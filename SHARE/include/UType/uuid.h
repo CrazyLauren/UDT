@@ -148,6 +148,7 @@ inline std::istream& operator>>(std::istream& aStream,
 		NSHARE::uuid_t& aUuid)
 {
 	NSHARE::CText _text;
+	aStream>>_text;
 	_text.MTrimSpace();
 	if (aStream.fail())
 	{

@@ -99,6 +99,13 @@ inline std::ostream& operator <<(std::ostream& aStream,
 		aStream << "IP=" << aIP.ip.MGetConst() << "; ";
 	return aStream << "Port=" << aIP.port;
 }
+template<class _Elem, class _Traits>
+inline basic_istream<_Elem, _Traits>& operator>>(
+		basic_istream<_Elem, _Traits>& aStream, NSHARE::net_address& _Str)
+{
+	//todo
+	return (aStream);
+}
 template<>
 struct less<NSHARE::net_address>: public binary_function<NSHARE::net_address, NSHARE::net_address, bool>
 {

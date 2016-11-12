@@ -265,14 +265,14 @@ private:
 		value_type* FBeginOfStorage;
 		eAllocatorType FAllocatorType;
 	};
-#ifdef	USE_BUFFER_PRIVATE_DATA
-	typedef std::pair<const_pointer, const_pointer> _diff_t;//todo refractoring
-	typedef std::pair<smart_field_t<value_type>, smart_field_t<_diff_t> > _insert_t;
-	void insert_impl(iterator __position, size_type __n, _insert_t __x =
-			_insert_t(),bool aCanDetach=true);
 
-	void MFill(const _insert_t& aVal, pointer aPosition, size_type aSize);
-#endif
+
+	pointer MInsertImpl(iterator __position, size_type __n, bool aCanDetach=true);
+
+	void MFill(pointer  aPosition, value_type const& aVal,
+			size_type aSize);
+	void MFill(pointer ,const_pointer const&,const_pointer const&);
+
 	value_type* MAllocate(size_t __n);
 	value_type* MReAllocate(value_type*,size_t __n);
 	size_type requred_buf_len(size_type aSize) const;

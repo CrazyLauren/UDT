@@ -25,11 +25,12 @@ int main(int argc, char *argv[])
 
 		for (;!_client.MOpen("test"); NSHARE::usleep(10000))
 		{
-			std::cerr << "test open" << std::endl;
+			std::cerr << "Cannot opened test SM" << std::endl;
 		}
+		std::cout << "Opened" << std::endl;
 		for(;!_client.MConnect();)
-			std::cerr << "test connect" << std::endl;
-
+			std::cerr << "Cannot connect to server 'test'" << std::endl;
+		std::cout << "Connected" << std::endl;
 		unsigned _flags=1;
 		for (;;)
 		{
@@ -38,7 +39,7 @@ int main(int argc, char *argv[])
 				++_flags;
 		}
 		NSHARE::usleep(10000);
-		std::cerr << "close" << std::endl;
+		std::cerr << "closing" << std::endl;
 		_client.MClose();
 		std::cerr << "closed" << std::endl;
 

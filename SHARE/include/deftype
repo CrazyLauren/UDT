@@ -195,7 +195,7 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/IFactory.h>
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
-
+#include <UType/CAddress.h>
 //#ifdef __MINGW32__
 //#	define _WIN32
 //#	undef unix

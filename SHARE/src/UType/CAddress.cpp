@@ -167,15 +167,18 @@ bool CRegistration::sMIsMeImpl(NSHARE::CText const& aFor, NSHARE::CText const& a
 			*_it == *_jt; ++_it, ++_jt)
 		if (*_it == SEPERATOR)
 			_is_sep = true;
-
+	VLOG(5) << " IsSep=" << _is_sep << " end=" << (_it == _it_end)
+						<< " jt_end=" << (_jt == _jt_end);
 	if (_it != _it_end)
 		return false;
 	else if	( _jt == _jt_end)//full equal
 		return true;
-	else if(!_is_sep)//name is not equal
-		return false;
-	else if(*_jt==CAddress::SEPERATOR)//more shorter address
+	else if(*_jt==CRegistration::SEPERATOR)//only name
 		return true;
+	else if (_is_sep && *_jt == CAddress::SEPERATOR) //more shorter address
+		return true;
+	else
+		VLOG(5)<<"Next  "<<*_jt;
 
 	return false;
 }
@@ -333,9 +336,14 @@ bool CAddress::MIsSubpathOfForRegistration(CText const& aName) const
 	CText::size_type const _pos = aName.find(CRegistration::SEPERATOR);
 	if (_pos == CText::npos) //no group
 		return false;
-	if((aName.length()-_pos-1) < MGetRaw().length())
+	CText::size_type const _size_gr= aName.length()-_pos-1;
+	if(_size_gr < MGetRaw().length())
 		return false;
-	return aName.compare(_pos+1,MGetRaw().length(),MGetRaw());
+
+	return aName.compare(_pos+1,MGetRaw().length(),MGetRaw())==0 &&//
+			(_size_gr == MGetRaw().length()
+					|| aName[_pos + 1 + MGetRaw().length()]
+							== CAddress::SEPERATOR);
 }
 bool CAddress::MIsSubpathOf(CRegistration const& aName) const
 {
@@ -354,7 +362,9 @@ bool CAddress::MIsSubpathOf(CText const& _gr) const
 
 	if (_gr.empty() || _gr.length() < MGetRaw().length())
 		return false;
-	return _gr.compare(0, MGetRaw().length(), MGetRaw()) == 0;
+	return _gr.compare(0, MGetRaw().length(), MGetRaw()) == 0 &&//
+			(_gr.length() == MGetRaw().length()
+					|| _gr[MGetRaw().length()] == CAddress::SEPERATOR);
 }
 bool CAddress::MIsPathOf(NSHARE::CText const& aRawGroup) const
 {
@@ -363,7 +373,9 @@ bool CAddress::MIsPathOf(NSHARE::CText const& aRawGroup) const
 
 	if (MGetRaw().empty() || MGetRaw().length() < aRawGroup.length())
 		return false;
-	return MGetRaw().compare(0, aRawGroup.length(), aRawGroup) == 0;
+	return MGetRaw().compare(0, aRawGroup.length(), aRawGroup) == 0 && //
+			(MGetRaw().length() == aRawGroup.length()
+					|| MGetRaw()[aRawGroup.length()] == CAddress::SEPERATOR);
 
 }
 bool CAddress::MIsPathOf(CAddress const& aVal) const
@@ -382,9 +394,12 @@ bool CAddress::MIsPathOfForRegistration(CText const& aName) const
 	CText::size_type const _pos = aName.find(CRegistration::SEPERATOR);
 	if (_pos == CText::npos) //no group
 		return true;
-	if(MGetRaw().length()<(aName.length()-_pos-1))
+	CText::size_type const _size_gr= aName.length()-_pos-1;
+	if(MGetRaw().length()<_size_gr)
 		return false;
-	return MGetRaw().compare(0,aName.length()-_pos-1,aName,_pos+1,aName.length()-_pos-1);
+	return MGetRaw().compare(0, _size_gr, aName, _pos + 1, _size_gr) == 0 && //
+			(_size_gr == MGetRaw().length()
+					|| MGetRaw()[_pos + 1 + _size_gr] == CAddress::SEPERATOR);
 }
 bool CAddress::MIsEmpty() const
 {

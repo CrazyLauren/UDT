@@ -42,7 +42,12 @@ struct CIPCSignalEvent::CImpl
 			oflags = O_CREAT;
 			break;
 		}
-		FSignalEvent = sem_open(aName, oflags, O_RDWR, 0);
+
+		if(oflags&O_CREAT)
+			FSignalEvent= sem_open(aName, oflags, 0666, 0);
+		else
+			FSignalEvent= sem_open(aName, oflags);
+
 		if (FSignalEvent == SEM_FAILED )
 		{
 			LOG(ERROR)<<aName<< " has not created as error "<<strerror(errno)<<"("<<errno<<")";
@@ -80,7 +85,7 @@ bool CIPCSignalEvent::MInit(char const* aName, eOpenType aHasToBeNew)
 	else if (FName[0] != '\\')
 		FName[0] = '/';
 	VLOG(2) << "Event " << FName << " is initialized.";
-	return FPImpl->MInit(aName, aHasToBeNew);
+	return FPImpl->MInit(FName.c_str(), aHasToBeNew);
 }
 void CIPCSignalEvent::MFree()
 {

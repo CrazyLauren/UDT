@@ -13,6 +13,7 @@
 #include <crc8.h>
 #include <tasks.h>
 #include <Socket/CSharedMemoryBase.h>
+#include <UType/CSharedAllocator.h>
 #include <Socket/CSharedMemoryImplTypes.h>
 #include <Socket/CSharedMemoryBaseImpl.h>
 namespace NSHARE

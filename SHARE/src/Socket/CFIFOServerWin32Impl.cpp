@@ -565,7 +565,7 @@ void CFIFOServer::CImpl::MSerialize(NSHARE::CConfig & aConf) const
 		_conf.MAdd("path", _it->get()->FPath);
 		_conf.MAdd("time", _it->get()->FTime);
 		_conf.MAdd("con", _it->get()->pipeConnected);
-		aConf.MAdd(aConf);
+		aConf.MAdd(_conf);
 	}
 }
 } // namespace NSHARE

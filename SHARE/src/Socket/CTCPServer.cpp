@@ -14,7 +14,7 @@
 #include <Socket/CLoopBack.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
-#include <Socket/CTcpServerImpl.h>
+#include <Socket/CTCPServerImpl.h>
 #if !defined(_WIN32)
 #	include <arpa/inet.h>                      // htons, htonl
 #else
@@ -105,7 +105,7 @@ void CTCPServer::MClose()
 {
 	return FImpl->MClose();
 }
-CTCPServer::sent_state_t CTCPServer::MSendLoopBack(data_t const aData)
+CTCPServer::sent_state_t CTCPServer::MSendLoopBack(data_t const& aData)
 {
 	return FImpl->FLoopBack->FLoop.MSend(aData);
 }

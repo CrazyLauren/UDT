@@ -68,7 +68,12 @@ bool CIPCSem::MInit(char const* aName, unsigned int value,
 		break;
 	}
 	CHECK_LE(value,SEM_VALUE_MAX);
-	FImpl->FSem = sem_open(FName.c_str(), oflags, O_RDWR, aInitvalue);
+	
+	if(oflags&O_CREAT)
+		FImpl->FSem = sem_open(FName.c_str(), oflags, 0666, aInitvalue);
+	else
+		FImpl->FSem = sem_open(FName.c_str(), oflags);
+	
 	if (FImpl->FSem == SEM_FAILED )
 	{
 		LOG(ERROR)<<FName<< " has not created as error "<<strerror(errno)<<"("<<errno<<")";

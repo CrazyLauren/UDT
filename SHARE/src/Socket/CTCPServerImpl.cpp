@@ -13,7 +13,7 @@
 #include <Socket/CLoopBack.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
-#include <Socket/CTcpServerImpl.h>
+#include <Socket/CTCPServerImpl.h>
 #include <errno.h>
 #if !defined(_WIN32)
 #include <signal.h>

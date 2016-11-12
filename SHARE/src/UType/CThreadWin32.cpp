@@ -247,7 +247,7 @@ void CThread::MRun(void)
 		FImpl->FCond.MBroadcast();
 	}
 	VLOG(2)<<"Thread closed...";
-	ExitThread(0);
+	_endthreadex(0);
 }
 
 void CThread::MCancelCleanUp()

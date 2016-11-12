@@ -16,6 +16,7 @@
 #include <boost/interprocess/detail/atomic.hpp>
 
 #include <Socket/CSharedMemoryClient.h>
+#include <UType/CSharedAllocator.h>
 #include <Socket/CSharedMemoryImplTypes.h>
 #include <Socket/CSharedMemoryClientImpl.h>
 

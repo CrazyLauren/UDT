@@ -9,7 +9,6 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */   
-#define USE_BUFFER_PRIVATE_DATA
 #include <deftype>
 #include <crc8.h>
 #include <boost/version.hpp>
@@ -679,13 +678,13 @@ void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
 		}
 	}
 	else if (aNewSize != size())
-		insert_impl(fromBegin ? begin() : end(), aNewSize - size(), _insert_t(),
-				aCanDetach);
+		MInsertImpl(fromBegin ? begin() : end(), aNewSize - size(),aCanDetach);
 }
 void CBuffer::insert(iterator __position, size_type __n, value_type const& __x)
 {
-	return insert_impl(__position, __n,
-			_insert_t(smart_field_t<value_type>(__x), smart_field_t<_diff_t>()));
+	pointer _p=MInsertImpl(__position, __n);
+	if(_p)
+		MFill(_p,__x,__n);
 }
 void CBuffer::insert(iterator __position, value_type const& __x)
 {
@@ -693,39 +692,35 @@ void CBuffer::insert(iterator __position, value_type const& __x)
 }
 void CBuffer::insert(iterator __position, iterator aBegin, iterator aEnd)
 {
-	return insert_impl(__position, aEnd - aBegin,
-			_insert_t(smart_field_t<value_type>(),
-					smart_field_t<_diff_t>(
-							_diff_t(aBegin.base(), aEnd.base()))));
+	pointer _p=MInsertImpl(__position, aEnd - aBegin);
+	if(_p)
+		MFill(_p,aBegin.base(),aEnd.base());
 }
 void CBuffer::insert(iterator __position, const_iterator aBegin,
 		const_iterator aEnd)
 {
 	CHECK(aEnd > aBegin);
-	return insert_impl(__position, aEnd - aBegin,
-			_insert_t(smart_field_t<value_type>(),
-					smart_field_t<_diff_t>(
-							_diff_t(aBegin.base(), aEnd.base()))));
-}
-void CBuffer::MFill(const _insert_t& aVal, pointer aPosition, size_type aSize)
-{
-	if (aVal.first.MIs())
-		memset(aPosition, aVal.first.MGetConst(), aSize);
-	else if (aVal.second.MIs())
-	{
-		CHECK_EQ(aSize,
-				(size_t )(aVal.second.MGetConst().second
-						- aVal.second.MGetConst().first));
-		memcpy(aPosition, aVal.second.MGetConst().first, aSize);
-	}
+	pointer _p=MInsertImpl(__position, aEnd - aBegin);
+	if(_p)
+		MFill(_p,aBegin.base(),aEnd.base());
 }
 
-void CBuffer::insert_impl(iterator aPosition, size_type aSize,
-		_insert_t aVal,bool aCanDetach)
+void CBuffer::MFill(pointer aPosition, value_type const& aVal,
+		size_type aSize)
+{
+	memset(aPosition, aVal, aSize);
+}
+void CBuffer::MFill(pointer  aPosition,const_pointer const& aBegin,const_pointer const& aEnd)
+{
+	CHECK_LE(aBegin,aEnd);
+	memcpy(aPosition, aBegin, aEnd-aBegin);
+
+}
+CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool aCanDetach)
 {
 	VLOG_IF(1,aSize == 0) << " aSize is zero.";
 	if (aSize == 0)
-		return;
+		return NULL;
 	pointer _position = NULL;
 	if (FBuffer.FBeginOfStorage)
 	{
@@ -922,7 +917,8 @@ void CBuffer::insert_impl(iterator aPosition, size_type aSize,
 		FBuffer.FBeginOfStorage = _buf_p;
 		_position = _buf_p + _new_info.MStartOffset();
 	}
-	MFill(aVal, _position, aSize);
+	//MFill(aVal, _position, aSize);
+	return _position;
 }
 void CBuffer::clear()
 {

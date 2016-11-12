@@ -12,6 +12,7 @@
 #ifndef CDEX_H_
 #define CDEX_H_
 
+#ifndef NODEX
 #ifndef DEX_SOCKET_EXIST
 #	define DEX_SOCKET_EXIST
 #endif 
@@ -105,4 +106,5 @@ public:
 	NSHARE::CConfig MSettings(void) const;
 };
 }
+#endif//#ifndef NODEX
 #endif /*CDEX_H_*/

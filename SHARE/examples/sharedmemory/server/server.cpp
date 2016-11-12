@@ -15,41 +15,26 @@
 #include <UType/CSharedMemory.h>
 using namespace NSHARE;
 
-void PrintState(void *);
-void SpeedTest(void *);
 using namespace std;
 
 
-bool g_working = true;
-CSharedMemoryServer* g_server=NULL;
+
 int main(int argc, char *argv[])
 {
 	init_trace(argc, argv);
 
 	CSharedMemoryServer _server;
-	g_server=&_server;
-	_server.MOpen("test", 1024 * 1024);
-
-	NSHARE::sleep(1);
-
-	_beginthread(PrintState, 0, NULL);
-	_beginthread(SpeedTest, 0, NULL);
-
-	NSHARE::sleep(100000);
-	g_working = false;
-	NSHARE::sleep(1);
-	return 0;
-}
-void PrintState(void *)
-{
-	for (; g_working; NSHARE::sleep(1))
+	if (!_server.MOpen("test", 1024 * 1024)) 
 	{
-		g_server->MPrint(std::cout)<<std::endl;
+		std::cerr << "Cannot open SM test" << std::endl;
+		return EXIT_FAILURE;
 	}
-	_endthread();
-}
-void SpeedTest(void *)
-{
+
+
+	for (;! _server.MIsClients(); NSHARE::sleep(1))
+	{
+		_server.MPrint(std::cout)<<std::endl;
+	}
 	double _time = NSHARE::get_time();
 	double _start_time = NSHARE::get_time();
 
@@ -57,10 +42,10 @@ void SpeedTest(void *)
 
 	unsigned aFlags=1;
 	unsigned _last_flags=0;
-	for (;g_working;)
+	for (;;)
 	{
 		NSHARE::CBuffer _data;
-		g_server->MReceiveData(_data,NULL,&aFlags);
+		_server.MReceiveData(_data,NULL,&aFlags);
 
 		++_last_flags;
 		if(_last_flags!=aFlags)
@@ -87,4 +72,6 @@ void SpeedTest(void *)
 		}
 
 	}
+
+	return 0;
 }

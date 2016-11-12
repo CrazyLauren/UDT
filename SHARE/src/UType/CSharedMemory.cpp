@@ -614,11 +614,15 @@ bool CSharedMemory::MOpenOrCreate(const NSHARE::CText& aName, size_t aSize,size_
 
 bool CSharedMemory::MFree()
 {
-	CHECK_NOTNULL (FImpl);
-	bool _is= FImpl->MFree();
-	delete FImpl;
-	FImpl=NULL;
-	return _is;
+	if(FImpl)
+	{ 
+		CHECK_NOTNULL (FImpl);
+		bool _is= FImpl->MFree();
+		delete FImpl;
+		FImpl=NULL;
+		return _is;
+	}
+	return false;
 }
 
 size_t CSharedMemory::MGetSize() const

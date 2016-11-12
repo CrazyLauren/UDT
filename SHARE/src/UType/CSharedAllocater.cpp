@@ -1887,8 +1887,9 @@ void CSharedAllocator::MCleaunUpBlock(heap_head_t* const _p_head,
 	block_node_t* _node = MGetBlockNode(_base_offset);
 	CHECK_NE((_node->FBlockSize & BLOCK_ALLOCATED_BIT), 0);
 
-	aNode = MSearchProcessOfBlockNode(_p_head, _node->FIndexOfOffset,
-			_base_offset).first;
+	if (!aNode)
+		aNode = MSearchProcessOfBlockNode(_p_head, _node->FIndexOfOffset,
+				_base_offset).first;
 	CHECK_NOTNULL(aNode);
 	if (aNode->FPid == _cleanup.FPid)
 	{
@@ -2058,10 +2059,11 @@ void CSharedAllocator::MCheckResources(clean_up_resources_t & _resources)
 			_resources.end());
 	for (; _it != _it_end; ++_it)
 	{
-		if (_it->FBlock.MIs())
+		clean_up_t& _val=*_it;
+		if (_val.FBlock.MIs())
 		{
 			const offset_t _base_offset = MConvertOffsetToBase(_p_head,
-					_it->FBlock.MGetConst().FOffset);
+					_val.FBlock.MGetConst().FOffset);
 
 			block_node_t* _node = MGetBlockNode(_base_offset);
 			if (!MSearchProcessOfBlockNode(_p_head, _node->FIndexOfOffset,
@@ -2069,8 +2071,8 @@ void CSharedAllocator::MCheckResources(clean_up_resources_t & _resources)
 			{
 				VLOG(2) << "The block " << _it->FBlock.MGetConst().FOffset
 									<< " has been removed.";
-				_it->FPid = 0;
-				_it->FBlock.MUnSet();
+				_val.FPid = 0;
+				_val.FBlock.MUnSet();
 			}
 		}
 	}

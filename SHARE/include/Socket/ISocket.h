@@ -16,6 +16,7 @@
 
 namespace NSHARE
 {
+
 class SHARE_EXPORT ISocket
 {
 public:
@@ -87,7 +88,10 @@ public:
 	virtual bool MIsOpen() const =0;
 	virtual void MClose()=0;
 	virtual bool MReOpen()=0;
-	virtual const CSocket& MGetSocket(void) const=0;//fixme replace to MAddTo CSelectSocket
+
+	//virtual bool MAddTo(CSelectSocket&)=0;//todo
+	//virtual bool MRemoveFrom(CSelectSocket&)=0;//todo
+	virtual const CSocket& MGetSocket(void) const=0;
 
 	//one of the method must be oveloaded, otherwise the recursion will be.
 	virtual sent_state_t MSend(void const* aData, std::size_t aSize,

@@ -21,7 +21,7 @@ public:
 	typedef ISocket::data_t cb_arg_t;
 	typedef CThread::param_t param_t;
 	CAsyncSocket(ISocket*&);
-	CAsyncSocket();//you are to overload MGetSocket() methods;
+	CAsyncSocket();//you have to overload MGetSocket() methods;
 	virtual ~CAsyncSocket();
 	bool MStart(const CThread::param_t* = NULL);
 	void MStop();

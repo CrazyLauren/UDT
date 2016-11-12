@@ -45,6 +45,15 @@ IF (WIN32)
 
 	target_link_libraries(${TARGET_NAME} ws2_32 ole32 oleaut32 Psapi Setupapi uuid)
 	SET(${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid)
+ELSEIF (UNIX)
+	IF(QNX OR APPLE)
+		target_link_libraries(${TARGET_NAME} pthread socket)
+		SET(${PLATFORM_LIBS} pthread socket)
+	ELSE()
+		target_link_libraries(${TARGET_NAME} pthread dl rt)
+		SET(${PLATFORM_LIBS} pthread dl rt)
+	ENDIF()
+
 ENDIF()
 	
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../include)

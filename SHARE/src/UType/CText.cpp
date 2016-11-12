@@ -1217,7 +1217,7 @@ CText CText::substr(size_type idx, size_type len) const
 /*************************************************************************
  Implementation Functions
  *************************************************************************/
-inline bool CText::MGrow(size_type new_size)
+bool CText::MGrow(size_type new_size)
 {
 	// check for too big
 	CHECK_GT(max_size(),new_size) << "Resulting CText would be too big";

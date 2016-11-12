@@ -103,7 +103,7 @@ public:
 	sent_state_t MSend(const void* pData, size_t nSize, const net_address&);
 	virtual sent_state_t MSend(const void* pData, size_t nSize);
 	virtual sent_state_t MSend(const void* pData, size_t nSize, NSHARE::CConfig  const& aTo);
-	sent_state_t MSendLoopBack(data_t const aData);
+	sent_state_t MSendLoopBack(data_t const& aData);
 
 	bool MIsOpen() const;
 	bool MReOpen();

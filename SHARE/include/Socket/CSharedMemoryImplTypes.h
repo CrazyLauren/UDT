@@ -68,6 +68,8 @@ SHARED_PACKED(struct shared_port_t
 	uint16_t FUserID; //It's used by user for identify client
 	uint16_t FUniqueID; //it'is setuped by server
 });
+COMPILE_ASSERT(sizeof(shared_port_t) == 8,
+		IVALID_SIZEOF_SHARED_PORT);
 SHARED_PACKED(struct event_info_t
 {
 	event_info_t() :
@@ -94,17 +96,17 @@ SHARED_PACKED(struct event_info_t
 	};
 	struct connect_t
 	{
-		IAllocater::offset_pointer_t FClientOffset;
+		CSharedAllocator::offset_t FClientOffset;
 	};
 	struct keap_t
 	{
-		IAllocater::offset_pointer_t FInfoOffset;
+		CSharedAllocator::offset_t FInfoOffset;
 		uint8_t FAnswer;
 	};
 	struct recv_t
 	{
-		IAllocater::offset_pointer_t FBufferOffset;
-		uint32_t FSize;//fixme CSharedAllocator::block_size_t
+		CSharedAllocator::offset_t FBufferOffset;
+		CSharedAllocator::block_size_t FSize;
 		uint32_t FBlockCode;//if is zero - Receiving of packet  has not to be  confirmed
 		uint32_t FFlags;
 	};
@@ -123,6 +125,10 @@ SHARED_PACKED(struct event_info_t
 		keap_t FKeapAlive;
 	};
 });
+COMPILE_ASSERT(sizeof(event_info_t::recv_t) ==(sizeof(uint32_t)*3+sizeof(CSharedAllocator::offset_t)),
+		IVALID_SIZEOF_EVENT_INFO_RECV);
+COMPILE_ASSERT(sizeof(event_info_t) ==(sizeof(shared_port_t)+sizeof(event_info_t::recv_t)+sizeof(uint32_t)),
+		IVALID_SIZEOF_EVENT_INFO);
 SHARED_PACKED(struct event_fifo_t
 {
 	enum
@@ -138,8 +144,8 @@ SHARED_PACKED(struct event_fifo_t
 			FWrite(0), //
 			FMaxCountRecvEvent(FArraySize>EVENT_RESERV?(FArraySize-EVENT_RESERV):FArraySize), //
 			FCountRecvEvent(0),//
-			FMaxValue((std::numeric_limits<uint16_t>::max()/FArraySize)*FArraySize),//
-			FReadTime(0)
+			FReadTime(0),//
+			FMaxValue((std::numeric_limits<uint16_t>::max()/FArraySize)*FArraySize)
 	{
 		FState=0;
 		CHECK_GT(aMemorySize, sizeof(event_fifo_t));
@@ -158,8 +164,7 @@ SHARED_PACKED(struct event_fifo_t
 	//
 	uint8_t FCrc;
 	uint8_t FState :8;	//state
-	//The Ring buffer is used to hold the data info  to avoid the memory fragmentation
-	uint16_t const FArraySize;
+	uint16_t const FArraySize;//The Ring buffer is used to hold the data info  to avoid the memory fragmentation
 	//
 	uint16_t FRead;
 	uint16_t FWrite;
@@ -167,10 +172,10 @@ SHARED_PACKED(struct event_fifo_t
 	uint16_t const FMaxCountRecvEvent;
 	uint16_t FCountRecvEvent :16;
 	//
+	uint64_t FReadTime;
+	//
 	uint16_t const FMaxValue;//max valid value of FRead and FWrite
 	uint16_t :16;
-	//
-	uint64_t FReadTime;
 	//
 	event_info_t FInfo[0];
 
@@ -197,6 +202,9 @@ SHARED_PACKED(struct event_fifo_t
 	inline uint16_t MInc(uint16_t aVal) const;
 	inline uint16_t MDec(uint16_t aVal) const;
 });
+COMPILE_ASSERT(sizeof(event_fifo_t) ==(32+32+sizeof(uint32_t)*5+sizeof(uint64_t)),
+		IVALID_SIZEOF_EVENT_FIFO);
+
 inline uint16_t event_fifo_t::MCount() const
 {
 	int const _pos_w = FWrite;	//helps to avoid sigsev
@@ -308,15 +316,21 @@ SHARED_PACKED
 	shared_port_t FId;
 	event_fifo_t FFifo;
 });
+COMPILE_ASSERT(sizeof(shared_info_t) ==(sizeof(shared_port_t)+sizeof(event_fifo_t)),
+		IVALID_SIZEOF_SHARED_POINT);
+
 SHARED_PACKED(struct client_info_t
 {
 	client_info_t(uint32_t aPid, size_t aMemory);
-	IAllocater::offset_pointer_t FNext;
+	CSharedAllocator::offset_t FNext;
 
 	shared_info_t FInfo;
 	shared_identify_t MGetId() const;
 	struct client_info_t * MNext(IAllocater const* aAllocater) const;
 });
+COMPILE_ASSERT(sizeof(client_info_t) ==(sizeof(shared_info_t)+sizeof(CSharedAllocator::offset_t)),
+		IVALID_SIZEOF_CLIENT_INFO);
+
 inline size_t get_client_fifo_size(unsigned aFifoSize)
 {
 	return sizeof(client_info_t) + sizeof(event_fifo_t)
@@ -358,7 +372,7 @@ struct server_info_t //
 	uint16_t FNumberOfClients;
 
 	//The list is used to hold the clients but it can fragment the memory
-	IAllocater::offset_pointer_t FOffsetToClient;
+	CSharedAllocator::offset_t FOffsetToClient;
 //	//The list is used to hold the clients but it can fragment the memory
 //	IAllocater::offset_pointer_t FOffsetToNewClient;
 	//
@@ -380,6 +394,8 @@ struct server_info_t //
 		return (client_info_t *) aAllocater->MPointer(FOffsetToClient);
 	}
 });
+COMPILE_ASSERT(sizeof(server_info_t) ==(32+sizeof(uint32_t)*2+sizeof(CSharedAllocator::offset_t)+sizeof(shared_info_t)),
+		IVALID_SIZEOF_SERVER_INFO);
 inline size_t get_server_fifo_size(unsigned aFifoSize)
 {
 	return sizeof(server_info_t) + sizeof(event_fifo_t)

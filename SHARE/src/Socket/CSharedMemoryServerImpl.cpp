@@ -14,6 +14,7 @@
 #include <tasks.h>
 #include <console.h>
 #include <Socket/CSharedMemoryBase.h>
+#include <UType/CSharedAllocator.h>
 #include <Socket/CSharedMemoryImplTypes.h>
 #include <Socket/CSharedMemoryBaseImpl.h>
 #include <Socket/CSharedMemoryServer.h>
@@ -243,18 +244,17 @@ void IMPL_CLASS::MEventConnect(client_info_t* aClient)
 	DCHECK_EQ(aClient->FInfo.FId.FUniqueID, 0);
 	aClient->FInfo.FId.FUniqueID = ++g_client_numerator;
 	smart_client_t _client = MAddClient(aClient);
-	if(_client.MIs())
+	if (_client.MIs())
 	{
-		CRAII<CSharedMemoryBase::CImpl> _block(*this);
+		{
+			CRAII<CSharedMemoryBase::CImpl> _block(*this);
 
-		VLOG(2) << "Event connect for " << aClient->FInfo.FId;
+			VLOG(2) << "Event connect for " << aClient->FInfo.FId;
 
-		VLOG(2)<<"Unique ID="<<aClient->FInfo.FId.FUniqueID;
+			VLOG(2) << "Unique ID=" << aClient->FInfo.FId.FUniqueID;
 
-		MInsertClientIntoList(_alocater, aClient);
-	}
-	if(_client.MIs())
-	{
+			MInsertClientIntoList(_alocater, aClient);
+		}
 		_client->MEventConnected();
 		FThis.MCallEventConnected(aClient->MGetId());
 	}
@@ -463,7 +463,14 @@ bool IMPL_CLASS::MOpen()
 
 
 	_p = FSharedMemory.MMallocTo((uint32_t)_server_size, 0);
-	CHECK_NOTNULL(_p);
+	DCHECK_NOTNULL(_p);
+	if(!_p)
+	{
+		LOG(ERROR) << " Cannot allocate memory for SM server";
+		MFreeBase();
+		return false;
+	}
+	
 	_is = MInitServer(_p,_server_size);
 	if (!_is)
 	{
