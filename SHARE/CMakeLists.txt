@@ -1,5 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
+INCLUDE(FindPackageHandleStandardArgs)
+
 if(COMMAND cmake_policy)#i don't know what is it
     cmake_policy(SET CMP0003 NEW)
     cmake_policy(SET CMP0005 OLD)
@@ -104,6 +106,14 @@ if(NOT RAPIDJSON_FOUND)
 	return()
 endif()
 
+SET(TCLAP_ROOT ${SHARE_DEPENDENCIES_PATH}/tclap-1.2.1)
+FIND_PACKAGE(tclap REQUIRED)
+if(NOT TCLAP_FOUND)
+	message(FATAL "TCLAP (http://tclap.sourceforge.net/) could not be found. Set TCLAP_INCLUDE_PATH to point to the headers adding '-DTCLAP_INCLUDE_PATH=/path/to/tclap' to the cmake command.")	
+	return()
+endif()
+
+
 SET(GLOG_ROOT_DIR ${SHARE_DEPENDENCIES_PATH}/glog)
 FIND_PACKAGE(glog)
 
@@ -113,7 +123,7 @@ FIND_PACKAGE(log4cplus)
 OPTION(LOGGING_TO_GLOG "Using glog for loging" OFF)
 OPTION(LOGGING_TO_LOG4CPLUS "Using log4cplus for loging" OFF)
 OPTION(LOGGING_TO_COUT "Logging to cout" OFF)
-OPTION(DISABLE_LOGGING "Disable logging" ON)
+OPTION(LOGGING_DISABLED "Disable logging" ON)
 OPTION(NO_STATRUP_TEST "Disable  start up tests " ON)
 OPTION(SHARE_DEX_SOCKET "Adding socket for dex" OFF)
 
@@ -140,7 +150,7 @@ ELSEIF (LOGGING_TO_COUT)
 add_definitions(-DCOUT_LOG)
 ENDIF ()
 
-IF (DISABLE_LOGGING)
+IF (LOGGING_DISABLED)
 	add_definitions(-DNOLOG)
 ENDIF ()
 
@@ -158,23 +168,16 @@ IF (WIN32)
    if (MSVC)
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX )
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
-        OPTION(WIN32_LOGGING_TO_MP "Set to ON to build osgEarth with the /MP option (Visual Studio 2005 and above)." OFF)
-        MARK_AS_ADVANCED(WIN32_LOGGING_TO_MP)
-        IF(WIN32_LOGGING_TO_MP)
+        OPTION(BUILD_BY_MP "Set to ON to build SHARE with the /MP option (Visual Studio 2005 and above)." OFF)
+        MARK_AS_ADVANCED(BUILD_BY_MP)
+        IF(BUILD_BY_MP)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-        ENDIF(WIN32_LOGGING_TO_MP)
+        ENDIF(BUILD_BY_MP)
 
     endif(MSVC)
 ENDIF()
 
 
-include_directories(${Boost_INCLUDE_DIRS} ${RAPIDJSON_INCLUDES})
-
-configure_file(${SHARE_SOURCE_PATH}/revision.c.in
-                ${SHARE_SOURCE_PATH}/revision.c)
-
-
-add_definitions(-DSHARE_EXPORTS)
 
 ################################################################################
 # descend into subdirs

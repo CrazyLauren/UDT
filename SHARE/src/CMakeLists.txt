@@ -1,27 +1,15 @@
 
 include(CheckFunctionExists)
 
+
+				
 file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in
+                ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)				
 list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)
 
-IF (MSVC)
-	CHECK_FUNCTION_EXISTS(getopt HAVE_getopt_FUNCTION)
-	if(NOT HAVE_getopt_FUNCTION)
-		list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/getopt_msvc.c)
-	endif(NOT HAVE_getopt_FUNCTION)
-ENDIF()
-
-IF (WIN32)
-	
-	CHECK_FUNCTION_EXISTS(getsubopt HAVE_getsubopt_FUNCTION)
-	if(NOT HAVE_getsubopt_FUNCTION)
-		list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/getsubopt.c)
-	endif(NOT HAVE_getsubopt_FUNCTION)
-	
-ENDIF()
-
-
-file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp)
+file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp ../include/logging/*.h ../include/logging/*.hpp)
 list (APPEND CORE_HEADER_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/../include/deftype)
 
 file (GLOB SOCKET_HEADER_FILES ../include/Socket/*.h ../include/Socket/*.hpp)
@@ -34,6 +22,8 @@ set (ALL_HEADER_FILES ${CORE_HEADER_FILES} ${SOCKET_HEADER_FILES} ${UTYPE_HEADER
 IF (NOT SHARE_DEX_SOCKET)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 ENDIF ()
+
+
 
 
 
@@ -56,7 +46,7 @@ ELSEIF (UNIX)
 
 ENDIF()
 	
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../include)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../include ${Boost_INCLUDE_DIRS} ${RAPIDJSON_INCLUDES} ${TCLAP_INCLUDES})
 
 install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
                           ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

@@ -25,4 +25,6 @@
 #include <Socket/CDex.h>
 #include <Socket/CUnix.h>
 #endif
+
+#include <Socket/socket_parser.h>
 #endif /* SHARE_SOCKET_H_ */

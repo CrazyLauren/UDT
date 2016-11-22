@@ -54,6 +54,10 @@ inline CText::const_reference CText::operator[](size_type idx) const
 	return ptr()[idx];
 }
 
+inline utf8 * CText::data_unsafety(void)
+{
+	return MBuildUtf8Buff();
+}
 inline utf8 const* CText::data(void) const
 {
 	return MBuildUtf8Buff();

@@ -32,7 +32,7 @@
 #endif //#ifndef WIN32
 #include <string.h>
 #include <console.h>
-#include <print_socket_error.h>
+#include <Socket/print_socket_error.h>
 namespace NSHARE
 {
 #define IMPL CTCPServer::CImpl

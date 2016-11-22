@@ -19,8 +19,8 @@
 
 #define REVISION "HEAD-HASH-NOTFOUND"
 #define REVISION_PATH "HEAD-HASH-NOTFOUND"
-#define TIME	"12:48:32"
-#define DATA	"2016-10-16"
+#define TIME	"13:08:00"
+#define DATA	"2016-11-22"
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;
 static char gData[]=DATA;

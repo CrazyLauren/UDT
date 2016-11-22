@@ -155,7 +155,7 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/numtostr.h>
 #include <UType/CAssertException.h>
 #include <uclock.h>
-#include <share_trace.h>
+#include <logging/share_trace.h>
 #include <UType/CSingleton.h>
 #include <UType/CAntiHang.h>
 #include <UType/CCheckNoMultiThread.h>

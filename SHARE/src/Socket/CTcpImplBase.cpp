@@ -15,7 +15,7 @@
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
 #include <Socket/CTcpImplBase.h>
-#include <print_socket_error.h>
+#include <Socket/print_socket_error.h>
 #if !defined(_WIN32)
 #include <signal.h>
 #include <sys/socket.h>

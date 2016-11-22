@@ -112,6 +112,7 @@ public:
 	utf8 const* c_str() const;
 
 	utf8 const* data(void) const;
+	utf8* data_unsafety(void);
 
 	utf32* ptr(void);
 

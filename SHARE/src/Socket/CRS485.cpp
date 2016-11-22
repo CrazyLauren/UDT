@@ -13,8 +13,7 @@
 #include <SerialPort.h>
 #include <string.h>
 #include <console.h>
-#include <share_trace.h>
-#include <print_socket_error.h>
+#include <Socket/print_socket_error.h>
 #define TIME_OF_WAITING_FOR_RECEIVING 0.25 //10 ms
 namespace NSHARE
 {
