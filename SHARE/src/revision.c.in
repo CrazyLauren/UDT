@@ -17,12 +17,12 @@
 #define EXTERN extern
 #endif
 
-#define MAJOR ${SHARE_MAJOR_VERSION}
-#define MINOR ${SHARE_MINOR_VERSION}
-#define REVISION "@SHARE_REVISION_VERSION@"
-#define REVISION_PATH "@SHARE_PATH@"
-#define TIME	"@SHARE_TIME@"
-#define DATA	"@SHARE_DATA@"
+#define MAJOR ${CONF_VERSION_MAJOR}
+#define MINOR ${CONF_VERSION_MINOR}
+#define REVISION "@CONF_VERSION_REVISION@"
+#define REVISION_PATH "@CONF_VERSION_PATH@"
+#define TIME	"@CONF_VERSION_TIME@"
+#define DATA	"@CONF_VERSION_DATA@"
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;
 static char gData[]=DATA;

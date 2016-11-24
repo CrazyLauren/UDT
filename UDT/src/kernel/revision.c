@@ -21,7 +21,7 @@
 #define MINOR 1
 #define REVISION "0"
 #define REVISION_PATH "no path"
-#define TIME	"18:08:58"
+#define TIME	"20:24:47"
 #define DATA	"2016-11-24"
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;

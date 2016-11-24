@@ -17,12 +17,12 @@
 #define EXTERN extern
 #endif
 
-#define MAJOR ${KERNEL_MAJOR_VERSION}
-#define MINOR ${KERNEL_MINOR_VERSION}
-#define REVISION "@KERNEL_REVISION_VERSION@"
-#define REVISION_PATH "@KERNEL_PATH@"
-#define TIME	"@KERNEL_TIME@"
-#define DATA	"@KERNEL_DATA@"
+#define MAJOR ${CONF_VERSION_MAJOR}
+#define MINOR ${CONF_VERSION_MINOR}
+#define REVISION "@CONF_VERSION_REVISION@"
+#define REVISION_PATH "@CONF_VERSION_PATH@"
+#define TIME	"@CONF_VERSION_TIME@"
+#define DATA	"@CONF_VERSION_DATA@"
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;
 static char gData[]=DATA;
