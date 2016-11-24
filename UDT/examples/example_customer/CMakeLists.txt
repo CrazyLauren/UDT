@@ -1,0 +1,32 @@
+SET(TARGET_NAME example_customer)
+
+add_definitions(${LOGGING_DEFENITIONS})
+
+file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file (GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+
+include_directories (
+					${CMAKE_CURRENT_SOURCE_DIR} 
+					${SHARE_INCLUDES} 
+					${Boost_INCLUDE_DIRS} 
+					${CUSTOMER_INCLUDES} 
+					${LOGGING_INCLUDES}
+					${EXAMPLE_PARSER_INCLUDES}
+					${UDT_SHARE_INCLUDES})
+
+add_executable (${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+
+target_link_libraries(
+					${TARGET_NAME} 
+					${PLATFORM_LIBS} 
+					${SHARE_LIBRARIES} 
+					${UDT_SHARE_LIBRARIES} 
+					${LOGGING_LIBRARIES} 
+					${CUSTOMER_LIBRARIES}
+					)
+
+install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                          ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                          RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/example_customer.xml 
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)						  

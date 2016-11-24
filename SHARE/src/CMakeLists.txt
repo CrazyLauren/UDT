@@ -1,60 +1,77 @@
+SET(TARGET_NAME SHARE)
+SET(SHARE_TARGET_NAME ${TARGET_NAME})
 
-include(CheckFunctionExists)
+OPTION(LOGGING_IS_DISABLED_IN_SHARE "Disable logging in share library" ON)
 
+configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 1)
+
+OPTION(SHARE_NO_STATRUP_TEST "Disable  start up tests " ON)
+
+IF (SHARE_NO_STATRUP_TEST)
+	add_definitions(-DNO_SHARE_TEST)
+ENDIF ()
+
+
+add_definitions(${LOGGING_DEFENITIONS} -DSHARE_EXPORTS)
+IF (LOGGING_IS_DISABLED_IN_SHARE)
+	add_definitions(-DNOLOG)
+ENDIF ()
 
 				
 file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)		
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in
-                ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)				
-list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)
-
-file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp ../include/logging/*.h ../include/logging/*.hpp)
+file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp)
 list (APPEND CORE_HEADER_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/../include/deftype)
 
+
+file (GLOB LOGGING_HEADER_FILES ../include/logging/*.h ../include/logging/*.hpp)
 file (GLOB SOCKET_HEADER_FILES ../include/Socket/*.h ../include/Socket/*.hpp)
 file (GLOB UTYPE_HEADER_FILES ../include/UType/*.h ../include/UType/*.hpp)
 file (GLOB UTYPE_EXT_HEADER_FILES ../include/UType/ext/*.h ../include/UType/ext/*.hpp)
 
-set (ALL_HEADER_FILES ${CORE_HEADER_FILES} ${SOCKET_HEADER_FILES} ${UTYPE_HEADER_FILES} ${UTYPE_EXT_HEADER_FILES})
+set (SHARE_HEADERS ${CORE_HEADER_FILES} ${SOCKET_HEADER_FILES} ${UTYPE_HEADER_FILES} ${UTYPE_EXT_HEADER_FILES} ${LOGGING_HEADER_FILES})
 
 
 IF (NOT SHARE_DEX_SOCKET)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 ENDIF ()
+	
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include ${Boost_INCLUDE_DIRS} ${RAPIDJSON_INCLUDES} ${TCLAP_INCLUDES} ${LOGGING_INCLUDES})
 
-
-
-
-
-ADD_LIBRARY(
+add_library(
 	${TARGET_NAME} ${USER_DEFINED_DYNAMIC_OR_STATIC}
-    ${TARGET_SRC} ${ALL_HEADER_FILES} )
+    ${TARGET_SRC} ${SHARE_HEADERS} )
+
+target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${LOGGING_LIBRARIES})
 
 IF (WIN32)
 
-	target_link_libraries(${TARGET_NAME} ws2_32 ole32 oleaut32 Psapi Setupapi uuid)
-	SET(${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid)
+	target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid)
+	set (PLATFORM_LIBS ${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid  CACHE STRING     "PLATFORM_LIBS" FORCE)
 ELSEIF (UNIX)
 	IF(QNX OR APPLE)
-		target_link_libraries(${TARGET_NAME} pthread socket)
-		SET(${PLATFORM_LIBS} pthread socket)
+		target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} pthread socket)
+		SET(PLATFORM_LIBS pthread socket ${PLATFORM_LIBS} CACHE STRING     "PLATFORM_LIBS" FORCE)
 	ELSE()
-		target_link_libraries(${TARGET_NAME} pthread dl rt)
-		SET(${PLATFORM_LIBS} pthread dl rt)
+		target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} pthread dl rt)
+		SET(PLATFORM_LIBS  pthread dl rt ${PLATFORM_LIBS} CACHE STRING     "PLATFORM_LIBS" FORCE)
 	ENDIF()
 
 ENDIF()
-	
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../include ${Boost_INCLUDE_DIRS} ${RAPIDJSON_INCLUDES} ${TCLAP_INCLUDES})
+list(REMOVE_DUPLICATES PLATFORM_LIBS)
+
 
 install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
                           ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
                           RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES ${CORE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(FILES ${LOGGING_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/logging)
 install(FILES ${SOCKET_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Socket)
 install(FILES ${UTYPE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/UType)
 install(FILES ${UTYPE_EXT_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/UType/ext)
 
-		
+SET(SHARE_LIBRARIES  ${TARGET_NAME} CACHE STRING "SHARE_LIBRARIES" FORCE)#fixme must be filepath
+
+set(SHARE_FOUND TRUE CACHE BOOL  "SHARE_FOUND" FORCE)	
 		

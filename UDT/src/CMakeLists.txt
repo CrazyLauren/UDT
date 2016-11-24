@@ -1,0 +1,3 @@
+add_subdirectory(udt_share)
+add_subdirectory(kernel)
+add_subdirectory(customer)

@@ -19,10 +19,11 @@
 #define EXTERN extern
 #endif
 EXTERN unsigned get_revision_number();
+EXTERN unsigned get_major_version();
+EXTERN unsigned get_minor_version();
 EXTERN const char* get_revision_path();
 EXTERN const char* get_compile_time();
 EXTERN const char* get_compile_data();
-
 #undef EXTERN
 
 #define  REVISION get_revision_number()

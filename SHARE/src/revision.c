@@ -4,7 +4,7 @@
  * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
  *
  *  Created on: 15.10.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren/UDT)
+ *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -17,10 +17,12 @@
 #define EXTERN extern
 #endif
 
-#define REVISION "HEAD-HASH-NOTFOUND"
-#define REVISION_PATH "HEAD-HASH-NOTFOUND"
-#define TIME	"13:08:00"
-#define DATA	"2016-11-22"
+#define MAJOR 0
+#define MINOR 1
+#define REVISION "0"
+#define REVISION_PATH "no path"
+#define TIME	"18:08:57"
+#define DATA	"2016-11-24"
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;
 static char gData[]=DATA;
@@ -41,4 +43,12 @@ EXTERN const char* get_compile_time()
 EXTERN const char* get_compile_data()
 {
 	return gData;
+}
+EXTERN unsigned get_major_version()
+{
+	return MAJOR;
+}
+EXTERN unsigned get_minor_version()
+{
+	return MINOR;
 }
