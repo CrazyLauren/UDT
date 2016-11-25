@@ -28,17 +28,19 @@ struct CIPCSem::CImpl
 int const CIPCSem::MAX_VALUE=SEM_VALUE_MAX;
 CIPCSem::CIPCSem(char const* aName, unsigned int value,
 		eOpenType const aHasToBeNew, int aInitvalue) :
-		FImpl(new CImpl)
+		FImpl(new CImpl),//
+		FType(E_UNDEF)
 {
 	MInit(aName, value, aHasToBeNew, aInitvalue);
 }
 CIPCSem::CIPCSem() :
-		FImpl(new CImpl)
+		FImpl(new CImpl),//
+		FType(E_UNDEF)
 {
 	;
 }
 bool CIPCSem::MInit(char const* aName, unsigned int value,
-		eOpenType const aHasToBeNew, int aInitvalue)
+		eOpenType  aHasToBeNew, int aInitvalue)
 {
 	if (aInitvalue < 0)
 		aInitvalue = value;
@@ -52,43 +54,67 @@ bool CIPCSem::MInit(char const* aName, unsigned int value,
 		FName.insert(FName.begin(), '/');
 	else if (FName[0] != '\\')
 		FName[0] = '/';
-	int oflags = O_CREAT | O_EXCL;
+	
+	CHECK_LE(value, SEM_VALUE_MAX);
 
 	switch (aHasToBeNew)
 	{
 	case E_HAS_TO_BE_NEW:
 	{
+		int const oflags = O_CREAT | O_EXCL;
+		FImpl->FSem = sem_open(FName.c_str(), oflags, 0666, aInitvalue);
+		if (FImpl->FSem == SEM_FAILED)
+		{
+			LOG(ERROR) << FName << " has not created as error " << strerror(errno) << "(" << errno << ")";
+			if (errno == EEXIST)
+			{
+				VLOG(2) << "The IPC mutex " << aName << " is exist.";
+			}
+			return false;
+		}
 		break;
 	}
 	case E_HAS_EXIST:
-		oflags = 0;
-		break;
-	case E_UNDEF:
-		oflags = O_CREAT;
-		break;
-	}
-	CHECK_LE(value,SEM_VALUE_MAX);
-	
-	if(oflags&O_CREAT)
-		FImpl->FSem = sem_open(FName.c_str(), oflags, 0666, aInitvalue);
-	else
-		FImpl->FSem = sem_open(FName.c_str(), oflags);
-	
-	if (FImpl->FSem == SEM_FAILED )
-	{
-		LOG(ERROR)<<FName<< " has not created as error "<<strerror(errno)<<"("<<errno<<")";
-		if(errno==EEXIST)
+	{	
+		int const 	oflags = 0;
+		FImpl->FSem = sem_open(FName.c_str(), oflags);//exist
+		if (FImpl->FSem == SEM_FAILED)
 		{
-			CHECK(aHasToBeNew==E_HAS_TO_BE_NEW);
-			VLOG(2)<<"The IPC mutex "<< aName << " is exist.";
+			LOG(ERROR) << FName << " has not created as error " << strerror(errno) << "(" << errno << ")";
+			CHECK_NE(errno, EEXIST);
+			return false;
 		}
-		return false;
+		break;
 	}
-//	for (; value != static_cast<unsigned>(aInitvalue); --value)
+
+	case E_UNDEF:
+	{
+		aHasToBeNew = E_HAS_TO_BE_NEW;
+		int oflags = O_CREAT | O_EXCL;
+		FImpl->FSem = sem_open(FName.c_str(), oflags, 0666, aInitvalue);
+		if (FImpl->FSem == SEM_FAILED && errno == EEXIST)
+		{
+			VLOG(2) << "It's exist";
+			aHasToBeNew = E_HAS_EXIST;
+			oflags = O_CREAT;
+			FImpl->FSem = sem_open(FName.c_str(), oflags, 0666, aInitvalue);
+		}
+		if (FImpl->FSem == SEM_FAILED)
+		{
+			LOG(ERROR) << FName << " has not created as error " << strerror(errno) << "(" << errno << ")";
+			return false;
+		}
+		break;
+	}
+	}
+
+	//	for (; value != static_cast<unsigned>(aInitvalue); --value)
 //	{
 //		VLOG(2) << "Start sem post " << value;
 //		sem_wait(FImpl->FSem);
 //	}
+	FType = aHasToBeNew;
+	FIs = true;
 	return true;
 }
 CIPCSem::~CIPCSem()
@@ -171,7 +197,7 @@ bool CIPCSem::MIsInited() const
 void CIPCSem::MFree()
 {
 	CHECK_NOTNULL(FImpl);
-	if(FImpl->FSem== SEM_FAILED)
+	if(!MIsInited())
 		return;
 	CHECK_NE(FImpl->FSem, SEM_FAILED);
 	bool _is = sem_close(FImpl->FSem) == 0;
@@ -179,6 +205,7 @@ void CIPCSem::MFree()
 	LOG_IF(ERROR,!_is) << "Free error " << strerror(errno)<<"("<<errno<<")";
 	(void)_is;
 	FImpl->FSem= SEM_FAILED;
+	FType = E_UNDEF;
 }
 } /* namespace NSHARE */
 

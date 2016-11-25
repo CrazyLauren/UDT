@@ -40,7 +40,7 @@ extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat, size_t aFullSize,
 	uint64_t const _time = NSHARE::get_unix_time();
 	CHECK_LE((int long long)(_time/1000-time(0)),1)
 			<< "Invalid rval of get_unix_time(): " << _time << "; time:"
-			<< time(0);
+			<< time(NULL);
 	_head->FTime = static_cast<uint32_t>(_time / 1000);
 	_head->FTimeMs = static_cast<uint32_t>(_time) - _head->FTime;
 	_head->FCounter = ++g_counter;

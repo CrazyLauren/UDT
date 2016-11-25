@@ -223,9 +223,9 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::descriptor_info_t const& aVal)
 {
 	aStream << aVal.FProgramm << std::endl;
-
-	aStream << "Connect Time:" << ctime(&aVal.FConnectTime) << " ("
-			<< aVal.FConnectTime << ")" << std::endl;
+	time_t const _time = aVal.FConnectTime/1000;//in ms
+	aStream << "Connect Time:" << ctime(&_time)<< " ("
+			<< _time << ")" << std::endl;
 
 	aStream << "Info:" << aVal.FInfo;
 

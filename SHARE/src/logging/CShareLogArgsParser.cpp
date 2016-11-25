@@ -171,7 +171,7 @@ const std::pair<const char*, const char*> CShareLogArgsParser::FOptsCommects[] =
 #	undef TO_SOCKET
 #endif
 
-#define IS_OPT(a) if(!_is&& (_is=aOption==FOptsCommects[a].first) )
+#define IS_OPT(a) if(!_is&& (_is=(aOption==FOptsCommects[a].first)) )
 void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		const std::string& value) const
 {

@@ -337,7 +337,7 @@ inline size_t get_client_fifo_size(unsigned aFifoSize)
 			+ sizeof(event_info_t) * aFifoSize;
 }
 inline client_info_t::client_info_t(uint32_t aPid, size_t aMemory) :
-		FNext(IAllocater::NULL_OFFSET),	//
+		FNext(CSharedAllocator::NULL_OFFSET),	//
 		FInfo(aPid, static_cast<uint32_t>(aMemory - sizeof(client_info_t)))	//
 {
 	CHECK_EQ(get_client_fifo_size(FInfo.FFifo.FArraySize),aMemory);
@@ -351,7 +351,7 @@ inline shared_identify_t client_info_t::MGetId() const
 inline struct client_info_t * client_info_t::MNext(
 		IAllocater const* aAllocater) const
 {
-	if (IAllocater::NULL_OFFSET == FNext)
+	if (CSharedAllocator::sMIsNullOffset(FNext))
 		return NULL;
 	return (client_info_t *) aAllocater->MPointer(FNext);
 }
@@ -374,7 +374,7 @@ struct server_info_t //
 	//The list is used to hold the clients but it can fragment the memory
 	CSharedAllocator::offset_t FOffsetToClient;
 //	//The list is used to hold the clients but it can fragment the memory
-//	IAllocater::offset_pointer_t FOffsetToNewClient;
+//	CSharedAllocator::offset_pointer_t FOffsetToNewClient;
 	//
 	shared_info_t FInfo;
 
@@ -389,7 +389,7 @@ struct server_info_t //
 	}
 	struct client_info_t * MFirstClientNode(IAllocater const* aAllocater) const
 	{
-		if (IAllocater::NULL_OFFSET == FOffsetToClient)
+		if (CSharedAllocator::sMIsNullOffset(FOffsetToClient))
 			return NULL;
 		return (client_info_t *) aAllocater->MPointer(FOffsetToClient);
 	}
@@ -406,7 +406,7 @@ inline server_info_t::server_info_t(uint32_t aPid, size_t aMemory) : //
 		FPIDOfLockedMutex(0),//
 		//FMaxClientFifoLen(0), //now it's set by client
 		FNumberOfClients(0), //
-		FOffsetToClient(IAllocater::NULL_OFFSET), //
+		FOffsetToClient(CSharedAllocator::NULL_OFFSET), //
 		FInfo(aPid, static_cast<uint32_t>(aMemory - sizeof(server_info_t)))
 {
 	FMutex[0]='\0';

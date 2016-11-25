@@ -258,7 +258,7 @@ bool IMPL::MCreateShatedSem(server_info_t * aInfo,NSHARE::CText const& aPostrix)
 	if(aPostrix.empty())
 		_mutex_name.MPrintf("sm_%d_%s", get_pid_optimized(), _rand.c_str());
 	else
-	_mutex_name.MPrintf("sm_%d_%s_%s", get_pid_optimized(),aPostrix.c_str(), _rand.c_str());
+		_mutex_name.MPrintf("sm_%d_%s_%s", get_pid_optimized(),aPostrix.c_str(), _rand.c_str());
 
 	size_t _name_len = (_mutex_name.length_code());
 	_name_len =

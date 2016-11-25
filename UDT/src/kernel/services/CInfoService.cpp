@@ -116,7 +116,7 @@ int CInfoService::sMHandleOpenId(CHardWorker* WHO, args_data_t* WHAT,
 	CHECK_NOTNULL(_this);
 	CHECK_EQ(open_descriptor::NAME, WHAT->FType);
 	const open_descriptor* _p =
-			reinterpret_cast<open_descriptor*>(WHAT->FPointToData);
+			reinterpret_cast<const open_descriptor*>(WHAT->FPointToData);
 	CHECK_NOTNULL(_p);
 	_this->MHandleOpen(_p->FId, _p->FInfo);
 	return 0;

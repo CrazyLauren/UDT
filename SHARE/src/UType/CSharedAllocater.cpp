@@ -62,9 +62,13 @@ inline void atomic_add(volatile boost::uint32_t *mem, int val)
 }
 typedef CSharedAllocator::block_size_t block_size_t;
 
+bool CSharedAllocator::sMIsNullOffset(const offset_t& aWhat) 
+{
+	return (aWhat&CSharedAllocator::NULL_OFFSET) != 0;
+}
 static inline bool is_null_offset( const CSharedAllocator::offset_t& aWhat)
 {
-	return (aWhat&CSharedAllocator::NULL_OFFSET)!=0;
+	return CSharedAllocator::sMIsNullOffset(aWhat);
 }
 SHARED_PACKED(struct CSharedAllocator::pid_offset_t
 {
@@ -1007,8 +1011,18 @@ std::string  CSharedAllocator::sMPrintAsXml(CSharedAllocator const* aFrom)
 }
 void CSharedAllocator::MInitIfNeedFreeSem(heap_head_t* const _p_head)
 {
-	if(!FFreeSem.MIsInited())
-		FFreeSem.MInit((char const*) _p_head->FFreeSem, CIPCSem::MAX_VALUE,CIPCSem::E_HAS_EXIST);
+	if (!FFreeSem.MIsInited())
+	{
+		FFreeSem.MInit((char const*)_p_head->FFreeSem, CIPCSem::MAX_VALUE);
+		CHECK(FFreeSem.MIsInited());
+		if (FFreeSem.MGetType() == CIPCSem::E_HAS_TO_BE_NEW)//It has been created
+		{
+			//DCHECK_EQ(atomic_read32(&_p_head->FNumberOfWaitingFor), atomic_read32(&_p_head->FPostCount));
+			atomic_write32(&_p_head->FNumberOfWaitingFor, 0);
+			atomic_write32(&_p_head->FPostCount, 0);
+		}
+	}
+
 }
 void* CSharedAllocator::MReallocate(void* aPtr,block_size_t aSize,bool aBlock,bool aFromReserv)
 {
@@ -1672,7 +1686,7 @@ void *CSharedAllocator::MMallocBlock(heap_head_t* const _p_head,
 	VLOG(2) << "Requred size " << xWantedSize;
 	CHECK_EQ((xWantedSize & BLOCK_ALLOCATED_BIT), 0);
 
-	uint32_t _alligment_size = xWantedSize;
+	block_size_t _alligment_size = xWantedSize;
 	// Ensure that blocks are always aligned to the required number
 	//of bytes.
 	const offset_t _offset = (offset_t) _alligment_size
@@ -2344,9 +2358,8 @@ bool CSharedAllocator::MReleaseHeap()
 		_is_full_cleanup = (_p_head->MFirstProcessNode(FBase) == NULL);
 		if (_is_full_cleanup)
 		{
-			CHECK_GE(
-					_p_head->FMaxSize - _p_head->FFreeBytesRemaining
-							- sizeof(heap_head_t) - sizeof(block_node_t), 0);
+			CHECK_GE(_p_head->FMaxSize,
+				_p_head->FFreeBytesRemaining+ sizeof(heap_head_t) + sizeof(block_node_t));
 			DCHECK_LE(
 					_p_head->FMaxSize - _p_head->FFreeBytesRemaining
 							- sizeof(heap_head_t) - sizeof(block_node_t),
@@ -2493,6 +2506,8 @@ CSharedAllocator::offset_t CSharedAllocator::MConvertOffsetToHead(
 }
 void* CSharedAllocator::MPointer(offset_t aVal) const
 {
+	if (is_null_offset(aVal))
+		return NULL;
 	if (!FBase)
 	{
 		LOG(DFATAL)<<"Segmentation failed Offset="<<aVal<<" FBase=0";
@@ -2500,6 +2515,7 @@ void* CSharedAllocator::MPointer(offset_t aVal) const
 	}
 	//CRAII<CIPCSem> _block(FSem);//fixme for optimization
 	heap_head_t* const _p_head = sMGetHead(FBase);
+	//fixme check for null ptr
 	if ( aVal >= _p_head->FMaxSize)
 	{
 		LOG(DFATAL)<<"Segmentation failed Offset="<<aVal;
@@ -2568,7 +2584,7 @@ void CSharedAllocator::MFillInfo(memory_info_t & _info,
 {
 	VLOG(5) << "Fill block node info";
 	_info.FOffset = sMOffsetFromBase(aP, FBase);
-	_info.FBlockSize = aP->FBlockSize & (~BLOCK_ALLOCATED_BIT);
+	_info.FBlockSize =(block_size_t) (aP->FBlockSize & (~BLOCK_ALLOCATED_BIT));
 	_info.FBlockSize += sizeof(block_node_t);
 
 	_info.FType =

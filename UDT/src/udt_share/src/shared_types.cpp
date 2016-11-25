@@ -158,7 +158,7 @@ const NSHARE::CText kernel_link::LINK = "link";
 kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 		FProgramm(aConf.MChild(PROGRAM_ID_NAME)), //
 		FLatency(std::numeric_limits<uint16_t>::max()),//
-		FConnectTime(time(NULL))
+		FConnectTime(NSHARE::get_unix_time())
 {
 	aConf.MGetIfSet(LATENCY, FLatency);
 	aConf.MGetIfSet(TIME, FConnectTime);
@@ -167,7 +167,7 @@ kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 kernel_link::kernel_link(programm_id_t const& aInfo, uint16_t aLink):
 		FProgramm(aInfo),//
 		FLatency(aLink),//
-		FConnectTime(time(NULL))
+		FConnectTime(NSHARE::get_unix_time())
 {
 	;
 }

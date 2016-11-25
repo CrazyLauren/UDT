@@ -20,15 +20,15 @@ class SHARE_EXPORT CIPCSem:CDenyCopying
 public:
 	enum eOpenType
 	{
-		E_HAS_TO_BE_NEW,
-		E_HAS_EXIST,
 		E_UNDEF,
+		E_HAS_TO_BE_NEW,
+		E_HAS_EXIST
 	};
 	static int const MAX_VALUE;
 	CIPCSem();
 	CIPCSem(char const* aName,unsigned int value,eOpenType const =E_UNDEF,int aInitvalue=-1);
 	~CIPCSem();
-	bool MInit(char const* aName,unsigned int value,eOpenType const =E_UNDEF,int aInitvalue=-1);
+	bool MInit(char const* aName,unsigned int value,eOpenType  =E_UNDEF,int aInitvalue=-1);
 	void MFree();
 	bool MIsInited()const;
 	bool MWait(void);
@@ -38,14 +38,20 @@ public:
 	int MValue() const;
 	NSHARE::CText const& MName()const;
 	void MUnlink();
+	eOpenType MGetType() const;//if E_HAS_TO_BE_NEW - The mutex has been created, if E_HAS_EXIST- It was exit, else It's not inited
 private:
 	struct CImpl;
 	CImpl *FImpl;
 	NSHARE::CText FName;
+	eOpenType FType;
 };
 inline NSHARE::CText const& CIPCSem::MName() const
 {
 	return FName;
+}
+inline CIPCSem::eOpenType CIPCSem::MGetType() const
+{
+	return FType;
 }
 template<> class SHARE_EXPORT CRAII<CIPCSem> : public CDenyCopying
 {

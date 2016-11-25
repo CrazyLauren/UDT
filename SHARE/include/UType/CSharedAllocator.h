@@ -25,6 +25,7 @@ public:
 	static const NSHARE::CText NAME;
 	static const index_type NULL_INDEX;
 	static const offset_t NULL_OFFSET;// max 2GB
+	static bool sMIsNullOffset(const offset_t& aWhat);
 
 	COMPILE_ASSERT(sizeof(NULL_OFFSET)==4,InvalidSizeNullOffset);
 

@@ -146,9 +146,9 @@ struct UDT_SHARE_EXPORT kernel_link
 	static const NSHARE::CText LINK;
 
 	programm_id_t FProgramm;
-	mutable uint16_t FLatency;
-	mutable time_t FConnectTime;
+	mutable uint64_t FConnectTime;//ms
 	NSHARE::CText FTypeLink;
+	mutable uint16_t FLatency;
 
 	kernel_link() :
 			FLatency(std::numeric_limits<uint16_t>::max())

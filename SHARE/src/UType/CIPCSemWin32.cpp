@@ -27,17 +27,21 @@ struct CIPCSem::CImpl
 int const CIPCSem::MAX_VALUE=std::numeric_limits<long>::max()/2;
 CIPCSem::CIPCSem(char const* aName, unsigned int value,
 		eOpenType const aHasToBeNew, int aInitvalue) :
-		FImpl(new CImpl)
+		FImpl(new CImpl),//
+		FType(E_UNDEF)
 {
-	MInit(aName, value, aHasToBeNew,aInitvalue);
+	bool const _is=MInit(aName, value, aHasToBeNew,aInitvalue);
+	(void)_is;
+	CHECK(_is);
 }
 CIPCSem::CIPCSem() :
-		FImpl(new CImpl)
+		FImpl(new CImpl),//
+		FType(E_UNDEF)
 {
 	;
 }
 bool CIPCSem::MInit(char const* aName, unsigned int value,
-		eOpenType const aHasToBeNew, int aInitvalue)
+		eOpenType  aHasToBeNew, int aInitvalue)
 {
 	if(aInitvalue<0)
 		aInitvalue=value;
@@ -46,7 +50,10 @@ bool CIPCSem::MInit(char const* aName, unsigned int value,
 	CHECK_NOTNULL(FImpl);
 	LOG_IF(FATAL,FImpl->FSem!= INVALID_HANDLE_VALUE)<<"Cannot init "<<aName<<" name="<<FName;
 	FImpl->FSem = ::CreateSemaphore(NULL, aInitvalue, value, aName);
-	CHECK_NE(FImpl->FSem, INVALID_HANDLE_VALUE);
+	DCHECK_NE(FImpl->FSem, INVALID_HANDLE_VALUE);
+	if (FImpl->FSem == INVALID_HANDLE_VALUE)
+		return false;
+
 	DWORD const _last_error = GetLastError();
 	LOG_IF(DFATAL,_last_error == ERROR_ALREADY_EXISTS && aHasToBeNew==E_HAS_TO_BE_NEW)
 																								<< "The mutex  "
@@ -60,29 +67,37 @@ bool CIPCSem::MInit(char const* aName, unsigned int value,
 	bool _is_new = _last_error != ERROR_ALREADY_EXISTS;
 	switch (aHasToBeNew)
 	{
-	case E_HAS_TO_BE_NEW:
-	{
-		if (!_is_new)
+		case E_HAS_TO_BE_NEW:
 		{
-			MFree();
-			return false;
+			if (!_is_new)
+			{
+				MFree();
+				return false;
+			}
+
+			break;
 		}
-		return true;
-		break;
-	}
-	case E_HAS_EXIST:
-	{
-		if (_is_new)
+		case E_HAS_EXIST:
 		{
-			LOG(ERROR)<<"The mutex is not to be a new, but it's not true.";
-			MFree();
-			return false;
+			if (_is_new)
+			{
+				LOG(ERROR)<<"The mutex is not to be a new, but it's not true.";
+				MFree();
+				return false;
+			}
+			break;
 		}
-		return true;
+		case E_UNDEF:
+		{
+			if (_is_new)
+				aHasToBeNew = E_HAS_TO_BE_NEW;
+			else
+				aHasToBeNew = E_HAS_EXIST;
+			break;
+		}
 	}
-	case E_UNDEF:
-	break;
-}
+	FType = aHasToBeNew;
+	FImpl->FIs = FImpl->FSem!= INVALID_HANDLE_VALUE;
 	return true;
 }
 CIPCSem::~CIPCSem()
@@ -97,8 +112,9 @@ bool CIPCSem::MWait(void)
 {
 	VLOG(2)<<"Wait for mutex(lock) "<<FName;
 	CHECK_NOTNULL(FImpl);
+	HANDLE const _handle = FImpl->FSem;
 	LOG_IF(FATAL,FImpl->FSem== INVALID_HANDLE_VALUE)<<"Cannot wait of "<<FName;
-	bool _is = WaitForSingleObject(FImpl->FSem, INFINITE) == WAIT_OBJECT_0;
+	bool _is = WaitForSingleObject(_handle, INFINITE) == WAIT_OBJECT_0;
 	VLOG(2)<<"Sem "<<FName<<" hold.";
 	LOG_IF(ERROR,!_is) << "Look error " << GetLastError();
 	return _is;
@@ -152,11 +168,12 @@ bool CIPCSem::MIsInited() const
 }
 void CIPCSem::MFree()
 {
-	if (FImpl->FSem != INVALID_HANDLE_VALUE)
+	if (MIsInited())
 	{
 		VLOG(2)<<"free mutex "<<FName;
 		::CloseHandle(FImpl->FSem);
 		FImpl->FSem = INVALID_HANDLE_VALUE;
+		FType = E_UNDEF;
 	}
 }
 } /* namespace NSHARE */

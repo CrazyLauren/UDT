@@ -108,8 +108,8 @@ size_t CNetBase::MAvailable(CSocket const& aSocket) const
 	int _val = ioctl(aSocket.MGet(), FIONREAD, &count_buf);
 	LOG_IF(ERROR,_val<0) << print_socket_error();
 	(void) _val;
-#endif
 	CHECK_GE(count_buf, 0);
+#endif
 	VLOG(2) << count_buf << " bytes available for reading from " << aSocket;
 	return count_buf;
 }

@@ -28,20 +28,27 @@ enum eLavel
 namespace NSHARE
 {
 namespace logging_impl{
-
+SHARE_EXPORT void lock_cout_mutex();
+SHARE_EXPORT void unlock_cout_mutex();
+SHARE_EXPORT void lock_cerr_mutex();
+SHARE_EXPORT void unlock_cerr_mutex();
 template<eLavel Level>
 struct __logging_t
 {
 	const bool FLogging;
 	__logging_t() :
-			FLogging(Level >= FLAGS_minloglevel)
-			{
-
-			}
+	FLogging(Level >= FLAGS_minloglevel)
+	{
+		if (FLogging)
+			lock_cout_mutex();
+	}
 	~__logging_t()
 	{
 		if (FLogging)
-			std::cout<<std::endl;
+		{
+			std::cout << std::endl;
+			unlock_cout_mutex();
+		}
 	}
 
 	template<typename T>
@@ -60,12 +67,16 @@ struct __logging_t<ERROR>
 	__logging_t() :
 			FLogging(ERROR >= FLAGS_minloglevel)
 	{
-
+		if (FLogging)
+			lock_cerr_mutex();
 	}
 	~__logging_t()
 	{
 		if (FLogging)
-				std::cerr<<std::endl;
+		{
+			std::cerr << std::endl;
+			unlock_cerr_mutex();
+		}
 	}
 
 	template<typename T>
@@ -90,8 +101,9 @@ struct __logging_t<FATAL>
 	{
 		if (FLogging)
 		{
-			std::cerr<<std::endl;
-			std::abort();
+			using namespace std;
+			cerr<<endl;
+			terminate();
 		}
 	}
 	template<typename T>

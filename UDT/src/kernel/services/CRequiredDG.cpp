@@ -106,7 +106,7 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 void CRequiredDG::MUnSendPacketToFrom(NSHARE::uuid_t const& aTo,
 		demand_dgs_t const& aFrom, demand_dgs_for_t & aOld)
 {
-	unique_uuids_t _res;
+//	unique_uuids_t _res;
 	std::set<id_t>::const_iterator _it = FIds.begin(), _it_end(FIds.end());
 	for (; _it != _it_end; ++_it)
 	{

@@ -67,7 +67,7 @@ class CSharedAllocatorImpl: public IAllocater
 {
 public:
 	typedef uint8_t common_allocater_t;
-	//COMPILE_ASSERT(((uint32_t)NULL_OFFSET)==((uint32_t)CSharedAllocator::NULL_OFFSET),InvalidNullOffsetofSM);
+	COMPILE_ASSERT((sizeof(NULL_OFFSET)>=sizeof(CSharedAllocator::NULL_OFFSET)),InvalidNullOffsetofSM);
 
 	CSharedAllocatorImpl(CSharedMemory::CImpl&);
 	virtual ~CSharedAllocatorImpl();
@@ -82,14 +82,21 @@ public:
 	{
 		if(!aP)
 			return NULL_OFFSET;
-		else
-			return FAllocater.MOffset(aP);
+		
+		CSharedAllocator::offset_t const _offset=FAllocater.MOffset(aP);
+		
+		if(CSharedAllocator::sMIsNullOffset(_offset))
+			return NULL_OFFSET;
+		return _offset;
 	}
 
 	virtual void* MPointer(offset_pointer_t aOffset) const
 	{
-		if(aOffset==CSharedAllocator::NULL_OFFSET)
+		if(aOffset==NULL_OFFSET)
 			return NULL;
+
+		CHECK_LE(aOffset, std::numeric_limits<CSharedAllocator::offset_t>::max());
+
 		void* _p = FAllocater.MPointer(aOffset);
 		return _p;
 	}

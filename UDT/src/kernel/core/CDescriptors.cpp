@@ -60,7 +60,7 @@ void CDescriptors::MOpenInfo(d_list_t::iterator _it,
 	++g_change_info;
 	_it->second = aInfo;
 	FByUUIDs[aInfo.FProgramm.FId.FUuid] = _it;
-	open_descriptor _val(aVal, aInfo);
+	open_descriptor const _val(aVal, aInfo);
 	CDataObject::sMGetInstance().MPush(_val);
 }
 

@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 {
 	init_trace(argc, argv);
 
+	CSharedMemoryServer::sMRemove("test");
 	CSharedMemoryServer _server;
 	if (!_server.MOpen("test", 1024 * 1024)) 
 	{
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
 
 	unsigned aFlags=1;
 	unsigned _last_flags=0;
+	unsigned _i = 0;
 	for (;;)
 	{
 		NSHARE::CBuffer _data;
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
 		if(_last_flags!=aFlags)
 		{
 			std::cerr<<"Invalid flags"<<std::endl;
+			throw;
 		}
 
 		_recv_count += _data.size();
@@ -62,8 +65,7 @@ int main(int argc, char *argv[])
 		double _speed = ((_data.size() / 1024.0 / 1024.0) / _delta);
 		_time = NSHARE::get_time();
 
-		static int _i = 0;
-		if (!(++_i % 10000))
+		if (!(++_i % 1000))
 		{
 			std::cout << "test1 <==" << (_recv_count / 1024 / 1024)
 					<< " md; speed=" << _speed << " mb/s; Med="
