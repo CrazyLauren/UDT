@@ -13,6 +13,24 @@
 #ifndef SHARE_NOLOG_H_
 #define SHARE_NOLOG_H_
 
+#undef INFO
+#undef WARNING
+#undef ERROR
+#undef FATAL
+#undef DFATAL
+enum
+{
+	INFO,
+	WARNING,
+	ERROR,
+	FATAL,
+#ifdef NDEBUG
+	DFATAL=ERROR
+#else
+	DFATAL=FATAL
+#endif
+};
+
 #	undef VLOG
 #	undef LOG
 #	undef LOG_IF
@@ -31,54 +49,80 @@
 #	undef CHECK
 #	undef DCHECK
 
-struct __gag_t
+namespace NSHARE
 {
-	inline void operator^(std::ostream&)
+	namespace logging_impl 
 	{
+		template<unsigned aVal>
+		struct __logging_t
+		{
+			template<typename T>
+			inline __logging_t <aVal>& operator<<(const T& aStream)
+			{
+				return *this;
+			}
+		};
+		template<>
+		struct __logging_t<FATAL>
+		{
+			__logging_t()
+			{
+				std::cerr << "FATAL:";
+			}
+			~__logging_t()
+			{
+				using namespace std;
+				cerr << endl;
+				terminate();
+			}
+			template<typename T>
+			inline __logging_t<FATAL>& operator<<(const T& aStream)
+			{
+				std::cerr << aStream;
+				return *this;
+			}
+		};
+		struct __gag_t
+		{
+			inline void operator^(std::ostream&)
+			{
+			}
+		};
 	}
-};
-#	define LOG(some)  true?(void)0: __gag_t()^ std::cout
-#	define VLOG(some)  LOG(some)
-#	define LOG_IF(some,other) LOG(some)
-#	define VLOG_IF(some,other) LOG(some)
-#	define DVLOG(some) LOG(some)
+}//
+#	define LOG(aLevel)  (aLevel!=FATAL)?(void)0: NSHARE::logging_impl::__logging_t<aLevel>()
+#	define VLOG(some)  true?(void)0: NSHARE::logging_impl::__gag_t()^ std::cout
+#	define LOG_IF(aLevel,condition) !(aLevel==FATAL && (condition))?(void)0: NSHARE::logging_impl::__logging_t<aLevel>()
+
+#	define VLOG_IF(some,other) VLOG(some)
+#	define DVLOG(some) VLOG(some)
 #	define DLOG(some) LOG(some)
-#	define DLOG_IF(some,other) LOG(some)
-#	define LOG_ASSERT(some)
-#	define CHECK_NE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_LE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_GT(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_GE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_LT(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_EQ(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define CHECK_NOTNULL(aVal) true?(void)0: __gag_t()^ std::cout
-#	define CHECK(aVal) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK(aVal) CHECK(aVal)
-#	define DCHECK_NOTNULL(aVal) CHECK_NOTNULL(aVal)
-#	define DCHECK_NE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK_LE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK_GT(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK_GE(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK_LT(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define DCHECK_EQ(some,some1) true?(void)0: __gag_t()^ std::cout
-#	define VLOG_EVERY_N(verboselevel, n) LOG(verboselevel)
-enum
-{
-#ifndef INFO
-	INFO,
+#	define DLOG_IF(some,other) VLOG_IF(some,other)
+#	define LOG_ASSERT(some) (some)?(void)0: NSHARE::logging_impl::__logging_t<FATAL>()
+#ifndef NDEBUG
+#	define DLOG_ASSERT(condition) LOG_ASSERT(condition)
+#else
+#	define DLOG_ASSERT(condition) true?(void)0: NSHARE::logging_impl::__gag_t()^ std::cout
 #endif
-#ifndef WARNING
-	WARNING,
-#endif
-#ifndef ERROR
-	ERROR,
-#endif
-#ifndef FATAL
-	FATAL,
-#endif
-#ifndef DFATAL
-	DFATAL
-#endif
-};
+#	define CHECK_NE(some,some1) LOG_ASSERT((some)!=(some1))
+#	define CHECK_LT(some,some1) LOG_ASSERT((some)<(some1))
+#	define CHECK_LE(some,some1) LOG_ASSERT((some)<=(some1))
+#	define CHECK_GT(some,some1) LOG_ASSERT((some)>(some1))
+#	define CHECK_GE(some,some1) LOG_ASSERT((some)>=(some1))
+#	define CHECK_EQ(some,some1) LOG_ASSERT((some)==(some1))
+#	define CHECK_NOTNULL(aVal) LOG_ASSERT(aVal!=NULL)
+#	define CHECK(aVal) LOG_ASSERT(aVal)
+
+#	define DCHECK_NE(some,some1) DLOG_ASSERT((some)!=(some1))
+#	define DCHECK_LT(some,some1) DLOG_ASSERT((some)<(some1))
+#	define DCHECK_LE(some,some1) DLOG_ASSERT((some)<=(some1))
+#	define DCHECK_GT(some,some1) DLOG_ASSERT((some)>(some1))
+#	define DCHECK_GE(some,some1) DLOG_ASSERT((some)>=(some1))
+#	define DCHECK_EQ(some,some1) DLOG_ASSERT((some)==(some1))
+#	define DCHECK_NOTNULL(aVal) DLOG_ASSERT(aVal!=NULL)
+#	define DCHECK(aVal) DLOG_ASSERT(aVal)
+
+#	define VLOG_EVERY_N(verboselevel, n) VLOG(verboselevel)
+
 
 #endif /* SHARE_NOLOG_H_ */

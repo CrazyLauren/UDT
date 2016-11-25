@@ -40,7 +40,10 @@ struct __logging_t
 	FLogging(Level >= FLAGS_minloglevel)
 	{
 		if (FLogging)
+		{
 			lock_cout_mutex();
+			std::cout << (Level == INFO ?"INFO:":"WARN:" );
+		}
 	}
 	~__logging_t()
 	{
@@ -68,7 +71,10 @@ struct __logging_t<ERROR>
 			FLogging(ERROR >= FLAGS_minloglevel)
 	{
 		if (FLogging)
+		{
 			lock_cerr_mutex();
+			std::cerr << "ERROR:";
+		}
 	}
 	~__logging_t()
 	{
@@ -95,7 +101,10 @@ struct __logging_t<FATAL>
 	__logging_t() :
 			FLogging(FATAL >= FLAGS_minloglevel)
 	{
-
+		if (FLogging)
+		{
+			std::cerr << "FATAL:";
+		}
 	}
 	~__logging_t()
 	{

@@ -1238,7 +1238,7 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 		}
 		CHECK_EQ((_check_size - 1) % _max, _buffer[_check_size - 1] % _max);
 		CHECK_EQ(_p, _buffer.ptr_const());
-		CHECK_EQ(_is_begin_capacity, (bool )_buffer.begin_capacity());
+		CHECK_EQ(_is_begin_capacity, _buffer.begin_capacity() != 0);
 		//std::cout << "EOK3" << std::endl;
 
 	}
