@@ -10,6 +10,7 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
+#include <revision.h>
 #include <Socket.h>
 #ifdef _WIN32
 #include <winsock2.h>                     // sockaddr_in
@@ -29,7 +30,7 @@
 #include "CControlByTCP.h"
 #include "CControlByTCPRegister.h"
 #include "CLocalChannelFactory.h"
-
+DECLARATION_VERSION_FOR(tcp_io_manager)
 namespace NUDT
 {
 NSHARE::CText const CControlByTCP::NAME = "tcp_io_manager";
@@ -727,32 +728,8 @@ void CControlByTCP::MSetStateConnected()
 	FState = E_CONNECTED;
 	FCustomer->MEventConnected();
 }
-/* Changelog
- *
- *
- * Версия 0.1
- *	The first Release
- *
- * Версия 0.2
- * - Обработка отключения от сервер
- *
- * Версия 0.3
- * - Добавлены фильтры
- *
- * Версия 0.4
- * - Изменения user_data_t
-
- * Версия 0.5
- * - Изменения user_data_t
- * - переход на CBuffer
- * - изменение интерфейса Main и IOCustomer
- *
- * Версия 0.6
- * - изменения протокола
- * */
-
 CControlByTCPRegister::CControlByTCPRegister() :
-		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 6))
+		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(MAJOR_VERSION_OF(tcp_io_manager), MINOR_VERSION_OF(tcp_io_manager), REVISION_OF(tcp_io_manager)))
 {
 
 }
@@ -787,5 +764,11 @@ extern "C" TCP_IO_MANAGER_EXPORT NSHARE::factory_registry_t* get_factory_registr
 		g_factory.push_back(new NUDT::CControlByTCPRegister());
 	}
 	return &g_factory;
+}
+#else
+#	include <load_static_module.h>
+namespace
+{
+	static NUDT::CStaticRegister<NUDT::CControlByTCPRegister> _reg;
 }
 #endif

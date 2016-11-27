@@ -27,12 +27,10 @@
 #include "CDataObject.h"
 #include "CCustomerImpl.h"
 #include "CLocalChannelFactory.h"
-/*	changelog
- *
- * Версия 0.2
- * - Добавлены фильтры
- * */
-static const NSHARE::version_t g_version(0, 2, REVISION);
+
+DECLARATION_VERSION_FOR(customer)
+
+static const NSHARE::version_t g_version(MAJOR_VERSION_OF(customer), MINOR_VERSION_OF(customer), REVISION_OF(customer));
 using namespace NSHARE;
 
 template<>
@@ -1205,10 +1203,3 @@ void CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
 	return FImpl->MWaitForReady(aSec);
 }
 } //
-#if defined(RRD_STATIC)
-extern "C" NSHARE::factory_registry_t*get_factory_registry()
-{
-	static NSHARE::factory_registry_t _registry;
-	return &_registry;
-}
-#endif

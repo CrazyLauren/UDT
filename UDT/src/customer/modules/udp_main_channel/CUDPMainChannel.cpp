@@ -11,6 +11,7 @@
  */
 
 #include <deftype>
+#include <revision.h>
 #include <Socket.h>
 #include <programm_id.h>
 #include <udt_share.h>
@@ -21,7 +22,7 @@
 #include <parser_in_protocol.h>
 #include "CUDPMainChannel.h"
 #include "CMainUdpRegister.h"
-
+DECLARATION_VERSION_FOR(udp_main_channel)
 namespace NUDT
 {
 NSHARE::CText const CUDPMainChannel::NAME = "udp";
@@ -200,16 +201,8 @@ bool CUDPMainChannel::MSend(user_data_t & aVal2)
 //--------
 //
 
-/* Changelog
- *
- *
- * Версия 0.1
- *	The first Release
- *
- **/
-
 CMainUdpRegister::CMainUdpRegister() :
-		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 1))
+		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(MAJOR_VERSION_OF(udp_main_channel), MINOR_VERSION_OF(udp_main_channel), REVISION_OF(udp_main_channel)))
 {
 
 }
@@ -240,5 +233,11 @@ extern "C" UDP_MAIN_CHANNEL_EXPORT NSHARE::factory_registry_t* get_factory_regis
 		g_factory.push_back(new NUDT::CMainUdpRegister());
 	}
 	return &g_factory;
+}
+#else
+#	include <load_static_module.h>
+namespace
+{
+	static NUDT::CStaticRegister<NUDT::CMainUdpRegister> _reg;
 }
 #endif

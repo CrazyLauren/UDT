@@ -14,19 +14,9 @@ include_directories (
 					${EXAMPLE_PARSER_INCLUDES}
 					${UDT_SHARE_INCLUDES})
 
-add_executable (${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
+share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES})
+share_add_dependency(${TARGET_NAME} ${CUSTOMER_LIBRARIES})
 
-target_link_libraries(
-					${TARGET_NAME} 
-					${PLATFORM_LIBS} 
-					${SHARE_LIBRARIES} 
-					${UDT_SHARE_LIBRARIES} 
-					${LOGGING_LIBRARIES} 
-					${CUSTOMER_LIBRARIES}
-					)
-
-install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                          ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                          RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/example_customer.xml 
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)						  

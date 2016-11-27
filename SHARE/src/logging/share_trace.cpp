@@ -338,5 +338,10 @@ extern "C" void install_failure_signal_handler()
 		g_prev_signals[_signals[i]] = signal(_signals[i], signal_handler);
 	}
 }
+#else
+extern "C" void install_failure_signal_handler()
+{
+	//todo
+}
 #endif//#elif defined(__MINGW32__)//_POSIX_VERSION
 #endif//#ifndef NOLOG

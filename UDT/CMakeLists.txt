@@ -3,11 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 SET(CMAKE_MODULE_PATH "${SHARE_ROOT_PATH}/CMakeModules;${CMAKE_MODULE_PATH}")
 INCLUDE(FindPackageHandleStandardArgs)
 
-if(COMMAND cmake_policy)#i don't know what is it
-    cmake_policy(SET CMP0003 NEW)
-    cmake_policy(SET CMP0005 OLD)
-endif(COMMAND cmake_policy)
-
+cmake_policy(SET CMP0022 NEW)
 # default to Release build (it's what most people will use, except cegui devs)
 if (NOT CMAKE_BUILD_TYPE)
     set( CMAKE_BUILD_TYPE Release CACHE STRING "Sets the configuration to build (Release, Debug, etc...)")

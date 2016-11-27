@@ -1,20 +1,17 @@
+set (TARGET_NAME sniffer)
+
+add_definitions(${LOGGING_DEFENITIONS})
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.hpp)
 
-set (TARGET_NAME sniffer)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SHARE_INCLUDES} ${LOGGING_INCLUDES} )
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-add_definitions(${LOGGING_DEFENITIONS})
+share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
 
-add_executable (${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
-#add_dependencies(${TARGET_NAME} ${SHARE_TARGET_NAME})
-include_directories (${SHARE_INCLUDES} ${LOGGING_INCLUDES} )
+share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES})
 
-target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${SHARE_LIBRARIES} ${LOGGING_LIBRARIES})
+share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES})
 
-
-install (TARGETS ${TARGET_NAME} 
-             RUNTIME DESTINATION "bin" )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sniffer.cfg DESTINATION "bin")			 
 
 

@@ -11,6 +11,7 @@
  */
 
 #include <deftype>
+#include <revision.h>
 #include <Socket.h>
 #include <programm_id.h>
 #include <udt_share.h>
@@ -22,7 +23,7 @@
 #include <sm_shared.h>
 #include "CSmMainChannel.h"
 #include "CMainSmRegister.h"
-
+DECLARATION_VERSION_FOR(sm_main_channel)
 //todo может добавить user id при иницилизации
 //todo user_data_info_t has to be allocated in shared memory directly
 namespace NUDT
@@ -435,20 +436,8 @@ bool CSmMainChannel::MSend(user_data_t & aVal)
 	return _is;
 }
 
-//
-//--------
-//
-
-/* Changelog
- *
- *
- * Версия 0.1
- *	The first Release
- *
- **/
-
 CMainSmRegister::CMainSmRegister() :
-		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 1))
+		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(MAJOR_VERSION_OF(sm_main_channel), MINOR_VERSION_OF(sm_main_channel), REVISION_OF(sm_main_channel)))
 {
 
 }
@@ -470,7 +459,7 @@ bool CMainSmRegister::MIsAlreadyRegistered() const
 
 }
 }
-#if !defined(UDP_MAIN_CHANNEL_STATIC)
+#if !defined(SM_MAIN_CHANNEL_STATIC)
 static NSHARE::factory_registry_t g_factory;
 extern "C" SM_MAIN_CHANNEL_EXPORT NSHARE::factory_registry_t* get_factory_registry()
 {
@@ -479,5 +468,11 @@ extern "C" SM_MAIN_CHANNEL_EXPORT NSHARE::factory_registry_t* get_factory_regist
 		g_factory.push_back(new NUDT::CMainSmRegister());
 	}
 	return &g_factory;
+}
+#else
+#	include <load_static_module.h>
+namespace
+{
+	static NUDT::CStaticRegister<NUDT::CMainSmRegister> _reg;
 }
 #endif

@@ -1,21 +1,24 @@
-SET(TARGET_NAME tcp_io_manager)
+add_loadable_module(tcp_io_manager 0 6)
 
-add_definitions(${LOGGING_DEFENITIONS} -DTCP_IO_MANAGER_EXPORTS)
+#Changelog
+#
+#
+# Версия 0.1
+#	The first Release
+#
+# Версия 0.2
+# - Обработка отключения от сервер
+#
+# Версия 0.3
+# - Добавлены фильтры
+#
+# Версия 0.4
+# - Изменения user_data_t
 
-configure_version(TCP_IO_MANAGER ${CMAKE_CURRENT_SOURCE_DIR} 0 1)
-
-file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)			
-list (APPEND SOURCE_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)
-
-file (GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
-
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SHARE_INCLUDES} ${Boost_INCLUDE_DIRS} ${CUSTOMER_INCLUDES} ${UDT_SHARE_INCLUDES} ${LOGGING_INCLUDES})
-
-add_library (${TARGET_NAME} ${USER_DEFINED_DYNAMIC_OR_STATIC}
-			${SOURCE_FILES} ${HEADER_FILES})
-
-target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES} ${LOGGING_LIBRARIES} ${CUSTOMER_LIBRARIES})
-
-install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                          ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                          RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+# Версия 0.5
+# - Изменения user_data_t
+# - переход на CBuffer
+# - изменение интерфейса Main и IOCustomer
+#
+# Версия 0.6
+# - изменения протокола

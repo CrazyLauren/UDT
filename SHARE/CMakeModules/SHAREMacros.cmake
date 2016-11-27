@@ -1,6 +1,7 @@
 #
 # Configuration logging og project
 #
+#	_DEP_PATH - Path for looking for dependencies
 macro(configure_logging _DEP_PATH)
 	
 	SET(GLOG_ROOT_DIR ${_DEP_PATH}/glog)
@@ -49,7 +50,20 @@ macro(configure_logging _DEP_PATH)
 	list(REMOVE_DUPLICATES LOGGING_LIBRARIES)
 	list(REMOVE_DUPLICATES LOGGING_INCLUDES)
 endmacro()
-macro(configure_version _PREFIX _FILE_PATH _MAJOR _MINOR)	
+
+# Make a version
+#	_TARGET - Name of the TARGET
+#	_FILE_PATH - Path to revision.c
+#	_MAJOR,_MINOR - Version of target
+#	_SOVERSION - For library only, version in lib.so._SOVERSION - API Version
+
+macro(configure_version _TARGET _FILE_PATH _MAJOR _MINOR )
+	
+	string(TOUPPER ${_TARGET} _PREFIX)
+	
+	if (("${ARGC}" GREATER 4) AND "${ARGV5}")
+		set(_SOVERSION ${ARGV5})
+	endif()
 	# Make a version file containing the current version from git.
 	SET(${_PREFIX}_MAJOR_VERSION ${_MAJOR} CACHE STRING "" FORCE)
 	SET(${_PREFIX}_MINOR_VERSION ${_MINOR} CACHE STRING "" FORCE)
@@ -75,7 +89,11 @@ macro(configure_version _PREFIX _FILE_PATH _MAJOR _MINOR)
 	STRING(TIMESTAMP ${_PREFIX}_DATA "%Y-%m-%d" )
 
 	SET(${_PREFIX}_VERSION 
-	${${_PREFIX}_MAJOR_VERSION}.${${_PREFIX}_MINOR_VERSION}.${${_PREFIX}_REVISION_VERSION})
+	${${_PREFIX}_MAJOR_VERSION}.${${_PREFIX}_MINOR_VERSION}.${${_PREFIX}_REVISION_VERSION} CACHE INTERNAL "" FORCE)
+	
+	if(_SOVERSION)
+		SET(${_PREFIX}_SOVERSION  ${_SOVERSION} CACHE INTERNAL "" FORCE)
+	endif()
 	
 	message ("Version of " ${_PREFIX} " is " ${${_PREFIX}_VERSION} " from " ${${_PREFIX}_PATH})
 
@@ -86,7 +104,7 @@ macro(configure_version _PREFIX _FILE_PATH _MAJOR _MINOR)
 	SET(CONF_VERSION_TIME ${${_PREFIX}_TIME} CACHE INTERNAL "" FORCE)
 	SET(CONF_VERSION_DATA ${${_PREFIX}_DATA} CACHE INTERNAL "" FORCE)
 	
-	configure_file(${_FILE_PATH}/revision.c.in
+	configure_file(${PATH_TO_REVISION_IN}
                 ${_FILE_PATH}/revision.c)
 	
 	UNSET(CONF_VERSION_MAJOR CACHE)
@@ -95,4 +113,209 @@ macro(configure_version _PREFIX _FILE_PATH _MAJOR _MINOR)
 	UNSET(CONF_VERSION_PATH CACHE)
 	UNSET(CONF_VERSION_TIME  CACHE)
 	UNSET(CONF_VERSION_DATA  CACHE)
+endmacro()
+
+
+# Define _LIB_NAME library to be built 
+#       _LIB_NAME           - Name of the library to create.
+#       _IS_MODULE          - to create a module or shared lib
+#       _SOURCE_FILES_VAR2   - the source file names.
+#       _HEADER_FILES_VAR   - the header file names.
+#       _INSTALL_BIN        - TRUE if the lib should be installed
+macro (share_add_library _LIB_NAME _IS_MODULE _SOURCE_FILES_VAR _HEADER_FILES_VAR _INSTALL_BIN)
+    
+	string(TOUPPER ${_LIB_NAME} _LIB_NAME_UP)
+    string(TOUPPER ${_LIB_NAME}_EXPORTS _EXPORT_DEFINE)
+	
+    #STATIC LIBRARY SET UP
+	set(${_LIB_NAME_UP}_BUILD_STATIC true CACHE BOOL "Build static library too")
+	set(${_LIB_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE BOOL "Link with static dependecies")
+	#OPTION(${_LIB_NAME_UP}_BUILD_STATIC "Build static library too" ON)
+
+
+	
+    if (${${_LIB_NAME_UP}_BUILD_STATIC})
+        add_library(${_LIB_NAME}_Static STATIC ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
+#        string(TOUPPER ${_LIB_NAME_UP}_STATIC _EXPORT_STATIC)
+#		set_property(TARGET ${_LIB_NAME}_Static APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_STATIC})
+		set_property(TARGET ${_LIB_NAME}_Static APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_DEFINE})
+    endif()
+
+
+    #SHARED LIBRARY SET UP
+	add_library(${_LIB_NAME} SHARED ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
+	
+    set_target_properties(${_LIB_NAME} PROPERTIES DEFINE_SYMBOL ${_EXPORT_DEFINE})
+	
+
+    if (NOT ${_IS_MODULE})
+		if(NOT ${_LIB_NAME_UP}_VERSION)
+			message(FATAL_ERROR "${_LIB_NAME} error: Version:${_LIB_NAME_UP}_VERSION is not set") 
+		endif()
+		if(${_LIB_NAME_UP}_SOVERSION)
+            set_target_properties(${_LIB_NAME} PROPERTIES
+                VERSION ${${_LIB_NAME_UP}_VERSION}
+                SOVERSION ${${_LIB_NAME_UP}_SOVERSION}
+            )
+		else()
+            set_target_properties(${_LIB_NAME} PROPERTIES
+                VERSION ${${_LIB_NAME_UP}_VERSION}
+                SOVERSION ${${_LIB_NAME_UP}_MAJOR_VERSION}
+            )		
+		endif()
+    endif()
+
+    #INSTALLATION
+    if (${_INSTALL_BIN})
+		install(TARGETS ${_LIB_NAME} 
+						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+
+        if (${${_LIB_NAME_UP}_BUILD_STATIC})
+            install(TARGETS ${_LIB_NAME}_Static
+   						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+        endif()
+    endif()
+endmacro()
+
+# Add libs to a target
+macro (share_target_link_libraries _LIB_NAME)
+    target_link_libraries(${_LIB_NAME} ${ARGN})
+
+    #get_target_property(_LIB_EXISTS ${_LIB_NAME}_Static TYPE)
+    if (TARGET ${_LIB_NAME}_Static)
+        foreach(_LIB ${ARGN})
+            if (${_LIB} STREQUAL optimized OR ${_LIB} STREQUAL debug OR ${_LIB} STREQUAL general)
+                set (_BUILD ${_LIB})
+            else()
+                #get_target_property(_LIB_IS_IN_PROJECT ${_LIB}_Static TYPE)
+
+                if (TARGET ${_LIB}_Static)
+                    target_link_libraries(${_LIB_NAME}_Static ${_BUILD} ${_LIB}_Static)
+                else()
+                    target_link_libraries(${_LIB_NAME}_Static ${_BUILD} ${_LIB})
+                endif()
+            endif()
+        endforeach()
+    endif()
+endmacro()
+
+macro (share_add_dependency _TARGET_NAME )
+    
+	#get_target_property(_STATIC_EXISTS ${_TARGET_NAME}_Static TYPE)	
+	#dynamic
+	string(TOUPPER ${_TARGET_NAME} _TARGET_NAME_UP)
+
+	#OPTION(${_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES "Link with static dependecies" OFF)
+	
+    foreach(_DEP_NAME ${ARGN})		
+	
+		if (${${_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES} AND TARGET ${_DEP_NAME}_Static)
+			
+			string(TOUPPER ${_DEP_NAME}_STATIC _EXPORT_STATIC)
+			set_property(TARGET ${_TARGET_NAME} APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_STATIC})
+			
+			target_link_libraries(${_TARGET_NAME} PRIVATE ${_DEP_NAME}_Static)
+		else()
+			target_link_libraries(${_TARGET_NAME} ${_DEP_NAME})
+		endif()
+
+	#static
+		if (TARGET ${_TARGET_NAME}_Static)
+			if (TARGET ${_DEP_NAME}_Static)
+				string(TOUPPER ${_DEP_NAME}_STATIC _EXPORT_STATIC)
+				set_property(TARGET ${_TARGET_NAME}_Static APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_STATIC})
+				target_link_libraries(${_TARGET_NAME}_Static ${_DEP_NAME}_Static)
+			else()
+				target_link_libraries(${_TARGET_NAME}_Static ${_DEP_NAME})
+			endif()
+		endif()
+    endforeach(_DEP_NAME ${ARGN})	
+endmacro()
+
+# Define _NAME library to be built 
+#       _NAME           - Name of the library to create.
+#       _IS_MODULE          - to create a module or shared lib
+#       _SOURCE_FILES_VAR   - the source file names.
+#       _HEADER_FILES_VAR   - the header file names.
+#       _INSTALL_BIN        - TRUE if the lib should be installed
+
+macro (share_add_executable TARGET_NAME _SOURCE_FILES_VAR _HEADER_FILES_VAR _INSTALL_BIN)
+
+
+	string(TOUPPER ${TARGET_NAME} _NAME_UP)
+    #Statically Linked
+	set(${_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE BOOL "Link with static dependecies")
+	#OPTION(${_NAME_UP}_BUILD_STATIC "Build as static too" ON)
+
+    if (${${_NAME_UP}_WITH_STATIC_DEPENDENCIES})
+		add_executable (${TARGET_NAME}_Static ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
+        string(TOUPPER ${_NAME_UP}_STATIC _EXPORT_STATIC)
+		set_property(TARGET ${TARGET_NAME}_Static APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_STATIC})
+    endif()
+
+    #Dynamically Linked
+
+    add_executable(${TARGET_NAME} ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
+
+    #Install
+	if (${_INSTALL_BIN})
+		install(TARGETS ${TARGET_NAME} 
+						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+
+		if (${${_NAME_UP}_WITH_STATIC_DEPENDENCIES})
+			install(TARGETS ${TARGET_NAME}_Static
+						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+		endif()
+	endif(${_INSTALL_BIN})
+endmacro()
+#Define loadable module - this is loaded dynamically at runtime
+macro (add_loadable_module _TARGET_NAME _MAJOR _MINOR)
+	
+	set(TARGET_NAME ${_TARGET_NAME})
+	SET(${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES ${${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES} ${TARGET_NAME} CACHE STRING "list of available modules" FORCE)
+
+
+	string(TOUPPER ${TARGET_NAME} _TARGET_NAME_UP)
+
+#	if(NOT ${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
+	set(${_TARGET_NAME_UP}_BUILD_STATIC false CACHE BOOL "Build static library too" FORCE)
+#	else()
+#		set(${_TARGET_NAME_UP}_BUILD_STATIC true CACHE BOOL "Build static library too" FORCE)
+#	endif()
+	
+	add_definitions(${LOGGING_DEFENITIONS})
+
+	configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} ${_MAJOR} ${_MINOR})
+
+	file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)			
+	list (APPEND SOURCE_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)
+
+	file (GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+
+	include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SHARE_INCLUDES} ${Boost_INCLUDE_DIRS} ${CUSTOMER_INCLUDES} ${UDT_SHARE_INCLUDES} ${LOGGING_INCLUDES})
+
+	#create objects files for for customer
+	if(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
+		list (FIND ${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES ${TARGET_NAME} _index)
+		if (${_index} GREATER -1)
+			add_library(${TARGET_NAME}_Object OBJECT ${SOURCE_FILES} ${HEADER_FILES})
+			set_property(TARGET ${TARGET_NAME}_Object APPEND PROPERTY COMPILE_DEFINITIONS ${_TARGET_NAME_UP}_STATIC ${CUSTOMER_TARGET_NAME_UP}_STATIC)
+		endif()
+	endif(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
+	
+	share_add_library(${TARGET_NAME} TRUE SOURCE_FILES HEADER_FILES TRUE)
+
+	share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES} )
+
+	share_add_dependency(${TARGET_NAME} ${CUSTOMER_LIBRARIES})
 endmacro()

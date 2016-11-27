@@ -322,7 +322,7 @@ std::string _log4cplus_impl::gen_file_name(eLavel aLevel)
 			_name += level_to_string(aLevel) + '.';
 
 			struct ::tm tm_time;
-#ifndef __MINGW32__
+#ifndef _WIN32
 			localtime_r(timestamp(), &tm_time);
 #else
 			struct ::tm *_p;
@@ -494,7 +494,7 @@ log4cplus::Logger& _log4cplus_impl::get_syslog_logger(eLavel _level)
 #if defined (LOG4CPLUS_HAVE_SYSLOG_H)
 	_append = new log4cplus::SysLogAppender(_name);
 #else
-#	ifndef __MINGW32__
+#	ifndef _WIN32
 #		warning "log4cplus have not syslog header."
 #	endif
 	_append = new log4cplus::SysLogAppender(_name, "127.0.0.1");

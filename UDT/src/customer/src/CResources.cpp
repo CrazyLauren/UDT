@@ -12,17 +12,23 @@
 #include <deftype>
 #include "CResources.h"
 
-#if defined(RRD_STATIC)
-extern "C"
-{
-NSHARE::factory_registry_t*get_factory_registry();
-}
-#endif
 using namespace NSHARE;
 template<>
 NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton = NULL;
 namespace NUDT
 {
+extern "C" NSHARE::factory_registry_t* static_factory_registry(NSHARE::CFactoryRegisterer* aVal)
+{
+	static NSHARE::CMutex _mutex;
+	NSHARE::CRAII<NSHARE::CMutex> _lock(_mutex);//may be don't need
+	static NSHARE::factory_registry_t _registry;
+	if (aVal)
+	{
+		_registry.push_back(aVal);
+	}
+	return &_registry;
+}
+
 CResources::CResources(std::vector<NSHARE::CText> const& aResources,
 		NSHARE::CText const& aExtPath)
 {
@@ -49,7 +55,6 @@ CResources::~CResources()
 void CResources::MLoad()
 {
 	VLOG(0) << "Begining resource loading:" << this;
-
 	//all resources
 	MLoadChannels();
 	VLOG(0) << "Resource loading completed:" << this;
@@ -94,15 +99,8 @@ void CResources::MLoadChannels()
 				}
 				catch(...)
 				{
-#if defined(RRD_STATIC)
-					LOG(WARNING) << "The dynamic module '" << _it->FName << "' is static ";
-					_it->FRegister = get_factory_registry();
-#else
 					LOG(ERROR)<<"Library "<<_it->FName<<" is not exist. Ignoring ...";
 					continue;
-
-#endif //defined(RRD_STATIC)
-
 				}
 			}
 		}
@@ -121,6 +119,24 @@ void CResources::MLoadChannels()
 				continue;
 			}
 			VLOG(2) << "Registry " << (*_jt)->FType<<" Version:"<<(*_jt)->FVersion;
+			(*_jt)->MRegisterFactory();
+		}
+	}
+	{
+		factory_registry_t::iterator _jt(static_factory_registry(NULL)->begin()), _jt_end(static_factory_registry(NULL)->end());
+		for (; _jt != _jt_end; ++_jt)
+		{
+			if (!(*_jt))
+			{
+				LOG(ERROR) << "Null pointer of Factory register. Ignoring ...";
+				continue;
+			}
+			if ((*_jt)->FType.empty())
+			{
+				LOG(ERROR) << "Invalid name of factory in static module list. Ignoring ...";
+				continue;
+			}
+			VLOG(2) << "Registry " << (*_jt)->FType << " Version:" << (*_jt)->FVersion;
 			(*_jt)->MRegisterFactory();
 		}
 	}

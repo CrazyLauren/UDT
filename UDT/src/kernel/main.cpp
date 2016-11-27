@@ -56,9 +56,8 @@
 #include "services/CPacketDivisor.h"
 
 using namespace NUDT;
-
-static NSHARE::version_t const g_version(get_major_version(),
-		get_minor_version(), get_revision_number());
+DECLARATION_VERSION_FOR(Kernel)
+static NSHARE::version_t const g_version(MAJOR_VERSION_OF(Kernel), MINOR_VERSION_OF(Kernel), REVISION_OF(Kernel));
 
 void initialize_def_main_channels();
 void initialize_def_links();

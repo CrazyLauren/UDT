@@ -14,18 +14,26 @@
 #define CONTROL_VERSION_H_
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
+#define SHARE_EXTERN_REVISION extern "C"
 #else
-#define EXTERN extern
+#define SHARE_EXTERN_REVISION extern
 #endif
-EXTERN unsigned get_revision_number();
-EXTERN unsigned get_major_version();
-EXTERN unsigned get_minor_version();
-EXTERN const char* get_revision_path();
-EXTERN const char* get_compile_time();
-EXTERN const char* get_compile_data();
-#undef EXTERN
 
-#define  REVISION get_revision_number()
+#define DECLARATION_VERSION_FOR(aNAME) \
+		SHARE_EXTERN_REVISION unsigned get_revision_number_##aNAME();\
+		SHARE_EXTERN_REVISION unsigned get_major_version_##aNAME();\
+		SHARE_EXTERN_REVISION unsigned get_minor_version_##aNAME();\
+		SHARE_EXTERN_REVISION const char* get_revision_path_##aNAME();\
+		SHARE_EXTERN_REVISION const char* get_compile_time_##aNAME();\
+		SHARE_EXTERN_REVISION const char* get_compile_data_##aNAME();
+
+#define REVISION_OF(aNAME) get_revision_number_##aNAME()
+#define REVISION_PATH_OF(aNAME) get_revision_path_##aNAME()
+#define MAJOR_VERSION_OF(aNAME) get_major_version_##aNAME()
+#define MINOR_VERSION_OF(aNAME) get_minor_version_##aNAME()
+#define COMPILE_TIME_OF(aNAME) get_compile_time_##aNAME()
+#define COMPILE_DATA_OF(aNAME) get_compile_data_##aNAME()
+
+
 
 #endif /*CONTROL_VERSION_H_*/

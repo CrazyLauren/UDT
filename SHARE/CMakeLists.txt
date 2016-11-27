@@ -16,7 +16,7 @@ endif()
 ################################################################################
 # Start of main Project definitions
 ################################################################################
-PROJECT(UDT_SHARE C CXX)
+PROJECT(SHARE_LIB C CXX)
 
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 INCLUDE(FindPackageHandleStandardArgs)
@@ -29,7 +29,7 @@ list( APPEND CMAKE_FIND_ROOT_PATH ${SHARE_DEPENDENCIES_PATH} )
 
 SET(CMAKE_MODULE_PATH "${SHARE_ROOT_PATH}/CMakeModules;${CMAKE_MODULE_PATH}")
 
-SET(CMAKE_DEBUG_POSTFIX  "d" CACHE STRING "add a postfix, usually d on windows")
+SET(CMAKE_DEBUG_POSTFIX  "" CACHE STRING "add a postfix, usually d on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 
 SET(SHARE_LIBRARIES "" CACHE STRING "Link these to use SHARE")
@@ -45,13 +45,6 @@ mark_as_advanced (
 	CMAKE_RELEASE_POSTFIX
     )
 	
-# Dynamic vs Static Linking
-OPTION(DYNAMIC_SHARE "Set to ON to build  for dynamic linking.  Use OFF for static." ON)
-IF   (DYNAMIC_SHARE)
-    SET(USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
-ELSE (DYNAMIC_SHARE)
-    SET(USER_DEFINED_DYNAMIC_OR_STATIC "STATIC")
-ENDIF(DYNAMIC_SHARE)
 
 ################################################################################
 # Create bin and lib directories if required
