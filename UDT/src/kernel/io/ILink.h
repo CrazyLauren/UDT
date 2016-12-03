@@ -92,6 +92,10 @@ public:
 //			NSHARE::CBuffer::const_iterator aEnd)=0; //false - handling link connection is finished
 	uint64_t const FTime; //ms
 private:
+	void operator=(const ILink & copy)
+	{
+	}
+	
 	split_info FSpitInfo;
 };
 typedef NSHARE::intrusive_ptr<ILink> smart_link_t;

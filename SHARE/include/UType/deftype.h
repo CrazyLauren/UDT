@@ -63,8 +63,8 @@ struct  angle_t
 	{
 		double _rad = 0;
 		_rad = static_cast<double>(usec) / 1000 / 1000;
-		_rad += degree * 3600;
-		_rad += min * 60;
+		_rad += degree * 3600.0;
+		_rad += min * 60.0;
 		_rad += sec;
 		_rad = _rad / 360 / 60 / 30 * M_PI;
 		return _rad;

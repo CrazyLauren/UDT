@@ -325,7 +325,6 @@ void CFIFOServer::CImpl::MAddNewClient(CFIFOServer::path_t const& aTo)
 	_write_t _n;
 	_n.FClient=aTo;
 	_n.FTime = ::time(NULL);
-	_n.FWSocket=-1;
 	_n.FWSocket=open(_path.c_str(), O_WRONLY | O_NONBLOCK, 0);
 	FFDWrites[aTo] = _n;
 //	CSocket _s = open(_path.c_str(), O_WRONLY | O_NONBLOCK, 0);
@@ -420,9 +419,12 @@ ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::si
 					return sent_state_t(E_ERROR,_full_size-aSize);
 			}
 			else
-			aSize-=_len;
+			{
+				CHECK_GE(aSize,_len)<<"O_O I don't known, why it happened.";
+				aSize-=_len;
+			}
 			CHECK(_len)<<"Len can't be equal 0";
-			CHECK_GE(aSize,0)<<"O_O I don't known, why it happened.";
+
 			VLOG_IF(1,aSize) << "Repeat write, len " << _len;
 			if(!aSize)
 			break;
@@ -464,7 +466,7 @@ void CFIFOServer::CImpl::MSerialize(NSHARE::CConfig & aConf) const
 		NSHARE::CConfig  _conf("cl");
 		_conf.MAdd("path",_it->first);
 		_conf.MAdd("time",_it->second.FTime);
-		aConf.MAdd(aConf);
+		aConf.MAdd(_conf);
 	}
 }
 } // namespace NSHARE

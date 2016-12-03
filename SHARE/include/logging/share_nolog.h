@@ -12,13 +12,13 @@
  */
 #ifndef SHARE_NOLOG_H_
 #define SHARE_NOLOG_H_
-
+#include <type_manip.h>
 #undef INFO
 #undef WARNING
 #undef ERROR
 #undef FATAL
 #undef DFATAL
-enum
+enum eNoLogLevel
 {
 	INFO,
 	WARNING,
@@ -53,56 +53,61 @@ namespace NSHARE
 {
 	namespace logging_impl 
 	{
-		template<unsigned aVal>
-		struct __logging_t
+		template<eNoLogLevel aVal>
+		struct __logging_nc_t
 		{
 			template<typename T>
-			inline __logging_t <aVal>& operator<<(const T& aStream)
+			inline __logging_nc_t <aVal>& operator<<(const T& aStream)
 			{
 				return *this;
 			}
 		};
 		template<>
-		struct __logging_t<FATAL>
+		struct __logging_nc_t<FATAL>
 		{
-			__logging_t()
+			__logging_nc_t()
 			{
 				std::cerr << "FATAL:";
 			}
-			~__logging_t()
+			~__logging_nc_t()
 			{
 				using namespace std;
 				cerr << endl;
 				terminate();
 			}
 			template<typename T>
-			inline __logging_t<FATAL>& operator<<(const T& aStream)
+			inline __logging_nc_t<FATAL>& operator<<(const T& aStream)
 			{
 				std::cerr << aStream;
 				return *this;
 			}
 		};
-		struct __gag_t
+		struct __gag_nc_t
 		{
+			template<eNoLogLevel Level>
+			inline void operator&(NSHARE::logging_impl::__logging_nc_t <Level> const&)
+			{
+			}
 			inline void operator^(std::ostream&)
 			{
 			}
 		};
+
 	}
 }//
-#	define LOG(aLevel)  (aLevel!=FATAL)?(void)0: NSHARE::logging_impl::__logging_t<aLevel>()
-#	define VLOG(some)  true?(void)0: NSHARE::logging_impl::__gag_t()^ std::cout
-#	define LOG_IF(aLevel,condition) !(aLevel==FATAL && (condition))?(void)0: NSHARE::logging_impl::__logging_t<aLevel>()
+#	define LOG(aLevel)  (!NSHARE::is_val_equal<aLevel,FATAL>::result)?(void)0: NSHARE::logging_impl::__gag_nc_t()&NSHARE::logging_impl::__logging_nc_t<aLevel>()
+#	define VLOG(some)  true?(void)0:NSHARE::logging_impl::__gag_nc_t()^ std::cout
+#	define LOG_IF(aLevel,condition) !(NSHARE::is_val_equal<aLevel,FATAL>::result && (condition))?(void)0: NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<aLevel>()
 
 #	define VLOG_IF(some,other) VLOG(some)
 #	define DVLOG(some) VLOG(some)
 #	define DLOG(some) LOG(some)
 #	define DLOG_IF(some,other) VLOG_IF(some,other)
-#	define LOG_ASSERT(some) (some)?(void)0: NSHARE::logging_impl::__logging_t<FATAL>()
+#	define LOG_ASSERT(some) (some)?(void)0:NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<FATAL>()
 #ifndef NDEBUG
 #	define DLOG_ASSERT(condition) LOG_ASSERT(condition)
 #else
-#	define DLOG_ASSERT(condition) true?(void)0: NSHARE::logging_impl::__gag_t()^ std::cout
+#	define DLOG_ASSERT(condition) true?(void)0: NSHARE::logging_impl::__gag_nc_t()^ std::cout
 #endif
 #	define CHECK_NE(some,some1) LOG_ASSERT((some)!=(some1))
 #	define CHECK_LT(some,some1) LOG_ASSERT((some)<(some1))

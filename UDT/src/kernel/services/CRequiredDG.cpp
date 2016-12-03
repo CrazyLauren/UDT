@@ -94,7 +94,7 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 	bool const _is = _exp_it->second.insert(aTo).second;
 	LOG_IF(INFO,_is) << "Now The packet:" << aWhat << " from " << aFrom
 								<< " is received of by " << aTo;
-	LOG_IF(DFATAL,!_is) << "WTF? The packet has been received of by " << aTo;
+	LOG_IF(INFO,!_is) << "WTF? The packet has been received twice of by " << aTo;
 
 	if (_is)
 	{

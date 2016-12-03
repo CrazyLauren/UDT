@@ -37,7 +37,7 @@
 #endif
 
 #define LOG_ASSERT(condition)  \
-		LOG_IF(FATAL, !(condition)) << "Assert failed: " #condition
+		LOG_IF(FATAL, !(condition)) << "Assert failed: "<< #condition
 
 #define LOG_EVERY_N(severity, n)                                        \
 		COMPILE_ASSERT( severity <= FATAL ,        INVALID_LOG_LEVEL);\

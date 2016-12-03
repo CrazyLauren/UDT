@@ -30,7 +30,7 @@ struct CThread::CImpl
 	typedef pthread_attr_t attr_t;
 
 	CImpl(CThread& aThis) :
-			FThis(aThis), FMutex(CMutex::MUTEX_NORMAL)
+			FID(pthread_t()),FThis(aThis), FMutex(CMutex::MUTEX_NORMAL)
 	{
 
 	}

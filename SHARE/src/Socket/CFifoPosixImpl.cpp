@@ -266,11 +266,11 @@ ISocket::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t a
 			}
 			else
 			{
+				CHECK_GE(aSize,_len)<<"O_O I don't known, why it happened.";
 				aSize-=_len;
 				VLOG_IF(1,aSize) << "Repeat write, len " << _len;
 			}
 			CHECK(_len)<<"Len can't be equal 0";
-			CHECK_GE(aSize,0)<<"O_O I don't known, why it happened.";
 			if(!aSize)
 				break;
 		}

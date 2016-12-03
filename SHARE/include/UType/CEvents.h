@@ -21,7 +21,7 @@ class  IEvents
 public:
 	struct  value_t
 	{
-		value_t()
+		value_t():FKey(key_type()), FCb(value_type())
 		{
 
 		}

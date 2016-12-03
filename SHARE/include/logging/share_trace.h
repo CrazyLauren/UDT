@@ -253,6 +253,7 @@ extern SHARE_EXPORT void init_trace_glog(int argc, char *argv[]);
 extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();
 
+#ifndef REMOVE_LOG
 #ifndef NOLOG
 #	ifdef GLOG
 #		include <glog/logging.h>
@@ -265,6 +266,7 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #		define NOLOG
 #	endif //#GLOG
 #endif //#ifndef NOLOG
+
 #if defined(NOLOG) //#ifndef NOLOG
 # include <logging/share_nolog.h>
 #endif//#ifndef NOLOG
@@ -288,6 +290,9 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #else
 #	define SHARE_TRACE_NAME "nolog"
 #endif //#GLOG
+#else //#ifndef REMOVE_LOG
+#	include <logging/share_dellog.h>
+#	define SHARE_TRACE_NAME "removed"
+#endif //#ifndef REMOVE_LOG
 
-//#	include <log_signal_handler.h>
 #endif /*SHARE_TRACE_H_*/

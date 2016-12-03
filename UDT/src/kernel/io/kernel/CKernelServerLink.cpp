@@ -38,7 +38,7 @@ namespace NUDT
 NSHARE::CText const CKernelServerLink::MAIN_CHANNEL_TYPE="channel_for";
 NSHARE::CText const CKernelServerLink::DEFAULT="default";
 NSHARE::CText const CKernelServerLink::NAME="udt_server";
-static const NSHARE::CText NEW_NAME = "udt_server";
+static const NSHARE::CText NEW_NAME = CKernelServerLink::NAME;
 
 CKernelServerLink::CKernelServerLink(descriptor_t aFD, uint64_t aTime,
 		ILinkBridge* aKer, programm_id_t const & aKernel) :

@@ -191,8 +191,8 @@ ssize_t CFIFOServer::CImpl::MReceiveDataImpl(data_t * aBuf, float const aTime,
 				}
 			}
 			DCHECK_NOTNULL(_sm_client.get());
-			if(!_sm_client.get())
-			continue;
+			if(!_sm_client.get()) continue;
+
 			client_data_t& _client=*_sm_client.get();
 			DWORD dwBytesPipe=0;
 			//WaitForMultipleObjects работает как всё в виндоусе)))

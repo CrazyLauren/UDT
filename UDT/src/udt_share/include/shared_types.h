@@ -79,7 +79,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	uint32_t FPacketNumber;
 	id_t FFrom;//Warinig The Field FName is deprecated
 	NSHARE::uuid_t FUuid;
-	NSHARE::smart_field_t<uuids_t> FUUIDTo;
+	NSHARE::smart_field_t<uuids_t> FUUIDTo;//It's deprecated, reserved for callback list vector
 
 	//customers_names_t FDestName;
 	NSHARE::CText FProtocol;

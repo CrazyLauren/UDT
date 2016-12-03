@@ -70,7 +70,7 @@ namespace log4cplus {
 
 namespace helpers {
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW32__)
 typedef SOCKET os_socket_type;
 os_socket_type const INVALID_OS_SOCKET_VALUE = INVALID_SOCKET;
 
@@ -103,8 +103,33 @@ struct socket_closer
         }
     }
 };
+#elif defined(__MINGW32__)
+        typedef SOCKET os_socket_type;
+        os_socket_type const INVALID_OS_SOCKET_VALUE = INVALID_SOCKET;
+
+        struct addrinfo_deleter
+        {
+            void
+            operator () (struct addrinfo * ptr) const
+            {
+                freeaddrinfo(ptr);
+            }
+        };
 
 
+        struct socket_closer
+        {
+            void
+            operator () (SOCKET s)
+            {
+                if (s && s != INVALID_OS_SOCKET_VALUE)
+                {
+                    DWORD const eno = WSAGetLastError();
+                    ::closesocket(s);
+                    WSASetLastError(eno);
+                }
+            }
+        };
 #else
 typedef int os_socket_type;
 os_socket_type const INVALID_OS_SOCKET_VALUE = -1;

@@ -55,7 +55,7 @@ public:
 	}
 	RAccess<T> const operator->() const
 	{
-		return *this;
+		return  RAccess<T>(*this);
 	}
 	CSafeData & operator=(value_type const & aData)
 	{

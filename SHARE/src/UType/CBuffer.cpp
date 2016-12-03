@@ -1256,7 +1256,7 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 			CHECK_EQ(i % _max, *_it);
 		}
 		CHECK_EQ(_p, _buffer.ptr_const() + _begin_capacity);
-		CHECK_GT(_buffer.capacity() - _buffer.size(), 0);
+		CHECK_GT(_buffer.capacity(), _buffer.size());
 		CHECK_EQ(_buffer.begin_capacity(), 0);
 		//std::cout << "EOK4" << std::endl;
 

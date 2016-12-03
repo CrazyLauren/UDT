@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<conf>
+	<worker>tcp_io_manager</worker>
+	<tcp_io_manager>
+		<Port>57005</Port>
+	</tcp_io_manager>
+
+	<modules>
+		<sm_main_channel/>
+		<tcp_io_manager/>
+	</modules>
+</conf>

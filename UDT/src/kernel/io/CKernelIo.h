@@ -194,8 +194,9 @@ inline void CKernelIo::MClose(descriptor_t const& aVal)
 		}
 		_p = &_it->second.MGet()->FWho;
 	}
-	if (_p)
-		_p->MClose(aVal);
+	//if (_p)
+	CHECK_NOTNULL(_p);
+	_p->MClose(aVal);
 }
 } /* namespace NUDT */
 #endif /* CKERNELIO_H_ */

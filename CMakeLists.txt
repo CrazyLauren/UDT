@@ -5,7 +5,8 @@ PROJECT(UDT C CXX)
 add_subdirectory(log4cplus-1.2.x)
 
 SET(LOG4CPLUS_LIBRARIES  log4cplus CACHE STRING "CUSTOMER_LIBRARIES" FORCE)#fixme must be filepath
-SET(LOG4CPLUS_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/log4cplus-1.2.x/include CACHE PATH  "Include path for the header files of log4cplus" )
+SET(LOG4CPLUS_INCLUDES ${log4cplus_SOURCE_DIR}/include; 
+                     ${log4cplus_BINARY_DIR}/include CACHE INTERNAL  "Include path for the header files of log4cplus" )
 SET(LOG4CPLUS_FOUND true CACHE INTERNAL "" FORCE)
 
 mark_as_advanced (

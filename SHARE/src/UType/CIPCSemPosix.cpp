@@ -114,7 +114,7 @@ bool CIPCSem::MInit(char const* aName, unsigned int value,
 //		sem_wait(FImpl->FSem);
 //	}
 	FType = aHasToBeNew;
-	FIs = true;
+	FImpl->FIs = true;
 	return true;
 }
 CIPCSem::~CIPCSem()

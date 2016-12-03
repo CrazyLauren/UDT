@@ -2239,8 +2239,8 @@ void CText::sMUnitTest()
 		NSHARE::CText a("ABC");
 		NSHARE::CText b("BCD");
 
-		CHECK_EQ(a, a);
-		CHECK_EQ(b, b);
+//		CHECK_EQ(a, a);
+//		CHECK_EQ(b, b);
 
 		CHECK_NE(a, b);
 	}
@@ -2447,8 +2447,8 @@ void CText::sMUnitTest()
 		NSHARE::CText a("AЭC");
 		NSHARE::CText b("ЭCD");
 
-		CHECK_EQ(a, a);
-		CHECK_EQ(b, b);
+//		CHECK_EQ(a, a);
+//		CHECK_EQ(b, b);
 
 		CHECK_NE(a, b);
 	}

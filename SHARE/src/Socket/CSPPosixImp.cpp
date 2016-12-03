@@ -39,6 +39,7 @@ CSerialPort::CImpl::CImpl(CSerialPort& aThis)
 {
 	FIsOpen = 0;
 	FPort = "";
+	FByteTime=0;
 }
 CSerialPort::CImpl::~CImpl()
 {
@@ -708,13 +709,13 @@ int CSerialPort::CImpl::MWaitData(float const aTime) const
 		// Select was interrupted
 		if (errno== EINTR)
 		{
-			return false;
+			return -1;
 		}
 		LOG(DFATAL) << "There was some error in select."<<strerror(errno);
 	}
 	if (_rval == 0)
 	{
-		return false;
+		return 0;
 	}
 	//This shouldn't happen!
 	if (!FD_ISSET (FFd.MGet(), &_rfds))

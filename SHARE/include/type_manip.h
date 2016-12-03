@@ -58,6 +58,23 @@ struct is_equal<T, T>
 		result = true
 	};
 };
+template<unsigned T, unsigned U>
+struct is_val_equal
+{
+	enum
+	{
+		result = false
+	};
+};
+
+template<unsigned T>
+struct is_val_equal<T, T>
+{
+	enum
+	{
+		result = true
+	};
+};
 //From T to U
 template<class T, class U>
 struct conversion_t

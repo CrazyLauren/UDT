@@ -29,12 +29,6 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 {
 	typedef NSHARE::CSafeData<customers_t> safety_customers_t;
 
-//	typedef std::map<required_header_t, callback_t, CReqHeaderFastLessCompare> dg_handlers_t;
-//	typedef std::map<NSHARE::CText, dg_handlers_t, NSHARE::CStringFastLessCompare> parser_for_protocol_t;
-//	//1 - customer name,2 - protocols
-//	typedef std::map<NSHARE::CRegistration, parser_for_protocol_t> customers_parser_t;//fixme optimized. The first has to be by protocol
-//	//then by required_header_t and then vector of pair<NSHARE::CRegistration,callback_t>
-
 	typedef std::map<NSHARE::CRegistration, callback_t> customer_handlers_t;
 	typedef std::map<required_header_t, customer_handlers_t, CReqHeaderFastLessCompare> header_for_protocol_t;
 	typedef std::map<NSHARE::CText, header_for_protocol_t, NSHARE::CStringFastLessCompare> protocol_parser_t;

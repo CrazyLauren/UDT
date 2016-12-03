@@ -4,13 +4,19 @@
  *  Created on: 11.11.2016
  *      Author: s.cherepanov
  */
-#undef NOLOG //if defined NOLOG and the other logging macros - The SHARE library will not
+
+#if defined(GLOG) || defined(COUT_LOG) || defined(CPLUS_LOG)
+#	undef NOLOG //if defined NOLOG and the other logging macros - The SHARE library will not
 //logging but the user can logging
+#elif defined(REMOVE_LOG)
+# define NOLOG
+#endif
 #include <share_socket.h>
 #include <logging/CShareLogArgsParser.h>
 #include <tclap/Arg.h>
 #include <tclap/Constraint.h>
 #include <tclap/CmdLine.h>
+
 namespace TCLAP
 {
 template<>

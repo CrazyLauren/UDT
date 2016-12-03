@@ -13,6 +13,7 @@
 #include <deftype>
 #include <pthread.h>                        // POSIX threads support
 #include <errno.h>
+#include <string.h>
 namespace NSHARE
 {
 struct CCondvar::CImpl
@@ -91,7 +92,7 @@ bool CCondvar::MTimedwait(CMutex *aMutex, double const aTime)
 		else
 			_status = pthread_cond_wait(&FPImpl->FCondition,
 					static_cast<pthread_mutex_t*>(aMutex->MGetPtr()));
-		VLOG_IF(1,_status<0) << "Condvar error " << strerror(errno)<<"("<<errno<<")"<<std::endl;
+		VLOG_IF(1,_status<0) << "Condvar error " << strerror(errno)<<"("<<errno<<")";
 		pthread_cleanup_pop(0);
 	return !_status;
 }

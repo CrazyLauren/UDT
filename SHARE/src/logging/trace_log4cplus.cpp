@@ -18,11 +18,11 @@
 #include <logging/share_trace_log4cplus.h>
 #include <logging/CTraceToSocket.h>
 #define DEFINE_FLAG( type, name, defvalue) \
-		static std::string flags_##name##_to_str();\
+		/*static std::string flags_##name##_to_str();*/\
 		 type& _log4cplus_impl::flags_##name() \
-		{static type _v=log_state::sMPut(flags_##name##_to_str)||true? defvalue:defvalue;\
-		return _v;}\
-		static std::string flags_##name##_to_str()\
+		{static type _v=/*log_state::sMPut(flags_##name##_to_str)||true? defvalue:*/defvalue;\
+		return _v;}
+/*		static std::string flags_##name##_to_str()\
 		{\
 			std::stringstream _buf;\
 			_buf<<#name<<" = "<<_log4cplus_impl::flags_##name();\
@@ -59,7 +59,7 @@ private:
 		static std::vector<std::string (*)()> _v;
 		return _v;
 	}
-};
+};*/
 DEFINE_FLAG(bool, logtostderr, false)
 ;
 

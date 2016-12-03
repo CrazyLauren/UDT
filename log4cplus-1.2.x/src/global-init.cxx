@@ -403,14 +403,14 @@ threadCleanup ()
     //
     // It is possible to work around this situation in user application by
     // calling `threadCleanup()` manually before `main()` exits.
-#if defined (_WIN32)
+#if defined (_WIN32) && !defined(__MINGW32__)
     if (_get_heap_handle() != 0)
     {
 #endif
         // Do thread-specific cleanup.
         internal::per_thread_data * ptd = internal::get_ptd (false);
         delete ptd;
-#if defined (_WIN32)
+#if defined (_WIN32) && !defined(__MINGW32__)
     }
     else
     {
