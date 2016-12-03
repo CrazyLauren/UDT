@@ -331,6 +331,20 @@ void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 	_f_to.FFrom = get_my_id().FId;
 	MSendTo(_f_to, _sent);
 }
+CRequiredDG::req_uuids_t CRoutingService::MGetCustomersFor(
+		user_data_t const& aData)
+{
+	r_route_access _access = FRouteData.MGetRAccess();
+	CRequiredDG const& _rdg = _access->FRequiredDG;
+	NSHARE::CBuffer const & _data = aData.FData;
+
+	return (!aData.FDataId.FProtocol.empty() && aData.FDataId.FProtocol!=RAW_PROTOCOL_NAME) ? //if empty ==> numbered raw protocol
+			_rdg.MGetCustomersFor(aData.FDataId.FFrom.FUuid, aData.FDataId.FProtocol,
+			_data.ptr_const(), _data.size()) :
+	//simplified parser for raw protocol
+	_rdg.MGetCustomersFor(aData.FDataId.FFrom.FUuid,
+			aData.FDataId.FRawProtocolNumber);
+}
 void CRoutingService::MHandleFrom(user_data_t const* aP, descriptor_t aFrom)
 {
 	VLOG(2) << "New  " << aP->FDataId << " From: " << aFrom;
@@ -338,7 +352,7 @@ void CRoutingService::MHandleFrom(user_data_t const* aP, descriptor_t aFrom)
 
 	uuids_t _to;
 	if (aP->FDataId.FUUIDTo.MIs())
-		_to = aP->FDataId.FUUIDTo.MGetConst();//todo ignoring flags. Some program has to intercept packet. For example, Registrators
+		_to = aP->FDataId.FUUIDTo.MGetConst(); //todo ignoring flags. Some program has to intercept packet. For example, Registrators
 	/*else if (!aP->FDataId.FDestName.empty())
 	 {
 	 customers_names_t::const_iterator _it = aP->FDestName.begin();
@@ -351,23 +365,12 @@ void CRoutingService::MHandleFrom(user_data_t const* aP, descriptor_t aFrom)
 	 }*/
 	else
 	{
-		//todo merge packet if need
-		r_route_access _access = FRouteData.MGetRAccess();
-		CRequiredDG const& _rdg=_access->FRequiredDG;
-		NSHARE::CBuffer const & _data = aP->FData;
+		CRequiredDG::req_uuids_t const _req_uuids(MGetCustomersFor(*aP));
 
-		NSHARE::smart_field_t<uuids_t> const _uuids =
-				!aP->FDataId.FProtocol.empty() ? //if empty ==> numbered raw protocol
-				_rdg.MGetCustomersFor(aP->FDataId.FFrom.FUuid,
-						aP->FDataId.FProtocol, _data.ptr_const(),
-						_data.size()) :
-				//simplified parser for raw protocol
-				_rdg.MGetCustomersFor(aP->FDataId.FFrom.FUuid,
-						aP->FDataId.FRawProtocolNumber);
+		for (CRequiredDG::req_uuids_t::const_iterator _kt = _req_uuids.begin();
+				_kt != _req_uuids.end(); ++_kt)
+			_to.push_back(_kt->first);
 
-
-		if (_uuids.MIs())
-			_to = _uuids.MGetConst();
 	}
 	LOG_IF(INFO,_to.empty()) << "There are not any uuids for "
 										<< aP->FDataId.FFrom
@@ -563,20 +566,21 @@ NSHARE::CConfig CRoutingService::MSerialize() const
 }
 void CRoutingService::MInformNewReceiver(demand_dgs_for_t & aNewRecveiver)
 {
-	VLOG(2)<<"Inform";
+	VLOG(2) << "Inform";
 	demand_dgs_for_t::iterator _it = aNewRecveiver.begin(), _it_end(
 			aNewRecveiver.end());
 	for (; _it != _it_end; ++_it)
 	{
-		descriptor_t const _to=CDescriptors::sMGetInstance().MGet(_it->first.FUuid);
-		if(CDescriptors::sMIsValid(_to))
+		descriptor_t const _to = CDescriptors::sMGetInstance().MGet(
+				_it->first.FUuid);
+		if (CDescriptors::sMIsValid(_to))
 		{
 			demand_dgs_for_t _copy;
 			_copy[_it->first].swap(_it->second);
 			DCHECK_EQ(
 					CDescriptors::sMGetInstance().MGet(_to).first.FProgramm.FType,
 					E_CONSUMER);
-			CKernelIo::sMGetInstance().MSendTo(_to,_copy);
+			CKernelIo::sMGetInstance().MSendTo(_to, _copy);
 		}
 	}
 }

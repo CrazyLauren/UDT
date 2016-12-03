@@ -28,10 +28,11 @@ typedef NSHARE::CEvents<NSHARE::CText, event_t, ievents_type> events_t;
 struct CCustomer::_pimpl: public ICustomer, public events_t
 {
 	typedef NSHARE::CSafeData<customers_t> safety_customers_t;
+	typedef HASH_MAP<uint32_t,callback_t> cb_event_t;
 
-	typedef std::map<NSHARE::CRegistration, callback_t> customer_handlers_t;
-	typedef std::map<required_header_t, customer_handlers_t, CReqHeaderFastLessCompare> header_for_protocol_t;
-	typedef std::map<NSHARE::CText, header_for_protocol_t, NSHARE::CStringFastLessCompare> protocol_parser_t;
+//	typedef std::map<NSHARE::CRegistration, callback_t> customer_handlers_t;
+//	typedef std::map<required_header_t, customer_handlers_t, CReqHeaderFastLessCompare> header_for_protocol_t;
+//	typedef std::map<NSHARE::CText, header_for_protocol_t, NSHARE::CStringFastLessCompare> protocol_parser_t;
 
 	_pimpl(CCustomer& aThis);
 	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName);
@@ -54,7 +55,6 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSendTo(unsigned aNumber,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo, eSendToFlags);
 	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf, eSendToFlags);
 
-	int MParseData(args_t & _raw_args) const;
 
 	int MSettingDgParserFor(const NSHARE::CText& aTo, dg_parser_t aNumber,
 			const callback_t& aHandler);
@@ -76,17 +76,11 @@ private:
 	static int sMDemands(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 
 	void MReceiver(recv_data_from_t & _from);
-	int MCallCBForUserProtocol(IExtParser*,IExtParser::result_t const& _result,header_for_protocol_t const& _par, args_t& _raw_args) const;
-	int MCallCBForRawProtocol(header_for_protocol_t const& _par,args_t& _raw_args) const;
 
 	int MInitId(NSHARE::CText const& aProgram, NSHARE::CText const& aName);
 	int MInitCallBacks();
 	int MLoadLibraries();
 	int MInitFactorys();
-	bool MDoesIdConformTo(id_t const& _id,
-			NSHARE::CRegistration const& _reg) const;
-	int MCallCBFor(customer_handlers_t const& _handler,
-			args_t& _raw_args) const;
 
 	//-----------------
 	CCustomer& FThis;
@@ -101,12 +95,15 @@ private:
 //	NSHARE::CWaitingQueue<data_from_t> FData;
 //	CDataObject FData;
 
-	protocol_parser_t FParserToCustomer;
+//	protocol_parser_t FParserToCustomer;
 	safety_customers_t FCustomers;
+
+	demand_dgs_t FDemands;
+	HASH_MAP<uint32_t,callback_t> FEvents;
 
 	mutable NSHARE::CMutex FCommonMutex;
 	mutable NSHARE::CMutex FParserMutex;
-
+	uint32_t FUniqueNumber;
 
 	friend class CCustomer;
 };

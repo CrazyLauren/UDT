@@ -569,7 +569,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::requiest_info2_t c
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 
 	return aStream;
 }
@@ -601,7 +601,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::dg_info2_t const& 
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 
 	return aStream;
 }
@@ -609,7 +609,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::clients_info2_t co
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 
 	return aStream;
 }
@@ -617,14 +617,14 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::kernels_info_t con
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream, NUDT::customers_demands_t const& aVal)
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 	return aStream;
 }
 
@@ -719,7 +719,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::custom_filters_dg2
 {
 	using namespace NUDT;
 	aStream << static_cast<head_t const&>(aVal);
-	aStream <<NSHARE::CText (aVal.MStrBegin(),aVal.FStrSize)  << std::endl;
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 	return aStream;
 }
 } //namespace std

@@ -21,16 +21,16 @@
 
 #include "CResources.h"
 #include "CConfigure.h"
-#include "CParserFactory.h"
 #include "CCustomer.h"
 #include "CIOFactory.h"
 #include "CDataObject.h"
 #include "CCustomerImpl.h"
 #include "CLocalChannelFactory.h"
 
-DECLARATION_VERSION_FOR(customer)
+DECLARATION_VERSION_FOR (customer)
 
-static const NSHARE::version_t g_version(MAJOR_VERSION_OF(customer), MINOR_VERSION_OF(customer), REVISION_OF(customer));
+static const NSHARE::version_t g_version(MAJOR_VERSION_OF (customer),
+		MINOR_VERSION_OF (customer), REVISION_OF (customer));
 using namespace NSHARE;
 
 template<>
@@ -58,7 +58,7 @@ const NSHARE::CText CCustomer::EVENT_NEW_RECEIVER = "event_receiver";
 
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
-				NSHARE::CMutex::MUTEX_NORMAL)
+				NSHARE::CMutex::MUTEX_NORMAL),FUniqueNumber(0)
 {
 
 }
@@ -71,14 +71,13 @@ int CCustomer::_pimpl::MInitialize(NSHARE::CText const& aProgram,
 		return _rval;
 	}
 
-	if (int _rval =MInitFactorys())
+	if (int _rval = MInitFactorys())
 	{
 		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 
-
-	if (int _rval =MLoadLibraries())
+	if (int _rval = MLoadLibraries())
 	{
 		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
 		return _rval;
@@ -106,12 +105,12 @@ CCustomer::_pimpl::~_pimpl()
 int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 		NSHARE::CText const& aName)
 {
-	if(is_id_initialized())
+	if (is_id_initialized())
 		return 0;
 
 	LOG_IF(WARNING,aName.empty()) << "The name of program is not present"
 			" trying to take it from config file.";
-	int _rval=0;
+	int _rval = 0;
 	CText _name(aName);
 	if (aName.empty())
 	{
@@ -195,8 +194,7 @@ int CCustomer::_pimpl::MInitFactorys()
 	//init factories
 	if (!CIOFactory::sMGetInstancePtr())
 		new CIOFactory();
-	if (!CParserFactory::sMGetInstancePtr())
-		new CParserFactory();
+
 	if (!CLocalChannelFactory::sMGetInstancePtr())
 		new CLocalChannelFactory();
 	if (!CDataObject::sMGetInstancePtr())
@@ -297,10 +295,10 @@ void CCustomer::_pimpl::MClose()
 
 	if (FWorker)
 	{
-		VLOG(2)<<"Close worker";
+		VLOG(2) << "Close worker";
 		FWorker->MClose();
 //		FThread.MCancel();
-		VLOG(2)<<"EOK";
+		VLOG(2) << "EOK";
 	}
 }
 bool CCustomer::_pimpl::MAvailable(const NSHARE::CText& aModule) const
@@ -332,165 +330,7 @@ CCustomer::modules_t CCustomer::_pimpl::MAllAvailable() const
 			_module.push_back(_its.FBegin->first);
 	return _module;
 }
-int CCustomer::_pimpl::MCallCBForUserProtocol(IExtParser* _p,
-		IExtParser::result_t const& _result, header_for_protocol_t const& _par,
-		args_t& _raw_args) const
-{
-	DCHECK_NOTNULL(_p);
-	int _count = 0;
 
-	if (_result.size() == 1 && _raw_args.FEnd == _result.back().FEnd)//optimization
-	{
-		IExtParser::obtained_dg_t const& _dg = _result.back();
-		header_for_protocol_t::const_iterator _handler = _par.find(_dg.FType);
-		if (_handler != _par.end())
-			_count+=MCallCBFor(_handler->second,_raw_args);
-		LOG_IF(INFO,_count)<<"The packet #" << _raw_args.FPacketNumber<<" of "<<_raw_args.FProtocolName<<" is  "<<_p->MToConfig(_dg.FType).MToJSON(true);
-	}
-	else
-	{
-		LOG(WARNING)<<"The packet is consist of several dg.";
-		VLOG_IF(5,
-				_raw_args.FBuffer.size()<100)<<_raw_args.FBuffer;
-		IExtParser::result_t::const_iterator _jt = _result.begin();
-
-		for (; _jt != _result.end(); ++_jt)
-		{
-			header_for_protocol_t::const_iterator _handler = _par.find(_jt->FType);
-
-			if (_handler != _par.end())
-			{
-				args_t _args;
-				_args.FBegin=_jt->FBegin;
-				_args.FEnd=_jt->FEnd;
-				_args.FFrom=_raw_args.FFrom;
-				_args.FPacketNumber=_raw_args.FPacketNumber;
-				_args.FProtocolName=_raw_args.FProtocolName;
-
-				_count+=MCallCBFor(_handler->second,_args);
-				LOG_IF(INFO,_count)<<"The packet #" << _raw_args.FPacketNumber<<" of "<<_raw_args.FProtocolName<<" is "<<_p->MToConfig(_jt->FType).MToJSON(true);
-			}
-		}
-	}
-
-	return _count;
-}
-
-int CCustomer::_pimpl::MCallCBFor(
-		customer_handlers_t const& _handler,
-		args_t& _raw_args) const
-{
-	//looking for CB which The FFrom is conformed
-	//Cannot be optimized as In The CB uses a regular expression
-
-	int _count=0;
-	customer_handlers_t::const_iterator _it = _handler.begin(),
-			_it_end = _handler.end();
-	for (; _it != _it_end; ++_it)
-
-		if (MDoesIdConformTo(_raw_args.FFrom, _it->first))
-		{
-			LOG(INFO)<< "Handling #"<<_raw_args.FPacketNumber<<" by "
-			<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom.FName<<" Raw="<<_raw_args.FRawProtocolNumber<<" as "<<_it->first;
-			_it->second.operator ()(&FThis, &_raw_args);
-			VLOG(2) << "The packet #" << _raw_args.FPacketNumber << " by "
-								<< _raw_args.FProtocolName << " protocol from "
-								<< _raw_args.FFrom.FName << " handled";
-
-			++_count;
-		}
-	return _count;
-}
-
-int CCustomer::_pimpl::MCallCBForRawProtocol(header_for_protocol_t const& _par,
-		args_t& _raw_args) const
-{
-	VLOG(2) << "Raw protocol.";
-	required_header_t _header;
-	_header.FNumber = _raw_args.FRawProtocolNumber;
-	header_for_protocol_t::const_iterator _handler = _par.find(_header);
-	LOG_IF(WARNING,_handler == _par.end()) << "It does not expect packet #"
-													<< _raw_args.FRawProtocolNumber
-													<< " from "
-													<< _raw_args.FFrom << " by "
-													<< _raw_args.FProtocolName
-													<< ". Ignoring ...";
-
-	if (_handler == _par.end())
-		return 0;
-	return MCallCBFor(_handler->second,  _raw_args);
-}
-bool CCustomer::_pimpl::MDoesIdConformTo(id_t const& _id,
-		NSHARE::CRegistration const& _reg) const
-{
-	VLOG(4)<<"Id "<<_id<<" reg "<<_reg;
-	bool const _is_name = _reg.MIsName();
-	VLOG(4)<<"Is name ="<<_is_name;
-	bool const _has_sended =
-			((_is_name && _reg.MIsForMe(_id.FName)) || //
-					(!_is_name
-							&& _reg.MGetAddress().MIsSubpathOfForRegistration(
-									_id.FName)));
-	return _has_sended;
-}
-int CCustomer::_pimpl::MParseData(args_t & _raw_args) const
-{
-	if (FParserToCustomer.empty())
-		return 0;
-
-	VLOG(2) << "Try parsing  data for " << _raw_args.FFrom << " by "
-						<< _raw_args.FProtocolName << " #"
-						<< _raw_args.FPacketNumber;
-
-	VLOG(2) << "Our turn.";
-
-	bool const _is_raw = _raw_args.FProtocolName == RAW_PROTOCOL_NAME;
-
-	IExtParser* _p=NULL;
-	IExtParser::result_t _result;
-
-	if (!_is_raw)//need parse data
-	{
-		VLOG(2) << "Parsing  data is required";
-		_p = CParserFactory::sMGetInstance().MGetFactory(_raw_args.FProtocolName);
-		LOG_IF(DFATAL, !_p) << "Parsing module for " << _raw_args.FProtocolName
-									<< " is not exist";
-		if (!_p)
-			return 0;
-
-		_result = _p->MParserData(_raw_args.FBegin, _raw_args.FEnd);
-		VLOG(1) << "Founded " << _result.size() << " dg.";
-
-		LOG_IF(ERROR,
-				(!_result.empty())&& _raw_args.FEnd!=_result.back().FEnd)
-																						<< "Didn't  all data handler by parser.";
-		if (_result.empty())
-			return 0;
-	}
-
-	int _count = 0;
-	protocol_parser_t::const_iterator _it = FParserToCustomer.find(_raw_args.FProtocolName);
-	LOG_IF(ERROR,_it==FParserToCustomer.end())
-													<< "It does not expect packet from "
-													<< _raw_args.FFrom
-													<< " by "
-													<< _raw_args.FProtocolName
-													<< ". Ignoring ...";
-	if(_it!=FParserToCustomer.end())
-	{
-		_count +=
-				_is_raw ?
-						MCallCBForRawProtocol(_it->second, _raw_args) :
-						MCallCBForUserProtocol(_p, _result,
-								_it->second, _raw_args);
-	}
-
-	LOG_IF(ERROR,_count==0)
-															<< "It does not expect packet from "
-															<< _raw_args.FFrom.FName
-															<< ". Ignoring ...";
-	return _count;
-}
 int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 		void* aData)
 {
@@ -589,7 +429,7 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 	LOG_IF(ERROR,!FWorker) << " There is not working module";
 	args_t _raw_args;
 
-	{//filling _raw_args
+	{ //filling _raw_args
 		VLOG(4) << "Handle data from " << aFrom.FData.FDataId.FFrom
 							<< " ; size:" << aFrom.FData.FData.size()
 							<< " Packet # "
@@ -616,11 +456,10 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 		else
 			_raw_args.FBegin = _raw_args.FEnd = NULL;
 	}
-	{//handle _raw_args
+	{ //handle _raw_args
 		CRAII<CMutex> _block(FParserMutex);
-		VLOG(1) << "Handle data from " << _raw_args.FFrom
-							<< " ; size:" <<_raw_args.FBuffer.size()
-							<< " Packet # "
+		VLOG(1) << "Handle data from " << _raw_args.FFrom << " ; size:"
+							<< _raw_args.FBuffer.size() << " Packet # "
 							<< _raw_args.FPacketNumber;
 
 		int _count = 0;
@@ -631,11 +470,11 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 		NSHARE::CRegistration const _r(_raw_args.FFrom.FName);
 		NSHARE::CAddress _addr(_r.MGetAddress());
 
-		if(!_addr.MIsEmpty())
+		if (!_addr.MIsEmpty())
 		{
 			//calling CB for subaddress
 			NSHARE::CText const _name(_r.MGetName());
-			for (; !_addr.MIsEmpty();_addr.MRemoveLastPath())
+			for (; !_addr.MIsEmpty(); _addr.MRemoveLastPath())
 			{
 				_count += MCall(
 						NSHARE::CRegistration(_name, _addr).MGetRawName(),
@@ -644,7 +483,43 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 			_count += MCall(_name, &_raw_args);
 		}
 
-		_count += MParseData(_raw_args);
+		if (aFrom.FData.FDataId.FUUIDTo.MIs() && !FEvents.empty())
+		{
+			uuids_t::const_iterator _it =
+					aFrom.FData.FDataId.FUUIDTo.MGetConst().begin(), _it_end(
+					aFrom.FData.FDataId.FUUIDTo.MGetConst().end());
+
+			for (; _it != _it_end; ++_it)
+			{
+//				CHECK_LT(_it->FVal, FDemands.size());
+//				CHECK_LT(_it->FVal,FEvents.size());
+//				CHECK_EQ(_it->FVal,FDemands[_it->FVal].FHandler);
+
+				cb_event_t::const_iterator _jt=FEvents.find(_it->FVal);
+				if(_jt!=FEvents.end())
+				{
+					LOG(INFO)<< "Handling #"<<_raw_args.FPacketNumber<<" by "
+					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom.FName<<" Raw="<<_raw_args.FRawProtocolNumber<<" by CB #"<<_it->FVal;
+
+					FEvents[_it->FVal].operator ()(&FThis, &_raw_args);
+
+					VLOG(2) << "The packet #" << _raw_args.FPacketNumber
+					<< " by " << _raw_args.FProtocolName
+					<< " protocol from "
+					<< _raw_args.FFrom.FName << " handled";
+					++_count;
+				}
+				else
+				{
+					LOG(ERROR)<<" CB "<<_it->FVal<<" is not founded. Ignoring";
+				}
+			}
+
+			LOG_IF(ERROR,_count==0) << "It does not expect packet from "
+											<< _raw_args.FFrom.FName
+											<< ". Ignoring ...";
+
+		}
 
 		LOG_IF(INFO,_count==0) << _raw_args.FBuffer.size()
 										<< " bytes of  data from "
@@ -667,142 +542,92 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 {
 	VLOG(2) << "Setting for " << aReq << " parser";
 
-	if(aNumber.FProtocolName.empty())
-		aNumber.FProtocolName=RAW_PROTOCOL_NAME;
-
+	if (aNumber.FProtocolName.empty())
+		aNumber.FProtocolName = RAW_PROTOCOL_NAME;
 
 	aNumber.FProtocolName.MToLowerCase();
 
-	if (aNumber.FProtocolName != RAW_PROTOCOL_NAME)
-	{
-		bool _is = CParserFactory::sMGetInstance().MIsFactoryPresent(
-				aNumber.FProtocolName);
-		LOG_IF(ERROR,!_is) << "Parsing module for " << aNumber.FProtocolName
-									<< " is not exist";
-		if (!_is)
-			return E_PARSER_IS_NOT_EXIST;
-
-		LOG_IF(DFATAL,!CParserFactory::sMGetInstance().MGetFactory(
-						aNumber.FProtocolName))<< "Parsing module for " << aNumber.FProtocolName
-		<< " is not exist";
-	}
+	demand_dgs_t::value_type _val;
+	_val.FNameFrom = NSHARE::CRegistration(aReq);
+	_val.FProtocol = aNumber.FProtocolName;
+	_val.FWhat = aNumber.FRequired;
 
 	CRAII<CMutex> _block(FParserMutex);
+
+	CHECK_EQ(FDemands.size(), FEvents.size());
+
+	VLOG(2) << "Our turn.";
+	unsigned _i = 0;
+	unsigned const _size = FDemands.size();
+	for (; _i != _size && !(FDemands[_i] == _val); ++_i)
+		;
+
+	if (_i == _size)
 	{
-		VLOG(2) << "Our turn.";
-		NSHARE::CRegistration const _what(aReq);
-		protocol_parser_t::iterator _par = FParserToCustomer.find(
-				aNumber.FProtocolName);
-		if (_par == FParserToCustomer.end())
-		{
-			LOG(INFO)<< "Add additional parser for channel '" << _what << "' by "
-			<< aNumber.FProtocolName<<"'";
+		LOG(INFO)<< "Add additional parser for channel '" << aNumber.FRequired << "' by "<< aNumber.FProtocolName<<"'";
 
-			header_for_protocol_t _parser;
-			customer_handlers_t _handlers;
-			_handlers[_what] = aHandler;
-			_parser[aNumber.FRequired] = _handlers;
-			FParserToCustomer[aNumber.FProtocolName] = _parser;
-		}
-		else
-		{
-			header_for_protocol_t::iterator _head= _par->second.find(
-					aNumber.FRequired);
-			if (_head == _par->second.end())
-			{
-				LOG(INFO) << "Add additional parser for channel '" << _what << "' by "
-				<< aNumber.FProtocolName<<"'";
+		_val.FHandler=++FUniqueNumber;
 
-				customer_handlers_t _handlers;
-				_handlers[_what] = aHandler;
-				_par->second[aNumber.FRequired] = _handlers;
-			}
-			else
-			{
-				customer_handlers_t::iterator _jt = _head->second.find(_what);
-				LOG_IF(WARNING, _jt != _head->second.end()) << "Replace handler "<< _jt->second<< " to " << aHandler;
-
-				LOG_IF(INFO,_jt != _head->second.end())<<"Change handler of '"<<aNumber.FProtocolName<<"' protocol for channel '"<<_what;
-				LOG_IF(INFO,_jt == _head->second.end())<<"Add handler  of '"<<aNumber.FProtocolName<<"' protocol for channel '"<<_what;
-
-				_head->second[_what] = aHandler;
-
-				if (_jt != _head->second.end()) //we change handler only
-				return 0;
-			}
-		}
+		FDemands.push_back(_val);
+		FEvents[_val.FHandler]=aHandler;
 	}
+	else
+	{
+		LOG(WARNING) << "Replace handler "<<FEvents[_i]<< " to " << aHandler;
+		CHECK(FEvents.find(_val.FHandler)!=FEvents.end());
+		FEvents[_val.FHandler]=aHandler;
+	}
+
 	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	return 0;
+	CHECK_EQ(FDemands.size(), FEvents.size());
+	return _val.FHandler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor(const NSHARE::CText& aReq,
 		dg_parser_t aNumber)
 {
 	VLOG(2) << "Remove parser for " << aReq;
 
-	if(aNumber.FProtocolName.empty())
-		aNumber.FProtocolName=RAW_PROTOCOL_NAME;
+	if (aNumber.FProtocolName.empty())
+		aNumber.FProtocolName = RAW_PROTOCOL_NAME;
 
 	aNumber.FProtocolName.MToLowerCase();
+	CRAII<CMutex> _block(FParserMutex);
+
+	VLOG(2) << "Our turn.";
+	CHECK_EQ(FDemands.size(), FEvents.size());
+
+	demand_dgs_t::value_type _val;
+	_val.FNameFrom = NSHARE::CRegistration(aReq);
+	_val.FProtocol = aNumber.FProtocolName;
+	_val.FWhat = aNumber.FRequired;
+
+	unsigned _i = 0;
+	unsigned const _size = FDemands.size();
+	for (; _i != _size && !(FDemands[_i] == _val); ++_i)
+		;
+	if (_i == _size)
 	{
-		CRAII<CMutex> _block(FParserMutex);
-		VLOG(2) << "Our turn.";
-		NSHARE::CRegistration const _what(aReq);
-		protocol_parser_t::iterator _it = FParserToCustomer.find(aNumber.FProtocolName);
-		if (_it == FParserToCustomer.end())
-		{
-
-			LOG(ERROR)<<"There is not "<< aNumber.FProtocolName<<" parser  in "<<_what;
-			return E_PARSER_IS_NOT_EXIST;
-		}
-		header_for_protocol_t::iterator _par = _it->second.find(
-				aNumber.FRequired);
-		if (_par == _it->second.end())
-		{
-			LOG(ERROR)<< "The Head "<<aNumber.FRequired<<"is not exist for " << _what;
-			return E_HANDLER_IS_NOT_EXIST;
-
-		}
-		customer_handlers_t::iterator _jt = _par->second.find(_what);
-		if (_jt == _par->second.end())
-		{
-			LOG(ERROR)<< "Parser is not exist for " << _what;
-			return E_CUSTOMER_IS_NOT_EXIST;
-		}
-		_par->second.erase(_jt);
+		return E_HANDLER_IS_NOT_EXIST;
 	}
+	const uint32_t _handler=FDemands[_i].FHandler;
+	FEvents.erase(_handler);
+	FDemands.erase(FDemands.begin() + _i);
+
 	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
 	MUdpateRecvList();
-	return 0;
+
+	CHECK_EQ(FDemands.size(), FEvents.size());
+	return _handler;
 }
 int CCustomer::_pimpl::MUdpateRecvList() const
 {
 	VLOG(2) << "Receiving list";
-	CRAII<CMutex> _block(FParserMutex);
 
 	req_recv_t _list;
+	_list.FDemand = FDemands;
 
-	VLOG(2) << "Our turn.";
-	protocol_parser_t::const_iterator _it = FParserToCustomer.begin();
-	demand_dgs_t::value_type _val;
-	for (; _it != FParserToCustomer.end(); ++_it)//todo optimize
-	{
-		_val.FProtocol = _it->first;
-
-		header_for_protocol_t::const_iterator _par = _it->second.begin();
-		for (; _par != _it->second.end(); ++_par)
-		{
-			_val.FWhat = _par->first;
-			for (customer_handlers_t::const_iterator _jt = _par->second.begin();
-					_jt != _par->second.end(); ++_jt)
-			{
-				_val.FNameFrom=_jt->first;
-				_list.FDemand.push_back(_val);
-			}
-		}
-	}
 	CDataObject::sMGetInstance().MPush(_list);
 
 	return 0;
@@ -815,14 +640,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return E_NOT_OPEND;
 	}
-	if(aProtocolName!=RAW_PROTOCOL_NAME)
-	{
-		bool _is = CParserFactory::sMGetInstance().MIsFactoryPresent(
-				aProtocolName);
-		LOG_IF(ERROR,!_is)<<" Error. The protocol "<<aProtocolName<<" is not exist.";
-		if(!_is)
-		return E_PARSER_IS_NOT_EXIST;
-	}
+
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
@@ -858,15 +676,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return E_NOT_OPEND;
 	}
-	if (aProtocolName != RAW_PROTOCOL_NAME)
-	{
-		bool const _is = CParserFactory::sMGetInstance().MIsFactoryPresent(
-				aProtocolName);
-		LOG_IF(ERROR,!_is) << " Error. The protocol " << aProtocolName
-									<< " is not exist.";
-		if (!_is)
-			return E_PARSER_IS_NOT_EXIST;
-	}
+
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
@@ -982,7 +792,7 @@ int CCustomer::MInitialize(NSHARE::CText const& aProgram,
 		NSHARE::CText const& aName)
 {
 	CHECK_NOTNULL(FImpl);
-	return FImpl->MInitialize(aProgram,aName);
+	return FImpl->MInitialize(aProgram, aName);
 }
 CCustomer::~CCustomer()
 {
@@ -1037,8 +847,8 @@ int CCustomer::sMInit(int argc, char* argv[], NSHARE::CText const& aName,
 	//fixme to constructor
 	//init rrd client
 	CCustomer* _p = new CCustomer();
-	const int _rval=_p->MInitialize(argv[0], aName);
-	if(_rval!=0)
+	const int _rval = _p->MInitialize(argv[0], aName);
+	if (_rval != 0)
 		delete _p;
 	return _rval;
 }

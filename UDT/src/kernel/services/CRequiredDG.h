@@ -19,9 +19,10 @@ namespace NUDT
 class CRequiredDG
 {
 public:
+	typedef std::map<NSHARE::uuid_t,std::vector<uint32_t> > req_uuids_t;
 	typedef std::set<NSHARE::uuid_t> unique_uuids_t;
 	//typedef std::map<NSHARE::CText,unique_uuids_t> uuids_of_t;
-	typedef std::map<required_header_t, unique_uuids_t, CReqHeaderFastLessCompare> uuids_of_expecting_dg_t;
+	typedef std::map<required_header_t, req_uuids_t, CReqHeaderFastLessCompare> uuids_of_expecting_dg_t;
 	typedef std::map<NSHARE::CText, uuids_of_expecting_dg_t,
 			NSHARE::CStringFastLessCompare> protocols_t;
 
@@ -39,10 +40,10 @@ public:
 	demand_dgs_for_t MRemoveClient(NSHARE::uuid_t const& aUUID);
 
 	//bool MUpdateDemandsDG(id_t const&, demand_dgs_t const&, demand_dgs_t& aNew);
-	NSHARE::smart_field_t<uuids_t> MGetCustomersFor(NSHARE::uuid_t const& aFor,
+	req_uuids_t MGetCustomersFor(NSHARE::uuid_t const& aFor,
 			NSHARE::CText const& aProtocol, void const*,
 			unsigned const aSize) const;
-	NSHARE::smart_field_t<uuids_t> MGetCustomersFor(NSHARE::uuid_t const& aFor,
+	req_uuids_t MGetCustomersFor(NSHARE::uuid_t const& aFor,
 			 unsigned const aNumber) const;
 
 

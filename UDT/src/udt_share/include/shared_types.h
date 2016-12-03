@@ -98,18 +98,21 @@ struct UDT_SHARE_EXPORT user_data_t
 struct UDT_SHARE_EXPORT demand_dg_t
 {
 	static const NSHARE::CText NAME;
-
+	static const NSHARE::CText HANDLER;
+	static const uint32_t NO_HANDLER;
 	required_header_t FWhat;
 	//NSHARE::CText FNameRegExp;	//from
 	NSHARE::CRegistration FNameFrom;
 	NSHARE::smart_field_t<NSHARE::uuid_t> FUUIDFrom;
 	NSHARE::CText FProtocol;
+	uint32_t FHandler;
 
-	demand_dg_t(){
+	demand_dg_t():FHandler(NO_HANDLER)
+	{
 		;
 	}
-	demand_dg_t(NSHARE::CConfig const& aConf);//todo update
-	NSHARE::CConfig MSerialize() const;//todo update
+	demand_dg_t(NSHARE::CConfig const& aConf);
+	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
 	bool operator==(demand_dg_t const& aRht) const;
 };
@@ -448,6 +451,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 
 	aStream << "From:" << aVal.FNameFrom << std::endl;
 	aStream << "Protocol :" << aVal.FProtocol << std::endl;
+	aStream << "Handler :" << aVal.FHandler << std::endl;
 	aStream << aVal.FWhat;
 	return aStream;
 }

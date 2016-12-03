@@ -596,7 +596,24 @@ bool CKernelIo::MSendUserData(descriptor_t const& _by, uuids_t const& _to,
 	if (CDescriptors::sMIsValid(_by))
 	{
 		//NSHARE::CRAII<NSHARE::CMutex> _lock(FMutex);
-		_data.FDataId.FUUIDTo = _to;		//by historical reason
+		std::pair<descriptor_info_t, bool> _resalt =
+				CDescriptors::sMGetInstance().MGet(_by);
+		CHECK(_resalt.second);
+		if(_resalt.first.FProgramm.FType!=E_CONSUMER)
+			_data.FDataId.FUUIDTo = _to;		//by historical reason
+		else
+		{
+			_data.FDataId.FUUIDTo.MGet().clear();
+			_data.FDataId.FUUIDTo.MUnSet();
+
+			CRequiredDG::req_uuids_t const _req_uuids(CRoutingService::sMGetInstance().MGetCustomersFor( _data));
+			CRequiredDG::req_uuids_t::const_iterator _it=_req_uuids.find(_resalt.first.FProgramm.FId.FUuid);
+			CHECK(_it!=_req_uuids.end());
+			std::vector<uint32_t>::const_iterator _begin(_it->second.begin()),_end(_it->second.end());
+
+			for(;_begin!=_end;++_begin)
+				_data.FDataId.FUUIDTo.MGet().push_back(NSHARE::uuid_t(*_begin));
+		}
 		_does_put = MPutUserDataToSendFifo(_by,  _data);
 	}
 

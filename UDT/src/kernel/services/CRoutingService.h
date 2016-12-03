@@ -28,6 +28,7 @@ public:
 
 	void MNoteFailSend(const user_data_info_t& aP, const uuids_t& _non_sent);
 	void MNoteFailSend(const fail_send_t&);
+	CRequiredDG::req_uuids_t MGetCustomersFor(user_data_t const&);
 
 	template<class T>
 	uuids_t MSendTo(routing_t const&, const T &);

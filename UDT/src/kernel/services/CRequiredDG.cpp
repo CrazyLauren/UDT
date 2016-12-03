@@ -87,14 +87,15 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 
 	if (_exp_it == _uuids.end())
 		_exp_it = _uuids.insert(_exp_it,
-				std::make_pair(aWhat.FWhat, unique_uuids_t()));
+				std::make_pair(aWhat.FWhat, req_uuids_t()));
 
 	CHECK(_exp_it != _uuids.end());
 
-	bool const _is = _exp_it->second.insert(aTo).second;
+	 _exp_it->second[aTo].push_back(aWhat.FHandler);
+	bool const _is = _exp_it->second[aTo].size() == 1;
 	LOG_IF(INFO,_is) << "Now The packet:" << aWhat << " from " << aFrom
 								<< " is received of by " << aTo;
-	LOG_IF(INFO,!_is) << "WTF? The packet has been received twice of by " << aTo;
+	LOG_IF(INFO,!_is) << "The packet has been received twice of by " << aTo;
 
 	if (_is)
 	{
@@ -146,7 +147,7 @@ void CRequiredDG::MUnSendPacketToFrom(NSHARE::uuid_t const& aTo,
 						{
 							VLOG(3)<<"Head is found ";
 							//looking for our UUID
-							unique_uuids_t::iterator _list_it =
+							req_uuids_t::iterator _list_it =
 									_exp_it->second.find(aTo);
 
 							if (_list_it != _exp_it->second.end())
@@ -242,16 +243,15 @@ demand_dgs_for_t CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
 	}
 	return _old;
 }
-NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
+CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
 		NSHARE::uuid_t const& aFor, unsigned const aNumber) const
 {
-	NSHARE::smart_field_t<uuids_t> _rval;
 	VLOG(2) << "Get uuids for " << aFor << " by " << RAW_PROTOCOL_NAME;
 	protocol_of_uuid_t::const_iterator _it = FNeedSendTo.find(aFor);
 	VLOG_IF(2, _it == FNeedSendTo.end()) << "There is not customers for "
 												<< aFor;
 	if (_it == FNeedSendTo.end())
-		return _rval;
+		return req_uuids_t();
 	protocols_t::const_iterator _prot_it = _it->second.find(RAW_PROTOCOL_NAME);
 	LOG_IF(INFO,_prot_it==_it->second.end()) << "Nobody expects of data from '"
 														<< _it->first
@@ -259,7 +259,7 @@ NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
 														<< RAW_PROTOCOL_NAME
 														<< "' protocol.";
 	if (_prot_it == _it->second.end())
-		return _rval;
+		return req_uuids_t();
 
 	VLOG(2) << "Receive by raw protocol.";
 	required_header_t _header;
@@ -269,27 +269,24 @@ NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
 			_header);
 	if (_jt != _prot_it->second.end())
 	{
-		for (unique_uuids_t::const_iterator _kt = _jt->second.begin();
-				_kt != _jt->second.end(); ++_kt)
-			_rval.MGet().push_back(*_kt);
+		return _jt->second;
 	}
-	return _rval;
+	return req_uuids_t();
 }
 
-NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
+CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
 		NSHARE::uuid_t const& aFor, NSHARE::CText const& aProtocol,
 		void const* aData, unsigned const aSize) const
 {
 	if (aProtocol == RAW_PROTOCOL_NAME)
 		return MGetCustomersFor(aFor, 0);
 
-	NSHARE::smart_field_t<uuids_t> _rval;
 	VLOG(2) << "Get uuids for " << aFor;
 	protocol_of_uuid_t::const_iterator _it = FNeedSendTo.find(aFor);
 	VLOG_IF(2, _it == FNeedSendTo.end()) << "There is not customers for "
 												<< aFor;
 	if (_it == FNeedSendTo.end())
-		return _rval;
+		return req_uuids_t();
 	protocols_t::const_iterator _prot_it = _it->second.find(aProtocol);
 	LOG_IF(INFO,_prot_it==_it->second.end()) << "Nobody expects of data from '"
 														<< _it->first
@@ -297,13 +294,13 @@ NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
 														<< aProtocol
 														<< "' protocol.";
 	if (_prot_it == _it->second.end())
-		return _rval;
+		return req_uuids_t();
 
 	IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(aProtocol);
 	LOG_IF(DFATAL,!_p) << "Parsing module for " << aProtocol
 								<< " is not exist";
 	if (!_p || aSize == 0)
-		return _rval;
+		return req_uuids_t();
 	IExtParser::result_t _result = _p->MParserData((const uint8_t*) aData,
 			(const uint8_t*) aData + aSize);
 	VLOG(1) << "Founded " << _result.size() << " dg.";
@@ -319,11 +316,12 @@ NSHARE::smart_field_t<uuids_t> CRequiredDG::MGetCustomersFor(
 														<< " does not required. Ignoring ...";
 
 	if (_jt != _prot_it->second.end())
-		for (unique_uuids_t::const_iterator _kt = _jt->second.begin();
-				_kt != _jt->second.end(); ++_kt)
-			_rval.MGet().push_back(*_kt);
+	{
+		return _jt->second;
+	}
 
-	return _rval;
+
+	return req_uuids_t();
 }
 
 void CRequiredDG::MUpdateRequrementFor(const demand_dgs_t& aAdded,
@@ -336,11 +334,11 @@ void CRequiredDG::MUpdateRequrementFor(const demand_dgs_t& aAdded,
 	for (; _req_it != aAdded.end(); ++_req_it)
 	{
 		VLOG(2) << "Try received " << *_req_it;
-		unique_uuids_t _uuids = MGetUUIDFor(_req_it->FNameFrom);
+		unique_uuids_t const _uuids = MGetUUIDFor(_req_it->FNameFrom);
 
 		//VLOG(2) << " Founded uuids: " << _uuids;
 
-		unique_uuids_t::iterator _uuid_it = _uuids.begin();
+		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
 		for (; _uuid_it != _uuids.end(); ++_uuid_it)
 			MSendPacketFromTo(*_uuid_it, aFor.FUuid, *_req_it, aNew);
 	}
@@ -443,11 +441,11 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 					_dg.MAdd("raw", _jt->first.MSerialize());
 				}
 
-				for (unique_uuids_t::const_iterator _kt = _jt->second.begin();
+				for (req_uuids_t::const_iterator _kt = _jt->second.begin();
 						_kt != _jt->second.end(); ++_kt)
 				{
 					_dg.MAdd(user_data_info_t::KEY_PACKET_TO,
-							_kt->MSerialize());
+							_kt->first.MSerialize());
 				}
 				_conf.MAdd(_dg);
 			}
