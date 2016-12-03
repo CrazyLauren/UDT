@@ -5,9 +5,6 @@
 		<tcp_io_manager>
 			<Port>57005</Port>
 		</tcp_io_manager>
-		<example_parser>
-			<some>val</some>
-		</example_parser>
 		<sm_main_channel> </sm_main_channel>
 		<tcp_main_channel> </tcp_main_channel>
 	</modules>
