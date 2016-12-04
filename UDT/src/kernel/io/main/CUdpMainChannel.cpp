@@ -43,15 +43,19 @@ CUdpMainChannel::CUdpMainChannel() :
 }
 void CUdpMainChannel::MInit()
 {
-//	NSHARE::CThread::param_t _param;
-//	NSHARE::CThread::eThreadPriority _priority =
-//			NSHARE::CThread::THREAD_PRIORITY_MAX;
-//	if (CConfigure::sMGetInstance().MGet().MGetIfSet(THREAD_PRIORITY,
-//			_priority))
-//	{
-//		VLOG(2)<<"Set up priority from config."<<_priority;	//_param.FPrior = _priority;
-//	}
-//	_param.FPrior = _priority;
+	VLOG(2) << "Initialize udp main channel";
+	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
+	if (_main_settings.MIsEmpty())
+	{
+		LOG(ERROR) << "Main channel settings is not exist";
+		return;
+	}
+	CConfig _settings = _main_settings.MChild(NAME);
+	if (_settings.MIsEmpty())
+	{
+		LOG(WARNING) << "The udp main channel is not initialized as no configure.";
+		return;
+	}
 	FUdp.MOpen();
 	NSHARE::operation_t _op(CUdpMainChannel::sMReceiver, this, NSHARE::operation_t::IO);
 	CDataObject::sMGetInstance().MPutOperation(_op);

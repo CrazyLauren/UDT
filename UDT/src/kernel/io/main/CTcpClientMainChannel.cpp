@@ -44,6 +44,18 @@ CTcpClientMainChannel::CTcpClientMainChannel() :
 }
 void CTcpClientMainChannel::MInit()
 {
+	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
+	if (_main_settings.MIsEmpty())
+	{
+		LOG(ERROR) << "Main channel settings is not exist";
+		return;
+	}
+	CConfig _settings = _main_settings.MChild(NAME);
+	if (_settings.MIsEmpty())
+	{
+		LOG(WARNING) << "The tcp client main channel is not initialized as no configure.";
+		return;
+	}
 	//CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
 	if (MOpenLoopSocket())
 	{

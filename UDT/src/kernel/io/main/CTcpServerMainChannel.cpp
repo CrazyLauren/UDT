@@ -53,11 +53,22 @@ CTcpServerMainChannel::CTcpServerMainChannel() :
 }
 void CTcpServerMainChannel::MInit()
 {
-	CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
+	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
+	if (_main_settings.MIsEmpty())
+	{
+		LOG(ERROR) << "Main channel settings is not exist";
+		return;
+	}
+	CConfig _settings = _main_settings.MChild(NAME);
+	if (_settings.MIsEmpty())
+	{
+		LOG(WARNING) << "The tcp server main channel is not initialized as no configure.";
+		return;
+	}
 
 
 	NSHARE::net_address _addr;
-	if (_conf.MGetIfSet(PORT, _addr.port))
+	if (_settings.MGetIfSet(PORT, _addr.port))
 	{
 		VLOG(2) << "Tcp main channel is  using port " << _addr;
 	}

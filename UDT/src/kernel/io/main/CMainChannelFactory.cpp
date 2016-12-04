@@ -26,6 +26,8 @@ namespace NUDT
 const NSHARE::CText CMainChannelFactory::NAME="mainchannels";
 const NSHARE::CText CMainChannelFactory::MAIN_CHANNEL="mch";
 const NSHARE::CText CMainChannelFactory::NAME_MAIN="name";
+const NSHARE::CText IMainChannel::CONFIGURE_NAME=CMainChannelFactory::NAME;
+
 CMainChannelFactory::CMainChannelFactory():IState(NAME)
 {
 }

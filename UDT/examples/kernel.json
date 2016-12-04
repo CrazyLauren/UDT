@@ -4,13 +4,16 @@
                 "some": "val"
             }
         },
-        "sm": {
-            "name": "kernel_udt",
-            "size": "10000000",
-			"path_hash_to_name":"true",
-            "remove": "true",
-			"as_def_alloc":"true"
-        },
+		"mainchannels":
+		{
+			"sm": {
+				"name": "kernel_udt",
+				"size": "10000000",
+				"path_hash_to_name":"true",
+				"remove": "true",
+				"as_def_alloc":"true"
+			}
+		},
 		"tcp_io_manager":{
 			"consumer":{
 				"channel_for":{

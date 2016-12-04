@@ -21,6 +21,7 @@ class IMainChannel: public NSHARE::IFactory,public IState
 {
 public:
 	typedef NSHARE::CBuffer data_t;
+	static const NSHARE::CText CONFIGURE_NAME;
 	virtual ~IMainChannel()
 	{
 

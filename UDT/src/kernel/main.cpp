@@ -97,20 +97,27 @@ int main(int argc, char *argv[])
 
 void initialize_def_main_channels()
 {
+	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
+	LOG_IF(DFATAL, _main_settings.MIsEmpty()) << "The main channel settings is not exist. See configure file, tag " << IMainChannel::CONFIGURE_NAME;
+	if(!_main_settings.MIsEmpty())
 	{
+
 		//udp
-		CMainFactoryRegisterer<CUdpMainChannel> _udp;
-		_udp.MRegisterFactory();
+		if(_main_settings.MIsChild(CUdpMainChannel::NAME))
+			CMainFactoryRegisterer<CUdpMainChannel>().MRegisterFactory();
 		//sm
-		CMainFactoryRegisterer<CSmMainChannel> _sm;
-		_sm.MRegisterFactory();
+		if (_main_settings.MIsChild(CSmMainChannel::NAME))
+			CMainFactoryRegisterer<CSmMainChannel>().MRegisterFactory();
+		
 		//tcp server
-		CMainFactoryRegisterer<CTcpServerMainChannel> _tcpser;
-		_tcpser.MRegisterFactory();
+		if (_main_settings.MIsChild(CTcpServerMainChannel::NAME))
+			CMainFactoryRegisterer<CTcpServerMainChannel>().MRegisterFactory();
+		
 		//tcp client
-		CMainFactoryRegisterer<CTcpClientMainChannel> _tcpcl;
-		_tcpcl.MRegisterFactory();
+		if (_main_settings.MIsChild(CTcpClientMainChannel::NAME))
+			CMainFactoryRegisterer<CTcpClientMainChannel>().MRegisterFactory();
 	}
+		
 	new CMainChannelFactory();
 }
 void initialize_def_links()
@@ -134,17 +141,20 @@ void initialize_def_links()
 void initialize_def_io_managers()
 {
 	//tcp
-	CKernelIOByTCPRegister _tcp_io;
-	_tcp_io.MRegisterFactory();
-	CKernelIOByTCPClientRegister _tcp_client;
-	_tcp_client.MRegisterFactory();
+	if(CConfigure::sMGetInstance().MGet().MFind(
+		CKernelIOByTCP::NAME))
+		CKernelIOByTCPRegister().MRegisterFactory();
 
-	CExternalChannelRegister _front;
-	_front.MRegisterFactory();
+	if (CConfigure::sMGetInstance().MGet().MFind(
+		CKernelIOByTCPClient::NAME))
+		CKernelIOByTCPClientRegister().MRegisterFactory();
+
+	if (CConfigure::sMGetInstance().MGet().MFind(
+		CExternalChannel::NAME))
+		CExternalChannelRegister().MRegisterFactory();
 }
 void initialize_extern_modules()
 {
-
 	CResources::sMGetInstance().MLoad();
 }
 void initialize_def_sevices()
@@ -180,9 +190,8 @@ void initialize_core(int argc, char* argv[])
 	try
 	{
 		_cmd.parse(argc, argv);
-
-		init_id(_name.getValue().c_str(), E_KERNEL, g_version);
 		init_share_trace(_cmd.getProgramName().c_str());
+		init_id(_name.getValue().c_str(), E_KERNEL, g_version);
 
 	} catch (ArgException &e)  // catch any exceptions
 	{
