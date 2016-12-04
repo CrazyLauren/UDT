@@ -95,15 +95,15 @@ namespace NSHARE
 
 	}
 }//
-#	define LOG(aLevel)  (!NSHARE::is_val_equal<aLevel,FATAL>::result)?(void)0: NSHARE::logging_impl::__gag_nc_t()&NSHARE::logging_impl::__logging_nc_t<aLevel>()
+#	define LOG(aLevel)  (!NSHARE::is_val_equal<aLevel,FATAL>::result)?(void)0: NSHARE::logging_impl::__gag_nc_t()&NSHARE::logging_impl::__logging_nc_t<aLevel>()<<__FILE__<<":"<<__LINE__<<" "
 #	define VLOG(some)  true?(void)0:NSHARE::logging_impl::__gag_nc_t()^ std::cout
-#	define LOG_IF(aLevel,condition) !(NSHARE::is_val_equal<aLevel,FATAL>::result && (condition))?(void)0: NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<aLevel>()
+#	define LOG_IF(aLevel,condition) !(NSHARE::is_val_equal<aLevel,FATAL>::result && (condition))?(void)0: NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<aLevel>()<<__FILE__<<":"<<__LINE__<<" "
 
 #	define VLOG_IF(some,other) VLOG(some)
 #	define DVLOG(some) VLOG(some)
 #	define DLOG(some) LOG(some)
 #	define DLOG_IF(some,other) VLOG_IF(some,other)
-#	define LOG_ASSERT(some) (some)?(void)0:NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<FATAL>()
+#	define LOG_ASSERT(some) (some)?(void)0:NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<FATAL>()<<__FILE__<<":"<<__LINE__<<" "
 #ifndef NDEBUG
 #	define DLOG_ASSERT(condition) LOG_ASSERT(condition)
 #else

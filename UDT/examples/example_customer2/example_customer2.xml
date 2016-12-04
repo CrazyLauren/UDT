@@ -4,9 +4,5 @@
 	<tcp_io_manager>
 		<Port>57005</Port>
 	</tcp_io_manager>
-
-	<modules>
-		<sm_main_channel/>
-		<tcp_io_manager/>
-	</modules>
+	<modules/>
 </conf>

@@ -1,0 +1,49 @@
+{
+        "modules": {
+            "example_parser": {
+                "some": "val"
+            }
+        },
+        "sm": {
+            "name": "kernel_udt",
+            "size": "10000000",
+			"path_hash_to_name":"true",
+            "remove": "true",
+			"as_def_alloc":"true"
+        },
+		"tcp_io_manager":{
+			"consumer":{
+				"channel_for":{
+					"default":"sm"
+				}
+			},
+			"udt_server":{
+				"channel_for":{
+					"default":"tcpser"
+				}
+			},
+			"links":["consumer","udt_server","http"]
+		},
+		"tcp_client_manager":{
+			
+		},
+		"front_end_manager":
+		{
+			"frontend":{
+			}
+		},
+		"buffers":
+		{
+			"tcp_io_manager":{
+					"consumer":{
+						"default":{
+						}
+					},
+					"default":
+					{
+						"maxsmbuf":"1000000"
+					}
+			}
+		}
+
+}

@@ -171,17 +171,19 @@ int CCustomer::_pimpl::MLoadLibraries()
 		return 0;
 	//MODULE
 	CConfig const* _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
+	std::vector<NSHARE::CText> _text;
+
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
 								<< " is not exist.";
 
 	if (!_p)
 		return E_INVALID_CONFIG;
-
 	ConfigSet::const_iterator _it = _p->MChildren().begin();
-
-	std::vector<NSHARE::CText> _text;
+	
 	for (; _it != _p->MChildren().end(); ++_it)
 		_text.push_back(_it->MKey());
+#endif
 
 	new CResources(_text);
 

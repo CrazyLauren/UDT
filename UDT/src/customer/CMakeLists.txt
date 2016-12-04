@@ -11,7 +11,9 @@ SET(CUSTOMER_TARGET_NAME_UP ${_NAME_UP} CACHE INTERNAL "")
 SET(CUSTOMER_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE PATH  "Include path for the header files of customer" )
 
 
-set(${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES false CACHE BOOL "Build ${TARGET_NAME} with 'static loaded modules' ")
+set(${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES true CACHE BOOL "Build ${TARGET_NAME} with 'static loaded modules' ")
+
+set(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES} true CACHE BOOL "Link ${TARGET_NAME}  with static dependecies ")
 
 #build library
 add_definitions(${LOGGING_DEFENITIONS})
@@ -27,8 +29,11 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include ${SHARE_INCLUDES} ${Boo
 
 
 #adding object files of modules to project
+SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES "sm_main_channel;tcp_io_manager"  CACHE STRING "list of modules which will linked static")
 
 if(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
+	add_definitions(-D${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES)
+	
 	foreach(_source ${${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES})
 		list(APPEND SOURCE_FILES "$<TARGET_OBJECTS:${_source}_Object>")
 		string(TOUPPER ${_source} _LIB_NAME_UP)
@@ -66,6 +71,5 @@ SET(${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES "" CACHE STRING "list of availa
 
 add_subdirectory(modules)
 
-SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES ${${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES}  CACHE STRING "list of modules which will linked static")
-
+#SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES ${${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES}  CACHE STRING "list of modules which will linked static")
 
