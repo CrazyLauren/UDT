@@ -12,6 +12,16 @@
 #ifndef DEFTYPE_
 #define DEFTYPE_
 
+#ifdef ENABLE_VTUNE
+#	include <profiler_vtune.h>
+#else
+#	define ProfileScopeEvent(x)
+#	define THREAD_NAME(n,i)
+#	define PROFILE_INIT()
+#	define PROFILE_PAUSE()
+#	define PROFILE_RESUME()
+#endif
+
 #if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
 #	include <unordered_set>
 #	include <unordered_map>

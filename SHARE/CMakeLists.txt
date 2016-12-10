@@ -38,6 +38,7 @@ SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windo
 
 SET(SHARE_LIBRARIES "" CACHE STRING "Link these to use SHARE")
 SET(PLATFORM_LIBS ""  CACHE STRING "Platform library")
+option(ENABLE_VTUNE "Enable Vtune profiling instrumentation" OFF)
 
 
 mark_as_advanced (
@@ -49,6 +50,20 @@ mark_as_advanced (
 	CMAKE_RELEASE_POSTFIX
     )
 	
+INCLUDE(FindVTune)
+if(ENABLE_VTUNE)
+    find_package(Vtune)
+	
+    if(VTUNE_FOUND)
+        add_definitions(-DENABLE_VTUNE)
+		
+        include_directories(${VTune_INCLUDE_DIRS})
+		
+        list(APPEND PLATFORM_LIBS ${VTune_LIBRARIES})
+				
+    endif(VTUNE_FOUND)
+	
+endif(ENABLE_VTUNE)
 
 ################################################################################
 # Create bin and lib directories if required
