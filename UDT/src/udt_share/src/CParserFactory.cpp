@@ -18,13 +18,9 @@
 #include <udt_share.h>
 #include <CParserFactory.h>
 
-namespace NUDT
-{
-static void* init_RawProtocolParser();
-}
 template<>
 NSHARE::CFactoryManager<NUDT::IExtParser>::singleton_pnt_t NSHARE::CSingleton<
-		NSHARE::CFactoryManager<NUDT::IExtParser> >::sFSingleton = (NSHARE::CFactoryManager<NUDT::IExtParser>::singleton_pnt_t)NUDT::init_RawProtocolParser();
+		NSHARE::CFactoryManager<NUDT::IExtParser> >::sFSingleton = NULL;
 namespace NUDT
 {
 extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME = "raw";
@@ -73,10 +69,9 @@ public:
 		return _conf;
 	}
 };
-static void* init_RawProtocolParser()
-{
-	CParserFactory::sMAddFactory<CRawProtocolParser>();
-	return NULL;
-}
 
+CParserFactory::CParserFactory()
+{
+	MAddFactory(new CRawProtocolParser());
+}
 }

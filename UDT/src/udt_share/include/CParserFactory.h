@@ -20,6 +20,10 @@ template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser>;
 }
 namespace NUDT
 {
-typedef  NSHARE::CFactoryManager<NUDT::IExtParser> CParserFactory;
+class UDT_SHARE_EXPORT CParserFactory:public  NSHARE::CFactoryManager<NUDT::IExtParser>
+{
+public:
+	CParserFactory();
+};
 }//
 #endif /* CPARSERFACTORY_H_ */

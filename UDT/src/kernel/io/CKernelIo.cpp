@@ -430,10 +430,10 @@ void CKernelIo::MNoteFailSend(std::vector<user_data_info_t> const& aWhat,
 								<< " has been set already. Ignoring....";
 			continue;
 		}
-		if (_it->FUUIDTo.MIs())
+/*		if (_it->FUUIDTo.MIs())
 			CRoutingService::sMGetInstance().MNoteFailSend(*_it,
 					_it->FUUIDTo.MGetConst());
-		else if (_info.second)
+		else*/ if (_info.second)
 		{
 			uuids_t _fail;
 			_fail.push_back(_info.first.FProgramm.FId.FUuid);
