@@ -23,7 +23,6 @@
 using namespace NSHARE;
 namespace NUDT
 {
-extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME="raw";
 //---------------------------
 const NSHARE::CText uuids_t::NAME = "uuids";
 uuids_t::uuids_t(NSHARE::CConfig const& aConf)
@@ -157,8 +156,8 @@ const NSHARE::CText kernel_link::TIME = "ctime";
 const NSHARE::CText kernel_link::LINK = "link";
 kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 		FProgramm(aConf.MChild(PROGRAM_ID_NAME)), //
-		FConnectTime(NSHARE::get_unix_time()),//
-		FLatency(std::numeric_limits<uint16_t>::max())
+		FConnectTime(NSHARE::get_unix_time()),
+		FLatency(std::numeric_limits<uint16_t>::max())//
 {
 	aConf.MGetIfSet(LATENCY, FLatency);
 	aConf.MGetIfSet(TIME, FConnectTime);
@@ -167,7 +166,7 @@ kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 kernel_link::kernel_link(programm_id_t const& aInfo, uint16_t aLink):
 		FProgramm(aInfo),//
 		FConnectTime(NSHARE::get_unix_time()),//
-		FLatency(aLink)
+		FLatency(aLink)//
 {
 	;
 }
@@ -243,7 +242,7 @@ const uint32_t demand_dg_t::NO_HANDLER = -1;
 
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FWhat(aConf.MChild("rh")),//
-		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)),//
+		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)),
 		FHandler(NO_HANDLER)
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
@@ -263,6 +262,7 @@ NSHARE::CConfig demand_dg_t::MSerialize() const
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 	_conf.MAdd(HANDLER, FHandler);
+
 	if(FUUIDFrom.MIs())
 	{
 		_conf.MAdd(FUUIDFrom.MGetConst().MSerialize());
@@ -272,7 +272,7 @@ NSHARE::CConfig demand_dg_t::MSerialize() const
 }
 bool demand_dg_t::MIsValid() const
 {
-	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs())&& FHandler!=NO_HANDLER;
+	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs()) && FHandler!=NO_HANDLER;
 }
 bool demand_dg_t::operator==(demand_dg_t const& aRht) const
 {

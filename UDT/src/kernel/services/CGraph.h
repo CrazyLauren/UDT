@@ -43,7 +43,7 @@ public:
 	void MReset();
 	void MResetCache();
 	path_t MShortestPath(node_t const& start,
-			node_t  finish) const;
+			node_t  const& finish) const;
 	NSHARE::CConfig MSerialize() const;
 private:
 

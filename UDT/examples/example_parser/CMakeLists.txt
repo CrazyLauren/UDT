@@ -1,6 +1,6 @@
 SET(TARGET_NAME example_parser)
 
-SET(EXAMPLE_PARSER_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH  "Include path for the header files of example parser" )
+SET(EXAMPLE_PARSER_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL  "Include path for the header files of example parser" )
 
 add_definitions(${LOGGING_DEFENITIONS} -DEXAMPLE_PARSER_EXPORTS)
 
@@ -14,7 +14,7 @@ add_library (${TARGET_NAME} SHARED
 
 target_link_libraries(	${TARGET_NAME} 
 						${PLATFORM_LIBS} 
-						${LOGGING_LIBRARIES}
+						
 						${UDT_SHARE_LIBRARIES})
 
 install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

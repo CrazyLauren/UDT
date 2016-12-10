@@ -23,7 +23,7 @@ public:
 	~CInfoService();
 	NSHARE::CConfig MSerialize() const;
 
-	CRouteGraph::path_t MShortestPath(CRouteGraph::node_t  aTo) const;
+	CRouteGraph::path_t MShortestPath(CRouteGraph::node_t const&  aTo) const;
 	bool MIsVertex(const CRouteGraph::node_t& name) const;
 	uuids_t MGetOtherKernelds() const;
 

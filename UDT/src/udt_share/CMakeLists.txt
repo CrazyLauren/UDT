@@ -1,8 +1,8 @@
-PROJECT(SHARE_OF_UDT C CXX)
+PROJECT(${PROJECT_NAME}_share C CXX)
 SET(TARGET_NAME udt_share)
 
 SET(UDT_SHARE_TARGET_NAME ${TARGET_NAME})
-SET(UDT_SHARE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE PATH  "Include path for the header files of udt share" )
+SET(UDT_SHARE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL  "Include path for the header files of udt share" )
 
 add_definitions(${LOGGING_DEFENITIONS})
 
@@ -17,10 +17,10 @@ include_directories (${SHARE_INCLUDES} ${Boost_INCLUDE_DIRS} ${UDT_SHARE_INCLUDE
 
 share_add_library(${TARGET_NAME} FALSE SOURCE_FILES HEADER_FILES TRUE)
 
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES} )
+share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}   )
 share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES})
 
-SET(UDT_SHARE_LIBRARIES  ${TARGET_NAME} CACHE STRING "UDT_SHARE_LIBRARIES" FORCE)#fixme must be filepath
+SET(UDT_SHARE_LIBRARIES  ${TARGET_NAME} CACHE INTERNAL "UDT_SHARE_LIBRARIES" FORCE)#fixme must be filepath
 
 						  
 install(FILES 	${CMAKE_CURRENT_SOURCE_DIR}/include/udt_types.h

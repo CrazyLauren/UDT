@@ -1,4 +1,4 @@
-PROJECT(examples C CXX)	
+PROJECT(${PROJECT_NAME}_examples C CXX)	
 
 add_subdirectory(example_parser)
 add_subdirectory(example_customer)	

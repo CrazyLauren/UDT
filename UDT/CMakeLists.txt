@@ -6,14 +6,18 @@ INCLUDE(FindPackageHandleStandardArgs)
 cmake_policy(SET CMP0022 NEW)
 # default to Release build (it's what most people will use, except cegui devs)
 if (NOT CMAKE_BUILD_TYPE)
-    set( CMAKE_BUILD_TYPE Release CACHE STRING "Sets the configuration to build (Release, Debug, etc...)")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Sets the configuration to build (Release, Debug, etc...)")
 endif()
 
 
 ################################################################################
 # Start of main Project definitions
 ################################################################################
-PROJECT(UDT C CXX)
+if(DEFINED PROJECT_NAME)
+	PROJECT(${PROJECT_NAME}_UDT C CXX)
+else()
+	PROJECT(UDT C CXX)
+endif()
 
 SET(KERNEL_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 SET(KERNEL_SOURCE_PATH ${KERNEL_ROOT_PATH}/src)
@@ -27,8 +31,7 @@ SET(CMAKE_DEBUG_POSTFIX  "d" CACHE STRING "add a postfix, usually d on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 
 
-SET(PLATFORM_LIBS ${PLATFORM_LIBS}  CACHE STRING "Platform library")
-list(REMOVE_DUPLICATES PLATFORM_LIBS)
+SET(PLATFORM_LIBS ""  CACHE STRING "Platform library")
 
 mark_as_advanced (
 	PLATFORM_LIBS
@@ -37,14 +40,6 @@ mark_as_advanced (
 	CMAKE_RELEASE_POSTFIX
     )
 	
-# Dynamic vs Static Linking
-OPTION(DEPENDENCIES_LINK_TYPE "Set to ON to dynamic link dependencies .  Use OFF for static." ON)
-IF   (DEPENDENCIES_LINK_TYPE)
-    SET(USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
-ELSE (DEPENDENCIES_LINK_TYPE)
-    SET(USER_DEFINED_DYNAMIC_OR_STATIC "STATIC")
-ENDIF(DEPENDENCIES_LINK_TYPE)
-
 ################################################################################
 # Create bin and lib directories if required
 ################################################################################

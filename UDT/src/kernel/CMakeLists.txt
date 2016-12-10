@@ -1,4 +1,4 @@
-PROJECT(UDT_KERNEL C CXX)
+PROJECT(${PROJECT_NAME}_kernel C CXX)
 SET(TARGET_NAME Kernel)
 
 configure_version(KERNEL ${CMAKE_CURRENT_SOURCE_DIR} 0 1)
@@ -11,7 +11,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SHARE_INCLUDES} ${Boost_INCLU
 
 share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
 
-#target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES} ${LOGGING_LIBRARIES})
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES})
+#target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES} )
+share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  )
 share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES})
 

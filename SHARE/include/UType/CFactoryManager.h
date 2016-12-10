@@ -180,7 +180,8 @@ template<class TFactory>
 inline typename CFactoryManager<TFactory>::factory_its_t CFactoryManager<TFactory>::MGetIterator(
 		) const
 {
-	CFactoryManager::factory_its_t _it;
+	typedef typename CFactoryManager<TFactory>::factory_its_t _its_t;
+	_its_t _it;
 	_it.FBegin = FRegistry.begin();
 	_it.FEnd = FRegistry.end();
 	return _it;

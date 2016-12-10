@@ -1,4 +1,4 @@
-PROJECT(customer C CXX)		  
+PROJECT(${PROJECT_NAME}_customer C CXX)		  
 
 #add_subdirectory(src)						
 SET(TARGET_NAME customer)
@@ -8,12 +8,10 @@ SET(CUSTOMER_TARGET_NAME ${TARGET_NAME} CACHE INTERNAL "")
 string(TOUPPER ${TARGET_NAME} _NAME_UP)
 SET(CUSTOMER_TARGET_NAME_UP ${_NAME_UP} CACHE INTERNAL "")
 
-SET(CUSTOMER_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE PATH  "Include path for the header files of customer" )
+SET(CUSTOMER_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL  "Include path for the header files of customer" )
 
 
 set(${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES true CACHE BOOL "Build ${TARGET_NAME} with 'static loaded modules' ")
-
-set(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES} true CACHE BOOL "Link ${TARGET_NAME}  with static dependecies ")
 
 #build library
 add_definitions(${LOGGING_DEFENITIONS})
@@ -43,7 +41,7 @@ endif()
 
 share_add_library(${TARGET_NAME} FALSE SOURCE_FILES HEADER_FILES TRUE)
 
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES} )
+share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}   )
 
 share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES}  ${UDT_SHARE_LIBRARIES})
 
@@ -52,7 +50,7 @@ set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_DEFINITIONS ${DEF_MOD
 
 #configure deps
 #if(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES})
-SET(CUSTOMER_LIBRARIES  ${TARGET_NAME} CACHE STRING "CUSTOMER_LIBRARIES" FORCE)#share and udt_share is not need as it's static 
+SET(CUSTOMER_LIBRARIES  ${TARGET_NAME} CACHE INTERNAL "CUSTOMER_LIBRARIES" FORCE)#share and udt_share is not need as it's static 
 #else()	
 #	SET(CUSTOMER_LIBRARIES  ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES} ${TARGET_NAME}  CACHE STRING "CUSTOMER_LIBRARIES" FORCE)
 #endif()

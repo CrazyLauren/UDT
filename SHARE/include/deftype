@@ -15,10 +15,20 @@
 #if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
 #	include <unordered_set>
 #	include <unordered_map>
+#	define HASH_SET std::unordered_set
+#	define HASH_MAP std::unordered_map
+#	define HASH_MULTISET std::unordered_multiset
+#	define HASH_MULTIMAP std::unordered_multimap
+#	define HASH std::hash
 #else
-#	include <hash_set>
-#	include <hash_map>
+#	include<boost/unordered_set.hpp>
+#	include<boost/unordered_map.hpp>
+#	define HASH_SET boost::unordered_set
+#	define HASH_MAP boost::unordered_map
+#	define HASH_MULTISET boost::unordered_multiset
+#	define HASH_MULTIMAP boost::unordered_multimap
 #endif
+
 #include <set>
 #include <map>
 #include <string>
@@ -44,11 +54,6 @@
 #	include <limits>
 #	include <malloc.h>
 
-#	define HASH std::hash
-#	define HASH_SET std::hash_set
-#	define HASH_MAP std::hash_map
-#	define HASH_MULTISET std::hash_multiset
-#	define HASH_MULTIMAP std::hash_multimap
 #	define SHARED_PTR boost::shared_ptr 
 
 #elif defined(unix) || defined(__MINGW32__)
@@ -70,7 +75,7 @@
 #	define SHARED_PTR std::tr1::shared_ptr
 # 	endif
 
-
+/*
 namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 {
   using namespace std;
@@ -85,18 +90,24 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
       }
     };
 }
+
 #	define HASH __gnu_cxx::hash
 #	define HASH_SET __gnu_cxx::hash_set
 #	define HASH_MAP __gnu_cxx::hash_map
+*/
 #elif defined(_WIN32)
 #	if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
+/*
 #		define HASH std::hash
 #		define HASH_SET std::unordered_set
 #		define HASH_MAP std::unordered_map
+*/
 #	else
+/*
 #		define HASH std::hash
 #		define HASH_SET std::hash_set
 #		define HASH_MAP std::hash_map
+*/
 #	endif
 #	define SHARED_PTR std::shared_ptr 
 #endif //#elif defined(_WIN32)

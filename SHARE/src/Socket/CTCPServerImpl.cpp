@@ -196,29 +196,37 @@ int IMPL::MReceiveFromAllSocket(data_t* aBuf,
 		{
 			MCloseClient(*_it);
 		}
-		else if ( aFrom)
+		else
 		{
 			_recvd += _size;
-			CRAccsess _r = FClients.MGetRAccess();
+			if ( aFrom)
+			{
+				CRAccsess _r = FClients.MGetRAccess();
 
-			clients_fd_t::const_iterator _cit = _r->find(*_it);
-			CHECK(_cit!=_r->end()) << "WTF?";
+				clients_fd_t::const_iterator _cit = _r->find(*_it);
+				LOG_IF(FATAL,_cit==_r->end()) << "WTF?";
 
+				_cit->second.FDiagnostic.MRecv(_size);
 
-			_cit->second.FDiagnostic.MRecv(_size);
+				recvs_t::value_type _val;
+				client_t const _saddr(_cit->second);
 
-			recvs_t::value_type _val;
-			client_t const _saddr(_cit->second);
-
-			_val.FClient = _saddr; //TODO
+				_val.FClient = _saddr; //TODO
 //			_val.FBufBegin=aBuf->end()-_size;//vector can be allocated to other heap
-			_val.FSize = _size;
-			//CHECK(_val.FBufBegin==(aBuf->begin()+_recvd-_size))<<"WTF? The container is damage.";
-			aFrom->push_back(_val);
+				_val.FSize = _size;
+				//CHECK(_val.FBufBegin==(aBuf->begin()+_recvd-_size))<<"WTF? The container is damage.";
+				aFrom->push_back(_val);
+			}
 		}
 	}
 	FDiagnostic.MRecv(_recvd);
 
+	if(_recvd>0 && aFrom)
+	{
+		//vector can be allocated to other heap thus
+		//FBufBegin is to calculated after data reading
+		MCalculateDataBegin(aFrom,aBuf);
+	}
 	return _recvd > 0 ? _recvd : -1;
 }
 
@@ -586,16 +594,7 @@ ssize_t IMPL::MReceiveData(recvs_t*aFrom, data_t*aBuf,
 					}
 				}
 				MReserveMemory(aBuf,_to);
-				int _rval=MReceiveFromAllSocket(aBuf,_to,aFrom);
-				_recvd=_rval;
-				if(_rval>0)
-				{
-//					_recvd+=_rval;
-
-					//vector can be allocated to other heap thus
-					//FBufBegin is to calculated after data reading
-					MCalculateDataBegin(aFrom,aBuf);
-				}
+				_recvd=MReceiveFromAllSocket(aBuf,_to,aFrom);
 				VLOG(1) << "Resultant:Reads " << _recvd << " bytes";
 			}
 		}

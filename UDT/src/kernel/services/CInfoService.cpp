@@ -749,7 +749,7 @@ inline void CInfoService::MInit()
 	}
 }
 
-CRouteGraph::path_t CInfoService::MShortestPath(CRouteGraph::node_t aTo) const
+CRouteGraph::path_t CInfoService::MShortestPath(CRouteGraph::node_t const& aTo) const
 {
 	const r_access _ac = FData.MGetRAccess();
 	const _data_info_t& _info = _ac.MGet();

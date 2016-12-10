@@ -302,13 +302,13 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 					&& (_head->FVersion.FMinor > KD_T::MINOR))
 			<< "The Minor version  of received the " << _head->FType << " DG "
 					" is greater than internal. (" << _head->FVersion.FMinor
-			<< ">" << KD_T::MINOR << ")";
+			<< ">" << (unsigned)KD_T::MINOR << ")";
 	bool _need_handled = true;
 	if (_head->FVersion.FMajor != KD_T::MAJOR)
 	{
 		_need_handled = false;
 		LOG(DFATAL) << "Internal version of protocol is out-of-date.("
-				<< _head->FVersion.FMajor << "!=" << KD_T::MAJOR << ") for "
+				<< _head->FVersion.FMajor << "!=" << (unsigned)KD_T::MAJOR << ") for "
 				<< _head->FType << " DG which will ignored.";
 	}
 	std::size_t const _size_kd = _head->FHeadSize + _head->FDataSize;

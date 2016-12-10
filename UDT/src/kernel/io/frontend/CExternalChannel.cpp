@@ -160,8 +160,9 @@ bool CExternalChannel::MSend(const fail_send_t& _id,
 bool CExternalChannel::MSend(const demand_dgs_for_t& _id,
 		descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)
 {
-	LOG(DFATAL)<<"Front end does't handle demand_dgs_for_t";
-	return false;
+	//LOG(DFATAL)<<"Front end does't handle demand_dgs_for_t";
+	DCHECK(FActiveChannels.find(aTo)!=FActiveChannels.end());
+	return true;
 }
 
 bool CExternalChannel::MSend(const kernel_infos_array_t& _id, descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)

@@ -47,6 +47,19 @@ enum  eMsgType
 //	E_SENT_ERROR = 1,
 //};
 
+namespace _impl
+{
+	template<uint8_t b>
+	struct msb2lsb
+	{
+		enum
+		{
+			b1=(b&0xF0)>>4|(b&0x0F)<<4,
+			b2=(b1&0xCC)>>2|(b1&0x33)<<2,
+			result=(b2&0xAA)>>1|(b2&0x55)<<1
+		};
+	};
+};
 //32 byte
 typedef NSHARE::crc8_t<0x97,0x01> udt_protocol_header_crc_t;
 typedef NSHARE::crc16_t<0xC005, 0> udt_protocol_data_crc_t;
@@ -56,9 +69,10 @@ struct head_t
 	typedef udt_protocol_header_crc_t crc_head_t;
 	typedef udt_protocol_data_crc_t crc_data_t;
 
-	enum eEndianness
+	enum eBOM
 	{
-		E_ORDER_CHECK=0x67
+		E_HEAD_SIZE=8*4,
+		E_ORDER_CHECK=_impl::msb2lsb<E_HEAD_SIZE>::result
 	};
 	enum eHeadFlags
 	{
@@ -66,9 +80,9 @@ struct head_t
 		E_ERROR_OF_MSG= 0x1<<2,
 	};
 	//1-st word
-	uint8_t const FEndianness:8;
-	uint8_t const FHeadSize;
-	uint16_t FTimeMs; //ms
+	uint32_t const FHeadSize:8;
+	uint32_t FTimeMs:16; //ms
+	uint32_t const FEndianness:8;
 
 	//2-d word
 	NSHARE::version_t const FVersion;
@@ -101,9 +115,9 @@ struct head_t
 	head_t(uint8_t aMajor,uint8_t aMinor,eMsgType aType);
 });
 inline head_t::head_t(uint8_t aMajor, uint8_t aMinor, eMsgType aType) :
-	FEndianness(E_ORDER_CHECK),//
-	FHeadSize(sizeof(head_t)),//
+	FHeadSize(E_HEAD_SIZE),//
 	FTimeMs(0),//
+	FEndianness(E_ORDER_CHECK),//
 	FVersion(aMajor, aMinor),//
 	FDataSize(0),//
 	FTime(0),//
@@ -125,7 +139,7 @@ inline void head_t::MSet(unsigned aFlag, bool aVal)
 }
 
 COMPILE_ASSERT(sizeof(NSHARE::version_t) == 4, InvalidSizeOfVersion);
-COMPILE_ASSERT(sizeof(head_t) == 8 * 4, InvalidSizeOfHead);
+COMPILE_ASSERT(sizeof(head_t) == head_t::E_HEAD_SIZE, InvalidSizeOfHead);
 
 //
 //---------------------

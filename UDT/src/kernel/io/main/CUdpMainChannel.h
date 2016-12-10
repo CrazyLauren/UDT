@@ -49,7 +49,7 @@ private:
 	typedef COverload<NSHARE::net_address> net_overload_t;
 	struct param_t
 	{
-		enum
+		enum eState
 		{
 			E_TRY_OPEN,
 			E_REQUEST_PARAM,
@@ -101,16 +101,12 @@ private:
 	net_overload_t FOverload; //fixme to base class
 	bool FIsOverload;
 
-	friend class CInParser<CUdpMainChannel, ILink*> ;
+	friend class CInParser<CUdpMainChannel, ILink*>;
+	friend std::ostream& operator<<(std::ostream & aStream,  NUDT::CUdpMainChannel::param_t::eState const& aVal);
 };
-}
-namespace std
+inline std::ostream& operator<<(std::ostream & aStream, NUDT::CUdpMainChannel::param_t::eState const& aVal)
 {
-//inline std::ostream& operator<<(std::ostream & aStream, NUDT::CUdpMainChannel::param_t const& aVal)
-//{
-//	using namespace NUDT;
-//	return aStream << static_cast<head_t const&>(aVal) << std::endl
-//			<<  aVal.FUserHeader;
-//}
+	return aStream << static_cast<unsigned>(aVal);
+}
 }
 #endif /* CUDPMAINCHANNEL_H_ */

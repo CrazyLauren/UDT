@@ -525,7 +525,7 @@ inline basic_istream<_Elem, _Traits>& operator>>(
 
 	ios_base::iostate _State = ios_base::goodbit;
 	bool _Changed = false;
-	const typename _Myis::sentry _Ok(aStream);
+	typename _Myis::sentry _Ok(aStream);
 
 	if (_Ok)
 	{

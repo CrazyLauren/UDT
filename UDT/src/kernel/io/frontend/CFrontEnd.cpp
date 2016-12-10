@@ -163,6 +163,7 @@ int IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, voi
 }
 void IMPL::MReceiverLoop()
 {
+	VLOG(2)<<"Receive data staring";
 	ISocket::data_t _data;					//todo allocate to def memory
 	for (;FSocket&&FSocket->MIsOpen(); )
 	{
@@ -177,6 +178,7 @@ void IMPL::MReceiverLoop()
 			}
 		}
 	}
+	VLOG(2)<<"Receive data finished";
 }
 void IMPL::MConnected()
 {
@@ -297,9 +299,9 @@ void IMPL::MReceivedData(data_t::const_iterator aBegin,
 		aBegin = FBuf.cbegin();
 		aEnd = FBuf.cend();
 	}
-	LOG_IF(ERROR,FProtocol.empty())<<"No protocol. Using raw protocol ...";
+	LOG_IF(INFO,FProtocol.empty())<<"No protocol. Using raw protocol ...";
 
-	if(FProtocol.empty()|| !MReceiveByProtocol(aBegin, aEnd))
+	if(FProtocol.empty()|| (FProtocol==RAW_PROTOCOL_NAME) || !MReceiveByProtocol(aBegin, aEnd))
 	{
 		MRawReceivedData(aBegin,aEnd);
 	}

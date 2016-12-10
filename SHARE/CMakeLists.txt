@@ -16,7 +16,11 @@ endif()
 ################################################################################
 # Start of main Project definitions
 ################################################################################
-PROJECT(SHARE_LIB C CXX)
+if(DEFINED PROJECT_NAME)
+	PROJECT(${PROJECT_NAME}_SHARE_LIB C CXX)
+else()
+	PROJECT(SHARE_LIB C CXX)
+endif()
 
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 INCLUDE(FindPackageHandleStandardArgs)
@@ -96,6 +100,7 @@ endif()
 configure_logging(${SHARE_DEPENDENCIES_PATH})
 
 OPTION(SHARE_DEX_SOCKET "Adding socket for dex" OFF)
+mark_as_advanced(SHARE_DEX_SOCKET)
 
 IF (NOT SHARE_DEX_SOCKET)
 	add_definitions(-DNODEX)

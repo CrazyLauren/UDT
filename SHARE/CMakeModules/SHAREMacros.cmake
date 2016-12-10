@@ -1,8 +1,15 @@
 #
-# Configuration logging og project
+# SHAREMacros.cmake
 #
-#	_DEP_PATH - Path for looking for dependencies
-macro(configure_logging _DEP_PATH)
+# Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+#
+#  Created on: 12.11.2016
+#      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+#
+# Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
+# https://www.mozilla.org/en-US/MPL/2.0)
+# 
+ macro(configure_logging _DEP_PATH)
 	
 	SET(GLOG_ROOT_DIR ${_DEP_PATH}/glog)
 	FIND_PACKAGE(glog)
@@ -76,7 +83,11 @@ macro(configure_version _TARGET _FILE_PATH _MAJOR _MINOR )
 	SET(${_PREFIX}_PATH "no path" CACHE STRING "" FORCE)
 
 	OPTION(${_PREFIX}_EMBED_GIT_SHA "Embeds the GIT SHA in the version code" ON)
-
+	
+	mark_as_advanced(${_PREFIX}_EMBED_GIT_SHA
+					${_PREFIX}_REVISION_VERSION
+					${_PREFIX}_PATH)
+	
 	IF (${_PREFIX}_EMBED_GIT_SHA)
 		include(GetGitRevisionDescription)
 		git_describe(VERSION --tags --dirty=-d)
@@ -133,13 +144,13 @@ macro (share_add_library _LIB_NAME _IS_MODULE _SOURCE_FILES_VAR _HEADER_FILES_VA
     string(TOUPPER ${_LIB_NAME}_EXPORTS _EXPORT_DEFINE)
 	
     #STATIC LIBRARY SET UP
-	set(${_LIB_NAME_UP}_BUILD_STATIC true CACHE BOOL "Build ${_LIB_NAME} as static library too")
+	set(${_LIB_NAME_UP}_BUILD_STATIC_TOO true CACHE BOOL "Build ${_LIB_NAME} as static library too")
 	set(${_LIB_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE BOOL "Link ${_LIB_NAME} with static dependecies")
-	#OPTION(${_LIB_NAME_UP}_BUILD_STATIC "Build static library too" ON)
+	#OPTION(${_LIB_NAME_UP}_BUILD_STATIC_TOO "Build static library too" ON)
 
 
 	
-    if (${${_LIB_NAME_UP}_BUILD_STATIC})
+    if (${${_LIB_NAME_UP}_BUILD_STATIC_TOO})
         add_library(${_LIB_NAME}_Static STATIC ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
 #        string(TOUPPER ${_LIB_NAME_UP}_STATIC _EXPORT_STATIC)
 #		set_property(TARGET ${_LIB_NAME}_Static APPEND PROPERTY COMPILE_DEFINITIONS ${_EXPORT_STATIC})
@@ -178,13 +189,19 @@ macro (share_add_library _LIB_NAME _IS_MODULE _SOURCE_FILES_VAR _HEADER_FILES_VA
                         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 
-        if (${${_LIB_NAME_UP}_BUILD_STATIC})
+        if (${${_LIB_NAME_UP}_BUILD_STATIC_TOO})
             install(TARGETS ${_LIB_NAME}_Static
    						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
                         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
         endif()
     endif()
+	
+	mark_as_advanced (
+    ${_LIB_NAME}_INCLUDES
+	${_LIB_NAME}_DEPENDENCIES_PATH
+    )
+	
 endmacro()
 
 # Add libs to a target
@@ -255,7 +272,7 @@ macro (share_add_executable TARGET_NAME _SOURCE_FILES_VAR _HEADER_FILES_VAR _INS
 	string(TOUPPER ${TARGET_NAME} _NAME_UP)
     #Statically Linked
 	set(${_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE BOOL "Link with static dependecies")
-	#OPTION(${_NAME_UP}_BUILD_STATIC "Build as static too" ON)
+	#OPTION(${_NAME_UP}_BUILD_STATIC_TOO "Build as static too" ON)
 
     if (${${_NAME_UP}_WITH_STATIC_DEPENDENCIES})
 		add_executable (${TARGET_NAME}_Static ${${_SOURCE_FILES_VAR}} ${${_HEADER_FILES_VAR}})
@@ -292,10 +309,13 @@ macro (add_loadable_module _TARGET_NAME _MAJOR _MINOR)
 
 	string(TOUPPER ${TARGET_NAME} _TARGET_NAME_UP)
 
+	set(${_TARGET_NAME_UP}_BUILD_STATIC_TOO false CACHE INTERNAL "Build static library too" FORCE)
+	set(${_TARGET_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE INTERNAL "Link ${_TARGET_NAME_UP} with static dependecies" FORCE)
+
+	
 #	if(NOT ${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
-	set(${_TARGET_NAME_UP}_BUILD_STATIC false CACHE BOOL "Build static library too" FORCE)
 #	else()
-#		set(${_TARGET_NAME_UP}_BUILD_STATIC true CACHE BOOL "Build static library too" FORCE)
+#		set(${_TARGET_NAME_UP}_BUILD_STATIC_TOO true CACHE BOOL "Build static library too" FORCE)
 #	endif()
 	
 	add_definitions(${LOGGING_DEFENITIONS})
@@ -325,7 +345,7 @@ macro (add_loadable_module _TARGET_NAME _MAJOR _MINOR)
 	
 	share_add_library(${TARGET_NAME} TRUE SOURCE_FILES HEADER_FILES TRUE)
 
-	share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  ${LOGGING_LIBRARIES} )
+	share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} )
 
 	share_add_dependency(${TARGET_NAME} ${CUSTOMER_LIBRARIES})
 endmacro()

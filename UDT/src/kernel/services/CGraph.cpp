@@ -144,7 +144,7 @@ void CRouteGraph::MResetCache()
 }
 
 CRouteGraph::path_t CRouteGraph::MShortestPath(node_t const& start,
-		node_t finish) const
+		node_t  const& finish) const
 {
 	VLOG(2) << "Shortest path from " << start << " to " << finish;
 
@@ -220,10 +220,11 @@ NSHARE::CConfig CRouteGraph::MSerialize() const
 			pathes_t::const_iterator _jt = FPathes.find(_it->first);
 			if (_jt != FPathes.end())
 			{
+				path_info const& _path = _jt->second;
 				{
 					fast_ways_t::const_iterator _rt =
-							_jt->second.FMinDistance.begin(), _rt_end =
-							_jt->second.FMinDistance.end();
+						_path.FMinDistance.begin(), _rt_end =
+						_path.FMinDistance.end();
 					for (; _rt != _rt_end; ++_rt)
 					{
 						NSHARE::CConfig _way("time");
@@ -233,8 +234,8 @@ NSHARE::CConfig CRouteGraph::MSerialize() const
 					}
 				}
 				{
-					roads_t::const_iterator _rt = _jt->second.FPrevious.begin(),
-							_rt_end = _jt->second.FPrevious.end();
+					roads_t::const_iterator _rt = _path.FPrevious.begin(),
+							_rt_end = _path.FPrevious.end();
 					for (; _rt != _rt_end; ++_rt)
 					{
 						NSHARE::CConfig _way("go");
