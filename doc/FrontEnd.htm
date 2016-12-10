@@ -1,0 +1,422 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:10.0pt;
+	margin-left:0cm;
+	line-height:115%;
+	font-size:14.0pt;
+	font-family:"Times New Roman","serif";}
+.MsoChpDefault
+	{font-size:14.0pt;}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:595.3pt 841.9pt;
+	margin:2.0cm 42.5pt 2.0cm 3.0cm;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=RU>
+
+<div class=WordSection1>
+
+<p class=MsoNormal><b>Модуль </b><b><span lang=EN-US>FrontEnd</span></b></p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>Модуль <span lang=EN-US>FrontEnd</span> 
+ядра <span lang=EN-US>UDT</span><span lang=EN-US> </span> предназначен для 
+удобного взаимодействия  пользователя  с внешними интерфейсами и программами.
+Например, если  пользователю необходимо принимать данные по последовательному
+порту, то он может настроить модуль  на открытие последовательного порта, а
+если формат передаваемых данных по последовательному порту отличается от  формата,
+используемого в пределах системы <span lang=EN-US>UDT</span>, то модуль может
+их конвертировать. Таким образом, пользовательское ПО становится более
+универсальным.  </p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>Модуль настраивается при помощи
+конфигурационного файла в теге  front_end_manager. Для создания нового внешнего
+интерфейса необходимо добавить дочерний тег frontend, общий вид тега
+представлен ниже</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>         &quot;<span
+lang=EN-US>frontend</span>&quot;:{</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                   &quot;&lt;тип
+интерфейса&gt;&quot;: &quot;&lt;его настройки&gt;&quot;,</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                   &quot;<span
+lang=EN-US>name</span>&quot;:&quot; &lt;имя в системе <span lang=EN-US>UDT</span>&gt;&quot;,</p>
+
+<p class=MsoNormal style='margin-left:70.8pt;text-indent:35.4pt;line-height:
+normal'>&quot;expl&quot;:&quot;&lt;выходной протокол&gt;&quot;,</p>
+
+<p class=MsoNormal style='margin-left:70.8pt;text-indent:35.4pt;line-height:
+normal'>&quot;<span lang=EN-US>mtu</span>&quot;:&quot;&lt;<span lang=EN-US>mtu</span>&gt;&quot;,</p>
+
+<p class=MsoNormal style='margin-left:70.8pt;text-indent:35.4pt;line-height:
+normal'><span lang=EN-US>&quot;onerror&quot;:&quot;&lt;</span>тип<span
+lang=EN-US>&gt;&quot;,</span></p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'><span
+lang=EN-US>                   &quot;demand&quot;:[</span></p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'><span
+lang=EN-US>                                      {</span></p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'><span
+lang=EN-US>                                      &quot;f&quot;:&quot;&lt;</span>от
+кого<span lang=EN-US>&gt;&quot;,</span></p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'><span
+lang=EN-US>                                      </span>&quot;<span lang=EN-US>pl</span>&quot;:&quot;&lt;протокол&gt;&quot;,</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                                      &quot;<span
+lang=EN-US>num</span>&quot;:&quot;номер сообщения&quot;</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                                      }</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                                      ]</p>
+
+<p class=MsoNormal style='text-indent:35.4pt;line-height:normal'>                            }</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>В теге &quot;&lt;тип интерфейса&gt;&quot;
+содержится информация необходимая для настройки интерфейса. Типы доступных
+интерфейсов и их параметры представлены в таблице ниже.</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>&nbsp;</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>&nbsp;</p>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse;border:none'>
+ <tr>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Тип</p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border:solid windowtext 1.0pt;
+  border-left:none;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Имя в настроечном фале</p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border:solid windowtext 1.0pt;
+  border-left:none;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Настройки</p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>TCP </span>сервер и клиент</p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>tcp</span></p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Для сервера:</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+  35.4pt;line-height:normal'>&quot;<span lang=EN-US>port</span><span
+  lang=EN-US> </span>&quot;:&quot;&lt;порт&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Для клиента:</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+  35.4pt;line-height:normal'>&quot;<span lang=EN-US>port</span><span
+  lang=EN-US> </span>&quot;:&quot;&lt;порт&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+  35.4pt;line-height:normal'>&quot;<span lang=EN-US>ip</span><span lang=EN-US> </span>&quot;:&quot;&lt;<span
+  lang=EN-US>ip</span><span lang=EN-US> </span>адрес&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&nbsp;</p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>PIPE </span>Клиент и сервер<sup><span lang=EN-US>1</span></sup></p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>pipe</span>_<span lang=EN-US>server</span>  - для
+  сервера,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>pipe</span>  - для клиента</p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Сервер:</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+  35.4pt;line-height:normal'>&quot;<span lang=EN-US>path</span><span
+  lang=EN-US> </span>&quot;:&quot;&lt;путь  к файлу чтения&gt;&quot;,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+  35.4pt;line-height:normal'>&quot;<span lang=EN-US>client</span>&quot;:[&quot;&lt;
+  путь  к файлу записи  1&gt;&quot;,&quot;&lt; путь  к файлу записи  2&gt;&quot;]</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Клиент:</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>         &quot;<span lang=EN-US>path</span><span lang=EN-US> </span>&quot;:&quot;&lt;путь 
+  к файлу чтения&gt;&quot;,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>   &quot;<span lang=EN-US>server</span>_<span lang=EN-US>path</span>&quot;:&quot;&lt;путь 
+  к файлу записи&gt;&quot;</p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>Unix </span>сокет<sup><span lang=EN-US>2</span></sup></p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>unix_dgram – для датаграмм</p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>         &quot;<span lang=EN-US>from</span>&quot;:&quot;&lt; путь  к
+  файлу чтения&gt;&quot;    &quot;<span lang=EN-US>to</span>&quot;:&quot;&lt;
+  путь  к файлу записи &gt;&quot;</p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Последовательный порт</p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>rs232</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>rs485</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>rs422</span></p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>         &quot;notation&quot;:&quot;&lt;</span>нотация<span
+  lang=EN-US>: 8N1, 7E1, 7O1, 7M1, 7S1&gt;&quot;,</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>         </span>&quot;<span lang=EN-US>speed</span>&quot;:&quot;&lt;скорость&gt;&quot;,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>         &quot;<span lang=EN-US>path</span>&quot;:&quot;&lt;путь&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&nbsp;</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&nbsp;</span></p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>UDP</span></p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>udp</span></p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>         &quot;toip&quot;:{                                  &quot;ip&quot;:&quot;&lt;<span
+  lang=EN-US>ip</span><span lang=EN-US> </span>получателя&gt;&quot;,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>                     &quot;port&quot;:&quot;&lt;порт получателя &gt;&quot;},</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>         &quot;port&quot;:&quot;&lt;прослушиваемый  порт&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&nbsp;</p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Запись и чтение из файла <sup>3</sup></p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>file</span></p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&quot;file&quot; :[ </span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>{</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&quot;direction&quot;:&quot;out&quot;,</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&quot;<span lang=EN-US>path</span>&quot;:&quot;&lt;пут ь к файлу&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>},</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>{</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&quot;direction&quot;:&quot;in&quot;,</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>&quot;path&quot;:&quot;&lt;</span>пут ь к файлу<span
+  lang=EN-US>&gt;&quot;,</span></p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&quot;<span lang=EN-US>size</span>&quot;:&quot;&lt;размер
+  передаваемого блока данных&gt;&quot;,</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&quot;<span lang=EN-US>period</span>&quot;:&quot;&lt;период передачи
+  блока данных&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>}</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>]</span></p>
+  </td>
+ </tr>
+ <tr style='height:62.85pt'>
+  <td width=194 valign=top style='width:145.45pt;border:solid windowtext 1.0pt;
+  border-top:none;padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>Петля (Все получаемые данные передаются обратно)</p>
+  </td>
+  <td width=117 valign=top style='width:87.45pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'><span lang=EN-US>loop</span></p>
+  </td>
+  <td width=328 valign=top style='width:245.65pt;border-top:none;border-left:
+  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+  padding:0cm 5.4pt 0cm 5.4pt;height:62.85pt'>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&quot;<span lang=EN-US>loop</span>&quot;:{</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>&quot;<span lang=EN-US>max</span>_<span lang=EN-US>speed</span>&quot;:&quot;&lt;имитируемая
+  скорость канала&gt;&quot;</p>
+  <p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;line-height:
+  normal'>}</p>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+35.4pt;line-height:normal'><sup><span style='font-size:10.0pt'>1</span></sup><span
+style='font-size:10.0pt'> Реализация в </span><span lang=EN-US
+style='font-size:10.0pt'>windows</span><span style='font-size:10.0pt'> и </span><span
+lang=EN-US style='font-size:10.0pt'>unix</span><span lang=EN-US
+style='font-size:10.0pt'> </span><span style='font-size:10.0pt'>отличаются</span></p>
+
+<p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+35.4pt;line-height:normal'><sup><span style='font-size:10.0pt'>2 </span></sup><span
+style='font-size:10.0pt'>Аналогов в </span><span lang=EN-US style='font-size:
+10.0pt'>windows</span><span style='font-size:10.0pt'> не существуют</span></p>
+
+<p class=MsoNormal style='margin-bottom:0cm;margin-bottom:.0001pt;text-indent:
+35.4pt;line-height:normal'><sup><span style='font-size:10.0pt'>3</span></sup><span
+style='font-size:10.0pt'> Интерфейс может быть как однонаправленный, так и
+двунаправленный.   Соответственно, если присутствуют настройки   как для &quot;</span><span
+lang=EN-US style='font-size:10.0pt'>direction</span><span style='font-size:
+10.0pt'>&quot;:&quot;</span><span lang=EN-US style='font-size:10.0pt'>out</span><span
+style='font-size:10.0pt'>&quot; и &quot;</span><span lang=EN-US
+style='font-size:10.0pt'>direction</span><span style='font-size:10.0pt'>&quot;:&quot;</span><span
+lang=EN-US style='font-size:10.0pt'>in</span><span style='font-size:10.0pt'>&quot;
+то интерфейс двунаправленный, в ином случае однонаправленный.</span></p>
+
+<p class=MsoNormal style='text-indent:35.4pt'> В теге &quot;&lt;<span
+lang=EN-US>name</span>&gt;&quot; указывается  имя, по которому будет доступен
+фронтенд. </p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>В теге &quot;&lt;expl &gt;&quot;  указывается
+используемый для работы с интерфейсом  протокол, если нет необходимости
+преобразовывать  протоколы, то тег не указывается. <i>В текущей версии тег не
+поддерживается, поэтому тег указывать не надо или нужно в качестве протокола
+указать </i><i><span lang=EN-US>raw</span>. Все данные передаются по </i><i><span
+lang=EN-US>raw</span><span lang=EN-US> </span>протоколу.</i></p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>В теге &quot; <span lang=EN-US>mtu</span>
+&quot; указываются ограничения на передачу данных по интерфейсу (см. настройка
+ограничений на канал). Если ограничений нет, то тег не указывается.</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>В теге &quot;<span lang=EN-US>demand</span>&quot;
+содержится информация, какие данные и от кого  отсылаются по интерфейсу.  Тег
+представляет собой массив содержащий объекты с полями &quot;<span lang=EN-US>f</span>&quot;,&quot;<span
+lang=EN-US>pl</span>&quot;,  &quot;<span lang=EN-US>ver</span>&quot;, &quot;<span
+lang=EN-US>rh</span>&quot; или другие.  В теге &quot;<span lang=EN-US>f</span>&quot;
+указывается от кого получать пакет, в теге &quot;<span lang=EN-US>pl</span>&quot;
+указывается название протокола. Далее сложнее. Если указан тег &quot;<span
+lang=EN-US>rh</span>&quot; то структура  required_header_t  заполняется
+следующим образом: поле FVersion  берётся из тега &quot;<span lang=EN-US>ver</span>&quot;
+(формат значения тега &quot;&lt;<span lang=EN-US>major</span>&gt;.&lt;<span
+lang=EN-US>minor</span>&gt;.&lt;<span lang=EN-US>revision</span>&gt;&quot;), а
+поле FReserved берётся из тега &quot;<span lang=EN-US>rh</span>&quot;, значение
+которого должно быть задано в формате <span lang=EN-US>base</span>64. Если тег &quot;<span
+lang=EN-US>rh</span>&quot; не указан, то для заполнения структуры required_header_t 
+будет вызван метод MHeader протокола указанного в &quot;<span lang=EN-US>pl</span>&quot;.
+Если тег в теге &quot;<span lang=EN-US>pl</span>&quot; указан протокол <span
+lang=EN-US>raw</span>, то номер сообщения будет считан из поля «<span
+lang=EN-US>num</span>».</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>Все сообщения отправляются по
+интерфейсу последовательно, т.е. до тех пор, пока сообщение от одной программы
+не будет передано, сообщения от других  программ будут буферизироваться. Если
+при передаче сообщения произойдёт сбой, то выбор действия зависит от  тега &quot;<span
+lang=EN-US>onerror</span>&quot;: &quot;<span lang=EN-US>close</span>&quot;,&quot;<span
+lang=EN-US>reopen</span>&quot;, &quot;<span lang=EN-US>ignor</span>&quot;. По
+умолчанию, &quot;<span lang=EN-US>onerror</span>&quot;<span lang=EN-US>:</span>&quot;<span
+lang=EN-US>ignor</span>&quot;.</p>
+
+<p class=MsoNormal style='text-indent:35.4pt'>После создания фронтенда он
+интерфейс будет доступен в системе <span lang=EN-US>UDT</span><span lang=EN-US>
+</span>под именем указном в теге &quot;<span lang=EN-US>name</span>&quot;.
+Получение данных осуществляется обычном способом, необходимо создать «запрос»
+на получение данных, подробнее см. руководство. <i>При использовании </i><i><span
+lang=EN-US>raw</span><span lang=EN-US> </span>протокола, номер всех сообщений
+равен нулю.</i></p>
+
+</div>
+
+</body>
+
+</html>
