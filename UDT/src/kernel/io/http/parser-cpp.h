@@ -147,7 +147,10 @@ extern NSHARE::CText http_error_description(eHtppError);
 extern NSHARE::CText http_status_str(eStatusCode);
 struct CUrl
 {
-	typedef std::map<NSHARE::CText,NSHARE::CText> qeury_t;
+	struct qeury_t:std::map<NSHARE::CText,NSHARE::CText>
+	{
+		 ;
+	};
 	CUrl();
 	CUrl(NSHARE::CText const& aFrom, bool aIsConnect = false,
 			NSHARE::ICodeConv const& aType = NSHARE::CCodeUTF8());
@@ -203,6 +206,17 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::CUrl const& aVal)
 {
 	aVal.MPrint(aStream);
+	return aStream ;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::CUrl::qeury_t const& aVal)
+{
+	NUDT::CUrl::qeury_t::const_iterator _it =aVal.begin(), _it_end(
+			aVal.end());
+	for (; _it != _it_end; ++_it)
+	{
+		aStream << _it->first << " = " << _it->second << ", ";
+	}
 	return aStream ;
 }
 }

@@ -437,13 +437,8 @@ std::ostream& CUrl::MPrint(std::ostream& aStream) const
 			aStream << std::endl << MPath();
 		if (!MQuery().empty())
 		{
-			qeury_t::const_iterator _it = MQuery().begin(), _it_end(
-					MQuery().end());
 			aStream << std::endl;
-			for (; _it != _it_end; ++_it)
-			{
-				aStream << _it->first << " = " << _it->second << ", ";
-			}
+			aStream<<MQuery();
 
 		}
 		if (MFragment().MIs())

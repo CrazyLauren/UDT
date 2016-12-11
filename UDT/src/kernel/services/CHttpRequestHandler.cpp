@@ -16,6 +16,7 @@
 #include "../core/IState.h"
 #include "../core/CDescriptors.h"
 #include "../core/CDataObject.h"
+#include "../core/CDiagnostic.h"
 #include "CHttpRequestHandler.h"
 #include "../io/CKernelIo.h"
 #include "../io/http/CHttpRequest.h"
@@ -53,40 +54,53 @@ int CHttpRequestHandler::sMHandleRequestId(CHardWorker* WHO, args_data_t* WHAT,
 	_this->MHandleFrom(&_p->FVal, _p->FId);
 	return 0;
 }
-void CHttpRequestHandler::MHandleFrom(CHttpRequest const* aRequest, descriptor_t aFrom)
+void CHttpRequestHandler::MHandleFrom(CHttpRequest const* aRequest,
+		descriptor_t aFrom)
 {
+	std::cout << *aRequest << std::endl;
+
+	NSHARE::smart_field_t<CUrl> const& _url = aRequest->MUrl();
+	eHtppMethod const _method(aRequest->MMethod());
+
 	CHttpResponse _response;
-	_response.MSetStatus(E_STARUS_OK);
-	_response.MAppendHeader("Server", "UDT");
-	_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
-	_response.MAppendHeader("Connection", "keep-alive");
+	eStatusCode _code(E_STARUS_UNINITIALIZED);
 
-	NSHARE::CBuffer _data;
-	NSHARE::smart_field_t<CUrl> const& _url=aRequest->MUrl();
-	if(_url.MIs())
+	if (_method == E_GET || _method == E_POST)
 	{
-		std::cout<<_url.MGetConst().MPath()<<std::endl;
-		NSHARE::CText _path="q:/workspaces/workspace-aptana/kernel/WebContent"+_url.MGetConst().MPath();
-		std::ifstream _stream;
-		_stream.open(_path.c_str());
-		if(_stream.is_open())
+		if (!_url.MGetConst().MQuery().empty())
 		{
-			std::stringstream buffer;
-			buffer << _stream.rdbuf();
-
-			_response.MSetBody( buffer.str());
-			_data = _response.MRaw();
-
+			CUrl::qeury_t  _query = _url.MGetConst().MQuery();
+			NSHARE::CText const _what = _query["query"];
+			if (!_what.empty())
+			{
+				NSHARE::CConfig const _conf(
+						CDiagnostic::sMGetInstance().MSerialize(_what,
+								_query.find("deep") != _query.end()));
+				if (!_conf.MIsEmpty())
+				{
+					_code = E_STARUS_OK;
+					_response.MSetBody(_conf.MToJSON());
+					_response.MAppendHeader("Content-Type", "application/json; charset=utf-8");
+				}
+				else
+					_code = E_STARUS_BAD_REQUEST;
+			}
+			else
+				_code = E_STARUS_METHOD_NOT_ALLOWED;
+		}
+		else
+		{
+			_code=E_STARUS_OK;
+			_response.MSetBody("UDT core welcome you!!!");
+			_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
 		}
 	}
-	if (_data.empty())
-	{
-		_response.MSetBody("UDT core welcome you!!!");
+	_response.MSetStatus(_code);
+	_response.MAppendHeader("Server", "UDT");
+	_response.MAppendHeader("Connection", "keep-alive");
 
-		_data = _response.MRaw();
-	}
-	if(!_data.empty())
-		CKernelIo::sMGetInstance().MSendTo(aFrom, _data);
+	CKernelIo::sMGetInstance().MSendTo(aFrom,  _response.MRaw());
+
 	CKernelIo::sMGetInstance().MClose(aFrom);
 }
 } /* namespace NUDT */

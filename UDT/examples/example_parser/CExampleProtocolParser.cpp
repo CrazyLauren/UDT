@@ -49,13 +49,6 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 	return _result;
 
 }
-NSHARE::CText CExampleProtocolParser::MToString(
-		const required_header_t& aHeader) const
-{
-	NSHARE::CText _text;
-	_text.MPrintf("# %d",aHeader.FNumber);
-	return _text;
-}
 NUDT::required_header_t CExampleProtocolParser::MHeader(
 		const NSHARE::CConfig& aFrom) const
 {

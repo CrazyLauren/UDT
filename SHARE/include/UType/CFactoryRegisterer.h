@@ -39,7 +39,7 @@ public:
 	{
 		NSHARE::CConfig _conf("reg");
 		_conf.MAdd("Type",FType);
-		_conf.MAdd("ver",FVersion.MSerialize());
+		_conf.MAdd(FVersion.MSerialize());
 		return _conf;
 	}
 protected:

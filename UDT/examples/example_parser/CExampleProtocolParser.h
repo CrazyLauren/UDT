@@ -31,7 +31,6 @@ public:
 	virtual NUDT::required_header_t MHeader(const NSHARE::CConfig& aFrom) const;
 	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t&) const;
 
-	virtual NSHARE::CText MToString(const NUDT::required_header_t&) const;
 
 private:
 };

@@ -441,7 +441,7 @@ NSHARE::CConfig IMPL::MSerialize() const
 	_conf.MAdd("conf",FConfig);
 	_conf.MAdd("desc",Fd);
 	_conf.MAdd(DEMAND,FDemands.MSerialize());
-	_conf.MAdd(FRONTEND_NAME,FProtocol);
+	_conf.MAdd(EXIT_PROTOCOL,FProtocol);
 	_conf.MAdd("info",FProgId.MSerialize());
 
 	return _conf;
