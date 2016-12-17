@@ -31,7 +31,7 @@
 using namespace NSHARE;
 namespace NUDT
 {
-NSHARE::CText const CKernelIOByTCPClient::NAME = "tcp_client_manager";
+NSHARE::CText const CKernelIOByTCPClient::NAME = "tcp_client_io_manager";
 
 
 
@@ -182,7 +182,7 @@ inline bool CKernelIOByTCPClient::MSendImpl(const user_data_t& _id,
 	LOG(ERROR)<< "No  channel for " << aTo;
 	return false;
 }
-bool CKernelIOByTCPClient::MSend(const programm_id_t& _id,
+bool CKernelIOByTCPClient::MSend(const program_id_t& _id,
 		descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)
 {
 	return MSendImpl(_id, aTo,aRoute,aError);
@@ -294,7 +294,7 @@ NSHARE::CConfig CKernelIOByTCPClient::MSerialize() const
 	return _conf;
 }
 
-NSHARE::CText const CKernelIOByTCPClientRegister::NAME="tcp_client_manager";
+NSHARE::CText const CKernelIOByTCPClientRegister::NAME="tcp_client_io_manager";
 CKernelIOByTCPClientRegister::CKernelIOByTCPClientRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 3))
 {

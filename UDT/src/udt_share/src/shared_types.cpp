@@ -163,7 +163,7 @@ kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 	aConf.MGetIfSet(TIME, FConnectTime);
 	aConf.MGetIfSet(LINK, FTypeLink);
 }
-kernel_link::kernel_link(programm_id_t const& aInfo, uint16_t aLink):
+kernel_link::kernel_link(program_id_t const& aInfo, uint16_t aLink):
 		FProgramm(aInfo),//
 		FConnectTime(NSHARE::get_unix_time()),//
 		FLatency(aLink)//
@@ -515,7 +515,7 @@ progs_id_t::progs_id_t(NSHARE::CConfig const& aConf)
 	for (; _it != _set.end(); ++_it)
 	{
 		VLOG(5) << "Push info " << *_it;
-		insert(programm_id_t(*_it));
+		insert(program_id_t(*_it));
 	}
 }
 NSHARE::CConfig progs_id_t::MSerialize() const

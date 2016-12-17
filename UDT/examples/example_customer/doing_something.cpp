@@ -99,7 +99,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 	STREAM_MUTEX_LOCK
 	if(!_recv_arg->FConnected.empty())
 	{
-		std::set<programm_id_t>::const_iterator _it=_recv_arg->FConnected.begin(),_it_end(_recv_arg->FConnected.end());
+		std::set<program_id_t>::const_iterator _it=_recv_arg->FConnected.begin(),_it_end(_recv_arg->FConnected.end());
 		std::cout << "Connected customers:";
 		for (; _it != _it_end; ++_it)
 		{
@@ -110,7 +110,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 	if(!_recv_arg->FDisconnected.empty())
 	{
 		std::cout << "Disconnected customers:";
-		std::set<programm_id_t>::const_iterator _it =
+		std::set<program_id_t>::const_iterator _it =
 				_recv_arg->FDisconnected.begin(), _it_end(
 				_recv_arg->FDisconnected.end());
 		for (; _it != _it_end; ++_it)

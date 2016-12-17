@@ -21,6 +21,8 @@
 #include <netinet/in.h>                     // sockaddr_in
 #include <arpa/inet.h>                      // htons, htonl
 #include <unistd.h>
+#else
+#include <ws2tcpip.h> //socklen_t
 #endif //#ifndef WIN32
 #include <Socket/print_socket_error.h>
 #define UDP_BUFFER_SIZE USHRT_MAX
@@ -171,105 +173,42 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 		LOG(ERROR)<< "The socket is not working";
 		return 0;
 	}
-#ifndef _WIN32
-	int _recvd = recvfrom(MGetSocket().MGet(), (char*) &_recvd, 1, MSG_PEEK,
-			NULL, NULL);
-	if (_recvd >= 0)
-	{
-		if (!MGetSocket().MIsValid()) //closed
-			return -1;
-		struct sockaddr_in _addr;
-		socklen_t _len = sizeof(_addr);
-		const size_t _befor = aBuf->size();
-		const size_t _size = MAvailable();
-
-		VLOG(2) << "Available " << _size << " bytes";
-		VLOG_IF(1,!_size) << "No data on socket " << MGetSocket();
-		aBuf->resize(_befor + _size);
-		CHECK_GT(aBuf->size(), 0);
-		CHECK_GE(aBuf->size(), _size);
-		_recvd = recvfrom(MGetSocket().MGet(),
-				(uint8_t*) &aBuf->front() + (aBuf->size() - _size), _size, 0,
-				(struct sockaddr*) &_addr, &_len);
-		VLOG(2) << "Recvd=" << _recvd;
-		if (aFrom)
-		{
-			LOG_IF(ERROR,_len==0) << "Length of address is 0.";
-			if (_len > 0)
-			{
-				aFrom->ip = inet_ntoa(_addr.sin_addr);
-				aFrom->port = ntohs(_addr.sin_port);
-				VLOG(2) << "From " << *aFrom;
-			}
-		}
-		aBuf->resize(_befor + _recvd);
-		VLOG(0) << "Reads " << _recvd << " bytes";
-		FDiagnostic.MRecv(_recvd);
-		return _recvd;
-	}
-	else
-	{
-		LOG(ERROR)<< "Unknown error:" << print_socket_error();
-		return -1; //FIXME
-	}
-#else
 	int _recvd = 0;
-
-	if (!MGetSocket().MIsValid()) //closed
-	return -1;
-
-	struct sockaddr_in _addr;
-	int _len = sizeof(_addr);
-	if (!FBuffer)
+	_recvd = recvfrom(MGetSocket().MGet(), (char*) &_recvd, 1, MSG_PEEK,
+			NULL, NULL);
+#ifdef _WIN32
+	//WTF? Fucking windows. If the received msg is more than the buffer size,
+	//it generates the WSAEMSGSIZE error. But The buffer is always small as
+	//it is 1 byte!!!!!
+	if (_recvd >= 0//
+					|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
+#else
+	if (_recvd >= 0)
+#endif
 	{
-		FBufferSize = std::numeric_limits<uint16_t>::max();
-		FBuffer = new uint8_t[FBufferSize];
-	}
-	bool _is_no_bug = false;
-	for (HANG_INIT; !_is_no_bug; HANG_CHECK)
-	{
-
-		size_t _size = MAvailable();
-		VLOG(2) << "Available " << _size << " bytes";
-
-		_recvd = recvfrom(MGetSocket().MGet(), (char*) FBuffer,static_cast<int>( FBufferSize), 0,
-				(struct sockaddr*) &_addr, &_len);
-		if (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError())
-		//WTF? Fucking windows. If the received msg is more than the buffer size,
-		//it generates the WSAEMSGSIZE error.
+		if (MGetSocket().MIsValid()) //closed
 		{
-
-			_size = MAvailable();
-			VLOG(2) << "Available " << _size << " bytes";
-			if (_size > sizeof(FBuffer))
-			{
-				delete[] FBuffer;
-				FBufferSize = _size;
-				FBuffer = new uint8_t[FBufferSize];
-			}
-			else
-			{
-				LOG(ERROR)<< "Fucking windows. What do you what from me?";
-
-				delete[] FBuffer;
-				FBufferSize+=100;
-				FBuffer = new uint8_t[FBufferSize];
-			}
-			continue;
-		}
-		_is_no_bug = true;
-		if (_recvd >= 0)
-		{
+			struct sockaddr_in _addr;
+			socklen_t _len = sizeof(_addr);
 			const size_t _befor = aBuf->size();
-			VLOG(0) << "Reads " << _recvd << " bytes. Buffer size = "
-			<< _befor;
-			aBuf->resize(_befor + (size_t)_recvd);
-			CHECK_GE((int)aBuf->size() - _recvd,0);
-			CHECK_LE((int)aBuf->size() - _recvd,(int)aBuf->size());
+			const size_t _size = MAvailable();
 
-			uint8_t* const _first = (uint8_t*)aBuf->ptr() + _befor;
-
-			memcpy(_first, FBuffer, _recvd);
+			VLOG(2) << "Available " << _size << " bytes";
+			VLOG_IF(1,!_size) << "No data on socket " << MGetSocket();
+			aBuf->resize(_befor + _size);
+			CHECK_GT(aBuf->size(), 0);
+			CHECK_GE(aBuf->size(), _size);
+			data_t::value_type* _pbegin=aBuf->ptr()+(aBuf->size() - _size);
+#ifdef _WIN32
+			_recvd = recvfrom(MGetSocket().MGet(),
+					(char*) _pbegin, _size,
+					0, (struct sockaddr*) &_addr, &_len);
+#else
+			_recvd = recvfrom(MGetSocket().MGet(),
+					_pbegin, _size,
+					0, (struct sockaddr*) &_addr, &_len);
+#endif
+			VLOG(2) << "Recvd=" << _recvd;
 			if (aFrom)
 			{
 				LOG_IF(ERROR,_len==0) << "Length of address is 0.";
@@ -280,29 +219,34 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 					VLOG(2) << "From " << *aFrom;
 				}
 			}
+			aBuf->resize(_befor + _recvd);
+			VLOG(0) << "Reads " << _recvd << " bytes";
 			FDiagnostic.MRecv(_recvd);
-			return _recvd;
 		}
 		else
-		{
+			_recvd = -1;
+	}
+	if (_recvd <= 0)
+	{
 #ifdef _WIN32
 			int const _errno=::WSAGetLastError();
 			if(_errno==WSAECONNRESET)//Thank you Bill Gates for your care!
 				//It's error  mean that  The packet has been SENT to closed port
-				_is_no_bug=false;
+				{
+					VLOG(1)<< "WSAECONNRESET"<<_errno;
+					_recvd=0;
+				}
 			else
 			{
 				LOG(ERROR)<< "Unknown error:"<<_errno;
-				return -1;
+				_recvd=-1;
 			}
 #else
 			LOG(ERROR)<< "Unknown error:" << print_socket_error();
-			return -1; //FIXME
+			_recvd=-1;
 #endif
-		}
 	}
-#endif
-	return -1;
+	return _recvd;
 }
 CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize, NSHARE::CConfig const& aTo)
 {

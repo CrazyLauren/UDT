@@ -58,7 +58,7 @@ public:
 	void MNoteFailSend(std::vector<user_data_info_t> const& aWhat,descriptor_t aTo);
 
 
-	void MReceivedData(programm_id_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
+	void MReceivedData(program_id_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
 	void MReceivedData(user_data_t const& aWhat, const descriptor_t& aFrom);
 	void MReceivedData(demand_dgs_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
 	void MReceivedData(demand_dgs_for_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);

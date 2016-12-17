@@ -40,8 +40,8 @@ public:
 		;
 	}
 
-	virtual bool MSend(const programm_id_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
-	virtual void MReceivedData(programm_id_t const&, const routing_t& aFrom,error_info_t const&)
+	virtual bool MSend(const program_id_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
+	virtual void MReceivedData(program_id_t const&, const routing_t& aFrom,error_info_t const&)
 	{
 		;
 	}

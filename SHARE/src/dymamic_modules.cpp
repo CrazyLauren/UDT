@@ -96,9 +96,6 @@ static void add_suffixes(CText& name)
 //----------------------------------------------------------------------------//
 static String get_module_env_var()
 {
-//	if (const char* envModuleDir = getenv(MODULE_DIR_VAR_NAME))
-//		return String(envModuleDir);
-//
 	//TODO
 	return String();
 }

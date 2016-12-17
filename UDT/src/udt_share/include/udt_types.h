@@ -21,18 +21,18 @@ struct required_header_t
 
 	union //using for  header dg specification
 	//
-	//The fixed size (32 byte) "union"  is be used to avoid
+	//The fixed size (8 byte) "union"  is be used to avoid
 	//frequently "required_header_t" structure changing.
 	//For example, when running "documentation playing",
 	//it is necessary to set the second dg type (playing dg type)
 	//in additional to setting the main dg type (dg "wrapper").
 	{
-		struct //header style of gamma,furke etc
+		struct //header style of
 		{
 			uint32_t FNumber;
 			//uint32_t FSize; //removing to avoid error
 		};
-		uint8_t FReserved[32];
+		uint8_t FReserved[8];
 	};
 
 #ifdef SHARE_CONFIG_DEFINED

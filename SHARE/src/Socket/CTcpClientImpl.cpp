@@ -122,7 +122,7 @@ ssize_t IMPL::MReceiveData(data_t* aBuf, const float aTime)
 #else
 			if (_recvd >= 0)
 #endif
-			_recvd=MReadData(aBuf,FSock);
+				_recvd=MReadData(aBuf,FSock);
 
 			if (_recvd <= 0)
 			_is_error = true;

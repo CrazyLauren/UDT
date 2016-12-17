@@ -26,7 +26,7 @@ CExampleProtocolParser::~CExampleProtocolParser()
 }
 
 CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
-		const uint8_t* aItBegin, const uint8_t* aItEnd,uint8_t aMask)
+		const uint8_t* aItBegin, const uint8_t* aItEnd,uint8_t aMask, required_header_t const*)
 {
 	//Parsing buffer aItBegin:aItEnd
 	result_t _result;
@@ -66,6 +66,10 @@ NSHARE::CConfig CExampleProtocolParser::MToConfig(
 	return _conf;
 }
 //The code below is trivial for all parsers.
+//You can use REGISTRE_ONLY_ONE_PROTOCOL_MODULE or define class register(see below)
+
+//REGISTRE_ONLY_ONE_PROTOCOL_MODULE(CExampleProtocolParser,EXAMPLE_PARSER)
+
 CExampleRegister::CExampleRegister() :
 		NSHARE::CFactoryRegisterer(NAME,NSHARE::version_t(0,1))
 {
@@ -88,6 +92,7 @@ bool CExampleRegister::MIsAlreadyRegistered() const
 
 }
 
+#if !defined(EXAMPLE_PARSER_STATIC)
 static NSHARE::factory_registry_t g_factory;
 extern "C" EXAMPLE_PARSER_EXPORT NSHARE::factory_registry_t* get_factory_registry()
 {
@@ -97,3 +102,10 @@ extern "C" EXAMPLE_PARSER_EXPORT NSHARE::factory_registry_t* get_factory_registr
 	}
 	return &g_factory;
 }
+#else//#if !defined(EXAMPLE_PARSER_STATIC)
+#	include <load_static_module.h>
+namespace
+{
+	static NUDT::CStaticRegister< CExampleRegister> _reg;
+}
+#endif

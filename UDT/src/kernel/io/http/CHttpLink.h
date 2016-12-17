@@ -24,7 +24,7 @@ public:
 	virtual ~CHttpLink();
 	void MReceivedData(CHttpRequest const& FRequest);
 	virtual bool MSend(const data_t& aVal);
-	virtual bool MSend(const programm_id_t& aVal, const routing_t& aRoute,error_info_t const&);
+	virtual bool MSend(const program_id_t& aVal, const routing_t& aRoute,error_info_t const&);
 	virtual bool MSend(const user_data_t& aVal);
 	virtual bool MSend(const kernel_infos_array_t& aVal, const routing_t& aRoute,error_info_t const&);
 	virtual bool MSend(const demand_dgs_for_t& aVal, const routing_t& aRoute,error_info_t const&);

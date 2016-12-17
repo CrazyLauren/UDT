@@ -20,7 +20,7 @@
 using namespace NSHARE;
 namespace NUDT
 {
-const NSHARE::CText CExternalChannel::NAME = "front_end_manager";
+const NSHARE::CText CExternalChannel::NAME = "front_end_io_manager";
 CExternalChannel::CExternalChannel() :
 		IIOManager(NAME)
 {
@@ -144,10 +144,10 @@ inline bool CExternalChannel::MSendImpl(const user_data_t& _id,
 	LOG(ERROR)<< "No  channel for " << aTo;
 	return false;
 }
-bool CExternalChannel::MSend(const programm_id_t& _id,
+bool CExternalChannel::MSend(const program_id_t& _id,
 		descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)
 {
-	LOG(DFATAL)<<"Front end does't handle programm_id_t";
+	LOG(DFATAL)<<"Front end does't handle program_id_t";
 	return false;
 }
 

@@ -17,7 +17,10 @@
 		"tcp_io_manager":{
 			"consumer":{
 				"channel_for":{
-					"default":"sm"
+					"default":"sm",
+					"@guex":"udp",
+					"uex@guex":"sm",
+					"uex2@guex":"sm"
 				}
 			},
 			"udt_server":{
@@ -25,12 +28,12 @@
 					"default":"tcpser"
 				}
 			},
-			"links":["consumer","udt_server","http"]
+			"protocol":["consumer","udt_server","http"]
 		},
-		"tcp_client_manager":{
+		"tcp_client_io_manager":{
 			
 		},
-		"front_end_manager":
+		"front_end_io_manager":
 		{
 			"frontend":{
 			}

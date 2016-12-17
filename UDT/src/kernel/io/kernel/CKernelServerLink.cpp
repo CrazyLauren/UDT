@@ -37,11 +37,12 @@ namespace NUDT
 
 NSHARE::CText const CKernelServerLink::MAIN_CHANNEL_TYPE="channel_for";
 NSHARE::CText const CKernelServerLink::DEFAULT="default";
+NSHARE::CText const CKernelServerLink::DEFAULT_MAIN = "tcpser";
 NSHARE::CText const CKernelServerLink::NAME="udt_server";
 static const NSHARE::CText NEW_NAME = CKernelServerLink::NAME;
 
 CKernelServerLink::CKernelServerLink(descriptor_t aFD, uint64_t aTime,
-		ILinkBridge* aKer, programm_id_t const & aKernel) :
+		ILinkBridge* aKer, program_id_t const & aKernel) :
 		ILink(NAME,aTime),//
 		FServiceParser(this),//
 		FBridge(aKer),//
@@ -163,7 +164,7 @@ void CKernelServerLink::MReceivedData(user_data_t const& _user)
 	else
 		FpUserDataFor=SHARED_PTR<user_data_t>(new user_data_t(_user));
 }
-void CKernelServerLink::MReceivedData(programm_id_t const& _customer,
+void CKernelServerLink::MReceivedData(program_id_t const& _customer,
 		const routing_t& aRoute,error_info_t const& aError)
 {
 	if(FKernel!=_customer)
@@ -213,8 +214,8 @@ inline unsigned CKernelServerLink::MFill<fail_send_t>(data_t* _buf,
 }
 
 template<>
-inline unsigned CKernelServerLink::MFill<programm_id_t>(data_t* _buf,
-		const programm_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
+inline unsigned CKernelServerLink::MFill<program_id_t>(data_t* _buf,
+		const program_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
 {
 	return serialize<requiest_info2_t>(_buf,_id,aRoute,aError);
 }
@@ -332,7 +333,7 @@ void CKernelServerLink::MProcess(dg_info2_t const* aP, parser_t* aThis)
 {
 	routing_t _uuid;
 	error_info_t _err;
-	programm_id_t _customer(deserialize<dg_info2_t,programm_id_t>(aP,&_uuid,&_err));
+	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,&_uuid,&_err));
 	MReceivedData(_customer,_uuid,_err);
 }
 template<>
@@ -425,7 +426,7 @@ void CKernelServerLink::MChangeState(eState aNew)
 	VLOG(2)<<"New state "<<aNew<<" Previous "<<FState;
 	FState=aNew;
 }
-bool CKernelServerLink::MSend(const programm_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MSend(const program_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
 {
 	data_t _buf;
 	MFill(&_buf, _id,aRoute,aError);
@@ -478,7 +479,7 @@ bool CKernelServerLink::MSendService(const data_t& aVal)
 }
 NSHARE::CText CKernelServerLink::MGetMainChannelType(bool aDefOnly)
 {
-	NSHARE::CText _val;
+	NSHARE::CText _val(DEFAULT_MAIN);
 	NSHARE::CConfig _configure;
 	FBridge->MConfig(_configure);
 	if(!_configure.MIsEmpty())

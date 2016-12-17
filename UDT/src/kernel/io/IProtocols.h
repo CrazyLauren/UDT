@@ -28,7 +28,7 @@ public:
 		return MSend(aVal, aTo);
 	}
 
-	virtual bool MSend(const programm_id_t& aVal, descriptor_t const& aFrom, const routing_t& aRoute=routing_t(),error_info_t const& =error_info_t())=0;
+	virtual bool MSend(const program_id_t& aVal, descriptor_t const& aFrom, const routing_t& aRoute=routing_t(),error_info_t const& =error_info_t())=0;
 	virtual bool MSend(const user_data_t& aVal, descriptor_t const& aFrom)=0;
 	virtual bool MSend(const kernel_infos_array_t& aVal, descriptor_t const& aFrom, const routing_t& aRoute=routing_t(),error_info_t const& =error_info_t())=0;
 	virtual bool MSend(const fail_send_t& aVal, descriptor_t const& aFrom, const routing_t& aRoute=routing_t(),error_info_t const& =error_info_t())=0;

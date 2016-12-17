@@ -148,7 +148,7 @@ struct UDT_SHARE_EXPORT kernel_link
 	static const NSHARE::CText TIME;
 	static const NSHARE::CText LINK;
 
-	programm_id_t FProgramm;
+	program_id_t FProgramm;
 	mutable uint64_t FConnectTime;//ms
 	NSHARE::CText FTypeLink;
 	mutable uint16_t FLatency;
@@ -158,7 +158,7 @@ struct UDT_SHARE_EXPORT kernel_link
 	{
 		FConnectTime = 0;
 	}
-	kernel_link(programm_id_t const&,uint16_t  aLatency);
+	kernel_link(program_id_t const&,uint16_t  aLatency);
 
 	kernel_link(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize() const;
@@ -175,16 +175,16 @@ struct UDT_SHARE_EXPORT kernel_link
 	{
 		return !operator==(aRht);
 	}
-	bool operator==(programm_id_t const& aRht) const
+	bool operator==(program_id_t const& aRht) const
 	{
 		return FProgramm == aRht;
 	}
-	bool operator!=(programm_id_t const& aRht) const
+	bool operator!=(program_id_t const& aRht) const
 	{
 		return !operator==(aRht);
 	}
 };
-struct UDT_SHARE_EXPORT progs_id_t:std::set<programm_id_t>
+struct UDT_SHARE_EXPORT progs_id_t:std::set<program_id_t>
 {
 	static const NSHARE::CText NAME;
 	progs_id_t()
@@ -203,7 +203,7 @@ struct UDT_SHARE_EXPORT kernel_infos_t
 	static const NSHARE::CText CLIENT;
 	static const NSHARE::CText NUMBER;
 
-	programm_id_t FKernelInfo;
+	program_id_t FKernelInfo;
 	mutable kern_links_t FCustomerInfo;
 	uint32_t FIndexNumber;//The greate the number the later the object is created (using then there is loop)
 
@@ -212,7 +212,7 @@ struct UDT_SHARE_EXPORT kernel_infos_t
 
 	}
 
-	explicit kernel_infos_t(programm_id_t const& aId):
+	explicit kernel_infos_t(program_id_t const& aId):
 		FKernelInfo(aId)
 	{
 		FIndexNumber=0;
@@ -226,7 +226,7 @@ struct UDT_SHARE_EXPORT kernel_infos_t
 	{
 		return FKernelInfo == aRht.FKernelInfo && FCustomerInfo == aRht.FCustomerInfo;
 	}
-	bool operator==(programm_id_t const& aRht) const
+	bool operator==(program_id_t const& aRht) const
 	{
 		return FKernelInfo == aRht;
 	}
@@ -234,7 +234,7 @@ struct UDT_SHARE_EXPORT kernel_infos_t
 	{
 		return !operator==(aRht);
 	}
-	bool operator!=(programm_id_t const& aRht) const
+	bool operator!=(program_id_t const& aRht) const
 	{
 		return !operator==(aRht);
 	}
@@ -247,11 +247,11 @@ struct CKernelInfoLessCompare
 		return (a.FKernelInfo.FId < b.FKernelInfo.FId);
 	}
 	bool operator()(const NUDT::kernel_infos_t& a,
-			const NUDT::programm_id_t& b) const
+			const NUDT::program_id_t& b) const
 	{
 		return (a.FKernelInfo.FId < b.FId);
 	}
-	bool operator()(const NUDT::programm_id_t& a,
+	bool operator()(const NUDT::program_id_t& a,
 			const NUDT::kernel_infos_t& b) const
 	{
 		return (a.FId< b.FKernelInfo.FId);

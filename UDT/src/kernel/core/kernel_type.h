@@ -142,7 +142,7 @@ struct split_info
 	bool MIsValid()const;
 };
 //received data
-typedef data_from_id<programm_id_t> new_id_t;
+typedef data_from_id<program_id_t> new_id_t;
 typedef data_from_id<user_data_t> user_data_id_t;
 typedef data_from_id<demand_dgs_t> demands_id_t;//fixme rename
 typedef data_from_id<kernel_infos_array_t> kernel_infos_array_id_t;

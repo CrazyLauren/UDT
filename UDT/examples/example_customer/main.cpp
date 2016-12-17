@@ -23,17 +23,17 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive codogram E_MSG_TEST of protocol PROTOCOL_NAME
+	{	//!< I want to receive msg E_MSG_TEST of protocol PROTOCOL_NAME
 		// from RECEIVE_MSG_TEST_FROM and it will be  handled  by function msg_test_handler
-		dg_parser_t _codogram;
-		_codogram.FRequired.FVersion.FMinor=1;
-		_codogram.FRequired.FNumber = E_MSG_TEST;
-		_codogram.FProtocolName = PROTOCOL_NAME;
+		dg_parser_t _msg;
+		_msg.FRequired.FVersion.FMinor=1;
+		_msg.FRequired.FNumber = E_MSG_TEST;
+		_msg.FProtocolName = PROTOCOL_NAME;
 
 		callback_t _handler(msg_test_handler, NULL);
 
 		CCustomer::sMGetInstance().MSettingDgParserFor(
-				RECEIVE_MSG_TEST_FROM, _codogram, _handler);
+				RECEIVE_MSG_TEST_FROM, _msg, _handler);
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function

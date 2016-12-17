@@ -536,15 +536,17 @@ struct CJsonReader
 
 	void MAddLeaf(NSHARE::CText const& aVal)
 	{
+		CHECK(!FStack.empty());
+		_stack_t& _stack = FStack.top();
 		VLOG(6) << "Add leaf " << FKey << " = " << aVal << " to "
-							<< FStack.top().FConf->MKey();
-		if (!FStack.top().FArrayKey.empty())
+							<< _stack.FConf->MKey();
+		if (!_stack.FArrayKey.empty())
 		{
-			FStack.top().FConf->MAdd(FStack.top().FArrayKey, aVal);
-			++FStack.top().FCurrentArrayLength;
+			_stack.FConf->MAdd(FStack.top().FArrayKey, aVal);
+			++_stack.FCurrentArrayLength;
 		}
 		else
-			FStack.top().FConf->MSet(FKey, aVal);
+			_stack.FConf->MSet(FKey, aVal);
 	}
 	bool StartObject()
 	{
@@ -556,17 +558,18 @@ struct CJsonReader
 			FStack.push(_stack);
 			return true;
 		}
-		if (!FStack.top().FArrayKey.empty())
+		_stack_t& _top = FStack.top();
+		if (!_top.FArrayKey.empty())
 		{
-			VLOG(6) << "StartObject() For Array " << FStack.top().FArrayKey;
+			VLOG(6) << "StartObject() For Array " << _top.FArrayKey;
 
-			NSHARE::CConfig _conf(FStack.top().FArrayKey);
+			NSHARE::CConfig _conf(_top.FArrayKey);
 
-			FStack.top().FConf->MAdd(_conf);
-			++FStack.top().FCurrentArrayLength;
+			_top.FConf->MAdd(_conf);
+			++_top.FCurrentArrayLength;
 
 			_stack_t _stack;
-			_stack.FConf = &FStack.top().FConf->MChildren().back();
+			_stack.FConf = &_top.FConf->MChildren().back();
 			FStack.push(_stack);
 		}
 		else
@@ -574,9 +577,9 @@ struct CJsonReader
 			VLOG(6) << "StartObject() For Object";
 			VLOG(6) << "Add new object " << FKey;
 			NSHARE::CConfig _conf(FKey);
-			FStack.top().FConf->MAdd(_conf);
+			_top.FConf->MAdd(_conf);
 			_stack_t _stack;
-			_stack.FConf = &FStack.top().FConf->MChildren().back();
+			_stack.FConf = &_top.FConf->MChildren().back();
 			FStack.push(_stack);
 		}
 		return true;
@@ -592,10 +595,11 @@ struct CJsonReader
 	{
 		if (!FStack.empty())
 		{
+			_stack_t& _top = FStack.top();
 			VLOG(6) << "EndObject(" << memberCount << ") for "
-								<< FStack.top().FConf->MKey();
-			CHECK_EQ(FStack.top().FConf->MChildren().size(),
-					memberCount + FStack.top().FNumberOfArrayElements);
+								<< _top.FConf->MKey();
+			CHECK_EQ(_top.FConf->MChildren().size(),
+					memberCount + _top.FNumberOfArrayElements);
 			FStack.pop();
 		}
 		return true;
@@ -603,26 +607,30 @@ struct CJsonReader
 
 	bool StartArray()
 	{
-		VLOG(6) << "StartArray() for " << FStack.top().FConf->MKey()
+		CHECK(!FStack.empty());
+		_stack_t& _top = FStack.top();
+		VLOG(6) << "StartArray() for " << _top.FConf->MKey()
 							<< " Key " << FKey << " Count = "
-							<< FStack.top().FCurrentArrayLength;
-		FStack.top().FArrayKey = FKey;
-		FStack.top().FCurrentArrayLength = 0;
+							<< _top.FCurrentArrayLength;
+		_top.FArrayKey = FKey;
+		_top.FCurrentArrayLength = 0;
 		CHECK(!FKey.empty());
 		return true;
 	}
 	bool EndArray(SizeType elementCount)
 	{
+		CHECK(!FStack.empty());
+		_stack_t& _top = FStack.top();
 		VLOG(6) << "EndArray(" << elementCount << ") for "
-							<< FStack.top().FConf->MKey() << " Key " << FKey;
+							<< _top.FConf->MKey() << " Key " << FKey;
 
-		FStack.top().FArrayKey.clear();
-		CHECK_EQ(FStack.top().FCurrentArrayLength, elementCount);
+		_top.FArrayKey.clear();
+		CHECK_EQ(_top.FCurrentArrayLength, elementCount);
 
-		FStack.top().FNumberOfArrayElements +=
-				FStack.top().FCurrentArrayLength > 0 ?
-						FStack.top().FCurrentArrayLength - 1 : 0;
-		FStack.top().FCurrentArrayLength = 0;
+		_top.FNumberOfArrayElements +=
+			_top.FCurrentArrayLength > 0 ?
+			_top.FCurrentArrayLength - 1 : 0;
+		_top.FCurrentArrayLength = 0;
 		return true;
 	}
 };

@@ -20,11 +20,11 @@ struct user_data_t;
 struct user_data_dg_t;
 struct user_data_info_t;
 
-extern UDT_SHARE_EXPORT programm_id_t const& get_my_id();
+extern UDT_SHARE_EXPORT program_id_t const& get_my_id();
 extern UDT_SHARE_EXPORT bool is_id_initialized();
 extern UDT_SHARE_EXPORT int init_id(char const *aName,eType aType,NSHARE::version_t const& aVer);
 
-extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat,size_t aFullSize,const programm_id_t& aFrom,bool aIsNeedCrc =false);
+extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat,size_t aFullSize,const program_id_t& aFrom,bool aIsNeedCrc =false);
 extern UDT_SHARE_EXPORT bool deserialize(user_data_t& aTo,const user_data_dg_t*,NSHARE::IAllocater*);
 
 extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* aTo,const user_data_info_t& aWhat,size_t aSize);
@@ -112,13 +112,13 @@ inline Tto deserialize_impl(NSHARE::CConfig  const& aConf,routing_t* aRoute,erro
 	return Tto(_conf);
 }
 template<>
-inline programm_id_t deserialize_impl<programm_id_t>(NSHARE::CConfig  const& aConf,routing_t* aRoute,error_info_t *aError)
+inline program_id_t deserialize_impl<program_id_t>(NSHARE::CConfig  const& aConf,routing_t* aRoute,error_info_t *aError)
 {
 	NSHARE::CConfig const& _conf=aConf.MChild("info");
 	deserialize_route_impl(_conf, aRoute);
 	deserialize_error_impl(_conf, aError);
 
-	return programm_id_t(_conf);
+	return program_id_t(_conf);
 }
 
 template<class aKdTypeY,class Tto>

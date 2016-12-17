@@ -134,7 +134,7 @@ bool CUdpMainChannel::MIsNew(descriptor_t const& aFor) const
 	return false;
 }
 
-bool CUdpMainChannel::MOpen(ILink* aHandler,programm_id_t const&,NSHARE::net_address const& aFor)
+bool CUdpMainChannel::MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_address const& aFor)
 {
 	CHECK_NOTNULL(aHandler);
 

@@ -27,7 +27,7 @@
 #include "CCustomerImpl.h"
 #include "CLocalChannelFactory.h"
 
-DECLARATION_VERSION_FOR (customer)
+DECLARATION_VERSION_FOR(customer)
 
 static const NSHARE::version_t g_version(MAJOR_VERSION_OF (customer),
 		MINOR_VERSION_OF (customer), REVISION_OF (customer));
@@ -38,10 +38,12 @@ NUDT::CCustomer::singleton_pnt_t NUDT::CCustomer::singleton_t::sFSingleton =
 		NULL;
 namespace NUDT
 {
+const NSHARE::CText CCustomer::DEFAULT_IO_MANAGER = "tcp_client_io_manager";
 const NSHARE::CText CCustomer::RAW_PROTOCOL = RAW_PROTOCOL_NAME;
 const NSHARE::CText CCustomer::ENV_CONFIG_PATH = "UDT_CUSTOMER_CONFIG_PATH";
 const NSHARE::CText CCustomer::CONFIG_PATH = "path";
 const NSHARE::CText CCustomer::MODULES = "modules";
+const NSHARE::CText CCustomer::MODULES_PATH = "modules_path";
 const NSHARE::CText CCustomer::DOING_MODULE = "worker";
 const NSHARE::CText CCustomer::RRD_NAME = "rrdname";
 const NSHARE::CText CCustomer::THREAD_PRIORITY = "priority";
@@ -58,7 +60,7 @@ const NSHARE::CText CCustomer::EVENT_NEW_RECEIVER = "event_receiver";
 
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
-				NSHARE::CMutex::MUTEX_NORMAL),FUniqueNumber(0)
+				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0)
 {
 
 }
@@ -112,38 +114,40 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 			" trying to take it from config file.";
 	int _rval = 0;
 	CText _name(aName);
-	if (aName.empty())
+
+	bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(RRD_NAME, _name);
+
+	LOG_IF(WARNING,_val && !aName.empty())
+													<< "The name of program is redefined in the config file";
+	LOG_IF(DFATAL,_name.empty() && !aName.empty())
+													<< "Invalid program name  in the config file";
+	if (_name.empty())
 	{
-		bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(RRD_NAME,
-				_name);
-		LOG_IF(ERROR,!_val)
-									<< "The name of program is not present in the config file";
-		if (_val)
-			(void) 0;
-		else if (!aProgram.empty())
+		if (!aProgram.empty())
 		{
 			CText _programm(aProgram);
 			CText::size_type slash = _programm.find_last_of("/\\");
 			if (slash != std::string::npos)
-				_name = CText(_programm, slash);
-			else
 			{
-				_rval = E_NO_CUSTOMER_NAME;
-				_name.MMakeRandom(8);
+				_name = CText(_programm, slash);
+				LOG(WARNING)<<"using program name "<<_name<<"as customer name";
 			}
 		}
-		else
+		if(_name.empty())
 		{
-			_name.MMakeRandom(8);
 			_rval = E_NO_CUSTOMER_NAME;
+			LOG(ERROR)<<"Invalid customer name";
 		}
 	}
-	if (init_id((char*) _name.c_str(), E_CONSUMER, g_version) != 0)
+	if (_rval == 0)
 	{
-		_rval = E_INVALID_NAME;
+		if (init_id((char*) _name.c_str(), E_CONSUMER, g_version) != 0)
+		{
+			_rval = E_INVALID_NAME;
+		}
+		else
+			FMyId = get_my_id();
 	}
-	else
-		FMyId = get_my_id();
 	return _rval;
 }
 void CCustomer::_pimpl::sMInitConfigure(const NSHARE::CConfig& aConf)
@@ -152,15 +156,9 @@ void CCustomer::_pimpl::sMInitConfigure(const NSHARE::CConfig& aConf)
 		return;
 
 	VLOG(1) << "Read Internal config " << aConf;
-	//read config
-	smart_field_t<CText> _path;
-	aConf.MGetIfSet(CONFIG_PATH, _path);
-	if (_path.MIs())
-		new CConfigure(_path.MGet());
-	else if (const char* envModuleDir = getenv(ENV_CONFIG_PATH.c_str()))
-		new CConfigure(envModuleDir);
-	else
-		new CConfigure();
+
+	new CConfigure();
+
 	CConfigure::sMGetInstance().MGet().MMerge(aConf);
 	VLOG(1) << "Final config " << CConfigure::sMGetInstance().MGet();
 }
@@ -175,17 +173,20 @@ int CCustomer::_pimpl::MLoadLibraries()
 
 #ifndef CUSTOMER_WITH_STATIC_MODULES
 	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
-								<< " is not exist.";
+	<< " is not exist.";
 
 	if (!_p)
-		return E_INVALID_CONFIG;
+	return E_INVALID_CONFIG;
 	ConfigSet::const_iterator _it = _p->MChildren().begin();
-	
+
 	for (; _it != _p->MChildren().end(); ++_it)
-		_text.push_back(_it->MKey());
+	_text.push_back(_it->MKey());
 #endif
 
-	new CResources(_text);
+	NSHARE::CText _ext_path;
+	CConfigure::sMGetInstance().MGet().MGetIfSet(MODULES_PATH,_ext_path);
+
+	new CResources(_text,_ext_path);
 
 	CResources::sMGetInstance().MLoad();
 	return 0;
@@ -253,10 +254,10 @@ bool CCustomer::_pimpl::MOpen()
 
 	if (!FWorker)
 	{
-		CText _name;
+		CText _name(DEFAULT_IO_MANAGER);
 		bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(DOING_MODULE,
 				_name);
-		LOG_IF(ERROR, !_val)
+		LOG_IF(WARNING, !_val)
 										<< "The operative module is not present in the config file";
 
 		FWorker = CIOFactory::sMGetInstance().MGetFactory(_name);
@@ -497,8 +498,8 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 //				CHECK_LT(_it->FVal,FEvents.size());
 //				CHECK_EQ(_it->FVal,FDemands[_it->FVal].FHandler);
 
-				cb_event_t::const_iterator _jt=FEvents.find(_it->FVal);
-				if(_jt!=FEvents.end())
+				cb_event_t::const_iterator _jt = FEvents.find(_it->FVal);
+				if (_jt != FEvents.end())
 				{
 					LOG(INFO)<< "Handling #"<<_raw_args.FPacketNumber<<" by "
 					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom.FName<<" Raw="<<_raw_args.FRawProtocolNumber<<" by CB #"<<_it->FVal;
@@ -533,7 +534,7 @@ id_t const CCustomer::_pimpl::MGetIdFor(NSHARE::uuid_t const& aUUID) const
 {
 	safety_customers_t::RAccess<> const _acc = FCustomers.MGetRAccess();
 	customers_t const& _cus = _acc.MGet();
-	programm_id_t _id;
+	program_id_t _id;
 	_id.FId.FUuid = aUUID;
 	customers_t::const_iterator _it = _cus.find(_id);
 	LOG_IF(ERROR,_it==_cus.end()) << "Cannot find " << aUUID;
@@ -613,7 +614,7 @@ int CCustomer::_pimpl::MRemoveDgParserFor(const NSHARE::CText& aReq,
 	{
 		return E_HANDLER_IS_NOT_EXIST;
 	}
-	const uint32_t _handler=FDemands[_i].FHandler;
+	const uint32_t _handler = FDemands[_i].FHandler;
 	FEvents.erase(_handler);
 	FDemands.erase(FDemands.begin() + _i);
 
@@ -801,39 +802,61 @@ CCustomer::~CCustomer()
 	delete FImpl;
 }
 
-const programm_id_t& CCustomer::MGetID() const
+const program_id_t& CCustomer::MGetID() const
 {
 	return FImpl->FMyId;
+}
+int CCustomer::sMInit(int argc, char* argv[], char const* aName)
+{
+	return sMInit(argc, argv, aName, NSHARE::CConfig());
 }
 int CCustomer::sMInit(int argc, char* argv[], char const* aName,
 		const NSHARE::CText& aConf)
 {
 	NSHARE::CConfig _conf;
+
 	std::fstream _stream;
 	_stream.open(aConf.c_str());
 	LOG_IF(DFATAL,!_stream.is_open()) << "***ERROR***:Configuration file - "
 												<< aConf << ".";
 	if (!_stream.is_open())
-		return E_CANNOT_OPEN_CONFIG;
-	if (aConf.find_last_of(".xml") != NSHARE::CText::npos)
 	{
-		LOG(INFO)<<"Initialize from xml configuration file "<<aConf;
-		_conf.MFromXML(_stream);
+		if(const char* envModuleDir = getenv(ENV_CONFIG_PATH.c_str()))
+		{
+			_stream.open(envModuleDir);
+			LOG_IF(DFATAL,!_stream.is_open())
+														<< "***ERROR***:Cannot open configuration file from Environment "
+														<< ENV_CONFIG_PATH
+														<< " - " << aConf << ".";
+		}
 	}
-	else if(aConf.find_last_of(".json")!=NSHARE::CText::npos)
-	{
-		LOG(INFO)<<"Initialize from json configuration file "<<aConf;
-		_conf.MFromJSON(_stream);
-	}
-	else
-	{
-		_stream.close();
-		LOG(DFATAL)<<"Unknown file format "<<aConf;
-		return E_CANNOT_OPEN_CONFIG;
-	}
-	_stream.close();
+	int _rval=0;
 
-	return sMInit(argc, argv, aName, _conf);
+	if (_stream.is_open())
+	{
+		if (aConf.find_last_of(".xml") != NSHARE::CText::npos)
+		{
+			LOG(INFO)<<"Initialize from xml configuration file "<<aConf;
+			_rval=_conf.MFromXML(_stream)?_rval:E_INVALID_CONFIG;
+		}
+		else if(aConf.find_last_of(".json")!=NSHARE::CText::npos)
+		{
+			LOG(INFO)<<"Initialize from json configuration file "<<aConf;
+			_rval=_conf.MFromJSON(_stream)?_rval:E_INVALID_CONFIG;
+		}
+		else
+		{
+			LOG(DFATAL)<<"Unknown file format "<<aConf;
+			_rval= E_CANNOT_OPEN_CONFIG;
+		}
+		_stream.close();
+	}else
+		_rval=E_CANNOT_OPEN_CONFIG;
+
+	if(_rval==0)
+		_rval= sMInit(argc, argv, aName, _conf);
+
+	return _rval;
 }
 int CCustomer::sMInit(int argc, char* argv[], NSHARE::CText const& aName,
 		const NSHARE::CConfig& aConf)
@@ -890,10 +913,29 @@ CCustomer::modules_t CCustomer::MModules() const
 	return FImpl->MAllAvailable();
 }
 
+int CCustomer::MSettingDgParserFor(const NSHARE::CText& aFrom,
+		const unsigned& aHeader, const callback_t& aCB)
+{
+	dg_parser_t _msg;
+	_msg.FRequired.FVersion = g_version;
+	_msg.FRequired.FNumber = aHeader;
+	_msg.FProtocolName = "";
+	//It's not need
+
+	return MSettingDgParserFor(aFrom, _msg, aCB);
+}
 int CCustomer::MSettingDgParserFor(const NSHARE::CText& aTo,
 		const dg_parser_t& aNumber, const callback_t& aHandler)
 {
 	return FImpl->MSettingDgParserFor(aTo, aNumber, aHandler);
+}
+int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aFrom,
+		const unsigned& aNumber)
+{
+	dg_parser_t _msg;
+	_msg.FRequired.FVersion = g_version;
+	_msg.FRequired.FNumber = aNumber;
+	return MRemoveDgParserFor(aFrom, _msg);
 }
 int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aTo,
 		const dg_parser_t& aNumber)

@@ -36,12 +36,13 @@ namespace NUDT
 {
 
 NSHARE::CText const CKernelClientLink::DEFAULT="default";
+NSHARE::CText const CKernelClientLink::DEFAULT_MAIN = "tcp";
 NSHARE::CText const CKernelClientLink::NAME="udt_client";
 NSHARE::CText const CKernelClientLink::MAIN_CHANNEL_TYPE="channel_for";
 
 
 CKernelClientLink::CKernelClientLink(descriptor_t aFD,
-		uint64_t aTime, ILinkBridge* aKer,programm_id_t const & aKernel) :
+		uint64_t aTime, ILinkBridge* aKer,program_id_t const & aKernel) :
 		ILink(NAME, aTime),//
 		FServiceParser(this),//
 		FBridge(aKer),//
@@ -180,7 +181,7 @@ void CKernelClientLink::MReceivedData(user_data_t const& _user)
 		FpUserDataFor=SHARED_PTR<user_data_t>(new user_data_t(_user));
 	}
 }
-void CKernelClientLink::MReceivedData(programm_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
+void CKernelClientLink::MReceivedData(program_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
 {
 	//todo update
 	CHECK(CDescriptors::sMIsValid(MGetID()));
@@ -247,8 +248,8 @@ inline unsigned CKernelClientLink::MFill<fail_send_t>(data_t* _buf,
 }
 
 template<>
-inline unsigned CKernelClientLink::MFill<programm_id_t>(data_t* _buf,
-		const programm_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
+inline unsigned CKernelClientLink::MFill<program_id_t>(data_t* _buf,
+		const program_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
 	return serialize<dg_info2_t>(_buf,_id,aRoute,aError);
 
@@ -277,7 +278,7 @@ void CKernelClientLink::MProcess(requiest_info2_t const* aP, parser_t*)
 
 	routing_t _r;
 	error_info_t _error;
-	programm_id_t _customer(deserialize<requiest_info2_t, programm_id_t>(aP,& _r,&_error));
+	program_id_t _customer(deserialize<requiest_info2_t, program_id_t>(aP,& _r,&_error));
 	MReceivedData(_customer, _r,_error);
 }
 template<>
@@ -448,7 +449,7 @@ bool CKernelClientLink::MOpening(NSHARE::CBuffer::const_iterator aBegin,
 	}
 	return true;
 }
-bool CKernelClientLink::MSend(const programm_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
+bool CKernelClientLink::MSend(const program_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
 	data_t _buf;
 	MFill(&_buf, _id,aRoute,aError);

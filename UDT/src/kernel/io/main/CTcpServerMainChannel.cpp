@@ -162,7 +162,7 @@ split_info CTcpServerMainChannel::MGetLimits(size_t aSize,ILink* aHandler) const
 	VLOG(2)<<"new limits "<<_info;
 	return _info;
 }
-bool CTcpServerMainChannel::MOpen(ILink* aHandler, programm_id_t const& aId,NSHARE::net_address const& aFor)
+bool CTcpServerMainChannel::MOpen(ILink* aHandler, program_id_t const& aId,NSHARE::net_address const& aFor)
 {
 	CHECK_NOTNULL(aHandler);
 

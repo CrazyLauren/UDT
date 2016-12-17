@@ -18,32 +18,56 @@ namespace NSHARE
 template <class T>
 inline bool approximatelyEqual(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=fabs(a-b);
+    return _diff <= ( ( _b>_a ? _b : _a) * epsilon);
 }
 template <class T>
 inline bool essentiallyEqual(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return fabs(a - b) <= ( (fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=fabs(a-b);
+    return _diff <= ( (_a > _b ? _b : _a) * epsilon);
 }
 template <class T>
 inline bool definitelyGreaterThan(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return (a - b) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=/*fabs*/(a-b);
+    return _diff > ( (_a < _b ? _b : _a) * epsilon);
 }
 template <class T>
 inline bool definitelyGreaterOrEqualThan(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return (a - b) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon)|| approximatelyEqual(a,b,epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=/*fabs*/(a-b);
+    return _diff > ( (_a < _b ? _b : _a) * epsilon)|| approximatelyEqual(a,b,epsilon);
 }
 template <class T>
 inline bool definitelyLessThan(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return (b - a) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);	
+	const T _diff=/*fabs*/(b-a);
+    return _diff > ( (_a < _b ? _b : _a) * epsilon);
 }
 template <class T>
 inline bool definitelyLessOrEqualThan(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
 {
-    return (b - a) > ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon) || approximatelyEqual(a,b,epsilon);
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=/*fabs*/(b-a);
+    return _diff > ( (_a < _b ? _b : _a) * epsilon) || approximatelyEqual(a,b,epsilon);
+}
+template <class T>
+inline bool isNull(T a, T epsilon=std::numeric_limits<T>::epsilon())
+{
+	const T _a=fabs(a);
+	return _a <= ( _a * epsilon);
 }
 }
 #endif /* FLOATCOMPARE_H_ */

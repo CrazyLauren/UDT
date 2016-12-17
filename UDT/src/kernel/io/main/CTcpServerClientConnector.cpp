@@ -74,7 +74,7 @@ void IMPL::MProcess(
 		}
 	}
 }
-bool IMPL::MAddNew(ILink* aHandler, programm_id_t const& aId)
+bool IMPL::MAddNew(ILink* aHandler, program_id_t const& aId)
 {
 	CRAII<CMutex> _block(FMutexNewLinks);
 

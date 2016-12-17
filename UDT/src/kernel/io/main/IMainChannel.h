@@ -31,7 +31,7 @@ public:
 
 	}
 	;
-	virtual bool MOpen(ILink* aHandler, programm_id_t const&,
+	virtual bool MOpen(ILink* aHandler, program_id_t const&,
 			NSHARE::net_address const& aFor)=0;
 	virtual bool MIsOpen(descriptor_t aFor) const =0;
 	virtual bool MClose(descriptor_t aFor)=0;

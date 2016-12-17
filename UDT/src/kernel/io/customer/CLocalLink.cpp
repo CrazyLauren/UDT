@@ -39,10 +39,11 @@ namespace NUDT
 
 NSHARE::CText const CLocalLink::MAIN_CHANNEL_TYPE="channel_for";
 NSHARE::CText const CLocalLink::DEFAULT="default";
+NSHARE::CText const CLocalLink::DEFAULT_MAIN = "sm";
 NSHARE::CText const CLocalLink::NAME="consumer";
 
 CLocalLink::CLocalLink(descriptor_t aFD,
-		uint64_t aTime, ILinkBridge* aKer, programm_id_t const & aCust) :
+		uint64_t aTime, ILinkBridge* aKer, program_id_t const & aCust) :
 		ILink( NAME,aTime), FServiceParser(this), FBridge(aKer), Fd(aFD),FCustomer(aCust)
 {
 	FMainChannel = NULL;
@@ -144,7 +145,7 @@ void CLocalLink::MReceivedData(user_data_t const& _user)
 		FpUserDataFor=SHARED_PTR<user_data_t>(new user_data_t(_user));
 	}
 }
-void CLocalLink::MReceivedData(programm_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
+void CLocalLink::MReceivedData(program_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
 {
 	//todo
 	CHECK(false);
@@ -182,10 +183,10 @@ inline unsigned CLocalLink::MFill<demand_dgs_t>(data_t* _buf,
 	return serialize<custom_filters_dg2_t,demand_dgs_t>(_buf,_id,aRoute,aError);
 }
 template<>
-inline unsigned CLocalLink::MFill<programm_id_t>(data_t* _buf,
-		const programm_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
+inline unsigned CLocalLink::MFill<program_id_t>(data_t* _buf,
+		const program_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
-	return serialize<requiest_info2_t,programm_id_t>(_buf,_id,aRoute,aError);
+	return serialize<requiest_info2_t,program_id_t>(_buf,_id,aRoute,aError);
 
 }
 
@@ -282,7 +283,7 @@ void CLocalLink::MProcess(dg_info2_t const* aP, parser_t* aThis)
 	if(FState==E_NOT_OPEN)
 		return;
 
-	programm_id_t _customer(deserialize<dg_info2_t,programm_id_t>(aP,NULL,NULL));
+	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,NULL,NULL));
 
 	MReceivedData(_customer,routing_t(),error_info_t());
 }
@@ -342,7 +343,7 @@ bool CLocalLink::MOpening(NSHARE::CBuffer::const_iterator aBegin,
 	}
 	return true;
 }
-bool CLocalLink::MSend(const programm_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
+bool CLocalLink::MSend(const program_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
 	data_t _buf;
 	MFill(&_buf, _id,aRoute,aError);
@@ -405,7 +406,7 @@ bool CLocalLink::MSendService(const data_t& aVal)
 }
 NSHARE::CText CLocalLink::MGetMainChannelType(bool aDefOnly)
 {
-	NSHARE::CText _val;
+	NSHARE::CText _val(DEFAULT_MAIN);
 	NSHARE::CConfig _configure;
 	FBridge->MConfig(_configure);
 	if(!_configure.MIsEmpty())

@@ -68,7 +68,7 @@ enum eType
 	E_CONSUMER = 2, //
 	//E_FRONT_END = 3, //
 };
-struct programm_id_t
+struct program_id_t
 {
 
 	id_t FId;
@@ -78,14 +78,14 @@ struct programm_id_t
 	NSHARE::CText FPath;
 	eType FType;
 
-	programm_id_t()
+	program_id_t()
 	{
 		FTime=0;
 		FPid=0;
 		FType = E_KERNEL;
 	}
 #ifdef SHARE_CONFIG_DEFINED
-	programm_id_t(NSHARE::CConfig const& aConf):
+	program_id_t(NSHARE::CConfig const& aConf):
 		FId(aConf.MChild("id")),//
 		FKernelVersion(aConf.MChild(NSHARE::version_t::NAME)),//
 		FTime(0),//
@@ -114,15 +114,15 @@ struct programm_id_t
 
 #endif
 
-	bool operator<(programm_id_t const& aRht) const
+	bool operator<(program_id_t const& aRht) const
 	{
 		return FId < aRht.FId;
 	}
-	bool operator==(programm_id_t const& aRht) const
+	bool operator==(program_id_t const& aRht) const
 	{
 		return FId == aRht.FId && FPath == aRht.FPath && FPid == aRht.FPid;
 	}
-	bool operator!=(programm_id_t const& aRht) const
+	bool operator!=(program_id_t const& aRht) const
 	{
 		return !operator==(aRht);
 	}
@@ -156,7 +156,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::eType const& aVal)
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
-		NUDT::programm_id_t const& aVal)
+		NUDT::program_id_t const& aVal)
 {
 	aStream << aVal.FId << std::endl;
 

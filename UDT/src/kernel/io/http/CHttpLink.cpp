@@ -55,7 +55,7 @@ bool CHttpLink::MSend(const data_t& aVal)
 {
 	return FKernel->MSend(aVal);
 }
-bool CHttpLink::MSend(const programm_id_t& aVal, const routing_t& aRoute,error_info_t const&)
+bool CHttpLink::MSend(const program_id_t& aVal, const routing_t& aRoute,error_info_t const&)
 {
 	return false;
 }

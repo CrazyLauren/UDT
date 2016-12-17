@@ -167,7 +167,7 @@ bool CKernelServerLink::CConnectionHandler::MSendImpl(const data_t& _buf)
 bool IMPL::MSendIDInfo()
 {
 	data_t _buf;
-	serialize<requiest_info2_t,programm_id_t>(&_buf,get_my_id(),routing_t(),error_info_t());
+	serialize<requiest_info2_t,program_id_t>(&_buf,get_my_id(),routing_t(),error_info_t());
 
 	CHECK(FBridge);
 	bool _is = MSendImpl(_buf);
@@ -227,7 +227,7 @@ void IMPL::MProcess(dg_info2_t const* aP, parser_t* aThis)
 			aP->FDataSize + aP->FHeadSize);
 	CHECK(FConnectionState != E_CONNECTED);
 
-	programm_id_t _customer(deserialize<dg_info2_t,programm_id_t>(aP,NULL,NULL));
+	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,NULL,NULL));
 
 	VLOG(2)<<_customer;
 	if (_customer.FType != E_KERNEL)

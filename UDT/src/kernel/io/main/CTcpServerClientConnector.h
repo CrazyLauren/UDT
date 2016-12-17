@@ -21,7 +21,7 @@ public:
 	struct new_link_t
 	{
 		ILink* FLink;
-		programm_id_t FId;
+		program_id_t FId;
 	};
 	typedef std::map<descriptor_t, new_link_t> new_links_t;
 	typedef CInParser<CMainClientConnector, CMainClientConnector*> parser_t;
@@ -30,7 +30,7 @@ public:
 	void MProcess(main_channel_param_t const* aP, parser_t*);
 	void MReceivedData(data_t::const_iterator const& _buf_begin,
 			data_t::difference_type aSize);
-	bool MAddNew(ILink* aHandler, programm_id_t const& aId);
+	bool MAddNew(ILink* aHandler, program_id_t const& aId);
 	bool MHandleServiceDG(main_channel_error_param_t const* aP,
 			descriptor_t aFor);
 	bool MClose(descriptor_t aFor);

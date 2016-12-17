@@ -51,8 +51,8 @@ struct fail_sent_args_t
 
 struct customers_updated_args_t
 {
-	std::set<programm_id_t> FDisconnected;
-	std::set<programm_id_t> FConnected;
+	std::set<program_id_t> FDisconnected;
+	std::set<program_id_t> FConnected;
 };
 struct new_receiver_args_t
 {
@@ -116,10 +116,12 @@ struct callback_t
 class CUSTOMER_EXPORT CCustomer: public NSHARE::CSingleton<CCustomer>
 {
 public:
+	static const NSHARE::CText DEFAULT_IO_MANAGER;
 	static const NSHARE::CText RAW_PROTOCOL;
 	static const NSHARE::CText ENV_CONFIG_PATH;
 	static const NSHARE::CText CONFIG_PATH;
 	static const NSHARE::CText MODULES;
+	static const NSHARE::CText MODULES_PATH;
 	static const NSHARE::CText DOING_MODULE;
 	static const NSHARE::CText RRD_NAME;
 	static const NSHARE::CText THREAD_PRIORITY;
@@ -136,7 +138,7 @@ public:
 	static const NSHARE::CText EVENT_READY;
 
 	typedef std::vector<NSHARE::CText> modules_t;
-	typedef std::set<programm_id_t> customers_t;
+	typedef std::set<program_id_t> customers_t;
 
 	enum eSendToFlags
 	{
@@ -183,6 +185,7 @@ public:
 	///@param argv - An array of pointers to strings that contain the arguments to the program
 	///@param aName - Name of Customer
 	///@param aConf - Config
+	static int sMInit(int argc, char* argv[], char const* aName);
 	static int sMInit(int argc, char* argv[], char const* aName,
 			const NSHARE::CText& aConf);
 	static int sMInit(int argc, char* argv[], NSHARE::CText const& aName,
@@ -212,7 +215,7 @@ public:
 	void MWaitForEvent(NSHARE::CText const& aEvent,double aSec=-1);
 
 	///@brief Return current ID
-	const programm_id_t& MGetID() const;
+	const program_id_t& MGetID() const;
 	///@brief Return all registered ID
 	customers_t MCustomers() const;
 
@@ -250,6 +253,11 @@ public:
 			const dg_parser_t& aHeader, const callback_t& aCB);
 	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
 			const dg_parser_t& aNumber);
+
+	int MSettingDgParserFor(const NSHARE::CText& aFrom,
+			const unsigned& aHeader, const callback_t& aCB);
+	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
+			const unsigned& aNumber);
 
 	bool operator+=(value_t const & aVal);
 	bool operator-=(value_t const & aVal);

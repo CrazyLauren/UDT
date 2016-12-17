@@ -77,7 +77,7 @@ void CTcpClientMainChannel::MCloseImpl()
 	FSelectSock.MRemoveSocket(FLoopBack.MGetSocket());
 	FSelectSock.MRemoveAll();
 }
-bool CTcpClientMainChannel::MOpen(ILink* aHandler, programm_id_t const& aId,NSHARE::net_address const& aFor)
+bool CTcpClientMainChannel::MOpen(ILink* aHandler, program_id_t const& aId,NSHARE::net_address const& aFor)
 {
 	CHECK_NOTNULL(aHandler);
 

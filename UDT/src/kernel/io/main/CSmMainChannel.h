@@ -32,7 +32,7 @@ public:
 	CSmMainChannel();
 	virtual ~CSmMainChannel();
 	void MInit();
-	bool MOpen(ILink* aHandler,programm_id_t const&,NSHARE::net_address const& aFor);
+	bool MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_address const& aFor);
 	bool MIsOpen(descriptor_t aFor) const;
 	bool MClose(descriptor_t aFor);
 

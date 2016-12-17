@@ -129,7 +129,7 @@ void CKernelIo::MRecvImpl(const routing_t& aRoute, const descriptor_t& aFrom,
 	}
 }
 
-void CKernelIo::MReceivedData(programm_id_t const& aWhat,
+void CKernelIo::MReceivedData(program_id_t const& aWhat,
 		const descriptor_t& aFrom, const routing_t& aRoute,
 		error_info_t const& aError)
 {

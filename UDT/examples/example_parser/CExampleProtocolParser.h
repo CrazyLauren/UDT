@@ -5,8 +5,8 @@
  *      Author: Sergey
  */
 
-#ifndef CGAMMAPROTOCOLPARSER_H_
-#define CGAMMAPROTOCOLPARSER_H_
+#ifndef CEXAMPLEPROTOCOLPARSER_H_
+#define CEXAMPLEPROTOCOLPARSER_H_
 #include <udt_share_macros.h>
 #include <udt_types.h>
 #if  defined( _WIN32 )
@@ -27,11 +27,11 @@ public:
 	virtual ~CExampleProtocolParser();
 
 	virtual result_t MParserData(const uint8_t* aItBegin,
-			const uint8_t* aItEnd,uint8_t aMask=ORDER_LE);
+			const uint8_t* aItEnd,uint8_t aMask=ORDER_LE, NUDT::required_header_t const* =NULL);
 	virtual NUDT::required_header_t MHeader(const NSHARE::CConfig& aFrom) const;
 	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t&) const;
 
 
 private:
 };
-#endif /* CGAMMAPROTOCOLPARSER_H_ */
+#endif /* CEXAMPLEPROTOCOLPARSER_H_ */

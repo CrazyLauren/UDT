@@ -16,14 +16,32 @@
 #include <IExtParser.h>
 namespace NSHARE
 {
-template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser>;
+template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser> ;
 }
 namespace NUDT
 {
-class UDT_SHARE_EXPORT CParserFactory:public  NSHARE::CFactoryManager<NUDT::IExtParser>
+class UDT_SHARE_EXPORT CParserFactory: public NSHARE::CFactoryManager<
+		NUDT::IExtParser>
 {
 public:
 	CParserFactory();
 };
-}//
+} //
+//easy-to-use macro registrator
+#define REGISTRE_ONLY_ONE_PROTOCOL_MODULE(aClassName, aLibraryName)\
+	namespace{struct CRegisterImpl:public NSHARE::CFactoryRegisterer{\
+	CRegisterImpl():NSHARE::CFactoryRegisterer(NSHARE::CText().MMakeRandom(10),NSHARE::version_t(0,1)){};\
+			void MAdding() const{NUDT::CParserFactory::sMAddFactory<aClassName>();}\
+			void MUnregisterFactory() const{NUDT::CParserFactory::sMGetInstance().MRemoveFactory(aClassName::NAME);};\
+			bool MIsAlreadyRegistered() const\
+			{ if (NUDT::CParserFactory::sMGetInstancePtr())\
+					return NUDT::CParserFactory::sMGetInstance().MIsFactoryPresent(aClassName::NAME);\
+				return false;};\
+	};};\
+	static NSHARE::factory_registry_t g_factory;\
+	extern "C" aLibraryName##_EXPORT NSHARE::factory_registry_t* get_factory_registry()\
+	{if (g_factory.empty())g_factory.push_back(new CRegisterImpl());\
+		return &g_factory;}\
+		/*END macro*/
+
 #endif /* CPARSERFACTORY_H_ */

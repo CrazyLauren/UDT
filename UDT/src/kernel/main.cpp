@@ -236,7 +236,10 @@ void initialize_core(int argc, char* argv[])
 			for (; _it != _p->MChildren().end(); ++_it)
 				_text.push_back(_it->MKey());
 		}
-		new CResources(_text);
+
+		NSHARE::CText _ext_path;
+		CConfigure::sMGetInstance().MGet().MGetIfSet("modules_path",_ext_path);
+		new CResources(_text,_ext_path);
 	}
 }
 void perpetual_loop()

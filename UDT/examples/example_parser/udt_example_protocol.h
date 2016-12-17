@@ -19,8 +19,8 @@ enum  eMsgType
 };
 struct msg_head_t
 {
-	uint32_t  FType           : 8;            //!< Type of codogram E_MSG_*
-	uint32_t  FSize           : 24;           //!< Size of codogram include header
+	uint32_t  FType           : 8;            //!< Type of msg E_MSG_*
+	uint32_t  FSize           : 24;           //!< Size of msg include header
 };
 struct test_msg_t
 {

@@ -85,7 +85,7 @@ private:
 	//-----------------
 	CCustomer& FThis;
 
-	programm_id_t FMyId; //todo const
+	program_id_t FMyId; //todo const
 
 	IIOConsumer* FWorker;
 	bool FIsReady;

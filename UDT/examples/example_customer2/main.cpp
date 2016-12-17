@@ -4,7 +4,6 @@
 using namespace NUDT;
 
 #define INDITIFICATION_NAME "uex2@guex"
-#define CONFIG_PATH "./example_customer2.xml" //!< Configuration file path. The file format are xml or json.
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int msg_test2_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -16,7 +15,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* WHAT, void* YOU_
 extern void doing_something();
 int main(int argc, char *argv[])
 {
-	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME, CONFIG_PATH);//!< initialize UDT library
+	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);//!< initialize UDT library
 
 	if(_val!=0)
 	{
@@ -24,30 +23,18 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive codogram number 1 
+	{	//!< I want to receive msg number 0
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
-		dg_parser_t _codogram;
-		_codogram.FRequired.FVersion.FMinor=1;
-		_codogram.FRequired.FNumber = 1;
-		_codogram.FProtocolName = "";//It's not need
-
 		callback_t _handler(msg_test_handler, NULL);
-
 		CCustomer::sMGetInstance().MSettingDgParserFor(
-				"uex2@guex", _codogram, _handler);
+				"uex2@guex", 0, _handler);
 	}
 	{	
-		//!< I want to receive codogram number 1 
+		//!< I want to receive msg number 0
 		// from any customer of "guex" group  and it will be  handled  by function msg_test_handler
-		dg_parser_t _codogram;
-		_codogram.FRequired.FVersion.FMinor = 1;
-		_codogram.FRequired.FNumber = 1;
-		_codogram.FProtocolName = "";//It's not need
-
 		callback_t _handler(msg_test2_handler, NULL);
-
 		CCustomer::sMGetInstance().MSettingDgParserFor(
-			"@guex", _codogram, _handler);
+			"@guex", 0, _handler);
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function

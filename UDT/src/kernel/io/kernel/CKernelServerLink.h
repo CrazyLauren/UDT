@@ -22,12 +22,13 @@ class CKernelServerLink: public ILink,NSHARE::CDenyCopying
 public:
 	static NSHARE::CText const MAIN_CHANNEL_TYPE;
 	static NSHARE::CText const DEFAULT;
+	static NSHARE::CText const DEFAULT_MAIN;
 	static const NSHARE::CText NAME;
 	CKernelServerLink(descriptor_t aFD, uint64_t FTime,
-			ILinkBridge*,programm_id_t const & aKernel);
+			ILinkBridge*,program_id_t const & aKernel);
 	virtual ~CKernelServerLink();
 
-	bool MSend(const programm_id_t& aVal,const routing_t&,error_info_t const& aError);
+	bool MSend(const program_id_t& aVal,const routing_t&,error_info_t const& aError);
 	bool MSend(const kernel_infos_array_t& aVal,const routing_t&,error_info_t const& aError);
 	bool MSend(const user_data_t& aVal);
 	bool MSend(const data_t& aVal);
@@ -39,7 +40,7 @@ public:
 			data_t::const_iterator aEnd);
 
 	void MReceivedData(user_data_t const&);
-	void MReceivedData(programm_id_t const&,const routing_t&,error_info_t const& aError);
+	void MReceivedData(program_id_t const&,const routing_t&,error_info_t const& aError);
 	void MReceivedData(demand_dgs_t const&,const routing_t&,error_info_t const& aError);
 	void MReceivedData(demand_dgs_for_t const&,const routing_t&,error_info_t const& aError);
 	void MReceivedData(kernel_infos_array_t const& aInfo,const routing_t&,error_info_t const& aError);
@@ -104,7 +105,7 @@ private:
 
 	eState FState;
 	IMainChannel* FMainChannel;
-	programm_id_t const FKernel;
+	program_id_t const FKernel;
 	CLinkDiagnostic FDiagnostic;
 
 

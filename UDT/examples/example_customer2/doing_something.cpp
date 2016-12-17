@@ -105,7 +105,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 	STREAM_MUTEX_LOCK
 	if(!_recv_arg->FConnected.empty())
 	{
-		std::set<programm_id_t>::const_iterator _it=_recv_arg->FConnected.begin(),_it_end(_recv_arg->FConnected.end());
+		std::set<program_id_t>::const_iterator _it=_recv_arg->FConnected.begin(),_it_end(_recv_arg->FConnected.end());
 		std::cout << "Connected customers:";
 		for (; _it != _it_end; ++_it)
 		{
@@ -116,7 +116,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 	if(!_recv_arg->FDisconnected.empty())
 	{
 		std::cout << "Disconnected customers:";
-		std::set<programm_id_t>::const_iterator _it =
+		std::set<program_id_t>::const_iterator _it =
 				_recv_arg->FDisconnected.begin(), _it_end(
 				_recv_arg->FDisconnected.end());
 		for (; _it != _it_end; ++_it)
@@ -157,8 +157,8 @@ extern void doing_something()
 		{
 			*_it=i%255;
 		}
-		//send the data of codogramm 1
-		int _num = CCustomer::sMGetInstance().MSend(1, _buf);
+		//send the data of msg 0
+		int _num = CCustomer::sMGetInstance().MSend(0, _buf);
 		if (_num > 0)	//Hurrah!!! The data has been sent
 		{
 			//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.

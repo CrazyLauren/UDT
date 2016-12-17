@@ -24,10 +24,10 @@ using namespace NSHARE;
 static uint32_t g_counter = 0;
 static time_t const g_time = ::time(NULL);
 static bool g_is_inited = false;
-static programm_id_t g_id;
+static program_id_t g_id;
 
 extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat, size_t aFullSize,
-		const programm_id_t& aFrom, bool aIsNeedCrc)
+		const program_id_t& aFrom, bool aIsNeedCrc)
 {
 	CHECK_EQ(
 			head_t::crc_head_t::sMCalcNextCRC(head_t::crc_head_t::Polynom,
@@ -351,7 +351,7 @@ extern UDT_SHARE_EXPORT size_t serialize(NSHARE::CBuffer* _data,
 }
 
 
-extern UDT_SHARE_EXPORT programm_id_t const& get_my_id()
+extern UDT_SHARE_EXPORT program_id_t const& get_my_id()
 {
 	CHECK(g_is_inited);
 	return g_id;

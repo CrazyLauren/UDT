@@ -65,9 +65,9 @@ private:
 	void MHandleFrom(demand_dgs_t const*, descriptor_t aFrom);
 
 	//void MHandleNewId(descriptor_t aFrom,descriptor_info_t const&_info);
-	void MHandleNewId(bool aIs, programm_id_t const&,
+	void MHandleNewId(bool aIs, program_id_t const&,
 			kern_links_t const& _vertex);
-	void MHandleCloseId(bool aIs, programm_id_t const&,
+	void MHandleCloseId(bool aIs, program_id_t const&,
 			kern_links_t const& _vertex);
 	void MHandleFrom(user_data_t const*, descriptor_t aFrom);
 

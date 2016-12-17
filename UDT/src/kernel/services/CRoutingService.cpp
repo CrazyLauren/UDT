@@ -168,7 +168,7 @@ void CRoutingService::MHandleNewDemands(descriptor_t aFrom,
 		MInformNewReceiver(_new_receiver);
 	}
 }
-void CRoutingService::MHandleNewId(bool, programm_id_t const& aFor,
+void CRoutingService::MHandleNewId(bool, program_id_t const& aFor,
 		kern_links_t const& aNew)
 {
 	VLOG(2) << "New For: " << aFor;
@@ -204,7 +204,7 @@ void CRoutingService::MHandleNewId(bool, programm_id_t const& aFor,
 	VLOG(2) << "Handled";
 }
 
-void CRoutingService::MHandleCloseId(bool aIs, programm_id_t const& aFor,
+void CRoutingService::MHandleCloseId(bool aIs, program_id_t const& aFor,
 		kern_links_t const& aOld)
 {
 	VLOG(2) << "Close: " << aFor;
@@ -516,7 +516,7 @@ descriptor_t CRoutingService::MNextDestinationNode(
 inline void CRoutingService::MInit()
 {
 	{
-		programm_id_t _my = get_my_id();
+		program_id_t _my = get_my_id();
 		w_route_access _access = FRouteData.MGetWAccess();
 		_access->FRequiredDG.MAddClient(_my.FId);
 	}

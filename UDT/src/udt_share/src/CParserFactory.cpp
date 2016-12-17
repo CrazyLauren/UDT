@@ -37,7 +37,7 @@ public:
 	}
 
 	result_t MParserData(
-			const uint8_t* aItBegin, const uint8_t* aItEnd, uint8_t aMask)
+			const uint8_t* , const uint8_t* , uint8_t, required_header_t const*)
 	{
 		//Parsing buffer aItBegin:aItEnd
 		static result_t _result(1);

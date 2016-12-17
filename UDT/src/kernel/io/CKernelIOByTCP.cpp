@@ -35,7 +35,7 @@ NSHARE::CText const CKernelIOByTCPRegister::NAME = "tcp_io_manager";
 NSHARE::CText const CKernelIOByTCP::NAME = "tcp_io_manager";
 NSHARE::CText const CKernelIOByTCP::TIMEOUT = "timeout";
 NSHARE::CText const CKernelIOByTCP::PORT = "port";
-NSHARE::CText const CKernelIOByTCP::LINKS = "links";
+NSHARE::CText const CKernelIOByTCP::LINKS = "protocol";
 
 bool CKernelIOByTCP::CServerBridge::MConfig(NSHARE::CConfig & aTo)
 {
@@ -59,7 +59,7 @@ void CKernelIOByTCP::MInitTcp()
 	CHECK(!FTcpServiceSocket.MIsOpen());
 	CConfig* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 
-	unsigned _port = 0xDEAD;
+	unsigned _port = 18011;
 	if (_p)
 	{
 
@@ -295,7 +295,7 @@ inline bool CKernelIOByTCP::MSendImpl(const user_data_t& _id, descriptor_t const
 	}
 	return _link->MSend(_id);
 }
-bool CKernelIOByTCP::MSend(const programm_id_t& _id, descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)
+bool CKernelIOByTCP::MSend(const program_id_t& _id, descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError)
 {
 	return MSendImpl(_id, aTo,aRoute,aError);
 }

@@ -182,7 +182,7 @@ bool CSmMainChannel::MIsNew(descriptor_t const& aFor) const
 	return false;
 }
 
-bool CSmMainChannel::MOpen(ILink* aHandler,programm_id_t const&,NSHARE::net_address const& aFor)
+bool CSmMainChannel::MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_address const& aFor)
 {
 	CHECK_NOTNULL(aHandler);
 

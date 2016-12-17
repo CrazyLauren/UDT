@@ -27,7 +27,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include ${SHARE_INCLUDES} ${Boo
 
 
 #adding object files of modules to project
-SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES "sm_main_channel;tcp_io_manager"  CACHE STRING "list of modules which will linked static")
+SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES "sm_main_channel;tcp_client_io_manager"  CACHE STRING "list of modules which will linked static")
 
 if(${${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES})
 	add_definitions(-D${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES)

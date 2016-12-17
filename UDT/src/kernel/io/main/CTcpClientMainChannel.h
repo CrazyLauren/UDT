@@ -28,7 +28,7 @@ public:
 	CTcpClientMainChannel();
 	~CTcpClientMainChannel();
 	void MInit();
-	bool MOpen(ILink* aHandler, programm_id_t const&,NSHARE::net_address const& aFor);
+	bool MOpen(ILink* aHandler, program_id_t const&,NSHARE::net_address const& aFor);
 	bool MIsOpen(descriptor_t aFor) const;
 	bool MClose(descriptor_t aFor);
 	bool MCloseRequest(descriptor_t aFor);
@@ -52,7 +52,7 @@ private:
 	struct new_link_t
 	{
 		ILink* FLink;
-		programm_id_t FId;
+		program_id_t FId;
 		NSHARE::net_address FAddr;
 	};
 

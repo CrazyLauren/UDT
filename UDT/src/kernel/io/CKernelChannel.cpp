@@ -33,7 +33,7 @@ namespace NUDT
 #define IMPL CKernelIOByTCPClient::CKernelChannel
 
 NSHARE::CText const IMPL::NAME = "cl";
-NSHARE::CText const IMPL::LINK_TYPE = "link";
+NSHARE::CText const IMPL::LINK_TYPE = "protocol";
 NSHARE::CText const CKernelIOByTCPClient::CKernelChannel::ADDR = "addr";
 
 CKernelIOByTCPClient::CKernelChannel::CKernelChannel(CConfig const& aWhat,

@@ -62,7 +62,7 @@ private:
 	descriptor_t Fd;
 	split_info FSplit;
 	unsigned FPacketNumber;
-	programm_id_t FProgId;
+	program_id_t FProgId;
 	NSHARE::CBuffer FBuf;
 	demand_dgs_t FDemands;
 	std::list<user_data_t> FDataSequence;

@@ -502,7 +502,7 @@ bool CInfoService::MUpdateMyInfo(_data_info_t& _d_info)
 	//check is exit
 	bool _is_changed=false;
 	{
-		const programm_id_t& _id = get_my_id();
+		const program_id_t& _id = get_my_id();
 		kernel_infos_array_t::iterator _it = _d_info.FInfo.find(
 				kernel_infos_t(_id));
 		DCHECK(_it != _d_info.FInfo.end());
@@ -584,7 +584,7 @@ void CInfoService::MHandleOpen(const descriptor_t& aFrom,
 bool CInfoService::MIsCustomer(const kernel_link& _what,
 		_data_info_t& _d_info) const
 {
-	const programm_id_t& _id = get_my_id();
+	const program_id_t& _id = get_my_id();
 	kernel_infos_array_t::const_iterator _it = _d_info.FInfo.find(
 			kernel_infos_t(_id));
 	DCHECK(_it != _d_info.FInfo.end());

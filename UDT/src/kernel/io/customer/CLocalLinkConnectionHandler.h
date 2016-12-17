@@ -56,7 +56,7 @@ private:
 	descriptor_t  Fd;
 	uint64_t FTime;
 
-	NSHARE::smart_field_t<programm_id_t> FKernel;
+	NSHARE::smart_field_t<program_id_t> FKernel;
 	bool FIsSent;
 	const eType FPType;
 };
