@@ -22,14 +22,14 @@ namespace NSHARE
 const NSHARE::CText CSocketFile::NAME="file";
 CSocketFile::CSocketFile(NSHARE::CConfig const& aConf)
 {
-	FTime = 0;
+	FNextTime = 0;
 	param_t _param(aConf);
 	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for file socket is not valid "<<aConf;
 	MOpen(_param);
 }
 CSocketFile::CSocketFile(const param_t& aParam)
 {
-	FTime = 0;
+	FNextTime = 0;
 	if(aParam.MIsValid())
 		MOpen(aParam);
 }
@@ -68,8 +68,8 @@ return 0;
 }
 bool CSocketFile::MOpen()
 {
-	FTime = NSHARE::get_time();
-	VLOG(2) << "Open Time  " << FTime << " type " << FParam.FDirect
+	FNextTime = NSHARE::get_time();
+	VLOG(2) << "Open Time  " << FNextTime << " type " << FParam.FDirect
 						<< " path " << FParam.FPath;
 	switch (FParam.FDirect)
 	{
@@ -85,7 +85,7 @@ bool CSocketFile::MOpen()
 
 	}
 	FStream.seekg(0, std::ios::beg);
-	return true;
+	return FStream.is_open();
 }
 bool CSocketFile::MReOpen()
 {
@@ -128,12 +128,12 @@ ssize_t CSocketFile::MReceiveData(data_t* aBuf, const float aTime)
 		std::cerr << "The type of socket is out. Cannot read data" << std::endl;
 		return 0;
 	}
-	double const _r_time = ((double) FParam.FTime) / 1000.0;
-	for (HANG_INIT;(NSHARE::get_time()-FTime)<_r_time;HANG_CHECK)
+	for (HANG_INIT;(FNextTime-NSHARE::get_time())>0;HANG_CHECK)
 	{
 		usleep(100);
 	}
-	FTime = NSHARE::get_time();
+	double const _r_time = ((double) FParam.FTime) / 1000.0;
+	FNextTime = NSHARE::get_time()+_r_time;
 
 	const size_t _size = std::min(MAvailable(), FParam.FSize);
 	const size_t _befor = aBuf->size();
@@ -141,8 +141,7 @@ ssize_t CSocketFile::MReceiveData(data_t* aBuf, const float aTime)
 
 	VLOG(2) << "Available " << _size << " bytes";
 	VLOG_IF(1,!_size) << "No data file socket ";
-	if (!_size)
-	return 0;
+	if (!_size) return 0;
 	aBuf->resize(_befor + _size);
 	FStream.read((char*) &aBuf->front() + (aBuf->size() - _size), _size);
 	if (!FStream)
@@ -187,7 +186,7 @@ NSHARE::CConfig CSocketFile::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	_conf.MAdd(FParam.MSerialize());
-	_conf.MAdd("time",FTime);
+	_conf.MAdd("time",FNextTime);
 	_conf.MAdd("open",MIsOpen());
 	_conf.MAdd(FDiagnostic.MSerialize());
 	return _conf;
@@ -318,6 +317,7 @@ CSocketFile::param_t::param_t(NSHARE::CConfig const& aConf)
 	{
 		CText _dir;
 		aConf.MGetIfSet(FILE_DIRECT, _dir);
+		LOG_IF(DFATAL,_dir.empty())<<"Invalid param "<<FILE_DIRECT<<" Conf:"<<aConf;
 		if (!_dir.empty())
 		{
 			if (_dir == FILE_DIRECT_IN)
@@ -333,8 +333,8 @@ CSocketFile::param_t::param_t(NSHARE::CConfig const& aConf)
 			else
 				LOG(DFATAL)<<"Invalid param "<<_dir;
 
-			}
 		}
+	}
 }
 bool CSocketFile::param_t::MIsValid() const
 {

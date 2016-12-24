@@ -137,8 +137,8 @@ CSharedMemoryServer::CImpl::CImpl(CSharedMemoryServer& aThis,
 		FIsOpened(false), FName(aName), FSize(aSize),FReserv(aReserv), FThis(aThis)
 {
 	FCleanUpThread += NSHARE::CB_t(sMServerCleaner, this);
-	MSetOption(CSharedMemoryBase::SEND_BUFFER_SIZE,
-			MGetOption(CSharedMemoryBase::SEND_BUFFER_SIZE) * 2); //default value is 2 times longer
+//	MSetOption(CSharedMemoryBase::SEND_BUFFER_SIZE,
+//			MGetOption(CSharedMemoryBase::SEND_BUFFER_SIZE) * 2); //default value is 2 times longer
 	if (!aName.empty())
 		MOpen();
 }

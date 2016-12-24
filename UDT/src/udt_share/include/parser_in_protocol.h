@@ -86,9 +86,19 @@ public:
 	static bool sMIsValidProtocol(data_t::const_iterator aItBegin,
 			data_t::const_iterator aItEnd)
 	{
-		data_t::const_iterator _tmp;
-		return MLookingForHead(aItBegin, aItEnd, &_tmp) == Eok
-				&& _tmp == aItBegin;
+		int _size = aItEnd - aItBegin;
+		size_t const _head_size = sizeof(head_t);
+
+		CHECK_GE(_size, 0);
+
+		if (_size < (int) _head_size)
+		{
+			return false;
+		}
+		typedef head_t::crc_head_t _crc_t;
+		_crc_t::type_t const _crc = _crc_t::sMCalcCRCofBuf(&(*aItBegin),
+				&(*aItBegin) + _head_size);
+		return _crc == _crc_t::sMCheckingConstant() ? true : false;
 	}
 	void MReceivedData(data_t::const_iterator aItBegin,
 			data_t::const_iterator aItEnd)

@@ -132,5 +132,5 @@ inline void fake_assert(_T const & aVal1)
 #endif
 
 #	define MASSERT(aVal1,aVal2) _MASSERT(aVal1,aVal2,"None")
-#	define MASSERT_1(aVal1) _MASSERT_1(aVal1,#aVal1)
+#	define MASSERT_1(aVal1) _MASSERT_1((aVal1),#aVal1)
 #endif

@@ -69,7 +69,7 @@ private:
 	param_t FParam;
 	mutable std::fstream FStream;
 	diagnostic_io_t FDiagnostic;
-	double FTime;
+	double FNextTime;
 	friend std::ostream& operator <<(std::ostream& aStream,
 			const param_t& aParam);
 	friend class CSocketFileDuplex;

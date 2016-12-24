@@ -592,9 +592,7 @@ T* CSharedAllocator::sMPointerFromBase(offset_t aOffset, void* aBase)
 {
 	VLOG_IF(2,!aBase) << "Base addr is null.!";
 	VLOG_IF(5,aBase) << "Base addr is " << aBase << " offset = " << aOffset;
-	if (!aBase || is_null_offset(aOffset ))
-		return NULL;
-	return reinterpret_cast<T *>((uint8_t*) aBase + aOffset);;
+	return (!aBase || is_null_offset(aOffset))?NULL: reinterpret_cast<T *>((uint8_t*)aBase + aOffset);
 }
 template<class T>
 void* CSharedAllocator::sMNextCoorectAddr(void* aAddr)

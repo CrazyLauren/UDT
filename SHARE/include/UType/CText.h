@@ -18,6 +18,7 @@
 #include <UType/CCodeConv.h>
 namespace NSHARE
 {
+class CBuffer;
 typedef char utf8;
 typedef uint32_t utf32;
 typedef utf8 encoded_char;
@@ -268,6 +269,7 @@ public:
 	//------------additional API--------
 
 	//!@brief Printing Text state, it isn't equal  the c_str() method
+	NSHARE::CBuffer& MToBuf(NSHARE::CBuffer&s) const;
 	std::ostream& MPrint(std::ostream&) const;
 	std::ostream& MPrint(std::ostream&, ICodeConv const& aType) const;
 

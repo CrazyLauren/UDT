@@ -86,6 +86,7 @@ struct CTCPServer::CImpl:public CTcpImplBase, CIntrusived
 	CCondvar FCond;		//fixme deprecated
 	NSHARE::intrusive_ptr<loop_back_t> FLoopBack;
 	CTCPServer *FThis;
+	CSelectSocket::socks_t FTo;
 };
 }
 

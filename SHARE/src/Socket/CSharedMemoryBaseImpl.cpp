@@ -26,7 +26,6 @@ static unsigned get_pid_optimized()
 	return _pid;
 }
 //todo keapallive
-//todo remove list of buffers, made custom list without assign operation
 //todo using atomic operation for event fifo
 static void def_setting_value(unsigned _array[])
 {
@@ -48,6 +47,7 @@ IMPL::CImpl() :
 {
 	memset(FCondVars,0,sizeof(FCondVars));
 	def_setting_value(FSettings);
+	//FBuffers.set_capacity(2*MGetOption(CSharedMemoryBase::SEND_BUFFER_SIZE));
 	FSignalHandler += NSHARE::CB_t(sMEventHandler, this);
 }
 
@@ -150,6 +150,9 @@ std::list<IMPL::recv_t> IMPL::MCleanUp(std::list<recv_t>& _buffers,event_fifo_t*
 	}
 	return _buffers;
 }
+
+
+
 void IMPL::MEventHandler(event_info_t* aEv)
 {
 	VLOG(2)<<"Handling Event";
@@ -192,19 +195,7 @@ void IMPL::MEventHandler(event_info_t* aEv)
 		break;
 	case event_info_t::E_DATA:
 	{
-		recv_t _recv;
-		IAllocater* const _p = FSharedMemory.MGetAllocator();
-		CHECK_NOTNULL(_p);
-//		LOG(WARNING)<<"Receive "<<aEv->FRecive.FBufferOffset<<" number "<<aEv->FCounter<<" from "<<aEv->FIdFrom.FPid<<" events info Re:"
-//				<<FEvents->FRead<<" Rc:"<<FEvents->FCountRecvEvent<<" W:"<<FEvents->FWrite<<" S:"<<FEvents->FArraySize;
-		NSHARE::CBuffer _data(*_p, aEv->FRecive.FBufferOffset);
-		CHECK_EQ(_data.size(), aEv->FRecive.FSize);
-		VLOG(5)<<"Use count of "<<_data.offset()<< "="<<_data.use_count();
-
-		_data.MMoveTo(_recv.FData);
-		_recv.FFrom = aEv->FIdFrom.MGetId();
-		_recv.FFlags =aEv->FRecive.FFlags;
-		MEventRecv(_recv,aEv->FRecive.FBlockCode);
+			MReceiveData(aEv);
 		break;
 	}
 	case event_info_t::E_DATA_CONFIRAMTION:
@@ -663,18 +654,30 @@ void IMPL::MSingleConvar(unsigned aVal)
 	FCond.MBroadcast();
 }
 
-void IMPL::MEventRecv(recv_t& aData,unsigned aCode)
+void IMPL::MReceiveData(event_info_t* aEv)
 {
-	if(aCode)//blocking mode
-		MEventDataConfiramtion(aData.FFrom,aCode);
+	IAllocater* const _p = FSharedMemory.MGetAllocator();
+	CHECK_NOTNULL(_p);
+	//		LOG(WARNING)<<"Receive "<<aEv->FRecive.FBufferOffset<<" number "<<aEv->FCounter<<" from "<<aEv->FIdFrom.FPid<<" events info Re:"
+	//				<<FEvents->FRead<<" Rc:"<<FEvents->FCountRecvEvent<<" W:"<<FEvents->FWrite<<" S:"<<FEvents->FArraySize;
+	NSHARE::CBuffer _data(*_p, aEv->FRecive.FBufferOffset);
+	CHECK_EQ(_data.size(), aEv->FRecive.FSize);
+	VLOG(5) << "Use count of " << _data.offset() << "=" << _data.use_count();
 
+	recv_t _recv;
+	_recv.FFrom = aEv->FIdFrom.MGetId();
+	_recv.FFlags = aEv->FRecive.FFlags;
 	{
+
 		CRAII<NSHARE::CMutex> _block(FBufMutex);
+		//CHECK(!FBuffers.full());
 		VLOG(2) << "Push data";
-		FCurentBufSize += aData.FData.size();
-		FBuffers.push_back(aData);//todo optimize! remove assign operation
-		aData.FData.release();
-		if (FCurentBufSize > MGetOption(RECV_BUFFER_SIZE))
+		FBuffers.push_back(_recv);
+
+		_data.MMoveTo(FBuffers.back().FData);
+		FCurentBufSize += aEv->FRecive.FSize;
+
+		if (FCurentBufSize > MGetOption(RECV_BUFFER_SIZE) /*||FBuffers.full()*/)
 		{
 			VLOG(2) << "Set Overload ";
 			VLOG_IF(1,!MOverload())<<"Overloaded before";
@@ -682,7 +685,12 @@ void IMPL::MEventRecv(recv_t& aData,unsigned aCode)
 		}
 	}
 	MSingleConvar(event_info_t::E_DATA);
+	const unsigned _code=aEv->FRecive.FBlockCode;
+	if(_code)//blocking mode
+		MEventDataConfiramtion(_recv.FFrom,_code);
+
 }
+
 
 void IMPL::MGetData(recv_t& _result)
 {
@@ -695,7 +703,7 @@ void IMPL::MGetData(recv_t& _result)
 	//decrease buffer size
 	const size_t _curret = FCurentBufSize;
 	FCurentBufSize -= _result.FData.size();
-	if (FCurentBufSize < MGetOption(RECV_BUFFER_SIZE) && _curret > MGetOption(RECV_BUFFER_SIZE))
+	if (FCurentBufSize <= MGetOption(RECV_BUFFER_SIZE) && _curret > MGetOption(RECV_BUFFER_SIZE))
 	{
 		CHECK(MOverload());
 		VLOG(2) << "Unset overload.";

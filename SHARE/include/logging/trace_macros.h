@@ -131,58 +131,58 @@
 		LOG_IF(severity,false)
 
 #	define DVLOG(verboselevel) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DLOG_IF(severity, condition) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DLOG_EVERY_N(severity, n) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DLOG_IF_EVERY_N(severity, condition, n) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DLOG_IF_EVERY_TIME(severity, condition, n) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DLOG_ASSERT(condition) \
-		DLOG(0)
+		DLOG(INFO)
 
 // MSVC warning C4127: conditional expression is constant
 #	define DCHECK(condition) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_EQ(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_NE(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_LE(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_LT(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_GE(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_GT(val1, val2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_NOTNULL(val) (val)
 
 #	define DCHECK_STREQ(str1, str2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_STRCASEEQ(str1, str2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_STRNE(str1, str2) \
-		DLOG(0)
+		DLOG(INFO)
 
 #	define DCHECK_STRCASENE(str1, str2) \
-		DLOG(0)
+		DLOG(INFO)
 #endif  // NDEBUG
 
 #endif /* TRACE_MACROS_H_ */

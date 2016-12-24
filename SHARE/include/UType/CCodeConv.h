@@ -13,6 +13,7 @@
 #define CCODECONV_H_
 
 #include <exception>
+#include <limits>
 namespace NSHARE
 {
 class SHARE_EXPORT ICodeConv
@@ -64,7 +65,7 @@ public:
 		return _size;
 	}
 	//return number of utf32 code  required to re-encode buffer
-	virtual size_t MLengthOf(it_char_t aBegin) const
+	virtual size_t MLengthOf(it_char_t aBegin, size_t aMax=std::numeric_limits<size_t>::max()) const
 			throw (CEInvalidChar) =0;
 
 	//return the size of buffer required to encode the given utf32 code point
@@ -95,11 +96,11 @@ public:
 		return _size;
 	}
 	//return number of utf32 code  required to re-encode buffer
-	virtual size_t MLengthOf(it_char_t aBegin) const
+	virtual size_t MLengthOf(it_char_t aBegin,size_t aMax=std::numeric_limits<size_t>::max()) const
 			throw (CEInvalidChar)
 	{
 		size_t _length = 0;
-		for (; *aBegin ;)
+		for (; *aBegin && aMax!=0;--aMax)
 		{
 			size_t _len = MSeqLen(*aBegin);
 			if (!_len)
@@ -260,9 +261,10 @@ class SHARE_EXPORT CCodeANSII: public ICodeConv
 {
 public:
 	//return number of utf32 code  required to re-encode buffer
-	virtual size_t MLengthOf(it_char_t aBegin) const
+	virtual size_t MLengthOf(it_char_t aBegin,size_t aMax=std::numeric_limits<size_t>::max()) const
 			throw (CEInvalidChar)
 	{
+		//return strnlen(aBegin,aMax);
 		return strlen(aBegin);
 	}
 	virtual size_t MCharLen(uint32_t aCode) const

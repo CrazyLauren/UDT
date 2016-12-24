@@ -285,6 +285,7 @@ bool CSharedAllocatorImpl::MUnlock(void* p) const
 }
 bool CSharedMemory::CImpl::MLock() const
 {
+
 	bool _is = FShareSem.MWait();
 	if (_is)
 	{
@@ -297,23 +298,6 @@ bool CSharedMemory::CImpl::MLock() const
 	}
 	return _is;
 }
-bool CSharedMemory::CImpl::MLockAlloc() const
-{
-	bool _is = FAllocaterSem.MWait();
-	if (_is)
-	{
-		DCHECK_NOTNULL(FInfo);
-		if (FInfo)
-		{
-			const unsigned _pid = NSHARE::CThread::sMPid();
-			VLOG(2) << "Lock Sem by " << _pid << "; previous="
-								<< FInfo->FPIDOfLockedAllocMutex;
-			FInfo->FPIDOfLockedAllocMutex = _pid;
-		}
-	}
-	return _is;
-}
-
 bool CSharedMemory::CImpl::MUnlock() const
 {
 	CHECK_NOTNULL (FInfo);
@@ -321,9 +305,25 @@ bool CSharedMemory::CImpl::MUnlock() const
 	FInfo->FPIDOfLockedMutex = 0;
 	return FShareSem.MPost();
 }
+bool CSharedMemory::CImpl::MLockAlloc() const
+{
+	bool _is = FAllocaterSem.MWait();
+	if (_is)
+	{
+		CHECK_NOTNULL(FInfo);
+		if (FInfo)
+		{
+			const unsigned _pid = NSHARE::CThread::sMPid();
+			VLOG(2) << "Lock Sem by " << _pid << "; previous="
+				<< FInfo->FPIDOfLockedAllocMutex;
+			FInfo->FPIDOfLockedAllocMutex = _pid;
+		}
+	}
+	return _is;
+}
 bool CSharedMemory::CImpl::MUnlockAlloc() const
 {
-	DCHECK_NOTNULL(FInfo);
+	CHECK_NOTNULL(FInfo);
 	if (FInfo)
 	{
 		CHECK_EQ(FInfo->FPIDOfLockedAllocMutex, NSHARE::CThread::sMPid());

@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 		for (;;)
 		{
 			NSHARE::CBuffer _buf=_client.MAllocate(100000);
+
 			if(!_buf.empty() && _client.MSend(_buf,false,_flags)==CSharedMemoryClient::E_SENDED)
 				++_flags;
 		}

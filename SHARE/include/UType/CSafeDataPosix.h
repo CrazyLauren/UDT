@@ -1,16 +1,16 @@
 /*
- * CSafeData.hpp
+ * CSafeDataPosix.h
  *
  * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
  *
- *  Created on: 15.09.2015
+ *  Created on: 23.12.2016
  *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */ 
-#ifndef CSAFEDATA_HPP_
-#define CSAFEDATA_HPP_
+ */
+#ifndef CSAFEDATAPOSIX_H_
+#define CSAFEDATAPOSIX_H_
 
 namespace NSHARE
 {
@@ -60,10 +60,6 @@ private:
 			FSafe(aA)
 	{
 		MLock();
-#ifndef NDEBUG
-		FPThread = new unsigned;
-		*FPThread = CThread::sMThreadId();
-#endif //NDEBUG
 	}
 	WAccess<_Y>& operator=(WAccess<_Y> const& aRhs)
 	{
@@ -71,70 +67,35 @@ private:
 	}
 	void MLock()
 	{
-		LOG_IF(FATAL,
-				FSafe.FImpl.FMutex.MThread()
-						== NSHARE::CThread::sMThreadId())
-				<< "Dead lock for rw writer " << FSafe.FImpl.FMutex.MThread()
-				<< " == " << NSHARE::CThread::sMThreadId();
-		FIsLock=FSafe.FImpl.FMutex.MLock();
-		++FSafe.FImpl.FWriters;
-		for (; FSafe.FImpl.FReaders;)
-		{
-			bool _rval = FSafe.FImpl.FWriteSignal.MTimedwait(
-					&FSafe.FImpl.FMutex);
-			MASSERT_1(_rval);
-		}
+		pthread_rwlock_wrlock(&FSafe.FImpl.FMutex);
 		CHECK_EQ(FSafe.FImpl.FWritersLock,0);
 		++FSafe.FImpl.FWritersLock;
 	}
 
 	void MUnlock()
 	{
-		CHECK(FIsLock);
-		CHECK(FSafe.FImpl.FWriters > 0);
 		if ((--FSafe.FImpl.FWritersLock) == 0)
-		{
-			if ((--FSafe.FImpl.FWriters)!=0)
-				FSafe.FImpl.FWriteSignal.MSignal();
-			else
-				FSafe.FImpl.FReadSignal.MBroadcast();
+			pthread_rwlock_unlock(&FSafe.FImpl.FMutex);
 
-			if (FIsLock)
-			{
-				FIsLock = false;
-				FSafe.FImpl.FMutex.MUnlock();
-			}
-		}
-		CHECK_GE(FSafe.FImpl.FWritersLock, 0);
+		CHECK_GE(FSafe.FImpl.FWritersLock , 0);
 	}
-
 	CSafeData<_T>& FSafe;
-	volatile bool FIsLock;
-#ifndef NDEBUG
-	volatile unsigned *FPThread;
-#endif //NDEBUG
 	friend class CSafeData<_T> ;
 };
-template<class _T>
-template<class _Y>
-inline CSafeData<_T>::WAccess<_Y>::WAccess(WAccess<_Y> const& aRhs) :
-		FSafe(aRhs.FSafe),FIsLock(aRhs.FIsLock)
-{
-#ifndef NDEBUG
-	FPThread=aRhs.FPThread;
-	MASSERT_1(CThread::sMThreadId() == *FPThread);
-#endif //NDEBUG
-	++FSafe.FImpl.FWritersLock;
-}
+
 template<class _T>
 template<class _Y>
 inline CSafeData<_T>::WAccess<_Y>::~WAccess()
 {
-#ifndef NDEBUG
-	if (1 == FSafe.FImpl.FWritersLock)
-		delete FPThread;
-#endif //NDEBUG
 	MUnlock();
+}
+template<class _T>
+template<class _Y>
+inline CSafeData<_T>::WAccess<_Y>::WAccess(WAccess<_Y> const& aRhs) :
+		FSafe(aRhs.FSafe)
+{
+	MASSERT_1(FSafe.FImpl.FWritersLock>0);
+	++FSafe.FImpl.FWritersLock;
 }
 
 template<class _T>
@@ -148,7 +109,6 @@ public:
 	RAccess(RAccess<_Y> const& aRhs) :
 			FSafe(aRhs.FSafe)
 	{
-		MASSERT_1(FSafe.FImpl.FReaders);
 		MLock();
 	}
 	~RAccess()
@@ -192,26 +152,11 @@ private:
 	}
 	inline void MLock()
 	{
-		LOG_IF(FATAL,
-				FSafe.FImpl.FMutex.MThread()
-						== NSHARE::CThread::sMThreadId())
-				<< "Dead lock for rw reader " << FSafe.FImpl.FMutex.MThread()
-				<< " == " << NSHARE::CThread::sMThreadId();
-		NSHARE::CRAII<CMutex> _block(FSafe.FImpl.FMutex);
-		for (; FSafe.FImpl.FWriters;)
-		{
-			bool _rval = FSafe.FImpl.FReadSignal.MTimedwait(
-					&FSafe.FImpl.FMutex);
-			MASSERT_1(_rval);
-		}
-		++FSafe.FImpl.FReaders;
+		pthread_rwlock_rdlock(&FSafe.FImpl.FMutex);
 	}
 	inline void MUnlock()
 	{
-		NSHARE::CRAII<CMutex> _block(FSafe.FImpl.FMutex);
-		MASSERT_1(FSafe.FImpl.FReaders > 0);
-		if (--FSafe.FImpl.FReaders == 0 && FSafe.FImpl.FWriters)
-			FSafe.FImpl.FWriteSignal.MSignal();
+		pthread_rwlock_unlock(&FSafe.FImpl.FMutex);
 	}
 
 	CSafeData<_T> const& FSafe;
@@ -219,4 +164,7 @@ private:
 };
 } //namespace NSHARE
 
-#endif /* CSAFEDATA_HPP_ */
+
+
+
+#endif /* CSAFEDATAPOSIX_H_ */

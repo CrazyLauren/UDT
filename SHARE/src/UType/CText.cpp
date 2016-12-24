@@ -214,7 +214,7 @@ int CText::compare(size_type aFirst, size_type aLen, const std::string& std_str,
 			<< "Index was out of range for std::string object";
 
 	if ((str_len == npos) || (str_idx + str_len > std_str.size()))
-		str_len = (size_type) aType.MLengthOf(std_str.c_str()) - str_idx;
+		str_len = (size_type) aType.MLengthOf(std_str.c_str(), str_len) - str_idx;
 
 	return compare(aFirst, aLen, &std_str.c_str()[str_idx], str_len);
 }
@@ -341,7 +341,7 @@ CText& CText::assign(const std::string& std_str, size_type str_idx,
 	if ((str_num == npos) || (str_num > (size_type) std_str.size() - str_idx))
 	{
 		LOG_IF(WARNING,str_num != npos) << "Size was out of range std::string";
-		str_num = aType.MLengthOf(std_str.c_str()) - str_idx;
+		str_num = aType.MLengthOf(std_str.c_str(), str_num) - str_idx;
 	}
 
 	return assign(&std_str.c_str()[str_idx], str_num, aType);
@@ -360,7 +360,7 @@ CText& CText::assign(utf8 const* utf8_str, size_type str_num,
 
 	CHECK_NE(str_num , npos)
 			<< "Length for utf8 encoded string can not be 'npos'";
-	CHECK_LE(str_num, aType.MLengthOf( utf8_str))
+	CHECK_LE(str_num, aType.MLengthOf( utf8_str,str_num))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -426,7 +426,7 @@ CText& CText::append(const std::string& std_str, size_type str_idx,
 	if ((str_num == npos) || (str_num > (size_type) std_str.size() - str_idx))
 	{
 		LOG_IF(WARNING,str_num != npos) << "Size was out of range std::string";
-		str_num = (size_type) aType.MLengthOf(std_str.c_str()) - str_idx;
+		str_num = (size_type) aType.MLengthOf(std_str.c_str(), str_num) - str_idx;
 	}
 	return append(&std_str.c_str()[str_idx], str_num);
 }
@@ -439,9 +439,9 @@ CText& CText::append(utf8 const* utf8_str, size_type len,
 	MWillBeenChanged();
 	CHECK_NE (len , npos) << "Length for  string can not be 'npos'";
 	VLOG(2) << "Length of str:" << len << ", Real length:"
-						<< aType.MLengthOf(utf8_str);
+						<< aType.MLengthOf(utf8_str,len);
 
-	CHECK_LE(len, aType.MLengthOf(utf8_str))
+	CHECK_LE(len, aType.MLengthOf(utf8_str,len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -505,7 +505,7 @@ CText& CText::insert(size_type idx, const std::string& std_str,
 	if ((str_num == npos) || (str_num > (size_type) std_str.size() - str_idx))
 	{
 		LOG_IF(WARNING,str_num != npos) << "Size was out of range std::string";
-		str_num = (size_type) aType.MLengthOf(std_str.c_str()) - str_idx;
+		str_num = (size_type) aType.MLengthOf(std_str.c_str(), str_num) - str_idx;
 	}
 	return insert(idx, &std_str.c_str()[str_idx], str_num);
 }
@@ -517,7 +517,7 @@ CText& CText::insert(size_type idx, utf8 const* utf8_str, size_type len,
 		CHECK_GT(FUCS4Length , idx) << "Index is out of range for CText";
 	CHECK_NE (len ,npos) << "Length of char array can not be 'npos'";
 
-	CHECK_LE(len, aType.MLengthOf(utf8_str))
+	CHECK_LE(len, aType.MLengthOf(utf8_str,len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -664,7 +664,7 @@ CText& CText::replace(size_type idx, size_type len, utf8 const* utf8_str,
 	CHECK_NE(str_len , npos)
 			<< "Length for utf8 encoded string can not be 'npos'";
 
-	CHECK_GE(len, aType.MLengthOf(utf8_str))
+	CHECK_GE(len, aType.MLengthOf(utf8_str,len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -861,7 +861,7 @@ CText::size_type CText::find(utf8 const* utf8_str, size_type idx,
 	CHECK_NE (str_len , npos)
 			<< "Length for utf8 encoded string can not be 'npos'";
 
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -886,7 +886,7 @@ CText::size_type CText::rfind(utf8 const* utf8_str, size_type aPos,
 	CHECK_NE (str_len , npos)
 			<< "Length for utf8 encoded string can not be 'npos'";
 
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -985,7 +985,7 @@ CText::size_type CText::find_first_of(utf8 const* utf8_str, size_type aIndx,
 		return npos;
 	}
 
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -1013,7 +1013,7 @@ CText::size_type CText::find_first_not_of(utf8 const* utf8_str, size_type aIndx,
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
 	}
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -1106,7 +1106,7 @@ CText::size_type CText::find_last_of(utf8 const* utf8_str, size_type aIndx,
 {
 	CHECK_NE(str_len , npos) << "Length for string can not be 'npos'";
 
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -1137,7 +1137,7 @@ CText::size_type CText::find_last_not_of(utf8 const* utf8_str, size_type aIndx,
 {
 	CHECK_NE(str_len , npos) << "Length for string can not be 'npos'";
 
-	CHECK_LE(str_len, aType.MLengthOf(utf8_str))
+	CHECK_LE(str_len, aType.MLengthOf(utf8_str,str_len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
@@ -1381,7 +1381,7 @@ inline CText::size_type CText::MFindCodepoint(utf8 const* aStr,
 {
 	VLOG(2) << "Find Code point for " << static_cast<const char*>(aStr)
 						<< " Len:" << chars_len << ", Real Len="
-						<< aType.MLengthOf(aStr) << "looking for:"
+						<< aType.MLengthOf(aStr, chars_len) << "looking for:"
 						<< static_cast<char>(code_point) << "(" << code_point
 						<< ").Type:" << aType;
 	utf8 const* const _src_end = aStr + strlen(aStr);
@@ -1421,6 +1421,43 @@ void CText::swap(CText& str)
 		memcpy(str.FQuickUCS4, temp_qbf, QUICKBUFF_SIZE * sizeof(utf32));
 	}
 
+}
+NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
+{
+	if (FUCS4Length)
+	{
+		COMPILE_ASSERT(sizeof(CCodeUTF8::utf8_t)>=sizeof(NSHARE::CBuffer::value_type),CannotConvertUtf8ToBuf);
+
+		aBuf.reserve(aBuf.size()+FUCS4Length);
+
+		const unsigned _factor=sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type);
+
+		NSHARE::CBuffer::value_type _buf[sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type)*4]; //max 4 byte
+		CBuffer::const_iterator const _p_buf(_buf);
+
+		size_type const src_len = FUCS4Length;
+		const utf32* _src_begin = ptr();
+		utf32 const* const _src_end = _src_begin + src_len;
+
+		for (; (_src_begin != _src_end); ++_src_begin)
+		{
+			size_t _count = (NSHARE::CBuffer::value_type*) CCodeUTF8::sMAppend(
+					*_src_begin, reinterpret_cast<CCodeUTF8::utf8_t*>(_buf)) - _buf;
+
+			CHECK_LE(_count, sizeof(_buf));
+
+			aBuf.insert(aBuf.end(),_p_buf,_p_buf+_count);
+
+			if (_count == 0)
+			{
+				LOG(DFATAL)<<"Invalid utf8 char code:"<<(*_src_begin);
+				break;
+			}
+		}
+	}
+	else
+		VLOG(2) << "Print empty text";
+	return aBuf;
 }
 std::ostream& CText::MPrint(std::ostream& aStream) const //optimized for utf8
 {

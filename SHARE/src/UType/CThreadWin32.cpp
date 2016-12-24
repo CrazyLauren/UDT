@@ -121,9 +121,14 @@ unsigned CThread::CImpl::sMThreadFunc(void* aData)
 	} catch (_thread_canceled_t const&)
 	{
 		_pThis->FThis.MCancelCleanUp();
-	}catch(...)
+	}
+	catch (std::exception const& aExcept)
 	{
-		;
+		LOG(DFATAL) << "Unhandled exception."<< aExcept.what();
+	}
+	catch(...)
+	{
+		LOG(DFATAL)<<"Unknown unhandled exception.";
 	}
 	_pThis->FThis.MSetRunnig(false);
 	_endthreadex(0);

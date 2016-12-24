@@ -83,7 +83,7 @@ bool IMPL_CLASS::MOpen()
 	bool _is = FSharedMemory.MOpen(FName,true,FReserv);
 	LOG_IF(ERROR,!_is) << "Cannot open " << FName;
 	if (!_is)
-	return false;
+		return false;
 	VLOG(2)<<"The ShM "<<FName<<" is opened";
 	void* _p = FSharedMemory.MGetIfMalloced(0);
 	LOG_IF(ERROR,!_is) << "The shared memory " << FName << " has not server.";

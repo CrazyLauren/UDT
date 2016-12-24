@@ -146,7 +146,7 @@ bool CIPCSem::MPost(void)
 	CHECK_NE(FImpl->FSem, INVALID_HANDLE_VALUE);
 	bool _is = ::ReleaseSemaphore(FImpl->FSem, 1, 0) != 0;
 	VLOG(2)<<"Sem "<<FName<<" released";
-	LOG_IF(ERROR,!_is) << "Look error " << GetLastError();
+	LOG_IF(FATAL,!_is) << "Look error " << GetLastError();
 	return _is;
 }
 int CIPCSem::MValue() const

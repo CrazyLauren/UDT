@@ -1112,7 +1112,7 @@ CBuffer::size_type CBuffer::begin_capacity() const
 }
 void CBuffer::reserve(size_t aSize)
 {
-	if (aSize < capacity())
+	if (aSize <= capacity())
 		return;
 	if (FBuffer.FBeginOfStorage!=NULL)
 	{

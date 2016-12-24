@@ -15,6 +15,7 @@
 #include <UType/CSharedMemory.h>
 #include <UType/CIPCSignalEvent.h>
 #include <Socket/diagnostic_io_t.h>
+#include <boost/circular_buffer.hpp>
 namespace NSHARE
 {
 struct server_info_t;
@@ -62,7 +63,6 @@ public:
 	bool MUnlock() const;
 
 
-	void MEventRecv(recv_t& aData,unsigned aCode);
 	bool MWaitForEvent(event_cv_t& aFrom,event_info_t* aVal, double const aTime);
 	bool MCreateEventHandler(event_cv_t & aEvent);
 	bool MCreateSignalEvent(event_cv_t &);
@@ -142,7 +142,9 @@ public:
 	mutable NSHARE::CIPCSem FSharedSem;
 
 private:
-	typedef std::list<recv_t> buffers_t;//todo replace to circular buffer with dynamic expending
+	typedef std::deque<recv_t> buffers_t;//todo replace to circular buffer with dynamic expending
+	//typedef boost::circular_buffer<recv_t> buffers_t;
+
 	struct check_connection_t
 	{
 		shared_identify_t FTo;
@@ -160,6 +162,7 @@ private:
 	void MGetValidBuffer(IAllocater* const aAlloc,CBuffer&);
 	bool  MWaitForSend(const event_info_t& _info, event_cv_t& aEvent);
 	static int sMEventHandler(void*, void*, void* pData);
+	void MReceiveData(event_info_t* aEv);
 
 	bool FCondVars[event_info_t::MAX_EVENT_VALUE];
 	mutable NSHARE::CMutex FBufMutex;

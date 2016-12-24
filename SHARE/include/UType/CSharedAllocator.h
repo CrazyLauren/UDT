@@ -124,7 +124,7 @@ private:
 	template<class T>
 	static offset_t sMOffsetFromBase(T const* const aFrom, void const * const aBase);
 	template<class T>
-	static T* sMPointerFromBase(offset_t aOffset, void* aBase);
+	inline static T* sMPointerFromBase(offset_t aOffset, void* aBase);
 	template<class T>
 	static void* sMNextCoorectAddr(void* aAddr);
 	template<class T>

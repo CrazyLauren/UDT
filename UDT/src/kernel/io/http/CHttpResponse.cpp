@@ -11,6 +11,7 @@
  */
 #include <deftype>
 #include <algorithm>
+#include <fstream>
 #include "parser-cpp.h"
 #include "CHttpResponse.h"
 
@@ -79,6 +80,21 @@ void CHttpResponse::MRemoveHeader(NSHARE::CText const & key)
 {
 	FHeaders.erase(key);
 }
+
+void CHttpResponse::MSetBody(NSHARE::CBuffer const & aBody)
+{
+	if (aBody.size() == 0)
+	{
+		MRemoveHeader(g_length_key);
+		FBody.clear();
+		return;
+	}
+	FBody = aBody;
+	NSHARE::CText _length;
+	NSHARE::num_to_str(aBody.size(), _length);
+	FHeaders[g_length_key] = _length;
+}
+
 void CHttpResponse::MSetBody(NSHARE::CText const & value)
 {
 	if (value.size() == 0)
@@ -87,9 +103,9 @@ void CHttpResponse::MSetBody(NSHARE::CText const & value)
 		FBody.clear();
 		return;
 	}
-	FBody = value;
+	FBody << value;
 	NSHARE::CText _length;
-	NSHARE::num_to_str(FBody.length_code(), _length);
+	NSHARE::num_to_str(value.length_code(), _length);
 	FHeaders[g_length_key] = _length;
 }
 void CHttpResponse::MSetStatus(eStatusCode code, NSHARE::CText const & msg)
@@ -112,23 +128,19 @@ void CHttpResponse::MRawHeaders(NSHARE::CText& aTo) const
 }
 NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 {
-	std::stringstream _buf;
 	{
 		NSHARE::CText _text_response;
 		_text_response.MPrintf("HTTP/%d.%d %d %s\r\n", FVersion.FMajor,
 				FVersion.FMinor, FCode, FCodeMsg.c_str());
-		_buf << _text_response;
+		aBuf << _text_response;
 	}
 	{
-		header_array_t::iterator _it = FHeaders.find(g_length_key);
-		if (_it != FHeaders.end())
-		{
-		}
-		else if (!FBody.empty())
+		header_array_t::const_iterator const _it = FHeaders.find(g_length_key);
+		if (_it == FHeaders.end() && !FBody.empty())
 		{
 			LOG(WARNING)<<g_length_key<<" is not setting.Chucked is not supported";
 			CText _num;
-			_num.MPrintf("%d",FBody.length_code());
+			_num.MPrintf("%d",FBody.size());
 			MAppendHeader(g_length_key,_num);
 		}
 #ifdef _WIN32
@@ -144,19 +156,49 @@ NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 		NSHARE::CText _data(asctime_r(&_ts,_str_buf));
 #endif
 		_data.erase(_data.find_last_of('\n'));
-		MAppendHeader("data",_data);
+		MAppendHeader("data", _data);
 	}
 	CText _head;
 	MRawHeaders(_head);
-	_buf << _head << "\r\n";
-	_buf << FBody;
-	std::string _str = _buf.str();
-	NSHARE::CBuffer::const_iterator _it(
-			(NSHARE::CBuffer::const_pointer) _str.c_str());
-
-	aBuf.insert(aBuf.end(), _it, _it + _str.length());
-
+	aBuf << _head << "\r\n";
+	aBuf.insert(aBuf.end(), FBody.begin(), FBody.end());
 	return aBuf;
 }
+bool CHttpResponse::MWriteFile(NSHARE::CText const& _path)
+{
+	std::ifstream _stream;
+	_stream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary);
+	bool _result = false;
+	if (_stream.is_open())
+	{
+		_stream.seekg(0, std::ios::end);
+		size_t const _size = _stream.tellg();
+		NSHARE::CBuffer _buf(_size, 0);
+		if (!_buf.empty())
+		{
+			_stream.seekg(0, std::ios::beg);
+			_stream.read((char*) _buf.ptr(), _size);
 
+			NSHARE::CText const _mime = sMGetMimetype(_path);
+			if (_mime.empty())
+			{
+				MAppendHeader("Content-Type", "application/octet-stream");//base64
+				LOG(FATAL)<<"It's not implemented";
+			}else
+			{
+				std::cout << "Mime=" << _mime << std::endl;
+				MAppendHeader("Content-Type",_mime);
+				MSetBody(_buf);
+			}
+			_result = true;
+			//
+		}else
+		{
+			LOG(ERROR)<<"The file "<<_path<<" is empty";
+			_result = false;
+		}
+		_stream.close();
+	}
+	return _result;
+}
 } /* namespace NUDT */

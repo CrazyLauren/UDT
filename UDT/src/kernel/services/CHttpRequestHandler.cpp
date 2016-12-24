@@ -57,7 +57,7 @@ int CHttpRequestHandler::sMHandleRequestId(CHardWorker* WHO, args_data_t* WHAT,
 void CHttpRequestHandler::MHandleFrom(CHttpRequest const* aRequest,
 		descriptor_t aFrom)
 {
-	std::cout << *aRequest << std::endl;
+	//std::cout << *aRequest << std::endl;
 
 	NSHARE::smart_field_t<CUrl> const& _url = aRequest->MUrl();
 	eHtppMethod const _method(aRequest->MMethod());
@@ -90,9 +90,18 @@ void CHttpRequestHandler::MHandleFrom(CHttpRequest const* aRequest,
 		}
 		else
 		{
-			_code=E_STARUS_OK;
-			_response.MSetBody("UDT core welcome you!!!");
-			_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
+			
+			NSHARE::CText const _path = "q:/workspaces/netbeans/udt_gui/public_html" + _url.MGetConst().MPath();
+			std::cout << "Read file:"<< _path << std::endl;
+			if (!_response.MWriteFile(_path))
+			{
+				_response.MSetBody("The page is not found:");
+				_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
+				std::cerr << "No page" << std::endl;
+				_code = E_STARUS_NOT_FOUND;
+			}else
+				_code = E_STARUS_OK;
+			
 		}
 	}
 	_response.MSetStatus(_code);

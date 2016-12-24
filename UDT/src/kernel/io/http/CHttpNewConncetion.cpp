@@ -50,7 +50,8 @@ public:
 	virtual bool MReceivedData(data_t::const_iterator aBegin,
 			data_t::const_iterator aEnd)
 	{
-		unsigned _count = FRequest.MParse(&(*aBegin), aEnd - aBegin);
+		VLOG(2) << "Starting parse request";
+		unsigned _count = FRequest.MParse(aBegin.base(), aEnd - aBegin);
 		VLOG(2) << "Parse " << _count << " bytes by http. Error="
 							<< FRequest.MError();
 		switch (FRequest.MError())

@@ -27,17 +27,24 @@ public:
 	void MRemoveHeader(NSHARE::CText const & key);
 
 	void MSetBody(NSHARE::CText const & value);
+	void MSetBody(NSHARE::CBuffer const & aBody);
+	bool MWriteFile(NSHARE::CText const&);
+
 	void MSetStatus(eStatusCode code, NSHARE::CText const & msg =
 			NSHARE::CText());
 	//fill response
 	NSHARE::CBuffer MRaw(NSHARE::CBuffer =
 			NSHARE::CBuffer()/*,NSHARE::ICodeConv*/);
 	void MRawHeaders(NSHARE::CText&) const;
+
+	static NSHARE::CText sMGetMimetype (NSHARE::CText const& filename);
 private:
+
 	typedef std::map<NSHARE::CText, NSHARE::CText> header_array_t;
+
 	NSHARE::version_t FVersion;
 	header_array_t FHeaders;
-	NSHARE::CText FBody;
+	NSHARE::CBuffer FBody;
 	eStatusCode FCode;
 	NSHARE::CText FCodeMsg;
 	//NSHARE::CBuffer FResponse;

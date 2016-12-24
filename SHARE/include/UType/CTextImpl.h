@@ -503,6 +503,10 @@ inline CText operator+(utf32 code_point, const CText& str)
 	temp.append(str);
 	return temp;
 }
+inline NSHARE::CBuffer& operator<<(NSHARE::CBuffer& s, const NSHARE::CText& str)
+{
+	return str.MToBuf(s);
+}
 
 }
 namespace std
