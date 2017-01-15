@@ -97,7 +97,7 @@ public:
 
 		CHECK_LE(aOffset, std::numeric_limits<CSharedAllocator::offset_t>::max());
 
-		void* _p = FAllocater.MPointer(aOffset);
+		void* _p = FAllocater.MPointer(static_cast<CSharedAllocator::offset_t>(aOffset));
 		return _p;
 	}
 
@@ -128,10 +128,10 @@ inline void* CSharedAllocatorImpl::MReallocate(void* p, size_type aSize,uint8_t 
 	switch(aType)
 	{
 	case ALLOCATE_FROM_COMMON:
-		_p = FAllocater.MReallocate(p,aSize,true,false);//fixme to config
+		_p = FAllocater.MReallocate(p,static_cast<CSharedAllocator::block_size_t>(aSize),true,false);//fixme to config
 		break;
 	case ALLOCATE_FROM_COMMON_AND_RESERV:
-		_p = FAllocater.MReallocate(p,aSize,true,true);//fixme to config
+		_p = FAllocater.MReallocate(p, static_cast<CSharedAllocator::block_size_t>(aSize),true,true);//fixme to config
 			break;
 	};
 	return _p;
@@ -648,13 +648,13 @@ IAllocater* CSharedMemory::MGetAllocator() const
 void* CSharedMemory::MMallocTo(const uint32_t xWantedSize, IAllocater::offset_pointer_t aRefOffset)
 {
 	CHECK_NOTNULL (FImpl);
-	return FImpl->FAllocater.FAllocater.MMallocTo(xWantedSize, aRefOffset);
+	return FImpl->FAllocater.FAllocater.MMallocTo(xWantedSize, static_cast<CSharedAllocator::offset_t>(aRefOffset));
 }
 
 void* CSharedMemory::MGetIfMalloced(IAllocater::offset_pointer_t aRefOffset)
 {
 	CHECK_NOTNULL (FImpl);
-	return FImpl->FAllocater.FAllocater.MGetIfMalloced(aRefOffset);
+	return FImpl->FAllocater.FAllocater.MGetIfMalloced(static_cast<CSharedAllocator::offset_t>(aRefOffset));
 }
 
 void CSharedMemory::MCleanUp()

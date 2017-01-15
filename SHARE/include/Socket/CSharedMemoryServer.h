@@ -45,8 +45,8 @@ public:
 	bool MClose(int aUserId);//if aUserId is negative, close all clients
 
 
-	eSendState  MSend(shared_identify_t const&,NSHARE::CBuffer const& aVal,bool aBlock,unsigned aFlags);
-	unsigned MSend(int aUserId,NSHARE::CBuffer const& aVal,bool aBlock,unsigned aFlags);//if aUserId is negative, The is sent to all clients
+	eSendState  MSend(shared_identify_t const&,NSHARE::CBuffer const& aVal,bool aBlock,unsigned aId);
+	unsigned MSend(int aUserId,NSHARE::CBuffer const& aVal,bool aBlock,unsigned aId);//if aUserId is negative, The is sent to all clients
 	sent_state_t MSend(void const* aData, std::size_t aSize,
 			NSHARE::CConfig const& aTo);
 	sent_state_t MSend(void const*  aData, std::size_t aSize);
@@ -54,7 +54,7 @@ public:
 	sent_state_t MSend(data_t const& aVal, NSHARE::CConfig const& aTo);
 
 
-	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,unsigned* aFlags=NULL,double aTime=-1);
+	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,unsigned* aId=NULL,double aTime=-1);
 	ssize_t MReceiveData(NSHARE::CBuffer *, float const aTime);
 	ssize_t MReceiveData(data_t * aData, float const aTime,
 			recvs_from_t *aFrom);

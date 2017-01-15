@@ -455,7 +455,7 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 	_info.FRecive.FBlockCode = 0;
 	_info.FRecive.FSize =(uint32_t) aVal.size();
 	CBuffer::offset_pointer_t const _offset = aVal.refuse();
-	_info.FRecive.FBufferOffset = _offset;
+	_info.FRecive.FBufferOffset = static_cast<CSharedAllocator::offset_t>(_offset);
 	VLOG(2) << "Offset is " << _offset;
 
 	CSharedMemoryBase::eSendState _state=CSharedMemoryBase::E_ERROR;

@@ -1432,7 +1432,7 @@ NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 
 		const unsigned _factor=sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type);
 
-		NSHARE::CBuffer::value_type _buf[sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type)*4]; //max 4 byte
+		NSHARE::CBuffer::value_type _buf[_factor*4]; //max 4 byte
 		CBuffer::const_iterator const _p_buf(_buf);
 
 		size_type const src_len = FUCS4Length;

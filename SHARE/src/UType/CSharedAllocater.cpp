@@ -109,8 +109,8 @@ struct CSharedAllocator::block_node_t:pid_offset_t
 	{
 
 	}
-	struct block_node_t *MNext(void* aBaseAddr) const;
-	offset_t MSetNextNode(offset_t const&);
+	inline struct block_node_t *MNext(void* aBaseAddr) const;
+	inline offset_t MSetNextNode(offset_t const&);
 	void MSetBlockSize(block_size_t const& aVal)
 	{
 		VLOG(2) << "Set new block size equal " << aVal;
@@ -158,16 +158,16 @@ static const uint32_t RESERV_IS_NOT_ALLOCATED=(uint32_t)-1;
 SHARED_PACKED(
 struct CSharedAllocator::process_node_t
 {
-	explicit process_node_t(pid_type aPid, block_size_t  aMemorySize,size_t aReserv);
-	explicit process_node_t(process_node_t const* aRht, block_size_t  aMemorySize);
+	inline explicit process_node_t(pid_type aPid, block_size_t  aMemorySize,size_t aReserv);
+	inline explicit process_node_t(process_node_t const* aRht, block_size_t  aMemorySize);
 
-	struct process_node_t *MNext(void* aBaseAddr) const;
-	offset_t MSetNextNode(offset_t const&);
+	inline struct process_node_t *MNext(void* aBaseAddr) const;
+	inline offset_t MSetNextNode(offset_t const&);
 
-	offset_t MPutOffset(offset_t aOffset);
+	inline offset_t MPutOffset(offset_t aOffset);
 	//void MPopOffset(offset_t aOffset);
-	void MPopOffsetById(offset_t aOffset);
-	bool MIsOffset(offset_t aOffsetInArray,offset_t aOffset);
+	inline void MPopOffsetById(offset_t aOffset);
+	inline bool MIsOffset(offset_t aOffsetInArray,offset_t aOffset);
 	size_t MSizeOf()const
 	{
 		const size_t _size=FArraySize*sizeof(FOffsets[0])+sizeof(process_node_t);
@@ -195,7 +195,7 @@ CSharedAllocator::process_node_t::process_node_t(pid_type aPid,
 		FCount(0), //
 		FArraySize(
 				(aMemorySize - sizeof(process_node_t)) / sizeof(FOffsets[0])), //
-		FSizeOfReserv(aReserv),//
+		FSizeOfReserv(static_cast<uint32_t>(aReserv)),//
 		FUsedUpReserv(RESERV_IS_NOT_ALLOCATED),//
 		FAlloactionCount(0) //
 {
@@ -245,7 +245,7 @@ CSharedAllocator::process_node_t::process_node_t(process_node_t const* aRht,
 //	;
 //}
 
-inline bool CSharedAllocator::process_node_t::MIsOffset(offset_t aOffsetInArray,
+bool CSharedAllocator::process_node_t::MIsOffset(offset_t aOffsetInArray,
 		offset_t aOffset)
 {
 	if(FArraySize<=aOffsetInArray)
@@ -324,7 +324,7 @@ CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t
 //	CHECK_NE(i, FArraySize);
 //	MPopOffsetById(i);
 //}
-inline void CSharedAllocator::process_node_t::MPopOffsetById(offset_t aOffset)
+void CSharedAllocator::process_node_t::MPopOffsetById(offset_t aOffset)
 {
 	free_index_t _min=atomic_read32(&FMinFreeIndex);
 	VLOG(5)<<"Prev index = "<<_min<<" new = "<<aOffset;
@@ -426,9 +426,9 @@ struct CSharedAllocator::heap_head_t
 
 	bool MIsWatchDogExist()const;
 	CText MWatchDogMutexName()const;
-	void MSetFirstNode(offset_t aNode);
-	struct process_node_t *MFirstProcessNode(void* aBaseAddr);
-	struct block_node_t *MFirstBlockNode(void* aBaseAddr);
+	inline void MSetFirstNode(offset_t aNode);
+	inline struct process_node_t *MFirstProcessNode(void* aBaseAddr);
+	inline struct block_node_t *MFirstBlockNode(void* aBaseAddr);
 	void MFillCRC();
 	bool MCheckCrc() const; //checking the head integrity;
 	void MSerialize(NSHARE::CConfig& ) const;
@@ -614,7 +614,11 @@ void* CSharedAllocator::sMPrevCoorectAddr(void* aAddr)
 	else
 		return aAddr;
 }
-CSharedAllocator::block_node_t* CSharedAllocator::sMGetBlockNode(void * const aPointer)
+void * CSharedAllocator::sMGetPointerOfBlockNode(block_node_t* aNode)
+{
+	return ++aNode;
+}
+CSharedAllocator::block_node_t* CSharedAllocator::sMGetBlockNode(void  * const aPointer)
 {
 	CHECK_NOTNULL(aPointer);
 	block_node_t* _p_node=reinterpret_cast<block_node_t*>((uint8_t*) (aPointer)
@@ -788,21 +792,19 @@ CSharedAllocator::MSearchProcessNode(
 	_rval.second = _p_prev;
 	return _rval;
 }
-CSharedAllocator::nodes_proc_t	//
+CSharedAllocator::process_node_t *	//
 CSharedAllocator::MSearchProcessOfBlockNode(
-		heap_head_t* const aHead,offset_t aOffsetInArray,offset_t aOffset) const
+		heap_head_t* const aHead,block_node_t * aNode) const
 {
-	nodes_proc_t _rval;
+	offset_t const _offset_in_array=aNode->FIndexOfOffset;
+	offset_t const _offset= sMOffsetFromBase(sMGetPointerOfBlockNode(aNode), FBase);
+
 	process_node_t * _p = aHead->MFirstProcessNode(FBase);
-	process_node_t * _p_prev = NULL;
-	for (; _p != NULL && !_p->MIsOffset(aOffsetInArray,aOffset);)
+	for (; _p != NULL && !_p->MIsOffset(_offset_in_array,_offset);)
 	{
-		_p_prev = _p;
 		_p = _p->MNext(FBase);
 	}
-	_rval.first = _p;
-	_rval.second = _p_prev;
-	return _rval;
+	return _p;
 }
 
 CSharedAllocator::process_node_t * const CSharedAllocator::MCreateProcessNode(
@@ -1072,14 +1074,14 @@ void* CSharedAllocator::MMalloc(block_size_t const xWantedSize,bool aBlock,bool 
 		if (aBlock && !_p)
 		{
 			VLOG(5) << sMPrintAsXml(this);
-			aBlock = FReserv >= xWantedSize || _p_head->MIsCanBeMAllocated();
+			aBlock = _p_head->MIsCanBeMAllocated() || (aFromReserv&&FReserv >= xWantedSize );//Usually always true
 			if (aBlock)
 			{
 				VLOG(1) << "The number of waiting for "
 									<< _p_head->FNumberOfWaitingFor
 									<< " post = " << _p_head->FPostCount;
 
-				aBlock = MWaitFreeOpereration(_p_head);
+				aBlock = MWaitFreeOperation(_p_head);
 			}
 			LOG_IF(INFO,!aBlock) << "Cannot allocate " << xWantedSize
 											<< " info " << sMPrintAsXml(this);
@@ -1091,7 +1093,7 @@ void* CSharedAllocator::MMalloc(block_size_t const xWantedSize,bool aBlock,bool 
 	}while( aBlock && !_p);
 	return _p;
 }
-bool CSharedAllocator::MWaitFreeOpereration(heap_head_t* const _p_head)
+bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 {
 	//fixme check for windows
 //			const int _val = FFreeSem.MValue();
@@ -1134,6 +1136,17 @@ void CSharedAllocator::MInformMemFreed(heap_head_t* const _p_head)
 	}
 	//DLOG_IF(ERROR,FFreeSem.MValue()>0)<<"Wtf? The semaphore value is greater of zero.";
 }
+void CSharedAllocator::MUnkeepBlock(block_node_t * _node,
+		process_node_t* const _process) const
+{
+	_process->MPopOffsetById(_node->FIndexOfOffset);
+}
+void CSharedAllocator::MKeepBlock(block_node_t * _node, process_node_t*const  _process) const
+{
+	offset_t const _offset = sMOffsetFromBase(sMGetPointerOfBlockNode(_node),
+			FBase);
+	_node->FIndexOfOffset = _process->MPutOffset(_offset);
+}
 void* CSharedAllocator::MMallocImpl(heap_head_t* const _p_head,
 		block_size_t const xWantedSize, offset_t aOffset, bool aUseReserv)
 {
@@ -1174,11 +1187,7 @@ void* CSharedAllocator::MMallocImpl(heap_head_t* const _p_head,
 											<< _p_head->FFreeBytesRemaining;
 		if (_pmemory)
 		{
-			offset_t const _offset = sMOffsetFromBase(_pmemory, FBase);
-			VLOG(5) << "Pid Offset=" << sMOffsetFromBase(_process, FBase);
-			//		_process->MPutOffset(_offset);
-			block_node_t* _node = sMGetBlockNode(_pmemory);
-			_node->FIndexOfOffset = _process->MPutOffset(_offset);
+			MKeepBlock(sMGetBlockNode(_pmemory),_process);
 			_p_head->MIncUserAllocation();
 		}
 	}
@@ -1194,26 +1203,16 @@ void* CSharedAllocator::MMallocImpl(heap_head_t* const _p_head,
 		if (_remain >= xWantedSize)
 		{
 			VLOG(2) << "Ok the reserve is exist.";
-			reserved_block_t _alloc = MMallocBlockFromReserv(_p_head, _process,
+			_pmemory = MMallocBlockFromReserv(_p_head, _process,
 					xWantedSize);
 
-			_pmemory = _alloc.first;
 			LOG_IF(INFO,_pmemory) << "The " << xWantedSize
 											<< " bytes memory is  allocated from reserve for "
 											<< _process->FPid << ". Remain "
 											<< (_process->FSizeOfReserv
 													- _process->FUsedUpReserv)
 											<< " bytes." << " Ponter = "
-											<< _pmemory;
-			if (_alloc.second)
-			{
-				VLOG(2) << "Reserve space left";
-				offset_t const _offset = sMOffsetFromBase(_alloc.second, FBase);
-				VLOG(5) << "Pid Offset="
-									<< sMOffsetFromBase(_process, FBase);
-				block_node_t* _node = sMGetBlockNode(_alloc.second);
-				_node->FIndexOfOffset = _process->MPutOffset(_offset);
-			}
+										<< _pmemory;
 		}
 	}
 
@@ -1233,52 +1232,41 @@ size_t CSharedAllocator::MFreeImpl(void* aP, heap_head_t* const _p_head,
 																			<< " is not allocated. Pid "
 																			<< MSearchProcessOfBlockNode(
 																					_p_head,
-																					_p_node->FIndexOfOffset,
-																					_offset).first;
+																					_p_node);
 
 	//looking for the process node for the block
 	if (!_p)
-		_p = MSearchProcessOfBlockNode(_p_head, _p_node->FIndexOfOffset,
-				_offset).first;
+		_p = MSearchProcessOfBlockNode(_p_head, _p_node);
 	else
 		LOG_IF(DFATAL,!_p->MIsOffset(_p_node->FIndexOfOffset,_offset))
 																				<< "Invalid pid of node ";
 
 	CHECK_NOTNULL(_p);
 //	CHECK_EQ(_p->FPid,_pid);
-
+	size_t _rval=0;
 	if (!_p_node->FReservedFlag
 			|| _p_node->FReserveFree/*remove reserve forever*/)
 	{
 		//Now The process is not hold the memory
-		{
-			VLOG(5) << "Pid Offset=" << sMOffsetFromBase(_p, FBase);
-			_p->MPopOffsetById(_p_node->FIndexOfOffset);
-		}
+		VLOG(5) << "Pid Offset=" << sMOffsetFromBase(_p, FBase);
+		MUnkeepBlock(_p_node,_p);
+
 		//_p->MPopOffset(_offset);
+
 		if (_p_node->FReserveFree)
-		{
 			_p->FSizeOfReserv = 0;
-		}
 		else
 			_p_head->MDecUserAllocation();
+
 		//The memory is freed
-		size_t _val = MFreeBlock(_p_head, aP);
+		_rval = MFreeBlock(_p_head, aP);
 		VLOG(1)<<"The "<<FBase<<" pointer being allocated by "<<_p->FPid
 		<<" is deallocated successfully by " <<get_pid_optimized()
 		<<". Remain "<<_p_head->FFreeBytesRemaining<<" bytes.";
-
-		MInformMemFreed(_p_head);
-
-		return _val;
 	}
 	else
-	{
 		MFreeReservedBlock(_offset, _p_node, _p);
-
-		MInformMemFreed(_p_head);
-		return 0;
-	}
+	return _rval;
 }
 void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 		block_node_t* _p_node, process_node_t* _p)
@@ -1330,7 +1318,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	{
 		VLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
-		_p->MPopOffsetById(_p_node->FIndexOfOffset);
+		MUnkeepBlock(_p_node,_p);
 		_prev->MSetBlockSize(
 				_prev->FBlockSize + _p_node->FBlockSize + sizeof(block_node_t));
 		_p_node = _prev;
@@ -1344,7 +1332,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	{
 		VLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
-		_p->MPopOffsetById(_next->FIndexOfOffset);
+		MUnkeepBlock(_next,_p);
 		_p_node->MSetBlockSize(
 				_p_node->FBlockSize + _next->FBlockSize + sizeof(block_node_t));
 		_next = NULL;
@@ -1374,7 +1362,9 @@ size_t CSharedAllocator::MFree(void *aP)
 	}
 	VLOG(2) << "Free " << aP << " (" << MOffset(aP) << ")";
 
-	return MFreeImpl(aP, _p_head, NULL);
+	const size_t _size=MFreeImpl(aP, _p_head, NULL);
+	MInformMemFreed(_p_head);
+	return _size;
 }
 //nodes_block_t
 CSharedAllocator::nodes_block_t CSharedAllocator::MGetFreeBlockFromBegin(
@@ -1593,14 +1583,14 @@ void CSharedAllocator::MSplitBlockAndUpdateList(nodes_block_t& _nodes,
 	if (pxNewBlockLink)
 		MInsertIntoFreeList(_p_head, pxNewBlockLink, _nodes.second);
 }
-CSharedAllocator::reserved_block_t CSharedAllocator::MMallocBlockFromReserv(
+void * CSharedAllocator::MMallocBlockFromReserv(
 		heap_head_t* const _p_head, process_node_t * const aProc,
 		block_size_t const xWantedSize) const
 {
 	CHECK_NOTNULL(FBase);
 	LOG_IF(ERROR,!xWantedSize) << "The size is null.";
 	if (xWantedSize == 0)
-		return reserved_block_t(NULL, NULL);
+		return NULL;
 	VLOG(2) << "Requred size " << xWantedSize;
 	CHECK_EQ((xWantedSize & BLOCK_ALLOCATED_BIT), 0);
 
@@ -1616,7 +1606,7 @@ CSharedAllocator::reserved_block_t CSharedAllocator::MMallocBlockFromReserv(
 	}
 
 	if (_alligment_size > aProc->FSizeOfReserv)
-		return reserved_block_t(NULL, NULL);
+		return NULL;
 	VLOG(2) << "Alligment block size " << _alligment_size;
 	block_node_t * _free_node = NULL;
 
@@ -1645,10 +1635,9 @@ CSharedAllocator::reserved_block_t CSharedAllocator::MMallocBlockFromReserv(
 	if (_free_node == NULL)
 	{
 		VLOG(2) << "No free reserved block";
-		return reserved_block_t(NULL, NULL);
+		return _free_node;
 	}
 	_free_node->FBlockSize &= (~BLOCK_ALLOCATED_BIT);	//for safety reset flags
-	reserved_block_t _rval(NULL, NULL);
 
 	atomic_add(&aProc->FUsedUpReserv, _free_node->FBlockSize);
 
@@ -1662,16 +1651,15 @@ CSharedAllocator::reserved_block_t CSharedAllocator::MMallocBlockFromReserv(
 		_new_block->FReservedFlag = 1;
 		_new_block->FReserveFree = 1;
 		_new_block->FBlockSize |= BLOCK_ALLOCATED_BIT;
-		_rval.second =
-				(void *) (((uint8_t *) _new_block) + sizeof(block_node_t));
 
+		MKeepBlock(_new_block,aProc);
 	}
+
 	_free_node->FReservedFlag = 1;
 	_free_node->FReserveFree = 0;
 	_free_node->FBlockSize |= BLOCK_ALLOCATED_BIT;
 
-	_rval.first = (void *) (((uint8_t *) _free_node) + sizeof(block_node_t));
-	return _rval;
+	return sMGetPointerOfBlockNode(_free_node);
 }
 void *CSharedAllocator::MMallocBlock(heap_head_t* const _p_head,
 		block_size_t const xWantedSize, bool aFromEnd, offset_t aOffset) const
@@ -1900,14 +1888,14 @@ void CSharedAllocator::MCleaunUpBlock(heap_head_t* const _p_head,
 	CHECK_NE((_node->FBlockSize & BLOCK_ALLOCATED_BIT), 0);
 
 	if (!aNode)
-		aNode = MSearchProcessOfBlockNode(_p_head, _node->FIndexOfOffset,
-				_base_offset).first;
+		aNode = MSearchProcessOfBlockNode(_p_head, _node);
+
 	CHECK_NOTNULL(aNode);
 	if (aNode->FPid == _cleanup.FPid)
 	{
 		VLOG(2) << "Erase block " << _cleanup.FBlock.MGetConst().FOffset;
 		void* _p_data = sMPointerFromBase<void>(_base_offset, FBase);
-		MFreeImpl(_p_data, _p_head, aNode);
+		MFreeImpl(_p_data, _p_head, aNode);//MInformMemFreed will call in the end. see MCleanUpMemoryImpl
 	}
 	else
 	{
@@ -1917,7 +1905,7 @@ void CSharedAllocator::MCleaunUpBlock(heap_head_t* const _p_head,
 				_cleanup.FBlock.MGetConst().FSize);
 		//remove from old process
 		//aNode->MPopOffset(_base_offset);
-		aNode->MPopOffsetById(_node->FIndexOfOffset);
+		MUnkeepBlock(_node,aNode);
 
 		//add into new process
 		aNode = MSearchProcessNode(_p_head, _cleanup.FPid).first;
@@ -2028,7 +2016,7 @@ void CSharedAllocator::MCleanUpMemoryImpl(
 	{
 		MCleaunUp(*_it);
 	}
-	MInformMemFreed(sMGetHead(FBase));//fixme may be error
+	MInformMemFreed(sMGetHead(FBase));
 }
 void CSharedAllocator::MGetLeakProcesses(leak_processes_t & aResources)
 {
@@ -2038,27 +2026,11 @@ void CSharedAllocator::MGetLeakProcesses(leak_processes_t & aResources)
 	for (; _p != NULL; _p = _p->MNext(FBase))
 	{
 		VLOG(2) << "Looking up " << _p->FPid << " process.";
-//		std::list<unsigned long long>::const_iterator _it = _list.begin();
-//		for (; _it != _list.end(); ++_it)
-//		{
-//			VLOG(5) << "Process: " << *_it;
-//			if (_p->FPid == *_it)
-//				break;
-//		}
-//		if (_it == _list.end())
 		if (!is_process_exist(_p->FPid))
 			aResources.push_back(_p->FPid);
 	}
 	if (_p_head->MIsWatchDogExist())
 	{
-//		std::list<unsigned long long>::const_iterator _it = _list.begin();
-//		for (; _it != _list.end(); ++_it)
-//		{
-//			VLOG(5) << "Process: " << *_it;
-//			if (_p_head->FWacthDogPid == *_it)
-//				break;
-//		}
-//		if (_it == _list.end())
 		if (!is_process_exist(_p_head->FWacthDogPid))
 			aResources.push_back(_p_head->FWacthDogPid);
 	}
@@ -2078,8 +2050,7 @@ void CSharedAllocator::MCheckResources(clean_up_resources_t & _resources)
 					_val.FBlock.MGetConst().FOffset);
 
 			block_node_t* _node = MGetBlockNode(_base_offset);
-			if (!MSearchProcessOfBlockNode(_p_head, _node->FIndexOfOffset,
-					_base_offset).first)
+			if (!MSearchProcessOfBlockNode(_p_head, _node))
 			{
 				VLOG(2) << "The block " << _it->FBlock.MGetConst().FOffset
 									<< " has been removed.";
@@ -2119,17 +2090,6 @@ void CSharedAllocator::MGetLeakResources(leak_processes_t const & _list,
 				_cleanup.FBlock.MGet().FOffset=MConvertOffsetToHead(_p_head,_p->FOffsets[i].FNextNode);
 				VLOG(2)<<"Head offset="<<_cleanup.FBlock.MGet().FOffset;
 				block_node_t* _node=MGetBlockNode(_p->FOffsets[i].FNextNode);
-
-//				DCHECK_EQ(_node->FPid,_p->FPid);
-//
-//				DCHECK_NE((_node->FBlockSize & BLOCK_ALLOCATED_BIT),0);
-//				if(_node->FPid==_p->FPid)	//exist
-//				{
-//					_cleanup.FBlock.MGet().FSize=_node->FBlockSize&(~BLOCK_ALLOCATED_BIT);
-//					_cleanup.FPid=_node->FPid;
-//
-//					aResources.push_back(_cleanup);
-//				}
 
 				DCHECK_EQ(_node->FIndexOfOffset,i);
 
@@ -2249,26 +2209,6 @@ bool CSharedAllocator::MIsNeedCleanUpResource()
 {
 	VLOG(2) << "MIsNeedCleanUpResource is called";
 
-//	std::vector<unsigned> _pid_list;
-//	{
-//		heap_head_t* const _p_head = sMGetHead(FBase);
-//		MSafetyLockImpl(_p_head);
-//		process_node_t* _p = _p_head->MFirstProcessNode(FBase);
-//		for (; _p != NULL; _p = _p->MNext(FBase))
-//			_pid_list.push_back(_p->FPid);
-//
-//		MUnlockImpl(_p_head);
-//	}
-//	std::vector<unsigned>::const_iterator _it=_pid_list.begin(),_it_end(_pid_list.end());
-//	bool _need_cleanup=false;
-//	for(;_it!=_it_end && !_need_cleanup;++_it)
-//	{
-//		if (!is_process_exist(*_it))
-//		{
-//			VLOG(2) << "The cleaning up resource is required as The process "<<*_it<<" is not exist.";
-//			_need_cleanup = true;
-//		}
-//	}
 	unsigned _buf[1024];
 	unsigned _number = 0;
 	const unsigned _max_count = sizeof(_buf) / sizeof(_buf[0]);
@@ -2397,32 +2337,9 @@ bool CSharedAllocator::MIsAllocatedImpl(offset_t const aBaseOffset) const
 	//The memory being allocated  have an block_node_t structure before it.
 	block_node_t* const _p_node = MGetBlockNode(aBaseOffset);
 
-	//in the first time aBaseOffset is locked for in its process data.
-//	nodes_proc_t _result = MSearchProcessNode(_p_head, _p_node->FPid);
-//	if (_result.first)
-//	{
-//		for (unsigned i = 0; i < _result.first->FArraySize; ++i)
-//			if (_result.first->FAddreses[i] != NULL_OFFSET)
-//			{
-//				VLOG(5) << "mem #" << i << " offset="
-//									<< _result.first->FAddreses[i];
-//				if (aBaseOffset == _result.first->FAddreses[i])
-//				{
-//					VLOG(2) << sMPointerFromBase<void>(aBaseOffset, FBase)
-//										<< "(" << aBaseOffset
-//										<< ") is founded ";
-//					return true;
-//				}
-//			}
-//
-//		VLOG(1) << "Probably The block "
-//							<< sMPointerFromBase<void>(aBaseOffset, FBase)
-//							<< " has been freed recently.";
-//	}
-
-	nodes_proc_t _result = MSearchProcessOfBlockNode(_p_head,
-			_p_node->FIndexOfOffset, aBaseOffset);
-	if (_result.first)
+	process_node_t * const _result = MSearchProcessOfBlockNode(_p_head,
+			_p_node);
+	if (_result)
 	{
 		VLOG(2) << sMPointerFromBase<void>(aBaseOffset, FBase) << "("
 							<< aBaseOffset << ") is founded ";
@@ -2511,9 +2428,8 @@ void* CSharedAllocator::MPointer(offset_t aVal) const
 		LOG(DFATAL)<<"Segmentation failed Offset="<<aVal<<" FBase=0";
 		return NULL;
 	}
-	//CRAII<CIPCSem> _block(FSem);//fixme for optimization
 	heap_head_t* const _p_head = sMGetHead(FBase);
-	//fixme check for null ptr
+
 	if ( aVal >= _p_head->FMaxSize)
 	{
 		LOG(DFATAL)<<"Segmentation failed Offset="<<aVal;

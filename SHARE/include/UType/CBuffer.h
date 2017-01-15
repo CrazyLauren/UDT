@@ -219,7 +219,7 @@ public:
 	void release_force() const; //todo
 	static void sMUnitTest(IAllocater*);
 	static void sMUnitTest(size_t aSize, IAllocater*);
-	bool MIsDeached() const;
+	bool MIsDetached() const;
 	bool MIsAllocatorEqual(IAllocater* aAlloc) const;
 	IAllocater* MAllocator() const;
 	bool MIsRestored() const;
@@ -296,7 +296,7 @@ inline CBuffer::const_iterator CBuffer::cend() const
 {
 	return end();
 }
-inline bool CBuffer::MIsDeached() const
+inline bool CBuffer::MIsDetached() const
 {
 	return FIsDetached;
 }

@@ -821,7 +821,12 @@ bool CConfig::MToXML(std::ostream& aStream, bool aPretty) const
 	ptree_t _tree;
 	MWriteTo(_tree);
 
+#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<56)
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+#else
+	boost::property_tree::xml_writer_settings<std::string> settings('\t', 1);
+#endif
+	
 	try
 	{
 		if (aPretty)

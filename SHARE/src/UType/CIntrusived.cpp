@@ -22,12 +22,6 @@ using namespace boost::interprocess::ipcdetail;
 
 namespace NSHARE
 {
-static CMutex& g_mutex()
-{
-	static CMutex _mutex;
-	return _mutex;
-}
-
 struct CIntrusived::_w_counter_t
 {
 	_w_counter_t(CIntrusived* aPtr) :
@@ -189,13 +183,5 @@ void CIntrusived::MDelete() const
 	VLOG(2) << "Delete object " << this;
 	FWn.FWCounter->FWPtr = NULL;
 	delete this;
-}
-bool CIntrusived::sMLock()
-{
-	return g_mutex().MLock();
-}
-bool CIntrusived::sMUnlock()
-{
-	return g_mutex().MUnlock();
 }
 }

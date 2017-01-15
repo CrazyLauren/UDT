@@ -326,7 +326,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 					std::string("Option: ") + aOption
 							+ "- must have value. Format =10.0.0.1:5002");
 		std::string _str(value.c_str());
-		unsigned _pos = _str.find_first_of(':');
+		size_t _pos = _str.find_first_of(':');
 		if (_pos == _str.npos)
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption

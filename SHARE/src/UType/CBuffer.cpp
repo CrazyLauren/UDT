@@ -31,7 +31,26 @@ namespace NSHARE
 {
 const IAllocater::offset_pointer_t IAllocater::NULL_OFFSET =
 		std::numeric_limits<IAllocater::offset_pointer_t>::max();//held here by historical reason
-
+#ifdef SAFETY_BUFFER_OPERATION
+struct _buffer_safety_operation_t :CRAII<IAllocater>
+{
+	_buffer_safety_operation_t(IAllocater * aMutex, void* aBuf) :
+		CRAII<IAllocater>(aMutex, aBuf)
+	{
+	}
+};
+#else
+struct _buffer_safety_operation_t
+{
+	_buffer_safety_operation_t(IAllocater * aMutex, void* aBuf)
+	{
+		;
+	}
+	void MUnlock()
+	{
+	}
+};
+#endif
 //static CMutex g_mutex;
 #define BUF_FACTOR 1.5//fixme
 const size_t CBuffer::DEF_BUF_RESERVE = 256; //fixme
@@ -278,7 +297,7 @@ CBuffer::_buffer_t::_buffer_t(IAllocater* aAlloc, offset_pointer_t aOffset,bool 
 	if (_p)
 	{
 		FBeginOfStorage = MGetPtr(_p);
-		CRAII<IAllocater> _block(FAllocator,FBeginOfStorage);
+		_buffer_safety_operation_t _block(FAllocator,FBeginOfStorage);
 		buf_info& _buf = sMGetBuff(FBeginOfStorage);
 		if((aCheckCrc && !_buf.MCheckCrc()) || _buf.use_count()==0)
 		{
@@ -358,7 +377,7 @@ void CBuffer::_buffer_t::MDeallocate()
 	{
 		size_type _size = 0;
 		{
-			CRAII<IAllocater> _block(FAllocator, FBeginOfStorage);
+			_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage);
 			buf_info& _buf = sMGetBuff(FBeginOfStorage);
 			_size = _buf.MBufSize();
 			_buf.MInvalid();
@@ -375,7 +394,7 @@ CBuffer::size_type CBuffer::_buffer_t::size() const
 {
 	if (empty())
 		return 0;
-//	CRAII<IAllocater> _block(FAllocator, FBeginOfStorage);//it's atomic
+//	_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage);//it's atomic
 	return sMGetBuff(FBeginOfStorage).MSize();
 }
 
@@ -425,7 +444,7 @@ void CBuffer::_buffer_t::add_ref_copy(bool aIsExist) const
 		LOG(ERROR)<< "Empty release.";
 		return;
 	}
-	//CRAII<IAllocater> _block(FAllocator,FBeginOfStorage);//it's atomic
+	//_buffer_safety_operation_t _block(FAllocator,FBeginOfStorage);//it's atomic
 //	buf_info& _buf = sMGetBuff(FBeginOfStorage);
 //	DCHECK(_buf.MCheckCrc());
 //	_buf.add_ref_copy();
@@ -456,10 +475,10 @@ CBuffer::_buffer_t & CBuffer::_buffer_t::operator=(_buffer_t const & r)
 	{
 		CHECK_NE(this,&r);
 		{
-			if (FBeginOfStorage != 0)
+			if (FBeginOfStorage != NULL)
 				release();
 
-			if (r.FBeginOfStorage != 0) r.add_ref_copy(true);
+			if (r.FBeginOfStorage != NULL) r.add_ref_copy(true);
 
 			FBeginOfStorage = r.FBeginOfStorage;
 			FAllocator = r.FAllocator;
@@ -487,7 +506,7 @@ CBuffer::_buffer_t &CBuffer::_buffer_t::deep_copy(_buffer_t const & r)
 			value_type* _buf_p = MAllocate(_r_info.MSize());
 			CHECK_NOTNULL(_buf_p);
 
-			CRAII<IAllocater> _block(r.FAllocator, r.FBeginOfStorage);
+			_buffer_safety_operation_t _block(r.FAllocator, r.FBeginOfStorage);
 			buf_info& _new_info = sMGetBuff(_buf_p);
 			_new_info.MSetSize(_r_info.MSize());
 			FBeginOfStorage = _buf_p;
@@ -651,7 +670,7 @@ void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
 			return;
 		}
 		{
-			//CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);//it's the new buffer
+			//_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);//it's the new buffer
 			buf_info& _new_info = _buffer_t::sMGetBuff(_buf_p);
 			_new_info.MSetSize(aNewSize);
 		}
@@ -666,7 +685,7 @@ void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
 			if(aCanDetach) MDetach();
 
 			{
-				CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+				_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 				buf_info& _info = FBuffer.MGetBuff();
 				CHECK(_info.MCheckCrc());
 				if (!fromBegin)
@@ -724,7 +743,7 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 	pointer _position = NULL;
 	if (FBuffer.FBeginOfStorage)
 	{
-		CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 		//guarantee valid of varibales
 		buf_info& _info = FBuffer.MGetBuff();
 		CHECK(_info.MCheckCrc());
@@ -900,7 +919,7 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 		}
 		if(_new_start_offset.MIs()||_new_size.MIs())
 		{
-			CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+			_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 			CHECK_EQ(_free_begin_mem, _info.MStartOffset());
 			if(_new_start_offset.MIs())
 				_info.MSetStartOffset(_new_start_offset.MGetConst(),!_new_size.MIs());
@@ -927,7 +946,7 @@ void CBuffer::clear()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetSize(0);
 	}
@@ -939,7 +958,7 @@ void CBuffer::pop_back()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetSize(_info.MSize() - 1);
 	}
@@ -955,7 +974,7 @@ void CBuffer::pop_front()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetStartOffset(_info.MStartOffset() + 1);
 	}
@@ -1025,7 +1044,7 @@ CBuffer::value_type* CBuffer::MAllocate(size_t aSize)
 	}
 
 	{
-		//CRAII<IAllocater> _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);/it's the new buffer
+		//_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);/it's the new buffer
 		buf_info& _info = _buffer_t::sMGetBuff(_p);
 		_info.MSetStartOffset(BEGIN_SIZE);
 	}

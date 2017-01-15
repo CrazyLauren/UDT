@@ -106,7 +106,6 @@ public:
 	size_t MGetNumberOfAllocations() const;
 	void MGetInfo(shared_info_t &) const;
 	void MSerialize(NSHARE::CConfig&) const;
-
 	struct block_node_t;
 	struct process_node_t;
 	struct heap_head_t;
@@ -119,7 +118,6 @@ private:
 
 	typedef std::pair<process_node_t *, process_node_t *> nodes_proc_t;
 	typedef std::pair<block_node_t *, block_node_t *> nodes_block_t;
-	typedef std::pair<void *, void *> reserved_block_t;
 
 	template<class T>
 	static offset_t sMOffsetFromBase(T const* const aFrom, void const * const aBase);
@@ -158,8 +156,8 @@ private:
 	//first the node,second -prev
 	nodes_proc_t MSearchProcessNode(heap_head_t* const aHead,
 			unsigned aPid) const;
-	nodes_proc_t MSearchProcessOfBlockNode(heap_head_t* const aHead,
-			offset_t aOffsetInArray,offset_t aOffset) const;
+	process_node_t * MSearchProcessOfBlockNode(heap_head_t* const aHead,
+			block_node_t * aNode) const;
 
 	nodes_proc_t& MInsertProcessNode(heap_head_t* const aHead,
 			nodes_proc_t&) const;
@@ -168,7 +166,7 @@ private:
 	void *MMallocBlock(heap_head_t* const aHead,
 			block_size_t const xWantedSize, bool aFromEnd,
 			offset_t aOffset = 0) const;
-	reserved_block_t MMallocBlockFromReserv( heap_head_t* const _p_head,process_node_t * const, block_size_t const xWantedSize) const;
+	void * MMallocBlockFromReserv( heap_head_t* const _p_head,process_node_t * const, block_size_t const xWantedSize) const;
 
 	nodes_block_t MGetFreeBlockFromBegin(offset_t const aOffset,
 			uint32_t const _alligment_size, heap_head_t* const _p_head) const;
@@ -192,6 +190,7 @@ private:
 			bool aFromEnd,
 			heap_head_t* const _p_head) const;
 	static block_node_t* sMGetBlockNode(void * const aPointer);
+	static void * sMGetPointerOfBlockNode(block_node_t* aNode);
 	block_node_t* MGetBlockNode(offset_t  aBaseOffset) const;
 
 	static heap_head_t* const sMGetHead(void* const aBase);
@@ -226,7 +225,11 @@ private:
 	bool MUnlockImpl(heap_head_t* const _p_head) const;
 	void MInitIfNeedFreeSem(heap_head_t* const _p_head);
 	void MInformMemFreed(heap_head_t* const _p_head);
-	bool MWaitFreeOpereration( heap_head_t*const _p_head);
+	bool MWaitFreeOperation( heap_head_t*const _p_head);
+	void MKeepBlock(block_node_t * _alloc, process_node_t*const  _process) const;
+	void MUnkeepBlock(block_node_t * _alloc, process_node_t*const  _process) const;
+
+
 	void* FBase;
 	mutable process_node_t* FCurentProcess;
 	mutable NSHARE::CIPCSem FSem;

@@ -130,7 +130,7 @@ void _log4cplus_impl::create_sym_link(std::string const& filename,
 		eLavel aLevel)
 {
 	// take directory from filename
-	unsigned _slash = filename.find_last_of('/');
+	size_t _slash = filename.find_last_of('/');
 	const std::string linkname = (FLAGS_file_name.empty()?programm_short_name():(FLAGS_file_name+".link"))+ '.'+ level_to_string(aLevel) + ".log";
 	std::string linkpath;
 	if (_slash != filename.npos)

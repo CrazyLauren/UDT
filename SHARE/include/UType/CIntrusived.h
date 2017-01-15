@@ -46,22 +46,7 @@ private:
 		CIntrusived* MGet() const;
 		volatile _w_counter_t* FWCounter;
 	};
-	struct  raii_t
-	{
-		raii_t()
-		{
-			FIsLock = sMLock();
-		}
-		~raii_t()
-		{
-			FIsLock && sMUnlock();
-			FIsLock = false;
-		}
-		volatile bool FIsLock;
-	};
 
-	static bool sMLock();
-	static bool sMUnlock();
 	int MRefImpl() const;
 	int MUnrefImpl() const;
 	void MDelete() const;
@@ -78,7 +63,6 @@ inline int CIntrusived::sMRef(T** aP)
 {
 	int _val = 0;
 	{
-	//	raii_t _block;
 		if (!aP || !(*aP))
 			return 0;
 		_val = (*aP)->CIntrusived::MRefImpl();
@@ -93,7 +77,6 @@ inline int CIntrusived::sMUnref(T** aP)
 	int _val;
 	T* _tmp = NULL;
 	{
-		//raii_t _block;
 		if (!aP || !(*aP))
 			return 0;
 		if ((_val = (*aP)->CIntrusived::MUnrefImpl()) == 0)

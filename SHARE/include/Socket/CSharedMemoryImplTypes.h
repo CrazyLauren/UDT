@@ -250,7 +250,7 @@ inline bool event_fifo_t::MPut(event_info_t const& aData)
 	VLOG(2) << "Put the offset to the array: " << FWrite << " array size= "
 			<< FArraySize << " pos= " << _pos;
 	FInfo[_pos] = aData;
-	uint16_t _count=MCount();
+	uint16_t const _count=MCount();
 	FWrite=MInc(FWrite);
 	CHECK_NE(_pos,FWrite%FArraySize);
 	CHECK_EQ(MCount(),_count+1);
