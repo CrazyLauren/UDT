@@ -100,7 +100,7 @@ public:
 			IAllocater::offset_pointer_t)=0;
 
 
-	bool MCreateShatedSem(server_info_t *,NSHARE::CText const& aPostrix=NSHARE::CText());
+	bool MCreateSharedSem(server_info_t *,NSHARE::CText const& aPostrix=NSHARE::CText());
 	bool MInitSharedSem(server_info_t* _info);
 
 

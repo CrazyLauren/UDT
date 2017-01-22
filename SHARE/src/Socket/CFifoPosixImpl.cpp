@@ -140,7 +140,6 @@ void CFifo::CImpl::MClose()
 	CHECK(!FFdRead.MIsValid());
 	CHECK(!FSelect.MIsSetUp());
 	CHECK(FSelect.MGetSockets().empty());
-	DCHECK(!MIsMade());
 }
 bool CFifo::CImpl::MMakefifo(CText _path)
 {

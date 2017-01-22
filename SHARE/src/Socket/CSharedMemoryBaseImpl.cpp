@@ -60,7 +60,7 @@ bool IMPL::MWaitForEvent(event_cv_t& aFrom,event_info_t* aVal, double const aTim
 {
 	if(!aFrom.FEvents)
 	{
-		LOG(DFATAL)<<"Cannot wait "<<aFrom.FSignalSem.MName();
+		LOG(DFATAL)<<"Cannot wait ";
 		return false;
 	}
 	CRAII<event_cv_t> _block(aFrom);
@@ -82,7 +82,7 @@ bool IMPL::MInvokeEventTo(event_cv_t & aFrom, event_info_t* _info) const
 {
 	if(!aFrom.FEvents)
 	{
-		LOG(DFATAL)<<"Cannot invoke to "<<aFrom.FSignalSem.MName();
+		LOG(DFATAL)<<"Cannot invoke to ";
 		return false;
 	}
 	CRAII<event_cv_t> _block(aFrom);//fixme decrease count of lock
@@ -104,7 +104,7 @@ bool IMPL::MRemoveEvent(event_info_t const* _info,event_cv_t& aFrom)
 {
 	if(!aFrom.FEvents)
 	{
-		LOG(DFATAL)<<"Cannot remove  "<<aFrom.FSignalSem.MName();
+		LOG(DFATAL)<<"Cannot remove  ";
 		return false;
 	}
 	CRAII<event_cv_t> _block(aFrom);
@@ -241,85 +241,35 @@ void IMPL::MEventHandler()
 		}
 	}
 }
-bool IMPL::MCreateShatedSem(server_info_t * aInfo,NSHARE::CText const& aPostrix)
+bool IMPL::MCreateSharedSem(server_info_t * aInfo,NSHARE::CText const& aPostrix)
 {
-	NSHARE::CText _rand;
-	_rand.MMakeRandom(10);
-	NSHARE::CText _mutex_name;
-	if(aPostrix.empty())
-		_mutex_name.MPrintf("sm_%d_%s", get_pid_optimized(), _rand.c_str());
-	else
-		_mutex_name.MPrintf("sm_%d_%s_%s", get_pid_optimized(),aPostrix.c_str(), _rand.c_str());
-
-	size_t _name_len = (_mutex_name.length_code());
-	_name_len =
-			_name_len <= (sizeof(aInfo->FMutex) - 1) ?
-					_name_len : (sizeof(aInfo->FMutex) - 1);
-	_mutex_name.resize(_name_len);
-
-	memcpy(aInfo->FMutex, _mutex_name.c_str(), _name_len);
-	aInfo->FMutex[_name_len ] = '\0';
-
-	bool _is = FSharedSem.MInit((char const*) aInfo->FMutex, 1,
-			CIPCSem::E_HAS_TO_BE_NEW);//fixme
-	LOG_IF(DFATAL,!_is) << "The sem " << _mutex_name
-								<< " has been created already.";
+	bool _is = FSharedSem.MInit(aInfo->FMutex,sizeof(aInfo->FMutex), 1,
+			CIPCSem::E_HAS_TO_BE_NEW);
 	if (!_is)
 		return false;
-	aInfo->MFillCRC();
 	return true;
 }
 bool IMPL::MInitSharedSem(server_info_t * aInfo)
 {
-	return FSharedSem.MInit((const char*) (aInfo->FMutex), 1, CIPCSem::E_HAS_EXIST);
+	return FSharedSem.MInit(aInfo->FMutex,sizeof(aInfo->FMutex), 1, CIPCSem::E_HAS_EXIST);
 
 }
 bool IMPL::MCreateSignalEvent(event_cv_t & aEvent)
 {
 	bool _is;
 	{
-		NSHARE::CText _rand;
-		_rand.MMakeRandom(10);
-		NSHARE::CText _mutex_name;
-		_mutex_name.MPrintf("%d_se_%s", get_pid_optimized(), _rand.c_str());
-
-		size_t _name_len = (_mutex_name.length_code());
-		_name_len =
-				_name_len <= (sizeof(aEvent.FEvents->FFifo.FSignalEvent) - 1) ?
-						_name_len :
-						(sizeof(aEvent.FEvents->FFifo.FSignalEvent) - 1);
-		_mutex_name.resize(_name_len);
-
-		memcpy(aEvent.FEvents->FFifo.FSignalEvent, _mutex_name.c_str(),
-				_name_len);
-		aEvent.FEvents->FFifo.FSignalEvent[_name_len ] = '\0';
 
 		_is = aEvent.FSignalEvent.MInit(
-				(char const*) aEvent.FEvents->FFifo.FSignalEvent,
+				 aEvent.FEvents->FFifo.FSignalEvent,sizeof(aEvent.FEvents->FFifo.FSignalEvent),
 				CIPCSignalEvent::E_HAS_TO_BE_NEW);
-		LOG_IF(DFATAL,!_is) << "Cannot create event " << _mutex_name;
+		LOG_IF(DFATAL,!_is) << "Cannot create event " << aEvent.FSignalEvent.MName();
 		if (!_is)
 			return false;
-		VLOG(2) << "Signal event=" << _mutex_name;
+		VLOG(2) << "Signal event=" << aEvent.FSignalEvent.MName();
 	}
 	{
-		NSHARE::CText _rand;
-		_rand.MMakeRandom(10);
-		NSHARE::CText _mutex_name;
-		_mutex_name.MPrintf("%d_ss_%s", get_pid_optimized(), _rand.c_str());
-
-		size_t _name_len = (_mutex_name.length_code());
-		_name_len =
-				_name_len <= (sizeof(aEvent.FEvents->FFifo.FSignalMutex) - 1) ?
-						_name_len : (sizeof(aEvent.FEvents->FFifo.FSignalMutex) - 1);
-		_mutex_name.resize(_name_len);
-
-		memcpy(aEvent.FEvents->FFifo.FSignalMutex, _mutex_name.c_str(), _name_len);
-		aEvent.FEvents->FFifo.FSignalMutex[_name_len] = '\0';
-
-
 		_is = aEvent.FSignalSem.MInit(
-				(const char*) (aEvent.FEvents->FFifo.FSignalMutex), 1,
+				aEvent.FEvents->FFifo.FSignalMutex,sizeof(aEvent.FEvents->FFifo.FSignalMutex), 1,
 				CIPCSem::E_HAS_TO_BE_NEW);
 
 		LOG_IF(DFATAL,!_is) << "Cannot create mutex " << aEvent.FEvents->FFifo.FSignalMutex;
@@ -337,12 +287,13 @@ bool IMPL::MInitSignalEvent(event_cv_t & aEvent,
 		shared_info_t *aFifo)
 {
 	CHECK_NOTNULL(aFifo);
-	bool _is = aEvent.FSignalEvent.MInit((char const*) aFifo->FFifo.FSignalEvent,
+	VLOG(2)<<"Initialize signal event";
+	bool _is = aEvent.FSignalEvent.MInit(aFifo->FFifo.FSignalEvent,sizeof(aFifo->FFifo.FSignalEvent),
 			CIPCSignalEvent::E_HAS_EXIST);
 	if (!_is)
 		return false;
 
-	_is = aEvent.FSignalSem.MInit((char const*) aFifo->FFifo.FSignalMutex,
+	_is = aEvent.FSignalSem.MInit(aFifo->FFifo.FSignalMutex,sizeof(aFifo->FFifo.FSignalMutex),
 			CIPCSignalEvent::E_HAS_EXIST);
 	if (!_is)
 	{

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {
 	init_trace(argc, argv);
 
-	CSharedMemoryServer::sMRemove("test");
+	//CSharedMemoryServer::sMRemove("test");
 	CSharedMemoryServer _server;
 	if (!_server.MOpen("test", 1024 * 1024)) 
 	{

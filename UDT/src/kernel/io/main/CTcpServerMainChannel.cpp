@@ -228,7 +228,7 @@ bool CTcpServerMainChannel::MClose(descriptor_t aFor)
 }
 bool CTcpServerMainChannel::MSend(user_data_t const& aData, descriptor_t aFor)
 {
-	CHECK(!aData.FData.MIsDeached());
+	CHECK(!aData.FData.MIsDetached());
 	VLOG(2) << "Send data " << aData.FDataId.FPacketNumber << " to " << aFor;
 	smart_client_t _client;
 	{

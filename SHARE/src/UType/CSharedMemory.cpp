@@ -29,39 +29,37 @@ SHARED_PACKED(
 		{
 			typedef NSHARE::crc8_t<0x96> crc_t;
 			mem_info_t() :
-			FCrc(0x1),FPIDOfLockedMutex(0),FPIDOfLockedAllocMutex(0), FSize(0)
+			FCrc(0x1),FPIDOfLockedMutex(0),FPIDOfLockedAllocMutex(0), FSize(0),FPidOffCreator(NSHARE::CThread::sMPid())
 			{
-				FSharedMutex[0] = '\0';
-				FAllocMutex[0]='\0';
+				memset(FSharedMutex,0,sizeof(FSharedMutex));
+				memset(FAllocMutex,0,sizeof(FAllocMutex));
 			}
 			crc_t::type_t FCrc;
-			int8_t FSharedMutex[32 - sizeof(crc_t::type_t)];
-			int8_t FAllocMutex[32];
+			uint8_t FSharedMutex[32 - sizeof(crc_t::type_t)];
+			uint8_t FAllocMutex[32];
 			uint32_t FPIDOfLockedMutex;
 			uint32_t FPIDOfLockedAllocMutex;
 			uint32_t FSize;
+			const uint32_t FPidOffCreator;
 			bool MUpdateCRC();
 			bool MCheckCRC()const;
 		});
 bool CSharedMemory::mem_info_t::MUpdateCRC()
 {
 	const mem_info_t::crc_t::type_t* _begin =
-			(mem_info_t::crc_t::type_t*) (this);
-	FCrc = crc_t::sMCalcCRCofBuf(_begin + 1,
-			_begin + sizeof(FSharedMutex) / sizeof(mem_info_t::crc_t::type_t));
+			(mem_info_t::crc_t::type_t*) (&FSize);
+	FCrc = crc_t::sMCalcCRCofBuf(_begin,
+			_begin + (sizeof(FPidOffCreator)+sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t));
 	return true;
 }
 
 bool CSharedMemory::mem_info_t::MCheckCRC() const
 {
-	if (FSharedMutex[0] == '\0')
-		return false;
-
 	const mem_info_t::crc_t::type_t* _begin =
-			(mem_info_t::crc_t::type_t*) (this);
-	crc_t::type_t _crc = crc_t::sMCalcCRCofBuf(_begin + 1,
-			_begin + sizeof(FSharedMutex) / sizeof(mem_info_t::crc_t::type_t));
-	return _crc == FCrc;
+			(mem_info_t::crc_t::type_t*) (&FSize);
+	crc_t::type_t _crc = crc_t::sMCalcCRCofBuf(_begin,
+			_begin + (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t));
+	return _crc == FCrc && FPidOffCreator>0 && FSize>0;
 }
 class CSharedAllocatorImpl: public IAllocater
 {
@@ -203,9 +201,6 @@ struct CSharedMemory::CImpl
 			FShedMem(open_only, aName.c_str(), read_write)//thank you the boost for User-friendly interface!!!
 	{
 		VLOG(2)<<"Start to  initialize the ShM "<<aName;
-		FInfo = NULL;
-		FUserData = NULL;
-		FUserCb = NULL;
 		MInit(aName, 0,aIsCleanUp,aReserv);
 	}
 
@@ -213,19 +208,17 @@ struct CSharedMemory::CImpl
 	{
 		MFree();
 	}
-
-	bool MInitHeader(bool isNew);
 	bool MFree();
 	size_t MGetSize();
-	bool MInitAllocate(void* aTo, bool _is_allocater, size_t aSize,bool aIsCleanUp,size_t aReserv);
 	bool MInit(const NSHARE::CText& aName, size_t aSize,bool aIsCleanUp,size_t aReserv);
 	static int sMCleanUp(CSharedAllocator* WHO, void* WHAT, void* YOU_DATA);
 	bool MCleanUp(CSharedAllocator::clean_up_f_t WHO, void* YOU_DATA);
+	bool MCleanUpShareSem();
+
 	bool MLock() const;
 	bool MUnlock() const;
 	bool MLockAlloc() const;
 	bool MUnlockAlloc() const;
-	bool MInitShM(bool& _is_new_header,size_t aSize);
 
 //private:
 	bool FIsInited;
@@ -332,68 +325,6 @@ bool CSharedMemory::CImpl::MUnlockAlloc() const
 	return FAllocaterSem.MPost();
 }
 
-bool CSharedMemory::CImpl::MInitHeader(bool isNew)
-{
-	uint8_t* const _begin = (uint8_t*) (FRegion.get_address());
-	FInfo = (mem_info_t*) (_begin);
-	if (!isNew)
-	{
-		VLOG(2) << "Initialize shared memory head from "<<_begin;
-		const bool _is_valid = FInfo->MCheckCRC()
-				&& (FInfo->FSize == MGetSize());
-
-		VLOG(1) << "Sm Valid = " << _is_valid;
-
-		if (!_is_valid)
-		{
-			LOG(ERROR)<<"The ShM head is not valid";
-			return false;
-		}
-		return FShareSem.MInit((char const*) FInfo->FSharedMutex, 1) && FAllocaterSem.MInit((char const*) FInfo->FAllocMutex, 1);
-	}
-	else
-	{
-		VLOG(2) << "Create new shared memory head.";
-		FInfo = new (_begin) mem_info_t();
-		FInfo->FSize = MGetSize();
-
-		//creating shared mutex
-		//The shared mutex name is consist of two part:
-		//the first is - pid, the second random string
-		{
-			NSHARE::CText _rand;
-			_rand.MMakeRandom(10);
-			NSHARE::CText _mutex_name;
-			_mutex_name.MPrintf("shmem_%d_%s", NSHARE::CThread::sMPid(),
-					_rand.c_str());
-			size_t _name_len = (_mutex_name.length_code());
-			_name_len =
-					_name_len <= (sizeof(FInfo->FSharedMutex) - 1) ?
-							_name_len : (sizeof(FInfo->FSharedMutex) - 1);
-			memcpy(FInfo->FSharedMutex, _mutex_name.c_str(), _name_len);
-			FInfo->FSharedMutex[_name_len] = '\0';
-			FInfo->MUpdateCRC();
-		}
-		{
-			NSHARE::CText _rand;
-			_rand.MMakeRandom(10);
-			NSHARE::CText _mutex_name;
-			_mutex_name.MPrintf("shmem_%d_al_%s", NSHARE::CThread::sMPid(),
-					_rand.c_str());
-			size_t _name_len = (_mutex_name.length_code());
-			_name_len =
-					_name_len <= (sizeof(FInfo->FAllocMutex) - 1) ?
-							_name_len : (sizeof(FInfo->FAllocMutex) - 1);
-			memcpy(FInfo->FAllocMutex, _mutex_name.c_str(), _name_len);
-			FInfo->FAllocMutex[_name_len] = '\0';
-		}
-
-		return FShareSem.MInit((char const*) FInfo->FSharedMutex, 1,
-				CIPCSem::E_HAS_TO_BE_NEW)&& FAllocaterSem.MInit((char const*) FInfo->FAllocMutex, 1,
-						CIPCSem::E_HAS_TO_BE_NEW);
-	}
-}
-
 bool CSharedMemory::CImpl::MFree()
 {
 	if (!FIsInited)
@@ -430,102 +361,183 @@ size_t CSharedMemory::CImpl::MGetSize()
 
 	return 0;
 }
-bool CSharedMemory::CImpl::MInitAllocate(void* aTo, bool aNew,
-		size_t aSize,bool aIsCleanUp,size_t aReserv)
-{
-	VLOG(2) << "Initialize allocator for " << aTo << " size = " << aSize
-						<< " Is new = " << aNew;
-	CRAII < CSharedMemory > _block(*this);
-	if (!aNew)
-		return FAllocater.FAllocater.MInitFromCreatedHeap(aTo,aIsCleanUp,aReserv);
-
-	FAllocater.FAllocater.MCreateHeap(aTo, aSize,aReserv);
-	return true;
-}
-bool CSharedMemory::CImpl::MInitShM(bool& _is_new_header,size_t aSize)
-{
-	offset_t _val = 0;
-	bool _is = FShedMem.get_size(_val);
-	_is_new_header = false;
-	VLOG_IF(2, _is) << "Shared memory size " << _val;
-	if (_is && _val == 0)
-	{
-		if(!aSize)
-		{
-			VLOG(2)<<"Cannot create ShM as Size equal "<<aSize;
-			return false;
-		}
-		LOG(INFO) << "Create for the first time.";
-		FShedMem.truncate(aSize);
-		_is_new_header = true;
-	}
-	FRegion = mapped_region(FShedMem, read_write);
-	FRegion.flush();
-	return true;
-}
-
 bool CSharedMemory::CImpl::MInit(const NSHARE::CText& aName, size_t aSize,bool aIsCleanUp,size_t aReserv)
 {
 	VLOG(2) << "Open shared memory " << aName<<" Size "<<aSize;
 	FIsInited=false;
 	bool _is_new_header=false;
-	if (!MInitShM(_is_new_header, aSize))
+	bool _is_creator_exist=false;
+	bool _was_exist=false;
+	uint8_t* _r_addr=NULL;
+	void* _allocate_to=NULL;
+
 	{
-		//FShedMem.remove(aName.c_str());
-		return false;
+		VLOG(2)<<"Initialize Shared memory "<<aName<<" path "<<FShedMem.get_name();
+		offset_t _size = -1;
+		bool const _is = FShedMem.get_size(_size);
+		VLOG_IF(2, _is) << "Shared memory size " << _size;
+		if (_is)
+		{
+			_was_exist=_size>0;
+			if(!_was_exist)
+			{
+				if(aSize == 0)
+				{
+					VLOG(2) << "Cannot create ShM as is not exist " << aSize;
+					goto error;
+				}else
+				{
+					LOG(INFO)<< "Create for the first time.";
+
+					FShedMem.truncate(aSize);
+					_is_new_header = true;
+				}
+			}else if(aSize > 0 /*&& aSize !=_size*/)
+			{
+				LOG(WARNING)<<"The Shm "<<aName<<" has been created already.";
+
+				mapped_region const _region= mapped_region(FShedMem, read_only);
+
+				uint8_t* _addr = (uint8_t*) _region.get_address();
+
+				if(!_addr)
+					goto error;
+
+				mem_info_t const* _info = (mem_info_t const*) (_addr);
+				const bool _is_valid =is_process_exist(_info->FPidOffCreator);
+
+				if(_is_valid)
+				{
+					LOG(DFATAL)<<" The Shm "<<aName<<" is using by "<<_info->FPidOffCreator;
+					goto error;
+				}
+				else
+				{
+					VLOG(2)<<"Change size of SM "<<aSize;
+					FShedMem.truncate(aSize);
+					_is_new_header = true;
+				}
+
+			}
+		}else if(aSize>0)
+		{
+			VLOG(2)<<"Change size of SM "<<aSize;
+			FShedMem.truncate(aSize);
+			_is_new_header = true;
+		}
+		FRegion = mapped_region(FShedMem, read_write);
+		FRegion.flush();
+		VLOG(2)<<"Region size "<<FRegion.get_size();
 	}
-	VLOG_IF(2,_is_new_header)
-			<< "The new shared memory " << aName << " is initialized.";
-	VLOG_IF(2,!_is_new_header)
-			<< "The new shared memory " << aName << " is exist.";
-	if (!MInitHeader(_is_new_header))
+	 _r_addr = (uint8_t*) FRegion.get_address();
+	CHECK_NOTNULL(_r_addr);
+	if(!_r_addr)
+		goto error;
+
+	FInfo = (mem_info_t*) (_r_addr);
+	_allocate_to = _r_addr	+ sizeof(mem_info_t);
+
+	if (_is_new_header)
 	{
-		VLOG(2)<<"Clean up ShM";
-		if(aSize) FShedMem.remove(aName.c_str());
-		FInfo = NULL;
-		FIsInited = false;
-		return false;
+		VLOG(2)
+				<< "The new shared memory " << aName << " is new.";
+
+		FInfo = new (_r_addr) mem_info_t();
+		FInfo->FSize = MGetSize();
+
+		//creating shared mutex
+		if (!FShareSem.MInit(FInfo->FSharedMutex,sizeof(FInfo->FSharedMutex), 1,
+				CIPCSem::E_HAS_TO_BE_NEW)
+				|| !FAllocaterSem.MInit(FInfo->FAllocMutex,sizeof(FInfo->FAllocMutex), 1,
+						CIPCSem::E_HAS_TO_BE_NEW))
+		{
+			LOG(DFATAL) << "Cannot create the semaphores as it's exist in Shm. Thus cannot open Shm.";
+			goto error;
+		}
+		CRAII<CSharedMemory> _block(*this);
+		FAllocater.FAllocater.MCreateHeap(_allocate_to,
+				aSize - sizeof(mem_info_t), aReserv);
+
+
+		FInfo->MUpdateCRC();
 	}
 	else
 	{
-		unsigned _process = FInfo->FPIDOfLockedMutex;
-		if (_process)
-			if (!is_process_exist(_process))
-			{
-				LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FShareSem.MName()
-				<<"still is locked by"<< FInfo->FPIDOfLockedMutex<<". Unlocking immediately ...";
-				FInfo->FPIDOfLockedMutex= 0;
-				FShareSem.MPost();
-			}
-		_process = FInfo->FPIDOfLockedAllocMutex;
-		if (_process)
-			if (!is_process_exist(_process))
-			{
-				LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FAllocaterSem.MName()
-				<<"still is locked by"<< FInfo->FPIDOfLockedAllocMutex<<". Unlocking immediately ...";
-				FInfo->FPIDOfLockedAllocMutex= 0;
-				FAllocaterSem.MPost();
-			}
+		VLOG (2) << "The new shared memory " << aName << " is exist.";
+		VLOG(2) << "Initialize shared memory head from " << _r_addr;
+		const bool _is_valid = FInfo->MCheckCRC()
+				&& (FInfo->FSize == MGetSize()) /*&& is_process_exist(FInfo->FPidOffCreator)*/;
+
+		VLOG(1) << "Sm Valid = " << _is_valid;
+
+		if (!_is_valid)
+		{
+			VLOG(2)<<"The ShM head is not valid";
+			return false;
+		}
+		if (!FShareSem.MInit(FInfo->FSharedMutex,sizeof(FInfo->FSharedMutex), 1,
+				CIPCSem::E_HAS_EXIST)
+				|| !FAllocaterSem.MInit( FInfo->FAllocMutex,sizeof(FInfo->FAllocMutex), 1,
+						CIPCSem::E_HAS_EXIST))
+		{
+			VLOG(2) << "Cannot init Sems";
+			goto error;
+		}
+		MCleanUpShareSem();
+
+		CRAII < CSharedMemory > _block(*this);
+
+		if(!FAllocater.FAllocater.MInitFromCreatedHeap(_allocate_to,aIsCleanUp,aReserv))
+		{
+			VLOG(2) << "Cannot init allocator";
+			_block.MUnlock();
+			goto error;
+		}
 	}
-	uint8_t* _r_addr = (uint8_t*) FRegion.get_address();
-	CHECK_NOTNULL(_r_addr);
-	void* _allocate_to = _r_addr	+ sizeof(mem_info_t);
-	if (!MInitAllocate(_allocate_to, _is_new_header,
-			aSize - sizeof(mem_info_t),aIsCleanUp,aReserv))
-	{
-		VLOG(2)<<"Clean up ShM";
-		FShareSem.MFree();
-		FAllocaterSem.MFree();
-		FShedMem.remove(FShedMem.get_name());
-		FInfo = NULL;
-		FIsInited = false;
-		return false;
-	}
+
 	VLOG(2)<<"The ShM is full valid";
+
 	FIsInited = true;
 	return true;
-}
 
+error:
+	VLOG(2)<<"Clean up ShM";
+
+	FShareSem.MFree();
+	FAllocaterSem.MFree();
+	if (aSize>0 && !_was_exist)
+		FShedMem.remove(FShedMem.get_name());
+	FInfo = NULL;
+	FIsInited = false;
+
+	return false;
+}
+bool CSharedMemory::CImpl::MCleanUpShareSem()
+{
+	unsigned _process = FInfo->FPIDOfLockedMutex;
+	unsigned _count=0;
+	if (_process)
+		if (!is_process_exist(_process))
+		{
+			LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FShareSem.MName()
+			<<"still is locked by"<< FInfo->FPIDOfLockedMutex<<". Unlocking immediately ...";
+			FInfo->FPIDOfLockedMutex= 0;
+			FShareSem.MPost();
+			++_count;
+		}
+
+	_process = FInfo->FPIDOfLockedAllocMutex;
+	if (_process)
+		if (!is_process_exist(_process))
+		{
+			LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FAllocaterSem.MName()
+			<<"still is locked by"<< FInfo->FPIDOfLockedAllocMutex<<". Unlocking immediately ...";
+			FInfo->FPIDOfLockedAllocMutex= 0;
+			FAllocaterSem.MPost();
+			++_count;
+		}
+	return _count>0;
+}
 int CSharedMemory::CImpl::sMCleanUp(CSharedAllocator* WHO, void* aWHAT,
 		void* YOU_DATA)
 {

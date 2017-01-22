@@ -158,7 +158,7 @@ public:
 //	CBuffer(_wraper<TAloc> const&);
 	//	CBuffer(IAllocater* aAlloc = NULL);
 	CBuffer(IAllocater* aAlloc,eAllocatorType=ALLOCATE_FROM_COMMON);
-	CBuffer(size_t aSize=0,int aBeginSize=-1,IAllocater* aAlloc=NULL,eAllocatorType=ALLOCATE_FROM_COMMON);
+	CBuffer(size_t aSize=0,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType=ALLOCATE_FROM_COMMON);
 
 //	CBuffer(IAllocater* aAlloc = NULL);
 //	CBuffer(size_t aBeginSize, IAllocater* aAlloc);

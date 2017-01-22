@@ -386,7 +386,7 @@ struct CSharedAllocator::heap_head_t
 	typedef NSHARE::crc8_t<0x97> crc_t;
 	heap_head_t(block_size_t aSize) :
 		FMutexFlags(0),//
-		FCrc8MutexName(0x1),//
+		FCrc8(0x1),//
 		FFreeBytesRemaining(0),//
 		FMaxSize(aSize),//
 		FOffsetToProcessNode(NULL_OFFSET),//
@@ -401,13 +401,15 @@ struct CSharedAllocator::heap_head_t
 		FControlingTypeSize(contoling_type_size()),
 		FNumUserAllocation(0)
 	{
-		FSharedMutex[0] = '\0';
-		FFreeSem[0]='\0';
+		memset(FSharedMutex,0,sizeof(FSharedMutex));
+		memset(FFreeSem,0,sizeof(FFreeSem));
+		memset(FWatchDogSem,0,sizeof(FWatchDogSem));
 	}
-	int8_t FSharedMutex[30];
-	int8_t FFreeSem[16];
+	uint8_t FSharedMutex[26];
+	uint8_t FFreeSem[26];
+	uint8_t FWatchDogSem[26];
 	uint8_t FMutexFlags;//
-	uint8_t FCrc8MutexName; //is used to control the head integrity
+	uint8_t FCrc8; //is used to control the head integrity
 	block_size_t FFreeBytesRemaining; //the number of free bytes remaining
 	block_size_t const FMaxSize; //size of allocated buffer
 	offset_t FOffsetToProcessNode; //is used to hold pointer to the first item in the pid list;
@@ -425,7 +427,6 @@ struct CSharedAllocator::heap_head_t
 	//int8_t FWacthDogMutex[16];
 
 	bool MIsWatchDogExist()const;
-	CText MWatchDogMutexName()const;
 	inline void MSetFirstNode(offset_t aNode);
 	inline struct process_node_t *MFirstProcessNode(void* aBaseAddr);
 	inline struct block_node_t *MFirstBlockNode(void* aBaseAddr);
@@ -439,7 +440,7 @@ struct CSharedAllocator::heap_head_t
 	bool MIsCanBeMAllocated() const;
 	//void MSetWaitFree(bool aVal);
 });
-COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (30 +16+ 2 + 13 * 4),
+COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (26 +26+26+ 2 + 13 * 4),
 		IVALID_SIZEOF_HEAD);
 void CSharedAllocator::heap_head_t::MIncUserAllocation()
 {
@@ -457,12 +458,6 @@ bool CSharedAllocator::heap_head_t::MIsValidTypeSize() const
 {
 	return contoling_type_size()==FControlingTypeSize;
 }
-CText CSharedAllocator::heap_head_t::MWatchDogMutexName() const
-{
-	CText _mutex_name;
-	if(MIsWatchDogExist()) _mutex_name.MPrintf("Wd_%d_%d", FWacthDogPid, FWacthDogTid);
-	return _mutex_name;
-}
 bool CSharedAllocator::heap_head_t::MIsWatchDogExist()const
 {
 	return FWacthDogPid>0;
@@ -471,7 +466,7 @@ void CSharedAllocator::heap_head_t::MSerialize(NSHARE::CConfig& aConfig) const
 {
 	aConfig.MAdd("Mutex",reinterpret_cast<const char*>(FSharedMutex));
 	aConfig.MAdd("FreeSem",reinterpret_cast<const char*>(FFreeSem));
-	aConfig.MAdd("Crc",FCrc8MutexName);
+	aConfig.MAdd("Crc",FCrc8);
 	aConfig.MAdd("FreeBytesRemaining",FFreeBytesRemaining);
 	aConfig.MAdd("MaxSize",FMaxSize);
 	aConfig.MAdd("OffsetToProcessNode",FOffsetToProcessNode);
@@ -524,18 +519,14 @@ struct CSharedAllocator::block_node_t *CSharedAllocator::heap_head_t::MFirstBloc
 }
 void CSharedAllocator::heap_head_t::MFillCRC()
 {
-	FCrc8MutexName = crc_t::sMCalcCRCofBuf(FSharedMutex,
-			FSharedMutex + sizeof(FSharedMutex) - 1);
+	crc_t::type_t* const _crc_begin = (crc_t::type_t*)&FMaxSize;
+	FCrc8 = crc_t::sMCalcCRCofBuf(_crc_begin,_crc_begin + sizeof(FMaxSize));
 }
 bool CSharedAllocator::heap_head_t::MCheckCrc() const //checking the head integrity
 {
-	//Heap is not valid as the mutex is not exist
-	if(FSharedMutex[0]=='\0')
-		return false;
-
-	uint8_t _crc = crc_t::sMCalcCRCofBuf(FSharedMutex,
-			FSharedMutex + sizeof(FSharedMutex) - 1); //can not less sizeof head
-	return _crc == FCrc8MutexName;
+	crc_t::type_t* const _crc_begin = (crc_t::type_t*)&FMaxSize;
+	uint8_t const _crc = crc_t::sMCalcCRCofBuf(_crc_begin, _crc_begin +sizeof(FMaxSize)); 
+	return _crc == FCrc8 &&FMaxSize>0 && FControlingTypeSize>0;
 }
 
 struct CSharedAllocator::block_node_t *CSharedAllocator::block_node_t::MNext(
@@ -665,7 +656,7 @@ bool CSharedAllocator::MInitFromCreatedHeap(void* aVal,bool aCleanUp,size_t aRes
 		else
 		{
 			//The semaphore with value 1 is a mutex.
-			FSem.MInit((char const*) _p_head->FSharedMutex, 1);
+			FSem.MInit(_p_head->FSharedMutex, sizeof(_p_head->FSharedMutex), 1,CIPCSem::E_HAS_EXIST);
 			MInitIfNeedFreeSem(_p_head);
 			if (aCleanUp)
 			{
@@ -725,43 +716,18 @@ void CSharedAllocator::MCreateHeap(void* aBase, block_size_t aSize,size_t aReser
 	//The shared mutex name is consist of two part:
 	//the first is - pid, the second random string
 	{
-		NSHARE::CText _rand;
-		_rand.MMakeRandom(10);
-		NSHARE::CText _mutex_name;
-		_mutex_name.MPrintf("sm_%d_al_%s", get_pid_optimized(), _rand.c_str());
-
-		size_t _name_len = (_mutex_name.length_code());
-		_name_len =
-				_name_len <= (sizeof(_p_head->FSharedMutex) - 1) ?
-						_name_len : (sizeof(_p_head->FSharedMutex) - 1);
-		memcpy(_p_head->FSharedMutex, _mutex_name.c_str(), _name_len);
-		_p_head->FSharedMutex[_name_len] = '\0';
-
-		bool _is = FSem.MInit((char const*) _p_head->FSharedMutex, 1,
+		bool _is = FSem.MInit( _p_head->FSharedMutex,sizeof(_p_head->FSharedMutex), 1,
 				CIPCSem::E_HAS_TO_BE_NEW);
 		CHECK(_is);
 		(void) _is;
 	}
 	{
-		NSHARE::CText _rand;
-		_rand.MMakeRandom(10);
-		NSHARE::CText _mutex_name;
-		_mutex_name.MPrintf("sm_%d_fr_%s", get_pid_optimized(), _rand.c_str());
-
-		size_t _name_len = (_mutex_name.length_code());
-		_name_len =
-				_name_len <= (sizeof(_p_head->FFreeSem) - 1) ?
-						_name_len : (sizeof(_p_head->FFreeSem) - 1);
-		memcpy(_p_head->FFreeSem, _mutex_name.c_str(), _name_len);
-		_p_head->FFreeSem[_name_len] = '\0';
-
-		bool _is = FFreeSem.MInit((char const*) _p_head->FFreeSem, CIPCSem::MAX_VALUE,
-				CIPCSem::E_HAS_TO_BE_NEW,0);
+		bool _is = FFreeSem.MInit(_p_head->FFreeSem, sizeof(_p_head->FFreeSem),
+				CIPCSem::MAX_VALUE, CIPCSem::E_HAS_TO_BE_NEW, 0);
 		CHECK(_is);
 		(void) _is;
 	}
 	//filling heap_head_t struct
-	_p_head->MFillCRC();
 	_p_head->MSetFirstNode(sMOffsetFromBase<void>((void*) _buf_addr, FBase));
 	_p_head->FFreeBytesRemaining = _first_node->FBlockSize;
 	//paranoic check of fisrt node addr
@@ -775,6 +741,7 @@ void CSharedAllocator::MCreateHeap(void* aBase, block_size_t aSize,size_t aReser
 			_heap_addr + aSize - _buf_addr - sizeof(block_node_t));
 	//filing process node
 	MInitProcessNode(_p_head);
+	_p_head->MFillCRC();
 }
 CSharedAllocator::nodes_proc_t	//
 CSharedAllocator::MSearchProcessNode(
@@ -1013,7 +980,7 @@ void CSharedAllocator::MInitIfNeedFreeSem(heap_head_t* const _p_head)
 {
 	if (!FFreeSem.MIsInited())
 	{
-		FFreeSem.MInit((char const*)_p_head->FFreeSem, CIPCSem::MAX_VALUE);
+		FFreeSem.MInit(_p_head->FFreeSem,sizeof(_p_head->FFreeSem), CIPCSem::MAX_VALUE,CIPCSem::E_HAS_EXIST);
 		CHECK(FFreeSem.MIsInited());
 		if (FFreeSem.MGetType() == CIPCSem::E_HAS_TO_BE_NEW)//It has been created
 		{
@@ -1106,10 +1073,12 @@ bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 	//fixme wait for the memory will be freed
 	if (MUnlock())
 	{
+		bool _is=false;
 		do
 		{
-			FFreeSem.MWait();
-		} while (_old == atomic_read32(&_p_head->FPostCount));//if is not locked on Sem then FPostCount don't changed
+			_is=FFreeSem.MWait();
+		} while (_is&&_old == atomic_read32(&_p_head->FPostCount));//if is not locked on Sem then FPostCount don't changed
+		LOG_IF(FATAL,!_is)<<"Cannot wait sem "<<FFreeSem.MName();
 		//atomic_dec32(&_p_head->FNumberOfWaitingFor);
 		MLock();
 	}
@@ -1131,8 +1100,9 @@ void CSharedAllocator::MInformMemFreed(heap_head_t* const _p_head)
 	for (; _num; --_num)
 	{
 		atomic_inc32(&_p_head->FPostCount);
-		FFreeSem.MPost();
-		VLOG(5) << "Post free semaphore. " << _p_head->FNumberOfWaitingFor;
+		bool const _is=FFreeSem.MPost();
+		LOG_IF(FATAL,!_is)<<"Cannot post sem "<<FFreeSem.MName();
+		VLOG(5) << "Posted free semaphore. "<<_num<<" Waiters:" << _p_head->FNumberOfWaitingFor;
 	}
 	//DLOG_IF(ERROR,FFreeSem.MValue()>0)<<"Wtf? The semaphore value is greater of zero.";
 }
@@ -1943,8 +1913,9 @@ void CSharedAllocator::MCleanUpByWatchDogImpl(leak_processes_t const& _list)
 	VLOG(2) << "Request cleaning up by the watch dog.";
 	heap_head_t* const _p_head = sMGetHead(FBase);
 	NSHARE::CIPCSem _wd_sem;
-	CText _sem_name = _p_head->MWatchDogMutexName();
-	bool _is = _wd_sem.MInit(_sem_name.c_str(), 1, CIPCSem::E_HAS_EXIST);
+
+	bool _is = _wd_sem.MInit(_p_head->FWatchDogSem,
+			sizeof(_p_head->FWatchDogSem), 1, CIPCSem::E_HAS_EXIST);
 	if (!_is)
 	{
 		LOG(DFATAL)<<"The Watch dog does not have the mutex.";
@@ -2128,15 +2099,14 @@ bool CSharedAllocator::MCleanUpResourceByWatchDog(clean_up_f_t aFunction,
 	_p_head->FWacthDogPid = _pid;
 	_p_head->FWacthDogTid = _tid;
 	NSHARE::CIPCSem _wd_sem;
-	CText _sem_name = _p_head->MWatchDogMutexName();
-	_wd_sem.MInit(_sem_name.c_str(), 1, CIPCSem::E_UNDEF, 0);
+	_wd_sem.MInit(_p_head->FWatchDogSem, sizeof(_p_head->FWatchDogSem), 1,
+			CIPCSem::E_UNDEF, 0);
 
 	_block.MUnlock();		//!---
 
 	LOG(INFO) << "Watch dog stands guard.";
 
 	CRAII<CIPCSem> _block2(_wd_sem);
-
 	if (!(_pid == _p_head->FWacthDogPid && _tid == _p_head->FWacthDogTid))
 	{
 		LOG(INFO)<<"The watch dog no longer "<<_pid<<":"<<_tid<<" stand guard...";
@@ -2179,10 +2149,9 @@ void CSharedAllocator::MResetWatchDog()
 }
 void CSharedAllocator::MResetWatchDogImpl(heap_head_t* const _p_head)
 {
-	CText _sem_name = _p_head->MWatchDogMutexName();
 	MRemoveWatchDog(_p_head);
 	NSHARE::CIPCSem _wd_sem;
-	if (_wd_sem.MInit(_sem_name.c_str(), 1, CIPCSem::E_HAS_EXIST))
+	if (_wd_sem.MInit(_p_head->FWatchDogSem,sizeof(_p_head->FWatchDogSem), 1, CIPCSem::E_HAS_EXIST))
 	{
 		VLOG(2) << "Reset Watch dog.";
 		_wd_sem.MPost();

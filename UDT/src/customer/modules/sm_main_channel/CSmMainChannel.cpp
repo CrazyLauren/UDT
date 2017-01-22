@@ -289,7 +289,7 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 	const size_t _before = _data_buf.size();
 	const size_t _full_size = _before + _size + sizeof(uint32_t);
 	_data_buf.resize(_full_size);
-	CHECK(!_data_buf.MIsDeached());
+	CHECK(!_data_buf.MIsDetached());
 
 	NSHARE::CBuffer::pointer const _header = _data_buf.ptr() + _before;
 	fill_header(_header, aInfo, _before);

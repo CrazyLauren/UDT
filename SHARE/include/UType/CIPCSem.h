@@ -25,10 +25,13 @@ public:
 		E_HAS_EXIST
 	};
 	static int const MAX_VALUE;
+
 	CIPCSem();
-	CIPCSem(char const* aName,unsigned int value,eOpenType const =E_UNDEF,int aInitvalue=-1);
+	CIPCSem(uint8_t* aBuf, size_t aSize,unsigned int value,eOpenType const =E_UNDEF,int aInitvalue=-1);
 	~CIPCSem();
-	bool MInit(char const* aName,unsigned int value,eOpenType  =E_UNDEF,int aInitvalue=-1);
+
+	bool MInit(uint8_t* aBuf, size_t aSize,unsigned int value,eOpenType  =E_UNDEF,int aInitvalue=-1);
+
 	void MFree();
 	bool MIsInited()const;
 	bool MWait(void);
@@ -39,16 +42,18 @@ public:
 	NSHARE::CText const& MName()const;
 	void MUnlink();
 	eOpenType MGetType() const;//if E_HAS_TO_BE_NEW - The mutex has been created, if E_HAS_EXIST- It was exit, else It's not inited
+
+	static size_t sMRequredBufSize();
 private:
 	struct CImpl;
 	CImpl *FImpl;
-	NSHARE::CText FName;
+	//NSHARE::CText FName;
 	eOpenType FType;
 };
-inline NSHARE::CText const& CIPCSem::MName() const
-{
-	return FName;
-}
+//inline NSHARE::CText const& CIPCSem::MName() const
+//{
+//	return FName;
+//}
 inline CIPCSem::eOpenType CIPCSem::MGetType() const
 {
 	return FType;

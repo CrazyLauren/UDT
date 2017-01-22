@@ -12,6 +12,7 @@
 #include <deftype>
 #include <crc8.h>
 #include <console.h>
+#include <tasks.h>
 #include <boost/version.hpp>
 #include <boost/interprocess/detail/atomic.hpp>
 
@@ -120,8 +121,8 @@ bool IMPL_CLASS::MOpenServer(void* _p)
 	CHECK_NOTNULL(_p);
 	server_info_t* _info = reinterpret_cast<server_info_t*>(_p);
 
-	bool _is = _info->MCheckCrc();
-	LOG_IF(ERROR, !_is) << "Invalid server info crc.";
+	bool _is = _info->MCheckCrc() && is_process_exist(_info->FInfo.FId.FPid);
+	VLOG_IF(2, !_is) << "Invalid server info crc.";
 	if (!_is)
 	return false;
 
@@ -133,6 +134,7 @@ bool IMPL_CLASS::MOpenServer(void* _p)
 	}
 	_is = MInitSignalEvent(FServerSignalEvent, &_info->FInfo);
 	FServerInfo = _info;
+	VLOG(2)<<"Opened";
 	return true;
 }
 void IMPL_CLASS::MInvokeEvent(event_info_t* _info)

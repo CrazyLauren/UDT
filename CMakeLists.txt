@@ -6,6 +6,8 @@ else()
 	PROJECT(ROOT C CXX)
 endif()
 
+add_definitions(-DBOOST_ALL_NO_LIB)
+
 SET(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE false CACHE BOOL "Build log4cplus from source")
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)

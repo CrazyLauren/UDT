@@ -15,18 +15,78 @@
 
 namespace NSHARE
 {
+#define SEM_STRUCT_SIZEOF 16
+size_t CIPCSignalEvent::sMRequredBufSize()
+{
+	return SEM_STRUCT_SIZEOF;
+}
+static int g_counter=0;
 struct CIPCSignalEvent::CImpl
 {
 	HANDLE FSignalEvent;
-
+	eOpenType FType;
+	NSHARE::CText FName;
 	CImpl() :
-			FSignalEvent(INVALID_HANDLE_VALUE)
+			FSignalEvent(INVALID_HANDLE_VALUE),FType(E_UNDEF)
 	{
 
 	}
-	bool MInit(char const* aName, eOpenType aIsNew)
+	bool MInit(uint8_t* aBuf, size_t aSize, eOpenType aIsNew)
 	{
-		FSignalEvent = ::CreateEvent(NULL, FALSE, FALSE, aName);
+		if(aSize<SEM_STRUCT_SIZEOF)
+		{
+			LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<<SEM_STRUCT_SIZEOF;
+			return false;
+		}
+		void *const _p=memchr(aBuf,'\0',aSize);
+		bool const _is_empty=_p== NULL || _p==aBuf;
+
+		if(aIsNew==E_UNDEF && _is_empty)
+		{
+			VLOG(2)<<"The buffer is empty. Create the mutex";
+			aIsNew=E_HAS_TO_BE_NEW;
+		}
+
+		switch (aIsNew)
+		{
+			case E_HAS_TO_BE_NEW:
+			{
+				{
+					NSHARE::CText _rand;
+					_rand.MMakeRandom(10);
+					NSHARE::CText _mutex_name;
+					_mutex_name.MPrintf("cv_%d_%s_%d", NSHARE::CThread::sMPid(), _rand.c_str(),++g_counter);
+
+					size_t _name_len = (_mutex_name.length_code());
+					_name_len =
+							_name_len <= (aSize - 1) ?
+									_name_len : (aSize - 1);
+					_mutex_name.resize(_name_len);
+
+					memcpy(aBuf, _mutex_name.c_str(), _name_len);
+					aBuf[_name_len] = '\0';
+				}
+				break;
+			}
+			case E_UNDEF:
+			{
+				break;
+			}
+			case E_HAS_EXIST:
+			{
+				if(_is_empty)
+				{
+					LOG(ERROR)<<"The buffer is empty.";
+					return false;
+				}
+				break;
+			}
+		}
+
+		FSignalEvent = ::CreateEvent(NULL, FALSE, FALSE, (char*)aBuf);
+		if (FSignalEvent == INVALID_HANDLE_VALUE)
+			return false;
+
 		DWORD const _last_error = GetLastError();
 		LOG_IF(FATAL,FSignalEvent==INVALID_HANDLE_VALUE)
 																	<< "CreateEvent failed. signalEvent:"
@@ -36,13 +96,13 @@ struct CIPCSignalEvent::CImpl
 
 		LOG_IF(DFATAL,_last_error == ERROR_ALREADY_EXISTS && aIsNew==E_HAS_TO_BE_NEW)
 																								<< "The signalEvent  "
-																								<< aName
+																								<< (char*)aBuf
 																								<< " is exist.";
 		VLOG_IF(2,_last_error != ERROR_ALREADY_EXISTS) << "The New signalEvent "
-																<< aName
+																<< (char*)aBuf
 																<< " has been created.";
 		VLOG_IF(2,_last_error == ERROR_ALREADY_EXISTS) << "The signalEvent "
-																<< aName
+																<< (char*)aBuf
 																<< " is exist.";
 
 		bool _is_new = _last_error != ERROR_ALREADY_EXISTS;
@@ -62,14 +122,24 @@ struct CIPCSignalEvent::CImpl
 		{
 			if (_is_new)
 			{
+				LOG(ERROR)<<"The mutex is not to be a new, but it's not true.";
 				CloseHandle(FSignalEvent);
 				return false;
 			}
 			return true;
 		}
 		case E_UNDEF:
+		{
+			if (_is_new)
+				aIsNew = E_HAS_TO_BE_NEW;
+			else
+				aIsNew = E_HAS_EXIST;
+
 			break;
 		}
+		}
+		FType=aIsNew;
+		FName=(char*)aBuf;
 		return true;
 	}
 	~CImpl()
@@ -83,24 +153,22 @@ CIPCSignalEvent::CIPCSignalEvent() :
 {
 
 }
-CIPCSignalEvent::CIPCSignalEvent(char const* aName, eOpenType aIsNew) :
+CIPCSignalEvent::CIPCSignalEvent(uint8_t* aBuf, size_t aSize, eOpenType aIsNew) :
 		FPImpl(new CImpl)
 {
-	MInit(aName, aIsNew);
+	MInit(aBuf,aSize, aIsNew);
 }
-bool CIPCSignalEvent::MInit(char const* aName, eOpenType aHasToBeNew)
+bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, eOpenType aHasToBeNew)
 {
 	CHECK_NOTNULL(FPImpl);
-	FName = aName;
-	VLOG(2) << "Event " << FName << " is initialized.";
-	return FPImpl->MInit(aName, aHasToBeNew);
+	return FPImpl->MInit(aBuf,aSize, aHasToBeNew);
 }
 void CIPCSignalEvent::MFree()
 {
 	CHECK_NOTNULL(FPImpl);
 	if (FPImpl->FSignalEvent != INVALID_HANDLE_VALUE)
 	{
-		VLOG(2) << "Event " << FName << " is freed.";
+		VLOG(2) << "Event " << FPImpl->FName << " is freed.";
 		BOOL _is = CloseHandle(FPImpl->FSignalEvent);
 		VLOG(2) << "Close handle return " << _is << " last error "
 							<< (_is ? 0 : GetLastError());
@@ -113,10 +181,10 @@ CIPCSignalEvent::~CIPCSignalEvent()
 }
 bool CIPCSignalEvent::MTimedwait(CIPCSem * aMutex, const struct timespec* aVal)
 {
-	VLOG(2) << "Event " << FName << " is waited for.";
 	CHECK_NOTNULL(FPImpl);
+	VLOG(2) << "Event " << FPImpl->FName << " is waited for.";
 	LOG_IF(DFATAL,FPImpl->FSignalEvent==INVALID_HANDLE_VALUE) << "Event "
-																		<< FName
+																		<< FPImpl->FName
 																		<< " is not init.";
 	if (FPImpl->FSignalEvent == INVALID_HANDLE_VALUE)
 		return false;
@@ -138,7 +206,7 @@ bool CIPCSignalEvent::MTimedwait(CIPCSem * aMutex, const struct timespec* aVal)
 	bool _is = aMutex->MWait();
 	CHECK(_is);
 	(void) _is;
-	VLOG(2) << "Event " << FName << " has been singaled.";
+	VLOG(2) << "Event " << FPImpl->FName << " has been singaled.";
 	return !_is_timeout;
 }
 bool CIPCSignalEvent::MTimedwait(CIPCSem *aMutex, double const aTime)
@@ -153,12 +221,12 @@ bool CIPCSignalEvent::MTimedwait(CIPCSem *aMutex, double const aTime)
 bool CIPCSignalEvent::MSignal()
 {
 	CHECK_NOTNULL(FPImpl);
-	VLOG(2) << "Event " << FName << " is signaled.";
+	VLOG(2) << "Event " << FPImpl->FName << " is signaled.";
 	return SetEvent(FPImpl->FSignalEvent) != FALSE;
 }
 NSHARE::CText const& CIPCSignalEvent::MName() const
 {
-	return FName;
+	return FPImpl->FName;
 }
 void CIPCSignalEvent::MUnlink()
 {
@@ -167,6 +235,10 @@ void CIPCSignalEvent::MUnlink()
 bool CIPCSignalEvent::MIsInited() const
 {
 	return FPImpl->FSignalEvent != INVALID_HANDLE_VALUE ;
+}
+CIPCSignalEvent::eOpenType CIPCSignalEvent::MGetType() const
+{
+	return FPImpl->FType;
 }
 } /* namespace NSHARE */
 #endif

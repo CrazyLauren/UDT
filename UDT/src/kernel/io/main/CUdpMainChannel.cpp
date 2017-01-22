@@ -214,7 +214,7 @@ bool CUdpMainChannel::MClose(descriptor_t aFor)
 
 bool CUdpMainChannel::MSend(user_data_t const& _id, descriptor_t aFor)
 {
-	CHECK(!_id.FData.MIsDeached());
+	CHECK(!_id.FData.MIsDetached());
 	data_t _buf;
 	MFill(&_buf, _id);
 	return MSend(_buf, aFor);

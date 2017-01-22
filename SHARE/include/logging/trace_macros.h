@@ -127,8 +127,20 @@
 #	define DCHECK_STRCASEEQ(str1, str2) CHECK_STRCASEEQ(str1, str2)
 
 #else  // NDEBUG
+namespace NSHARE
+{
+	namespace log_impl
+	{
+	struct __gag_t
+	{
+		inline void operator^(std::ostream&)
+		{
+		}
+	};
+	}
+}
 #	define DLOG(severity) \
-		LOG_IF(severity,false)
+		true?(void)0: NSHARE::log_impl::__gag_t()^ std::cout
 
 #	define DVLOG(verboselevel) \
 		DLOG(INFO)

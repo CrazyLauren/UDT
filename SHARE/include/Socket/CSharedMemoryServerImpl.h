@@ -68,7 +68,7 @@ private:
 	void MEventConnect(client_info_t* aClient);
 	void MEventDisconnect(client_info_t* aClient);
 	bool MEventDisconnectImpl(client_info_t* aClient,bool aInvokeDisconnect=true);
-	bool MInitServer(void* _p,size_t const _server_size);
+	bool MCreateServer(void* _p,size_t const _server_size);
 	bool MValidateClient(IAllocater* const _alocater,
 			client_info_t* aClient) const;
 	//void MEraseBlock(uint32_t aPid,std::list<recv_t>& aBuffers);

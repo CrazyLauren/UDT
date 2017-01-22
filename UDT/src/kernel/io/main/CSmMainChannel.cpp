@@ -398,7 +398,7 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 }
 bool CSmMainChannel::MSend(user_data_t const& aVal, descriptor_t aFor)
 {
-	CHECK(!aVal.FData.MIsDeached());
+	CHECK(!aVal.FData.MIsDetached());
 
 	NSHARE::smart_field_t<NSHARE::shared_identify_t> _addr;
 	NSHARE::intrusive_ptr<sm_io_t> _io;

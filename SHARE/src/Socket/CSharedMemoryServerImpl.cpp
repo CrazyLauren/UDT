@@ -459,6 +459,7 @@ bool IMPL_CLASS::MOpen()
 			MFreeBase();
 			return false;
 		}
+		VLOG(2)<<"It's the old server";
 	}
 
 
@@ -471,7 +472,7 @@ bool IMPL_CLASS::MOpen()
 		return false;
 	}
 	
-	_is = MInitServer(_p,_server_size);
+	_is = MCreateServer(_p,_server_size);
 	if (!_is)
 	{
 		_alloc->MDeallocate(_p,_server_size);
@@ -488,12 +489,12 @@ bool IMPL_CLASS::MOpen(NSHARE::CText const& aName, size_t aSize,size_t aReserv)
 	FReserv=aReserv;
 	return MOpen();
 }
-bool IMPL_CLASS::MInitServer(void* _p,size_t const _server_size)
+bool IMPL_CLASS::MCreateServer(void* _p,size_t const _server_size)
 {
 	server_info_t* _info = new (_p) server_info_t(NSHARE::CThread::sMPid(),
 			_server_size);
 
-	bool _is = MCreateShatedSem(_info,"sv");
+	bool _is = MCreateSharedSem(_info,"sv");
 	if (!_is)
 	return _is;
 	FEv.FEvents = &_info->FInfo;
@@ -508,6 +509,7 @@ bool IMPL_CLASS::MInitServer(void* _p,size_t const _server_size)
 	_is = MCreateEventHandler(FEv);
 	FIsOpened=true;
 	FCleanUpThread.MCreate();
+	_info->MFillCRC();
 	return _is;
 }
 unsigned IMPL_CLASS::MSend(int aUserId, NSHARE::CBuffer & aVal,bool aBlock,unsigned aFlags)

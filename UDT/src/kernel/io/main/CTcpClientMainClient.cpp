@@ -240,7 +240,7 @@ bool IMPL::MSendMainChannelParam() const
 //}
 bool IMPL::MSend(user_data_t const& aData)
 {
-	CHECK(!aData.FData.MIsDeached());
+	CHECK(!aData.FData.MIsDetached());
 	VLOG(2) << "Send data " << aData.FDataId.FPacketNumber << " to " << FAddr;
 
 	CMainClient::eSendResult _result= CMainClient::E_SENT_ERROR;

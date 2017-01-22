@@ -1013,7 +1013,7 @@ CBuffer::size_type CBuffer::requred_buf_len(size_type aSize) const
 	{
 		_size=_req_len+DEF_BUF_RESERVE;
 	}
-	const size_type _len = (_size<256?256:_size) + BEGIN_SIZE;
+	const size_type _len = _size + BEGIN_SIZE;
 	return (_len < size() || _len > _max_size) ? _max_size : _len;
 }
 CBuffer::value_type* CBuffer::MReAllocate(value_type* aP, size_t aSize)
