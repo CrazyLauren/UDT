@@ -245,7 +245,12 @@ extern  uint64_t get_unix_time()//ms
 {
 	struct timeval _tp;
 	if(gettimeofday(&_tp,NULL)==0)
-		return _tp.tv_sec*1000+_tp.tv_usec/1000;
+	{
+		uint64_t _rval=_tp.tv_sec;
+		_rval*=1000;
+		_rval+=(_tp.tv_usec/1000);
+		return _rval;
+	}
 	return 0;
 }
 #elif defined(_WIN32)
