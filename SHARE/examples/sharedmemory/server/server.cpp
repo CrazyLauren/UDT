@@ -34,10 +34,10 @@ int main(int argc, char *argv[])
 
 	for (;! _server.MIsClients(); NSHARE::sleep(1))
 	{
-		_server.MPrint(std::cout)<<std::endl;
+		std::cout<<_server<<std::endl;
 	}
 	double _time = NSHARE::get_time();
-	double _start_time = NSHARE::get_time();
+	double const _start_time = NSHARE::get_time();
 
 	unsigned long long _recv_count = 0;
 
@@ -52,25 +52,26 @@ int main(int argc, char *argv[])
 		++_last_flags;
 		if(_last_flags!=aFlags)
 		{
-			std::cerr<<"Invalid flags"<<std::endl;
+			std::cerr<<"WTF? Invalid flag or The several clients is working."<<std::endl;
 			throw;
 		}
+		NSHARE::CBuffer::size_type const _data_size = _data.size();
+		_recv_count += _data_size;
 
-		_recv_count += _data.size();
-
-		double _delta = NSHARE::get_time() - _time;
+		double const _current_time = NSHARE::get_time();
+		double _delta = _current_time - _time;
 		if (_delta == 0.0)
 			_delta = 0.0000000000001;
 
-		double _speed = ((_data.size() / 1024.0 / 1024.0) / _delta);
+		double const _speed = ((_data_size / 1024.0 / 1024.0) / _delta);
 		_time = NSHARE::get_time();
 
-		if (!(++_i % 1000))
+		if ((++_i % 1000)==0)
 		{
 			std::cout << "test1 <==" << (_recv_count / 1024 / 1024)
 					<< " md; speed=" << _speed << " mb/s; Med="
 					<< ((_recv_count / 1024.0 / 1024.0)
-							/ (NSHARE::get_time() - _start_time))<<" mb/s." << std::endl;
+							/ (_current_time - _start_time))<<" mb/s." << std::endl;
 		}
 
 	}

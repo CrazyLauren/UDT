@@ -197,6 +197,7 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/CSemaphore.h>
 
 #include <UType/CIPCSem.h>
+#include <UType/CIPCSignalEvent.h>
 
 
 //#include <interface/IEvent.h> //TODO ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½

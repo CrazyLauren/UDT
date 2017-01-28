@@ -15,12 +15,13 @@
 
 namespace NSHARE
 {
-#define SEM_STRUCT_SIZEOF 16
+extern size_t get_unique_name(char const* aPreifix,uint8_t* aTo,size_t aSize);
+
 size_t CIPCSignalEvent::sMRequredBufSize()
 {
-	return SEM_STRUCT_SIZEOF;
+	return CIPCSignalEvent::eReguredBufSize;
 }
-static int g_counter=0;
+
 struct CIPCSignalEvent::CImpl
 {
 	HANDLE FSignalEvent;
@@ -33,9 +34,9 @@ struct CIPCSignalEvent::CImpl
 	}
 	bool MInit(uint8_t* aBuf, size_t aSize, eOpenType aIsNew)
 	{
-		if(aSize<SEM_STRUCT_SIZEOF)
+		if(aSize<eReguredBufSize)
 		{
-			LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<<SEM_STRUCT_SIZEOF;
+			LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<< eReguredBufSize;
 			return false;
 		}
 		void *const _p=memchr(aBuf,'\0',aSize);
@@ -51,21 +52,7 @@ struct CIPCSignalEvent::CImpl
 		{
 			case E_HAS_TO_BE_NEW:
 			{
-				{
-					NSHARE::CText _rand;
-					_rand.MMakeRandom(10);
-					NSHARE::CText _mutex_name;
-					_mutex_name.MPrintf("cv_%d_%s_%d", NSHARE::CThread::sMPid(), _rand.c_str(),++g_counter);
-
-					size_t _name_len = (_mutex_name.length_code());
-					_name_len =
-							_name_len <= (aSize - 1) ?
-									_name_len : (aSize - 1);
-					_mutex_name.resize(_name_len);
-
-					memcpy(aBuf, _mutex_name.c_str(), _name_len);
-					aBuf[_name_len] = '\0';
-				}
+				get_unique_name("cv",aBuf, aSize);
 				break;
 			}
 			case E_UNDEF:

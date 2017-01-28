@@ -12,12 +12,32 @@
 #ifndef CIPCCONDVAR_H_
 #define CIPCCONDVAR_H_
 
+#ifndef _WIN32
+#	if defined(__linux__) && defined(USING_FUTEX)
+#		define SE_USING_FUTEX
+#	else
+#		include <semaphore.h>
+#		define SE_USING_SEM_INIT
+#	endif
+#endif
+
 namespace NSHARE
 {
 
 class CIPCSignalEvent:CDenyCopying
 {
 public:
+	enum{
+# ifdef _WIN32
+	eReguredBufSize=16
+#elif defined(SE_USING_FUTEX)
+	eReguredBufSize=sizeof(int32_t)+2*4+4
+#elif defined(SE_USING_SEM_INIT)
+	eReguredBufSize=sizeof(sem_t)+2*4+__alignof(sem_t)
+#else//using sem_open
+	eReguredBufSize=16
+#endif	
+	};
 	enum eOpenType
 	{
 		E_HAS_TO_BE_NEW,

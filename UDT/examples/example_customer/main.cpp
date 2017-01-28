@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
 		callback_t _handler(msg_test_handler, NULL);
 
-		CCustomer::sMGetInstance().MSettingDgParserFor(
+		CCustomer::sMGetInstance().MIWantReceivingMSG(
 				RECEIVE_MSG_TEST_FROM, _msg, _handler);
 	}
 	{

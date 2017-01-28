@@ -35,8 +35,8 @@ SHARED_PACKED(
 				memset(FAllocMutex,0,sizeof(FAllocMutex));
 			}
 			crc_t::type_t FCrc;
-			uint8_t FSharedMutex[32 - sizeof(crc_t::type_t)];
-			uint8_t FAllocMutex[32];
+			uint8_t FSharedMutex[CIPCSem::eReguredBufSize];
+			uint8_t FAllocMutex[CIPCSem::eReguredBufSize];
 			uint32_t FPIDOfLockedMutex;
 			uint32_t FPIDOfLockedAllocMutex;
 			uint32_t FSize;

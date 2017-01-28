@@ -378,6 +378,10 @@ struct CSharedAllocator::heap_head_t
 {
 	enum
 	{
+		eMutexAlign = (NSHARE::CIPCSem::eReguredBufSize * 3) % sizeof(uint32_t),
+	};
+	enum
+	{
 		WACTH_DOG_PRIORITY=0x1<<0,
 		TRY_LOCK_MUTEX=0x1<<1,
 		TRY_UNLOCK_MUTEX=0x1<<2,
@@ -404,12 +408,12 @@ struct CSharedAllocator::heap_head_t
 		memset(FSharedMutex,0,sizeof(FSharedMutex));
 		memset(FFreeSem,0,sizeof(FFreeSem));
 		memset(FWatchDogSem,0,sizeof(FWatchDogSem));
+		if(eMutexAlign>0)
+			memset(FAllign,0,eMutexAlign);
 	}
-	uint8_t FSharedMutex[26];
-	uint8_t FFreeSem[26];
-	uint8_t FWatchDogSem[26];
 	uint8_t FMutexFlags;//
 	uint8_t FCrc8; //is used to control the head integrity
+	uint16_t :16;
 	block_size_t FFreeBytesRemaining; //the number of free bytes remaining
 	block_size_t const FMaxSize; //size of allocated buffer
 	offset_t FOffsetToProcessNode; //is used to hold pointer to the first item in the pid list;
@@ -425,6 +429,10 @@ struct CSharedAllocator::heap_head_t
 	uint32_t :24;
 	mutable uint32_t FNumUserAllocation;
 	//int8_t FWacthDogMutex[16];
+	uint8_t FSharedMutex[CIPCSem::eReguredBufSize];
+	uint8_t FFreeSem[CIPCSem::eReguredBufSize];
+	uint8_t FWatchDogSem[CIPCSem::eReguredBufSize];
+	uint8_t	FAllign[eMutexAlign];
 
 	bool MIsWatchDogExist()const;
 	inline void MSetFirstNode(offset_t aNode);
@@ -440,7 +448,7 @@ struct CSharedAllocator::heap_head_t
 	bool MIsCanBeMAllocated() const;
 	//void MSetWaitFree(bool aVal);
 });
-COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (26 +26+26+ 2 + 13 * 4),
+COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (3*CIPCSem::eReguredBufSize+  14 * 4+ CSharedAllocator::heap_head_t::eMutexAlign),
 		IVALID_SIZEOF_HEAD);
 void CSharedAllocator::heap_head_t::MIncUserAllocation()
 {
@@ -2633,7 +2641,7 @@ bool CSharedAllocator::MLockImpl(heap_head_t* const _p_head) const
 		return true;
 	}
 	_p_head->FMutexFlags |= heap_head_t::TRY_LOCK_MUTEX;
-	bool _is = FSem.MWait();
+	bool const _is = FSem.MWait();
 	if (_is)
 	{
 		VLOG(2) << "Lock Sem " << FSem.MName() << " by " << _pid
@@ -2677,9 +2685,18 @@ bool CSharedAllocator::MUnlockImpl(heap_head_t* const _p_head) const
 		<< _p_head->FLockedMutexCounter;
 		return false;
 	}
+	const pid_type _old_pid=_p_head->FPIDOfLockedMutex;
+	const pid_type _old_tid=_p_head->FTIDOfLockedMutex;
 	_p_head->FPIDOfLockedMutex = 0;
 	_p_head->FTIDOfLockedMutex = 0;
-	return FSem.MPost();
+	if(!FSem.MPost())
+	{
+		_p_head->FPIDOfLockedMutex = _old_pid;
+		_p_head->FTIDOfLockedMutex = _old_tid;
+		++_p_head->FLockedMutexCounter;
+		return false;
+	}
+	return true;
 }
 bool CSharedAllocator::MLock() const
 {

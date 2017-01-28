@@ -26,14 +26,14 @@ int main(int argc, char *argv[])
 	{	//!< I want to receive msg number 0
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
-		CCustomer::sMGetInstance().MSettingDgParserFor(
+		CCustomer::sMGetInstance().MIWantReceivingMSG(
 				"uex2@guex", 0, _handler);
 	}
 	{	
 		//!< I want to receive msg number 0
-		// from any customer of "guex" group  and it will be  handled  by function msg_test_handler
+		// from any customer of "guex" group  and it will be  handled  by function msg_test2_handler
 		callback_t _handler(msg_test2_handler, NULL);
-		CCustomer::sMGetInstance().MSettingDgParserFor(
+		CCustomer::sMGetInstance().MIWantReceivingMSG(
 			"@guex", 0, _handler);
 	}
 	{
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	}
 	{
 		//!< When the customer's list has been updated. The function
-		//event_fail_sent_handler is called.
+		//event_customers_update_handler is called.
 
 		callback_t _handler_cus_update(event_customers_update_handler, NULL);
 		CCustomer::value_t _event_cust(CCustomer::EVENT_CUSTOMERS_UPDATED,

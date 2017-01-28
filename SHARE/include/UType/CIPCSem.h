@@ -12,12 +12,31 @@
 #ifndef CIPCSEM_H_
 #define CIPCSEM_H_
 
+#ifndef _WIN32
+#	if defined(__linux__) && defined(USING_FUTEX)
+#		define SEM_USING_FUTEX
+#	else
+#		include <semaphore.h>
+#		define SM_USING_SEM_INIT
+#	endif
+#endif
 namespace NSHARE
 {
 
 class SHARE_EXPORT CIPCSem:CDenyCopying
 {
 public:
+	enum{
+# ifdef _WIN32
+	eReguredBufSize=16
+#elif defined(SEM_USING_FUTEX)
+	eReguredBufSize=sizeof(int32_t)+2*4+4
+#elif defined(SM_USING_SEM_INIT)
+	eReguredBufSize=(sizeof(sem_t)+2*4+__alignof(sem_t))
+#else//using sem_open
+	eReguredBufSize=16
+#endif	
+	};
 	enum eOpenType
 	{
 		E_UNDEF,
@@ -47,13 +66,8 @@ public:
 private:
 	struct CImpl;
 	CImpl *FImpl;
-	//NSHARE::CText FName;
 	eOpenType FType;
 };
-//inline NSHARE::CText const& CIPCSem::MName() const
-//{
-//	return FName;
-//}
 inline CIPCSem::eOpenType CIPCSem::MGetType() const
 {
 	return FType;

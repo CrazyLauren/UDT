@@ -249,15 +249,17 @@ public:
 	///@param aFrom Name of Parsing  customer
 	///@param aHeader Parsing a header type
 	///@param aCB Callback handler
-	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const dg_parser_t& aHeader, const callback_t& aCB);
-	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
+	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
+			const unsigned& aMSGNumber, const callback_t& aHandler);
+	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
+			const unsigned& aNumber);
+
+	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
+			const dg_parser_t& aMSGHeader, const callback_t& aHandler);
+	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 			const dg_parser_t& aNumber);
 
-	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const unsigned& aHeader, const callback_t& aCB);
-	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
-			const unsigned& aNumber);
+
 
 	bool operator+=(value_t const & aVal);
 	bool operator-=(value_t const & aVal);
@@ -271,6 +273,16 @@ public:
 
 	bool MEmpty  ()const;
 	NSHARE::CBuffer MGetNewBuf(unsigned aSize) const;
+
+	int MSettingDgParserFor(const NSHARE::CText& aFrom,
+			const dg_parser_t& aHeader, const callback_t& aCB);
+	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
+			const dg_parser_t& aNumber);
+
+	int MSettingDgParserFor(const NSHARE::CText& aFrom,
+			const unsigned& aHeader, const callback_t& aCB);
+	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
+			const unsigned& aNumber);
 private:
 
 	CCustomer();
@@ -281,6 +293,24 @@ private:
 	struct _pimpl;
 	_pimpl* FImpl;
 };
+inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
+		const dg_parser_t& aHeader, const callback_t& aCB){
+	return MSettingDgParserFor(aFrom,aHeader,aCB);
+}
+inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
+		const dg_parser_t& aNumber){
+	return MRemoveDgParserFor(aFrom,aNumber);
+}
+
+inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
+		const unsigned& aHeader, const callback_t& aCB){
+	return MSettingDgParserFor(aFrom,aHeader,aCB);
+}
+inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
+		const unsigned& aNumber){
+	return MRemoveDgParserFor(aFrom,aNumber);
+}
+
 } //
 namespace std
 {

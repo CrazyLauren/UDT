@@ -38,7 +38,7 @@ public:
 			FLine(0) //
 	{
 	}
-	void operator()()
+	bool operator()()
 	{
 		++FCount;
 		if ((FCount ==10) || //after the first 10 reps is done,
@@ -55,6 +55,7 @@ public:
 			}
 			FTime = NSHARE::get_time();
 		}
+		return true;
 	}
 	unsigned MCounter() const
 	{
