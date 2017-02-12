@@ -58,6 +58,7 @@ template<class _T> struct data_from_id
 struct descriptor_info_t:kernel_link
 {
 	static const NSHARE::CText NAME;
+	static const NSHARE::CText CONNECTION_INFO;
 	NSHARE::CConfig FInfo;
 
 	//---
@@ -125,7 +126,7 @@ struct split_info
 	{
 		CAN_NOT_SPLIT=0x1<<0,//only whole block
 		LIMITED=0x1<<1,
-		IS_UNIQUE=0x1<<2,
+		IS_UNIQUE=0x1<<2,//deprecated
 
 	};
 	split_info();
@@ -143,7 +144,16 @@ struct split_info
 };
 //received data
 typedef data_from_id<program_id_t> new_id_t;
-typedef data_from_id<user_data_t> user_data_id_t;
+//typedef data_from_id<user_data_t> user_data_id_t;
+typedef std::list<user_data_t> user_datas_t;
+struct routing_user_data_t
+{
+	static const NSHARE::CText NAME;
+	descriptor_t FDesc;
+	user_datas_t FData;
+};
+typedef std::list<routing_user_data_t> output_user_data_t;
+
 typedef data_from_id<demand_dgs_t> demands_id_t;//fixme rename
 typedef data_from_id<kernel_infos_array_t> kernel_infos_array_id_t;
 typedef data_from_id<demand_dgs_for_t> demand_dgs_for_by_id_t;
@@ -218,6 +228,12 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::data_from_id<_T> const& aVal)
 {
 	return aStream << "Id=" << aVal.FId<<"Route :"<<aVal.FRoute << "; " << aVal.FVal;
+}
+template<class _T>
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::routing_user_data_t const& aVal)
+{
+	return aStream << "Id=" << aVal.FDesc;//<< "; " << aVal.FData;//todo
 }
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::descriptor_info_t const& aVal)

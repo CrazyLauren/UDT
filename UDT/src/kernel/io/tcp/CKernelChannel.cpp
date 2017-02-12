@@ -14,17 +14,17 @@
 #include <string.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
-#include "../core/kernel_type.h"
-#include "../core/CConfigure.h"
-#include "../core/CDescriptors.h"
-#include "../core/CDataObject.h"
+#include <core/kernel_type.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
 
-#include "CKernelIo.h"
-#include "ILink.h"
+#include <io/CKernelIo.h>
+#include <io/ILink.h>
 #include "ILinkBridge.h"
 #include "CConnectionHandlerFactory.h"
 
-#include "parser_in_protocol.h"
+#include <parser_in_protocol.h>
 #include "CKernelIOByTCPClient.h"
 #include "CKernelChannel.h"
 

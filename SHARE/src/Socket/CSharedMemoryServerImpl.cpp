@@ -920,7 +920,7 @@ void IMPL_CLASS::MSerialize(NSHARE::CConfig& aConf) const
 			_it->second->MSerialize(_conf);
 		}
 	}
-	aConf.MAdd("clup",FCleanUpThread.MSerialize());
+	aConf.MAdd(/*"clup",*/FCleanUpThread.MSerialize());
 	aConf.MAdd("size",FSize);
 	aConf.MAdd("name",FName);
 	aConf.MAdd("res",FReserv);

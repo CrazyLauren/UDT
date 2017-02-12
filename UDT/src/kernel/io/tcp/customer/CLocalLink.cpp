@@ -15,20 +15,21 @@
 #include <udt_share.h>
 #include <internel_protocol.h>
 
-#include "../../core/kernel_type.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CConfigure.h"
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <core/CConfigure.h>
+#include <io/ILink.h>
+#include <io/CKernelIo.h>
+#include <io/main/CMainChannelFactory.h>
+#include <io/CLinkDiagnostic.h>
 #include "../ILinkBridge.h"
-#include "../ILink.h"
-#include "../main/CMainChannelFactory.h"
-#include "../CKernelIo.h"
 #include "../CConnectionHandlerFactory.h"
 
 #include "receive_from_local_link.h"
 #include <parser_in_protocol.h>
 
-#include "../CLinkDiagnostic.h"
+
 #include "CLocalLink.h"
 #include "CLocalLinkConnectionHandler.h"
 #include "CLocalLinkRegister.h"
@@ -58,7 +59,7 @@ CLocalLink::CLocalLink(descriptor_t aFD,
 
 CLocalLink::~CLocalLink()
 {
-	MClose();
+	MCloseImpl();
 }
 bool CLocalLink::MIsOpened() const
 {
@@ -107,7 +108,7 @@ void CLocalLink::MCloseRequest()
 		FState = E_ERROR;
 	}
 }
-void CLocalLink::MClose()
+void CLocalLink::MCloseImpl()
 {
 	VLOG(2) << "Close link";
 	if(FMainChannel) MCloseMain();
@@ -116,7 +117,11 @@ void CLocalLink::MClose()
 	Fd = CDescriptors::INVALID;
 	FServiceParser.MCleanBuffer();
 	VLOG(2) << "The link has been closed.";
-	CHECK(FState == E_NOT_OPEN);
+	CHECK(FState == E_NOT_OPEN);;
+}
+void CLocalLink::MClose()
+{
+	MCloseImpl();
 }
 int CLocalLink::MCloseMain()
 {

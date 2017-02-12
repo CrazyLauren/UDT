@@ -75,30 +75,33 @@ void CDataObject::MPush(const fail_send_by_id_t & aVal)
 {
 	MPushImpl(aVal,false);
 }
-void CDataObject::MPush(const user_data_id_t & aVal)
+void CDataObject::MPush(routing_user_data_t & aVal)
 {
-	VLOG(2) << "USER DATA Push " << user_data_id_t::NAME << " data size = "
+	VLOG(2) << "USER DATA Push " << routing_user_data_t::NAME << " data size = "
 						<< sizeof(aVal);
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FFifoMutex);
-		std::map<descriptor_t,user_operation_t>::iterator _it=FUserDataFIFO.find(aVal.FId);
+		std::map<descriptor_t,user_operation_t>::iterator _it=FUserDataFIFO.find(aVal.FDesc);
 		if(_it==FUserDataFIFO.end())
 		{
-			std::map<descriptor_t,user_operation_t>::value_type const _val(aVal.FId,*this);
+			std::map<descriptor_t,user_operation_t>::value_type const _val(aVal.FDesc,*this);
 			_it=FUserDataFIFO.insert(_val).first;
+			_it->second.FUserData.FDesc=aVal.FDesc;
 		}
+		CHECK_EQ(_it->first,aVal.FDesc);
 		_it->second.MPush(aVal);
 	}
 
 //		MNewDataFor(user_data_id_t::NAME, sMUserDataOperation);
 }
-void CDataObject::user_operation_t::MPush(const user_data_id_t & aVal)
+void CDataObject::user_operation_t::MPush(routing_user_data_t & aVal)
 {
 	bool _need_call = false;
 	{
-		_need_call = !FIsWorking && FUserDataFIFO.empty();
+		_need_call = !FIsWorking && FUserData.FData.empty();
 		VLOG_IF(4,_need_call) << "Need call handling data";
-		FUserDataFIFO.push_back(aVal);
+		FUserData.FData.splice(FUserData.FData.end(), aVal.FData);
+		CHECK(!FUserData.FData.empty());
 	}
 
 	if (_need_call)
@@ -114,40 +117,42 @@ int CDataObject::user_operation_t::sMUserDataOperation(const NSHARE::CThread* WH
 	VLOG(2) << "User data Operation ";
 	user_operation_t* _p = reinterpret_cast<user_operation_t*>(YOU_DATA);
 	CHECK_NOTNULL(_p);
-	_p->MUserOperation(WHO, WHAT,user_data_id_t::NAME );
+	_p->MUserOperation(WHO, WHAT,routing_user_data_t::NAME );
 	return 0;
 }
 void CDataObject::user_operation_t::MUserOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, const NSHARE::CText& aWhat)
 {
 	VLOG(2) << "Operation for user data " << aWhat;
-	CHECK_EQ(user_data_id_t::NAME, aWhat);
+	CHECK_EQ(routing_user_data_t::NAME, aWhat);
 	args_data_t _args;
 	_args.FType = aWhat;
-	user_data_id_t _data;
+	routing_user_data_t _data;
 
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FFifoMutex);
-		CHECK(!FUserDataFIFO.empty());
-		_data = FUserDataFIFO.front();
-		FUserDataFIFO.pop_front();
-		VLOG_IF(2,FUserDataFIFO.empty()) << "No more data";
+		_data.FDesc=FUserData.FDesc;
+		_data.FData.swap(FUserData.FData);
+		CHECK(!_data.FData.empty());
+		VLOG_IF(2,FUserData.FData.empty()) << "No more data";
 		FIsWorking = true;
 	}
+
+	descriptor_t const _descriptor=_data.FDesc;
 	_args.FPointToData = &_data;
 	int _count = FThis.MCall(aWhat, &_args);
 	VLOG(2) << "EOK:" << _count;
 
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FFifoMutex);
-		if (!FUserDataFIFO.empty())
+		if (!FUserData.FData.empty())
 		{
 			WHAT->MKeep(true);
 		}
 		else
 		{
 			FIsWorking = false;
-			FThis.FUserDataFIFO.erase(_data.FId);
+			FThis.FUserDataFIFO.erase(_descriptor);
 		}
 	}
 	VLOG(2) << "Finish handle";
@@ -169,7 +174,7 @@ NSHARE::CConfig CDataObject::MSerialize() const
 	NSHARE::CRAII<NSHARE::CMutex> _block(FUserDataMutex);
 	NSHARE::CConfig _conf(NAME);
 	_conf.MAdd(CHardWorker::MSerialize());
-	_conf.MAdd(user_data_id_t::NAME,FUserDataFIFO.size());
+	_conf.MAdd(routing_user_data_t::NAME,FUserDataFIFO.size());
 	return _conf;
 
 }

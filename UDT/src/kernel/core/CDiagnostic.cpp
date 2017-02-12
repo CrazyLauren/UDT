@@ -10,8 +10,11 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
+#include <udt_share.h>
 #include "IState.h"
 #include "CDiagnostic.h"
+#include "kernel_type.h"
+
 
 template<>
 NUDT::CDiagnostic::singleton_pnt_t NUDT::CDiagnostic::singleton_t::sFSingleton = NULL;
@@ -32,7 +35,12 @@ CDiagnostic::~CDiagnostic()
 NSHARE::CConfig CDiagnostic::MSerialize(NSHARE::CText const& aName,bool aDeep) const
 {
 	NSHARE::CConfig _rval(NAME);
-
+	if(aName==program_id_t::NAME)
+	{
+		program_id_t const& _info(get_my_id());
+		_rval.MAdd(_info.MSerialize());
+		return _rval;
+	}
 	void* _pointer = NULL;
 	CText::size_type _pos = aName.find(REFFRENCE_PREFIX);
 	if (_pos == 0)

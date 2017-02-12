@@ -96,8 +96,7 @@ void CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data,
 		VLOG_IF(1,FRecv.first) << "The data in " << FRecv.first
 										<< " is not handled.";
 		user_data_info_t _info;
-		/*NSHARE::CBuffer::offset_pointer_t const _point =*/
-		get_sm_user_data(_data.ptr_const(), &_info);
+		deserialize_dg_head(_info,_data.ptr_const());
 		FRecv.first = true;
 		FRecv.second.FDataId = _info;
 		VLOG(4) << "Data info:" << FRecv.second;
@@ -405,7 +404,7 @@ bool CSmMainChannel::MSend(user_data_t & aVal)
 	}
 
 	CHECK_NOTNULL(FCustomer);
-	aVal.FDataId.FFrom = CCustomer::sMGetInstance().MGetID().FId;
+	//aVal.FDataId.FFrom = CCustomer::sMGetInstance().MGetID().FId;
 	NSHARE::CBuffer _data_buf;
 	if (aVal.FData.MIsAllocatorEqual(FSm.MGetAllocator()))
 	{

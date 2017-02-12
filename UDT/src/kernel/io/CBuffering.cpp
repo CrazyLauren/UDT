@@ -12,7 +12,7 @@
 #include <deftype>
 #include <udt_share.h>
 #include <shared_types.h>
-#include "../core/kernel_type.h"
+#include <core/kernel_type.h>
 #include "CBuffering.h"
 
 namespace NUDT
@@ -141,49 +141,67 @@ bool CBuffering::MIsWorking() const
 {
 	return FDoingThread>0;
 }
-bool CBuffering::MPut(user_data_t const& aData)
+bool CBuffering::MPut(user_datas_t & aData)
 {
 	//Thread blocking protection and buffering limitation.
 	//if another thread is handling data to aFor, Let its put our buffer.
-	const size_t _b_size = aData.FData.size();
-	if (FMaxBufferSizeForChannel)
+	bool const _is_limitation_exist = FMaxBufferSizeForChannel > 0 ||	//
+			FMaxSMBufferSize>0;
+	if(_is_limitation_exist)
 	{
-		if ((FBuffer + _b_size) > FMaxBufferSizeForChannel)
+		user_datas_t _fails;
+		for (;!aData.empty();)
 		{
-			//todo set overload flag
-			LOG(ERROR)<<"Cannot put data. The buffering is overloaded. Cur="<<FBuffer<<" bytes; MaxSize="<<FMaxBufferSizeForChannel;
-			return false;
-		}
-		FBuffer+=_b_size;
-	}
-	if (FMaxSMBufferSize
-			&& (FMaxSMBufferSize < FMaxBufferSizeForChannel
-					|| !FMaxBufferSizeForChannel))
-	{
-		if (!aData.FData.MIsAllocatorEqual(NSHARE::CBuffer::sMDefAllaocter()))
-		{
-			VLOG(2) << "Handle by SM";
-			if ((FCurrentSMBuffer + _b_size) < FMaxSMBufferSize)
+			user_data_t & _data=aData.front();
+			const size_t _b_size = _data.FData.size();
+			if (FMaxBufferSizeForChannel)
 			{
-				FCurrentSMBuffer += _b_size;//todo atomic
-				FSMBuffer += _b_size;
+				if ((FBuffer + _b_size) > FMaxBufferSizeForChannel)
+				{
+					//todo set overload flag
+					LOG(ERROR)<<"Cannot put data. The buffering is overloaded. Cur="<<FBuffer<<" bytes; MaxSize="<<FMaxBufferSizeForChannel;
+					break;
+				}
+				FBuffer+=_b_size;
+			}
+			if (FMaxSMBufferSize
+					&& (FMaxSMBufferSize < FMaxBufferSizeForChannel
+							|| !FMaxBufferSizeForChannel))
+			{
+				if (!_data.FData.MIsAllocatorEqual(
+						NSHARE::CBuffer::sMDefAllaocter()))
+				{
+					VLOG(2) << "Handle by SM";
+					if ((FCurrentSMBuffer + _b_size) < FMaxSMBufferSize)
+					{
+						FCurrentSMBuffer += _b_size;
+						FSMBuffer += _b_size;
 
-				VLOG(2) << "Increment sm buffer " << FCurrentSMBuffer;
+						VLOG(2) << "Increment sm buffer "
+											<< FCurrentSMBuffer;
+					}
+					else
+					{
+						LOG(WARNING)<<"SM limitation="<<FCurrentSMBuffer<<"; max="<<FMaxSMBufferSize;
+						NSHARE::CBuffer _fix_data;
+						_fix_data.deep_copy(_data.FData);
+						_data.FData=_fix_data;
+					}
+				}
 			}
-			else
-			{
-				LOG(WARNING)<<"SM limitation="<<FCurrentSMBuffer<<"; max="<<FMaxSMBufferSize;
-				user_data_t _fix_data;
-				_fix_data.FData.deep_copy(aData.FData);
-				_fix_data.FDataId=aData.FDataId;
-				FData.push_back(_fix_data);
-				return true;
-			}
+
+			VLOG(3) << "Push data to buffer.";
+			FData.splice(FData.end(),aData,aData.begin());
 		}
+		aData.splice(aData.end(),_fails);//if fails put back failed packets
 	}
-	VLOG(2)<<"Push data to buffer.";
-	FData.push_back(aData);
-	return true;
+	else
+	{
+		VLOG(3) << "No limitation ==> fast buffering";
+		FData.splice(FData.end(), aData);
+	}
+
+	return aData.empty();
 }
 NSHARE::CConfig CBuffering::MSerialize() const
 {

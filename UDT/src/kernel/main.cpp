@@ -30,12 +30,12 @@
 #include "core/CConfigure.h"
 #include "core/CDataObject.h"
 
-#include "io/ITcpIOManager.h"
 #include "io/CLinkDiagnostic.h"
 #include "io/CChannelDiagnostics.h"
 #include "io/CKernelIo.h"
-#include "io/CKernelIOByTCP.h"
-#include "io/CKernelIOByTCPClient.h"
+#include "io/tcp/ITcpIOManager.h"
+#include "io/tcp/CKernelIOByTCP.h"
+#include "io/tcp/CKernelIOByTCPClient.h"
 #include "io/frontend/CExternalChannel.h"
 #include "io/main/CMainChannelFactory.h"
 #include "io/main/CMainChannelFactoryRegister.h"
@@ -43,16 +43,16 @@
 #include "io/main/CTcpServerMainChannel.h"
 #include "io/main/CTcpClientMainChannel.h"
 #include "io/main/CSmMainChannel.h"
-#include "io/CConnectionHandlerFactory.h"
+#include "io/tcp/CConnectionHandlerFactory.h"
 
-#include "io/customer/CLocalLinkRegister.h"
-#include "io/http/CHttpNewConncetion.h"
-#include "io/kernel/CKernelServerLinkRegister.h"
-#include "io/kernel/CKernelLinkRegister.h"
+#include "io/tcp/customer/CLocalLinkRegister.h"
+#include "io/tcp/http/CHttpNewConncetion.h"
+#include "io/tcp/kernel/CKernelServerLinkRegister.h"
+#include "io/tcp/kernel/CKernelLinkRegister.h"
 
 #include "services/CRoutingService.h"
 #include "services/CInfoService.h"
-#include "services/CHttpRequestHandler.h"
+#include "services/http/CHttpRequestHandler.h"
 #include "services/CPacketDivisor.h"
 
 using namespace NUDT;

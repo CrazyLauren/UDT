@@ -23,7 +23,7 @@ public:
 	~CInfoService();
 	NSHARE::CConfig MSerialize() const;
 
-	CRouteGraph::path_t MShortestPath(CRouteGraph::node_t const&  aTo) const;
+	std::vector<descriptor_t> MNextDestinations(CRouteGraph::node_t const&  aTo) const;
 	bool MIsVertex(const CRouteGraph::node_t& name) const;
 	uuids_t MGetOtherKernelds() const;
 
@@ -55,16 +55,20 @@ private:
 	};
 	typedef std::map<descriptor_t, k_info_t> k_info_by_descriptor_t;
 	typedef std::map<id_t, k_counter> kernels_counter_t; //the identical kernel can be available by several kernels
+	typedef std::map<CRouteGraph::node_t, std::vector<descriptor_t> > next_destination_t;
+
 	struct _data_info_t
 	{
 		kernel_infos_array_t FInfo;
 		k_info_by_descriptor_t FInfoForDesc;
 		kernels_counter_t FWayCounter;
 		CRouteGraph FGraph;
+		next_destination_t FDestianationCache;
+		void MResetCache();
 	};
 	typedef NSHARE::CSafeData<_data_info_t> info_data_t;
 	typedef const info_data_t::RAccess<> r_access;
-	typedef info_data_t::WAccess<> w_access;
+	typedef info_data_t::WAccess<> w_access;//don't forgot reset cache
 	//typedef std::list<std::pair<descriptor_t,kernel_infos_array_t const*> > new_infos_t;
 	void MInit();
 	void MSynchronize2(descriptors_t& aNeedSent, _data_info_t&, bool aIsChange);
@@ -117,7 +121,7 @@ private:
 
 	unsigned FNumberOfChange;
 	unsigned FInfoPriority;
-	info_data_t FData;
+	mutable info_data_t FData;
 	NSHARE::CMutex FUpdateMutex;
 
 };

@@ -19,7 +19,7 @@ class CBuffering
 {
 public:
 	static const NSHARE::CText NAME;
-	typedef std::list<user_data_t> data_list_t;
+	typedef user_datas_t data_list_t;
 
 	static const NSHARE::CText MAX_BUFFER_SIZE_FOR_CHANNEL;
 	static const NSHARE::CText MAX_SM_BUFFER;
@@ -38,7 +38,7 @@ public:
 	void MFinish(data_list_t & aNoSent,bool aTryAgain=true);
 	bool MIsWorking() const;
 
-	bool MPut(user_data_t const& aData);
+	bool MPut(user_datas_t & aData);
 	NSHARE::CConfig MSerialize() const;
 	void MClearImidiatle(data_list_t& aTo);
 private:

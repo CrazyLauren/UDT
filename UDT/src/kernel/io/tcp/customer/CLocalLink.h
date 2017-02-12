@@ -73,6 +73,7 @@ private:
 	void MProcess(DG_T const* aP, parser_t*);
 
 	NSHARE::CText MGetMainChannelType(bool aDefOnly=false);
+	void MCloseImpl();
 	bool MCreateMainChannel();
 	int MCloseMain();
 	int MSendMainChannelError(NSHARE::CText const& _channel_type, unsigned aError);

@@ -29,7 +29,6 @@ public:
 	static const NSHARE::CText DEFAULT;
 	static const NSHARE::CText NAME;
 	typedef std::map<descriptor_t, routing_t> output_decriptors_for_t;
-	typedef std::vector<std::pair<output_decriptors_for_t::key_type, output_decriptors_for_t::mapped_type> > output_vector_t;
 
 	CKernelIo();
 	virtual ~CKernelIo();
@@ -51,11 +50,10 @@ public:
 	bool MSendTo(descriptor_t const& aBy, const T & aVal, routing_t const& aTo,
 			error_info_t const& aError);
 
-	void MSendTo(output_decriptors_for_t& aBy, user_data_t & _data,
-			fail_send_array_t & _non_sent); //warning! All arguments can be changed(optimization)
-	void MSendTo(output_vector_t& aBy,
-			std::vector<user_data_t> & _data, uuids_t & _non_sent); //warning! All arguments can be changed(optimization)
-	void MNoteFailSend(std::vector<user_data_info_t> const& aWhat,descriptor_t aTo);
+	void MSendTo(output_user_data_t& aBy,
+			fail_send_array_t & _non_sent,user_datas_t& aFailedData); //warning! All arguments can be changed(optimization)
+	fail_send_t::eError MSendUserData(descriptor_t const& _by, user_datas_t& _data);
+	//void MSendTo(output_user_data_t& aBy, uuids_t & _non_sent); //warning! All arguments can be changed(optimization)
 
 
 	void MReceivedData(program_id_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
@@ -119,13 +117,11 @@ private:
 	bool MNextSend(descriptor_t aDesc,CBuffering::data_list_t& _data);
 
 	NSHARE::CConfig  MBufferingConfFor(descriptor_t const& aName, IIOManager* aWhere);
-	inline bool MSendUserData(descriptor_t const& _by,uuids_t const& _to,
-			user_data_t& _data, uuids_t& _non_sent);
+
 	void MSendingUserDataTo(descriptor_t aTo, IIOManager* aBy,
 			CBuffering::data_list_t& _data,
-			std::vector<user_data_info_t>& _non_sent) const;
-	bool MPutUserDataToSendFifo(const descriptor_t& _by,
-			user_data_t const& _data);
+			fail_send_array_t& _non_sent) const;
+	fail_send_t::eError MPutUserDataToSendFifo(descriptor_t const& _by, user_datas_t& _data);
 	void MRemoveManagerFor(const descriptor_t& aVal,
 			CBuffering::data_list_t& _not_sent_data);
 

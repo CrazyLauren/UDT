@@ -29,7 +29,7 @@
 
 DECLARATION_VERSION_FOR(customer)
 
-static const NSHARE::version_t g_version(MAJOR_VERSION_OF (customer),
+static const NSHARE::version_t g_cutomer_version(MAJOR_VERSION_OF (customer),
 		MINOR_VERSION_OF (customer), REVISION_OF (customer));
 using namespace NSHARE;
 
@@ -65,9 +65,9 @@ CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 
 }
 int CCustomer::_pimpl::MInitialize(NSHARE::CText const& aProgram,
-		NSHARE::CText const& aName)
+		NSHARE::CText const& aName,NSHARE::version_t const& aVersion)
 {
-	if (int _rval = MInitId(aProgram, aName))
+	if (int _rval = MInitId(aProgram, aName,aVersion))
 	{
 		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
 		return _rval;
@@ -105,7 +105,7 @@ CCustomer::_pimpl::~_pimpl()
 }
 
 int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
-		NSHARE::CText const& aName)
+		NSHARE::CText const& aName,NSHARE::version_t const& aVersion)
 {
 	if (is_id_initialized())
 		return 0;
@@ -141,7 +141,7 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 	}
 	if (_rval == 0)
 	{
-		if (init_id((char*) _name.c_str(), E_CONSUMER, g_version) != 0)
+		if (init_id((char*) _name.c_str(), E_CONSUMER, aVersion) != 0)
 		{
 			_rval = E_INVALID_NAME;
 		}
@@ -344,7 +344,8 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	fail_sent_args_t _fail;
 	_fail.FPacketNumber = _prog.FPacketNumber;
 	_fail.FProtocolName = _prog.FProtocol;
-	_fail.FTo = _prog.FUUIDTo.MGetConst();
+	_fail.FTo = _prog.FDestination;
+	_fail.FFails = _prog.FRouting;
 	_impl->MCall(EVENT_FAILED_SEND, &_fail);
 	VLOG(2) << "Fail sent";
 	return 0;
@@ -433,16 +434,17 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 	args_t _raw_args;
 
 	{ //filling _raw_args
-		VLOG(4) << "Handle data from " << aFrom.FData.FDataId.FFrom
+		VLOG(4) << "Handle data from " << aFrom.FData.FDataId.FRouting.FFrom
 							<< " ; size:" << aFrom.FData.FData.size()
 							<< " Packet # "
 							<< aFrom.FData.FDataId.FPacketNumber;
 		_raw_args.FPacketNumber = aFrom.FData.FDataId.FPacketNumber;
-		_raw_args.FFrom = MGetIdFor(aFrom.FData.FDataId.FFrom.FUuid); //may be remove?
+		_raw_args.FFrom = aFrom.FData.FDataId.FRouting.FFrom.FUuid; //may be remove?
 		_raw_args.FProtocolName =
 				aFrom.FData.FDataId.FProtocol.empty() ?
 						RAW_PROTOCOL_NAME : aFrom.FData.FDataId.FProtocol;
 		_raw_args.FRawProtocolNumber = aFrom.FData.FDataId.FRawProtocolNumber;
+		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
 
 		aFrom.FData.FData.MMoveTo(_raw_args.FBuffer);
 
@@ -468,29 +470,30 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 		int _count = 0;
 		_count += MCall(EVENT_RAW_DATA, &_raw_args);
 
-		_count += MCall(_raw_args.FFrom.FName, &_raw_args);
+//deprecated
+		//_count += MCall(_raw_args.FFrom.FName, &_raw_args);
 
-		NSHARE::CRegistration const _r(_raw_args.FFrom.FName);
-		NSHARE::CAddress _addr(_r.MGetAddress());
+//		NSHARE::CRegistration const _r(_raw_args.FFrom.FName);
+//		NSHARE::CAddress _addr(_r.MGetAddress());
+//
+//		if (!_addr.MIsEmpty())
+//		{
+//			//calling CB for subaddress
+//			NSHARE::CText const _name(_r.MGetName());
+//			for (; !_addr.MIsEmpty(); _addr.MRemoveLastPath())
+//			{
+//				_count += MCall(
+//						NSHARE::CRegistration(_name, _addr).MGetRawName(),
+//						&_raw_args);
+//			}
+//			_count += MCall(_name, &_raw_args);
+//		}
 
-		if (!_addr.MIsEmpty())
+		if (!aFrom.FData.FDataId.FEventsList.empty() && !FEvents.empty())
 		{
-			//calling CB for subaddress
-			NSHARE::CText const _name(_r.MGetName());
-			for (; !_addr.MIsEmpty(); _addr.MRemoveLastPath())
-			{
-				_count += MCall(
-						NSHARE::CRegistration(_name, _addr).MGetRawName(),
-						&_raw_args);
-			}
-			_count += MCall(_name, &_raw_args);
-		}
-
-		if (aFrom.FData.FDataId.FUUIDTo.MIs() && !FEvents.empty())
-		{
-			uuids_t::const_iterator _it =
-					aFrom.FData.FDataId.FUUIDTo.MGetConst().begin(), _it_end(
-					aFrom.FData.FDataId.FUUIDTo.MGetConst().end());
+			std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
+					aFrom.FData.FDataId.FEventsList.begin(), _it_end(
+							aFrom.FData.FDataId.FEventsList.end());
 
 			for (; _it != _it_end; ++_it)
 			{
@@ -498,28 +501,28 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 //				CHECK_LT(_it->FVal,FEvents.size());
 //				CHECK_EQ(_it->FVal,FDemands[_it->FVal].FHandler);
 
-				cb_event_t::const_iterator _jt = FEvents.find(_it->FVal);
+				cb_event_t::const_iterator _jt = FEvents.find(*_it);
 				if (_jt != FEvents.end())
 				{
 					LOG(INFO)<< "Handling #"<<_raw_args.FPacketNumber<<" by "
-					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom.FName<<" Raw="<<_raw_args.FRawProtocolNumber<<" by CB #"<<_it->FVal;
+					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom<<" Raw="<<_raw_args.FRawProtocolNumber<<" by CB #"<<(*_it);
 
-					FEvents[_it->FVal].operator ()(&FThis, &_raw_args);
+					FEvents[*_it].operator ()(&FThis, &_raw_args);
 
 					VLOG(2) << "The packet #" << _raw_args.FPacketNumber
 					<< " by " << _raw_args.FProtocolName
 					<< " protocol from "
-					<< _raw_args.FFrom.FName << " handled";
+					<< _raw_args.FFrom << " handled";
 					++_count;
 				}
 				else
 				{
-					LOG(ERROR)<<" CB "<<_it->FVal<<" is not founded. Ignoring";
+					LOG(ERROR)<<" CB "<<(*_it)<<" is not founded. Ignoring";
 				}
 			}
 
 			LOG_IF(ERROR,_count==0) << "It does not expect packet from "
-											<< _raw_args.FFrom.FName
+											<< _raw_args.FFrom
 											<< ". Ignoring ...";
 
 		}
@@ -530,7 +533,7 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 										<< " is not handled.";
 	}
 }
-id_t const CCustomer::_pimpl::MGetIdFor(NSHARE::uuid_t const& aUUID) const
+program_id_t  CCustomer::_pimpl::MCustomer(NSHARE::uuid_t const& aUUID) const
 {
 	safety_customers_t::RAccess<> const _acc = FCustomers.MGetRAccess();
 	customers_t const& _cus = _acc.MGet();
@@ -538,10 +541,10 @@ id_t const CCustomer::_pimpl::MGetIdFor(NSHARE::uuid_t const& aUUID) const
 	_id.FId.FUuid = aUUID;
 	customers_t::const_iterator _it = _cus.find(_id);
 	LOG_IF(ERROR,_it==_cus.end()) << "Cannot find " << aUUID;
-	return _it != _cus.end() ? _it->FId : id_t();
+	return _it != _cus.end() ? *_it: program_id_t();
 }
 int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
-		dg_parser_t aNumber, const callback_t& aHandler)
+		msg_parser_t aNumber, const callback_t& aHandler)
 {
 	VLOG(2) << "Setting for " << aReq << " parser";
 
@@ -554,7 +557,9 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 	_val.FNameFrom = NSHARE::CRegistration(aReq);
 	_val.FProtocol = aNumber.FProtocolName;
 	_val.FWhat = aNumber.FRequired;
+	_val.FFlags = aNumber.FFlags;
 
+	VLOG(2)<<"New demand:"<<_val;
 	CRAII<CMutex> _block(FParserMutex);
 
 	CHECK_EQ(FDemands.size(), FEvents.size());
@@ -588,7 +593,7 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 	return _val.FHandler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor(const NSHARE::CText& aReq,
-		dg_parser_t aNumber)
+		msg_parser_t aNumber)
 {
 	VLOG(2) << "Remove parser for " << aReq;
 
@@ -651,6 +656,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	aBuf.release(); //optimization
 
 	_data.FDataId.FProtocol=aProtocolName;
+	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	//_data.FDataId.FDestName.push_back(aTo);
 	int _number= FWorker->MSend(_data);
 	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
@@ -670,7 +676,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		recv_data_from_t _data;
 		_data.FData.FData = aBuf;
 		aBuf.release();
-		_data.FData.FDataId.FFrom = FMyId.FId;
+		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
 		CDataObject::sMGetInstance().MPush(_data);
 		return 0;
 	}
@@ -686,7 +692,8 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	_data.FData = aBuf;
 	aBuf.release(); //optimization
 	_data.FDataId.FProtocol = aProtocolName;
-	_data.FDataId.FUUIDTo.MGet().push_back(aTo);
+	_data.FDataId.FRouting.FFrom=FMyId.FId;
+	_data.FDataId.FDestination.push_back(aTo);
 	int _number = FWorker->MSend(_data);
 	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
 	if (_number < 0)
@@ -705,7 +712,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 		recv_data_from_t _data;
 		_data.FData.FData = aBuf;
 		aBuf.release();
-		_data.FData.FDataId.FFrom = FMyId.FId;
+		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
 		CDataObject::sMGetInstance().MPush(_data);
 		return 0;
 	}
@@ -719,8 +726,9 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	user_data_t _data;
 	_data.FData = aBuf;
 	aBuf.release(); //optimization
+	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber = aNumber;
-	_data.FDataId.FUUIDTo.MGet().push_back(aTo);
+	_data.FDataId.FDestination.push_back(aTo);
 	int _number = FWorker->MSend(_data);
 	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
 	if (_number < 0)
@@ -743,7 +751,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	user_data_t _data;
 	_data.FData=aBuf;
 	aBuf.release(); //optimization
-
+	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber=aNumber;
 	//_data.FDataId.FDestName.push_back(aTo);
 	int _number= FWorker->MSend(_data);
@@ -792,10 +800,10 @@ CCustomer::CCustomer() :
 {
 }
 int CCustomer::MInitialize(NSHARE::CText const& aProgram,
-		NSHARE::CText const& aName)
+		NSHARE::CText const& aName,NSHARE::version_t const& Version)
 {
 	CHECK_NOTNULL(FImpl);
-	return FImpl->MInitialize(aProgram, aName);
+	return FImpl->MInitialize(aProgram, aName,Version);
 }
 CCustomer::~CCustomer()
 {
@@ -806,73 +814,90 @@ const program_id_t& CCustomer::MGetID() const
 {
 	return FImpl->FMyId;
 }
-int CCustomer::sMInit(int argc, char* argv[], char const* aName)
+static void f_init_log(int argc, char* argv[])
 {
-	return sMInit(argc, argv, aName, NSHARE::CConfig());
-}
-int CCustomer::sMInit(int argc, char* argv[], char const* aName,
-		const NSHARE::CText& aConf)
-{
-	NSHARE::CConfig _conf;
-
-	std::fstream _stream;
-	_stream.open(aConf.c_str());
-	LOG_IF(DFATAL,!_stream.is_open()) << "***ERROR***:Configuration file - "
-												<< aConf << ".";
-	if (!_stream.is_open())
-	{
-		if(const char* envModuleDir = getenv(ENV_CONFIG_PATH.c_str()))
-		{
-			_stream.open(envModuleDir);
-			LOG_IF(DFATAL,!_stream.is_open())
-														<< "***ERROR***:Cannot open configuration file from Environment "
-														<< ENV_CONFIG_PATH
-														<< " - " << aConf << ".";
-		}
-	}
-	int _rval=0;
-
-	if (_stream.is_open())
-	{
-		if (aConf.find_last_of(".xml") != NSHARE::CText::npos)
-		{
-			LOG(INFO)<<"Initialize from xml configuration file "<<aConf;
-			_rval=_conf.MFromXML(_stream)?_rval:E_INVALID_CONFIG;
-		}
-		else if(aConf.find_last_of(".json")!=NSHARE::CText::npos)
-		{
-			LOG(INFO)<<"Initialize from json configuration file "<<aConf;
-			_rval=_conf.MFromJSON(_stream)?_rval:E_INVALID_CONFIG;
-		}
-		else
-		{
-			LOG(DFATAL)<<"Unknown file format "<<aConf;
-			_rval= E_CANNOT_OPEN_CONFIG;
-		}
-		_stream.close();
-	}else
-		_rval=E_CANNOT_OPEN_CONFIG;
-
-	if(_rval==0)
-		_rval= sMInit(argc, argv, aName, _conf);
-
-	return _rval;
-}
-int CCustomer::sMInit(int argc, char* argv[], NSHARE::CText const& aName,
-		const NSHARE::CConfig& aConf)
-{
+	static bool _is=false;
+	if(_is)
+		return;
+	_is=true;
 #ifdef _WIN32
 	WSADATA _data;
 	WSAStartup(MAKEWORD(2,2), &_data);
 #endif
 	//init trace
 	init_trace(argc, argv);
+}
+
+int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& aVersion,
+		const NSHARE::CText& aConf)
+{
+	f_init_log(argc, argv);
+	NSHARE::CConfig _conf;
+
+	int _rval = 0;
+	const char* envModuleDir = getenv(ENV_CONFIG_PATH.c_str());
+	if (!aConf.empty() || envModuleDir)
+	{
+		std::ifstream _stream;
+		NSHARE::CText _name=aConf;
+		if (!_name.empty())
+		{
+			_stream.open(_name.c_str());
+			LOG_IF(DFATAL,!_stream.is_open())
+														<< "***ERROR***:Configuration file - "
+														<< _name << ".";
+		}
+
+		if (!_stream.is_open() && envModuleDir)
+		{
+			_name=envModuleDir;
+			_stream.open(envModuleDir);
+			LOG_IF(DFATAL,!_stream.is_open())
+														<< "***ERROR***:Cannot open configuration file from Environment "
+														<< ENV_CONFIG_PATH
+														<< " == "
+														<< envModuleDir<< ".";
+		}
+
+
+		if (_stream.is_open())
+		{
+			if (_name.find_last_of(".xml") != NSHARE::CText::npos)
+			{
+				LOG(INFO)<<"Initialize from xml configuration file "<<_name;
+				_rval=_conf.MFromXML(_stream)?_rval:E_INVALID_CONFIG;
+			}
+			else if(_name.find_last_of(".json")!=NSHARE::CText::npos)
+			{
+				LOG(INFO)<<"Initialize from json configuration file "<<_name;
+				_rval=_conf.MFromJSON(_stream)?_rval:E_INVALID_CONFIG;
+			}
+			else
+			{
+				LOG(DFATAL)<<"Unknown file format "<<_name;
+				_rval= E_CANNOT_OPEN_CONFIG;
+			}
+			_stream.close();
+		}
+		else
+		_rval=E_CANNOT_OPEN_CONFIG;
+	}
+
+	if(_rval==0)
+		_rval= sMInit(argc, argv, aName,aVersion, _conf);
+
+	return _rval;
+}
+int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& aVersion,
+		const NSHARE::CConfig& aConf)
+{
+	f_init_log(argc, argv);
 	//read config
 	_pimpl::sMInitConfigure(aConf);
 	//fixme to constructor
 	//init rrd client
 	CCustomer* _p = new CCustomer();
-	const int _rval = _p->MInitialize(argv[0], aName);
+	const int _rval = _p->MInitialize(argv[0], aName,aVersion);
 	if (_rval != 0)
 		delete _p;
 	return _rval;
@@ -914,31 +939,32 @@ CCustomer::modules_t CCustomer::MModules() const
 }
 
 int CCustomer::MSettingDgParserFor(const NSHARE::CText& aFrom,
-		const unsigned& aHeader, const callback_t& aCB)
+		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVer,msg_parser_t::eFLags const& aFlags)
 {
-	dg_parser_t _msg;
-	_msg.FRequired.FVersion = g_version;
+	msg_parser_t _msg;
+	_msg.FRequired.FVersion = aVer;
 	_msg.FRequired.FNumber = aHeader;
 	_msg.FProtocolName = "";
+	_msg.FFlags=aFlags;
 	//It's not need
 
 	return MSettingDgParserFor(aFrom, _msg, aCB);
 }
 int CCustomer::MSettingDgParserFor(const NSHARE::CText& aTo,
-		const dg_parser_t& aNumber, const callback_t& aHandler)
+		const msg_parser_t& aNumber, const callback_t& aHandler)
 {
 	return FImpl->MSettingDgParserFor(aTo, aNumber, aHandler);
 }
 int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
 {
-	dg_parser_t _msg;
-	_msg.FRequired.FVersion = g_version;
+	msg_parser_t _msg;
+	_msg.FRequired.FVersion = MGetID().FKernelVersion;
 	_msg.FRequired.FNumber = aNumber;
 	return MRemoveDgParserFor(aFrom, _msg);
 }
 int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aTo,
-		const dg_parser_t& aNumber)
+		const msg_parser_t& aNumber)
 {
 	return FImpl->MRemoveDgParserFor(aTo, aNumber);
 }
@@ -999,6 +1025,10 @@ int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
 	int _result = FImpl->MSendTo(aNumber, aBuffer, aTo, aFlag);
 	return _result;
 }
+program_id_t CCustomer::MCustomer(NSHARE::uuid_t const& aUUID) const
+{
+	return FImpl->MCustomer(aUUID);
+}
 CCustomer::customers_t CCustomer::MCustomers() const
 {
 	return FImpl->MCustomers();
@@ -1049,7 +1079,7 @@ NSHARE::CBuffer CCustomer::MGetNewBuf(unsigned aSize) const
 }
 const NSHARE::version_t& CCustomer::sMVersion()
 {
-	return g_version;
+	return g_cutomer_version;
 }
 void CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
 {

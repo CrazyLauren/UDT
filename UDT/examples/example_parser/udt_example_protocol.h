@@ -10,7 +10,7 @@
 
 #define PROTOCOL_NAME "pudt" //!<Unique protocol name.Recommended using a short name
 #define INDITIFICATION_NAME "uex@guex" //!<Indintification program name. Recommended using a short name
-#define CONFIG_PATH "./example_customer.xml" //!< Configuration file path. The file format are xml or json.
+#define CONFIG_PATH "./example_customer2.xml" //!< Configuration file path. The file format are xml or json.
 
 enum  eMsgType
 {

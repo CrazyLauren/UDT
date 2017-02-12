@@ -1,22 +1,23 @@
 #include <customer.h>
 
-#include <udt_example_protocol.h>
-
 using namespace NUDT;
 
-#define RECEIVE_MSG_TEST_FROM INDITIFICATION_NAME
+#define PACKET_SIZE 100000
+#define INDITIFICATION_NAME "uex3@guex"
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
-extern int sniffer_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_new_receiver(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_connect_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_fail_sent_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_customers_update_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
 extern void doing_something();
+extern size_t g_buf_size;
 int main(int argc, char *argv[])
 {
-	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME,NSHARE::version_t(1,0), CONFIG_PATH);//!< initialize UDT library
+	g_buf_size= (argc > 1) ? atoi(argv[1]) : PACKET_SIZE;
+
+	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);//!< initialize UDT library
 
 	if(_val!=0)
 	{
@@ -24,25 +25,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg E_MSG_TEST of protocol PROTOCOL_NAME
-		// from RECEIVE_MSG_TEST_FROM and it will be  handled  by function msg_test_handler
-		msg_parser_t _msg;
-		_msg.FRequired.FVersion.FMinor=1;
-		_msg.FRequired.FNumber = E_MSG_TEST;
-		_msg.FProtocolName = PROTOCOL_NAME;
-
+	{	//!< I want to receive msg number 0
+		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
-
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				RECEIVE_MSG_TEST_FROM, _msg, _handler);
-	}
-	{
-		//!< I want to sniff the msg number 0 (sent by example_customer)
-		// between any customer of "guex" group
-		//and it will be  handled  by function sniffer_handler
-		callback_t _handler(sniffer_handler, NULL);
-		CCustomer::sMGetInstance().MIWantReceivingMSG(
-			"@guex", 0, _handler,NSHARE::version_t(),msg_parser_t::E_REGISTRATOR);
+				INDITIFICATION_NAME, 0, _handler);
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function
@@ -72,7 +59,7 @@ int main(int argc, char *argv[])
 	}
 	{
 		//!< When the customer's list has been updated. The function
-		//event_fail_sent_handler is called.
+		//event_customers_update_handler is called.
 
 		callback_t _handler_cus_update(event_customers_update_handler, NULL);
 		CCustomer::value_t _event_cust(CCustomer::EVENT_CUSTOMERS_UPDATED,

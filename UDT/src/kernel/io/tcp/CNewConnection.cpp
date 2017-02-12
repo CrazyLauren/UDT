@@ -14,12 +14,12 @@
 #include <string.h>
 #include <internel_protocol.h>
 #include "receive_from.h"
-#include "parser_in_protocol.h"
-#include "../core/kernel_type.h"
-#include "../core/CDescriptors.h"
+#include <parser_in_protocol.h>
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
 #include "CKernelIOByTCP.h"
 #include "CServerBridge.h"
-#include "ILink.h"
+#include <io/ILink.h>
 #include "CConnectionHandlerFactory.h"
 #include "CNewConnection.h"
 

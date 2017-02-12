@@ -377,7 +377,7 @@ CConfig CUDP::param_t::MSerialize() const
 	{
 		_conf.MSet(UDP_PORT, FPort);
 		if (FAddr.MIs())
-			_conf.MSet(ADDR_TO, FAddr.MGetConst().MSerialize());
+			_conf.MAdd(/*ADDR_TO,*/ FAddr.MGetConst().MSerialize());
 	}
 	return _conf;
 }

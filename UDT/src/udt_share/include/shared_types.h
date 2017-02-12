@@ -59,55 +59,34 @@ struct UDT_SHARE_EXPORT split_packet_t
 	uint32_t FCounter;
 	uint16_t FCoefficient;
 };
-struct UDT_SHARE_EXPORT user_data_info_t
-{
-	static const NSHARE::CText NAME;
-	static const NSHARE::CText KEY_PACKET_NUMBER;
-	static const NSHARE::CText KEY_PACKET_FROM;
-	static const NSHARE::CText KEY_PACKET_TO;
-	static const NSHARE::CText KEY_PACKET_PROTOCOL;
-	static const NSHARE::CText KEY_RAW_PROTOCOL_NUM;
-	user_data_info_t() :
-			FPacketNumber(0),FRawProtocolNumber(0)
-	{
-
-	}
-	user_data_info_t(NSHARE::CConfig const& aConf);
-	NSHARE::CConfig MSerialize() const;
-	bool MIsValid()const;
-
-	uint32_t FPacketNumber;
-	id_t FFrom;//Warinig The Field FName is deprecated
-	NSHARE::uuid_t FUuid;
-	NSHARE::smart_field_t<uuids_t> FUUIDTo;//It's deprecated, reserved for callback list vector
-
-	//customers_names_t FDestName;
-	NSHARE::CText FProtocol;
-	unsigned FRawProtocolNumber;//it's optimization
-
-	split_packet_t FSplit;
-};
-struct UDT_SHARE_EXPORT user_data_t
-{
-	user_data_info_t FDataId;
-	NSHARE::CBuffer FData;
-};
 //
 //-------------------------
 //
 struct UDT_SHARE_EXPORT demand_dg_t
 {
+	typedef uint32_t event_handler_t;
+
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText HANDLER;
+	static const NSHARE::CText KEY_FLAGS;
 	static const uint32_t NO_HANDLER;
+
+	enum
+	{
+		E_NO_DEMAND_FLAGS=0,
+		E_REGISTRATOR=0x1<<0
+	};
 	required_header_t FWhat;
 	//NSHARE::CText FNameRegExp;	//from
 	NSHARE::CRegistration FNameFrom;
 	NSHARE::smart_field_t<NSHARE::uuid_t> FUUIDFrom;
 	NSHARE::CText FProtocol;
 	uint32_t FHandler;
+	uint32_t FFlags;
 
-	demand_dg_t():FHandler(NO_HANDLER)
+	demand_dg_t():
+		FHandler(NO_HANDLER),//
+		FFlags(E_NO_DEMAND_FLAGS)//
 	{
 		;
 	}
@@ -116,6 +95,70 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	bool MIsValid()const;
 	bool operator==(demand_dg_t const& aRht) const;
 };
+//
+//-------------------------
+//
+struct UDT_SHARE_EXPORT routing_t: uuids_t
+{
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText FROM;
+	id_t FFrom;//from.FName - Depreciated
+	routing_t()
+	{
+
+	}
+	routing_t(id_t const& aFrom, uuids_t const& aWhat) :
+			uuids_t(aWhat),	//
+			FFrom(aFrom)
+	{
+
+	}
+	explicit routing_t(NSHARE::CConfig const& aConf);
+
+	NSHARE::CConfig MSerialize() const;
+	bool MIsValid()const;
+};
+//
+//-------------------------
+//
+struct UDT_SHARE_EXPORT user_data_info_t
+{
+
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText KEY_PACKET_NUMBER;
+	static const NSHARE::CText KEY_PACKET_FROM;
+	static const NSHARE::CText KEY_PACKET_TO;
+	static const NSHARE::CText KEY_PACKET_PROTOCOL;
+	static const NSHARE::CText KEY_RAW_PROTOCOL_NUM;
+	user_data_info_t() :
+			FPacketNumber(0),//
+			FRawProtocolNumber(0)//
+	{
+
+	}
+	user_data_info_t(NSHARE::CConfig const& aConf);
+	NSHARE::CConfig MSerialize() const;
+	bool MIsValid()const;
+	bool MIsRaw() const;
+
+	//id_t FFrom;//from.FName - Depreciated
+	uint32_t FPacketNumber;
+
+	NSHARE::CText FProtocol;
+	unsigned FRawProtocolNumber;//it's optimization
+
+	std::vector<demand_dg_t::event_handler_t> FEventsList;
+	uuids_t FDestination;
+	routing_t FRouting;
+
+	split_packet_t FSplit;
+};
+struct UDT_SHARE_EXPORT user_data_t
+{
+	user_data_info_t FDataId;
+	NSHARE::CBuffer FData;
+};
+
 struct UDT_SHARE_EXPORT demand_dgs_t:std::vector<demand_dg_t>
 {
 	static const NSHARE::CText NAME;
@@ -286,53 +329,55 @@ struct  UDT_SHARE_EXPORT kernel_infos_diff_t
 
 	bool MIsValid()const;
 };
-//
-//-------------------------
-//
-struct UDT_SHARE_EXPORT routing_t: uuids_t
-{
-	static const NSHARE::CText NAME;
-	static const NSHARE::CText FROM;
-	id_t FFrom;
-	routing_t()
-	{
 
-	}
-	routing_t(id_t const& aFrom, uuids_t const& aWhat) :
-			uuids_t(aWhat),	//
-			FFrom(aFrom)
-	{
-
-	}
-	explicit routing_t(NSHARE::CConfig const& aConf);
-
-	NSHARE::CConfig MSerialize() const;
-	bool MIsValid()const;
-};
 //
 //-------------------------
 //
 struct UDT_SHARE_EXPORT fail_send_t:user_data_info_t
 {
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText CODE;
+
 	enum eError
 	{
+		E_NO_ERROR,
 		E_THE_BUFFER_IS_SMALL=-1,
+		E_HANDLE_NOT_EXIST=-2,
+		E_NO_ROUTE=-3,
+		E_UNKNOWN_ERROR=-4,
+		E_PARSER_IS_NOT_EXIST=-5,
+		E_PARSER_NO_MSG=-6,
+		E_SOCKET_CLOSED=-7,
+		E_BUFFER_IS_FULL=-8,
+		E_PACKET_LOST=-9,
+		E_MERGE_ERROR=-10,
+
+		E_USER_ERROR_BEGIN=-255,
 	};
-	fail_send_t():FError(E_THE_BUFFER_IS_SMALL)
+	uint8_t MGetUserError() const;
+	void MSetUserError(uint8_t);
+	void MSetError(int);
+	fail_send_t() :
+			FError(E_NO_ERROR)	//
 	{
 
 	}
-	explicit fail_send_t(NSHARE::CConfig const& aConf) :
-			user_data_info_t(aConf),FError(E_THE_BUFFER_IS_SMALL)
-	{
-		;
-	}
+	explicit fail_send_t(NSHARE::CConfig const& aConf);
 	explicit fail_send_t(user_data_info_t const& aRht) :
-			user_data_info_t(aRht),FError(E_THE_BUFFER_IS_SMALL)
+			user_data_info_t(aRht),FError(E_NO_ERROR)
 	{
-
 	}
-	eError FError;
+	explicit fail_send_t(user_data_info_t const& aRht, const uuids_t& aTo,int aError =E_NO_ERROR) :
+			user_data_info_t(aRht)
+	{
+		MSetError(aError);
+		FRouting.clear();
+		FRouting.insert(FRouting.end(),aTo.begin(),aTo.end());
+	}
+	NSHARE::CConfig MSerialize() const;
+	bool MIsValid()const;
+
+	int FError;
 };
 typedef std::vector<fail_send_t> fail_send_array_t;
 //
@@ -413,14 +458,34 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::user_data_info_t const& aVal)
 {
 
-	aStream <<"#" <<aVal.FPacketNumber<<" From:" << aVal.FFrom << ";";
+	aStream <<"#" <<aVal.FPacketNumber<<" From:" << aVal.FRouting.FFrom << ";";
 	//aStream << "To:" << aVal.FDestName;
-	if (aVal.FUUIDTo.MIs())
+	if (!aVal.FDestination.empty())
 	{
-		aStream << "(" << aVal.FUUIDTo.MGetConst() << ")" << ";";
+		aStream << "(" << aVal.FDestination << ")" << ";";
 	}
 	else
 		aStream << "();";
+
+	if (!aVal.FRouting.empty())
+	{
+		aStream << " ==> " << aVal.FRouting << " <> " << ";";
+	}
+
+	if (!aVal.FEventsList.empty())
+	{
+		std::vector<NUDT::demand_dg_t::event_handler_t>::const_iterator _it =
+				aVal.FEventsList.begin(), _it_end(aVal.FEventsList.end());
+		aStream << " | ";
+		for(;_it!=_it_end;++_it)
+		{
+			aStream << *_it << ",";
+		}
+
+		aStream << " | " << ";";
+	}
+
+
 	if(aVal.FSplit.MIsSplited())
 			aStream << aVal.FSplit<<";";
 	aStream << "Protocol :" << aVal.FProtocol;
@@ -452,6 +517,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	aStream << "From:" << aVal.FNameFrom << std::endl;
 	aStream << "Protocol :" << aVal.FProtocol << std::endl;
 	aStream << "Handler :" << aVal.FHandler << std::endl;
+	aStream << "Flags :" << aVal.FFlags << std::endl;
 	aStream << aVal.FWhat;
 	return aStream;
 }

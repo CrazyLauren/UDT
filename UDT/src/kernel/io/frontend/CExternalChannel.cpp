@@ -10,11 +10,11 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include "../../core/kernel_type.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CConfigure.h"
-#include "../CKernelIo.h"
-#include "../IIOManager.h"
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
+#include <core/CConfigure.h>
+#include <io/CKernelIo.h>
+#include <io/IIOManager.h>
 #include "CExternalChannel.h"
 #include "CFrontEnd.h"
 using namespace NSHARE;

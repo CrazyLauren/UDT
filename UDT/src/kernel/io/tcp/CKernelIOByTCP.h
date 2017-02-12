@@ -13,7 +13,7 @@
 #define CIOTCPIMPL_H_
 
 #include "ITcpIOManager.h"
-#include "ILink.h"
+#include <io/ILink.h>
 namespace NUDT
 {
 using namespace NSHARE;

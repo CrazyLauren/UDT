@@ -11,12 +11,12 @@
  */
 #include <deftype>
 #include <udt_share.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CDescriptors.h"
+#include <core/kernel_type.h>
+#include <core/CDataObject.h>
+#include <core/CDescriptors.h>
 #include "../ILinkBridge.h"
-#include "../ILink.h"
-#include "CHttpRequest.h"
+#include <io/ILink.h>
+#include <io/http/CHttpRequest.h>
 #include "CHttpLink.h"
 
 namespace NUDT
@@ -32,10 +32,12 @@ CHttpLink::CHttpLink(descriptor_t aFD,
 	split_info _split;
 	_split.FType.MSetFlag(split_info::CAN_NOT_SPLIT,true);
 	MSetLimits(_split);
+	std::cout<<"New HTTP link: "<<aFD<<std::endl;
 }
 
 CHttpLink::~CHttpLink()
 {
+	std::cout<<"Close HTTP link: "<<Fd<<std::endl;
 	Fd = CDescriptors::INVALID;
 }
 void CHttpLink::MReceivedData(CHttpRequest const& aRequest)
@@ -83,6 +85,7 @@ void CHttpLink::MCloseRequest()
 void CHttpLink::MClose()
 {
 	Fd = CDescriptors::INVALID;
+	FIsAccept = false;
 }
 descriptor_t CHttpLink::MGetID() const
 {
@@ -106,6 +109,7 @@ void CHttpLink::MReceivedData(NSHARE::CBuffer::const_iterator aBegin,
 		break;
 	}
 	case E_INVALID_EOF_STATE:
+		//LOG(ERROR)<<"Invalid EOF state ";
 		break;
 	default:
 		LOG(ERROR)<<"Parsing http error."<<_count;

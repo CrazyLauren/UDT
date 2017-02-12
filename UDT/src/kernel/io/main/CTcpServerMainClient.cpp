@@ -14,12 +14,12 @@
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CConfigure.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../ITcpIOManager.h"
-#include "../ILink.h"
+#include <core/kernel_type.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <io/IIOManager.h>
+#include <io/ILink.h>
 #include "../CChannelDiagnostics.h"
 
 #define RECEIVES /*получаемые пакеты*/ \

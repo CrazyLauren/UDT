@@ -331,17 +331,13 @@ SHARED_PACKED(struct user_data_header_t
 	uint64_t FUUIDFrom;
 	uint64_t FIsLast:1;
 	uint64_t FSplitCounter:23;
-	uint64_t FUUIDsLen:8;
+	uint64_t FEventList:8;
 	uint64_t FRawNumber:32;
 	//uint64_t FUUIDTo; //if 0 is not exist
 
 	uint16_t FSplitCoefficient;
-
-	//dyanmic
-	//deprecated
-//	uint16_t FName; // if customer receive packet it's name "from"
-//	// if send it's name t  To (+ '\0') if 0 is not exist
-	uint16_t :16;
+	uint16_t FDestination:8;
+	uint16_t FRouting:8;
 
 
 	uint16_t FProtocolName; //(+ '\0')
@@ -707,8 +703,8 @@ inline std::ostream& operator<<(std::ostream & aStream,
 {
 	using namespace NUDT;
 	return aStream << "Number:"<<aVal.FNumber<<" Data size:" << aVal.FDataSize << std::endl  << "RawNumber:" << aVal.FRawNumber<< std::endl//"Name:" << aVal.FName<< std::endl
-			<< "UUID From:" << aVal.FUUIDFrom << std::endl << "UUIDS len:"
-			<< (int)aVal.FUUIDsLen<< std::endl <<"ProtocolLen:"
+			<< "UUID From:" << aVal.FUUIDFrom << std::endl << " Destination len:"
+			<< (int)aVal.FDestination<<", Routing:"<<(int)aVal.FRouting<<", Events:"<<(int)aVal.FEventList<< std::endl <<"ProtocolLen:"
 			<< aVal.FProtocolName<<" Packet:"<<aVal.FSplitCounter<<" Coefficient:"<<aVal.FSplitCoefficient<<" IsLast"<<(bool)aVal.FIsLast;
 }
 inline std::ostream& operator<<(std::ostream & aStream,

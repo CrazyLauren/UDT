@@ -20,9 +20,12 @@ using namespace NSHARE;
 template<>
 NUDT::CDescriptors::singleton_pnt_t NUDT::CDescriptors::singleton_t::sFSingleton =
 		NULL;
+
 namespace NUDT
 {
 const NSHARE::CText CDescriptors::NAME="desc";
+const NSHARE::CText CDescriptors::DESCRIPTOR_NAME="kerd";
+
 //const descriptor_t CDescriptors::MAX = 255;
 const descriptor_t CDescriptors::INVALID = -1;
 static uint32_t g_change_info=0;
@@ -219,7 +222,7 @@ NSHARE::CConfig CDescriptors::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	//_conf.MAdd("Max", MAX);
-	_conf.MAdd("Last", FLast);
+	_conf.MAdd("last", FLast);
 
 	CRAII<CMutex> _block(FBLock);
 	d_list_t::const_iterator _it = FDescriptors.begin(), _it_end(
@@ -227,11 +230,12 @@ NSHARE::CConfig CDescriptors::MSerialize() const
 
 	for (; _it != _it_end; ++_it)
 	{
-		NSHARE::CConfig _c_id("id");
-		_c_id.MAdd("id",_it->first);
+		NSHARE::CConfig _c_id(DESCRIPTOR_NAME);
+		_c_id.MAdd("numd",_it->first);
 		if(_it->second.MIs())
 		{
-			_c_id.MAdd("info",_it->second.MGetConst().MSerialize());
+			//_c_id.MAdd("info",_it->second.MGetConst().MSerialize());
+			_c_id.MAdd(_it->second.MGetConst().MSerialize());
 		}
 		_conf.MAdd(_c_id);
 	}

@@ -13,19 +13,19 @@
 #include <Socket.h>
 
 #include <udt_share.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CConfigure.h"
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <core/CConfigure.h>
+#include <io/ILink.h>
+#include <io/CKernelIo.h>
+#include <io/CLinkDiagnostic.h>
+#include <io/main/CMainChannelFactory.h>
 #include "../ILinkBridge.h"
-#include "../ILink.h"
-#include "../main/CMainChannelFactory.h"
-#include "../CKernelIo.h"
 #include "../CConnectionHandlerFactory.h"
-#include "../CLinkDiagnostic.h"
-#include "internel_protocol.h"
+#include <internel_protocol.h>
 #include "receive_from_server_link.h"
-#include "parser_in_protocol.h"
+#include <parser_in_protocol.h>
 
 #include "CKernelServerLink.h"
 #include "CServerLinkConnectionHandler.h"
@@ -535,7 +535,7 @@ NSHARE::CConfig CKernelServerLink::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	FServiceParser.MGetState().MSerialize(_conf);
-	_conf.MAdd("id",Fd);
+	_conf.MAdd(CDescriptors::DESCRIPTOR_NAME,Fd);
 	_conf.MAdd(FKernel.MSerialize());
 	_conf.MAdd(MLimits().MSerialize());
 	FDiagnostic.MSerialize(_conf);

@@ -20,12 +20,12 @@
 #include <shared_types.h>
 #include <sm_shared.h>
 
-#include "../../core/kernel_type.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CConfigure.h"
-#include "../../core/CDescriptors.h"
-#include "../ITcpIOManager.h"
-#include "../ILink.h"
+#include <core/kernel_type.h>
+#include <core/CDataObject.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <io/IIOManager.h>
+#include <io/ILink.h>
 
 
 #include "CSmMainChannel.h"
@@ -492,7 +492,7 @@ size_t CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data, NSHA
 	{
 		user_data_info_t _info;
 		NSHARE::CBuffer::offset_pointer_t const _point =
-				get_sm_user_data(_data.ptr_const(), &_info);
+				deserialize_dg_head(_info,_data.ptr_const()).second;
 		FRecv[_point] = _info;
 		VLOG(4) << "Data info:" << FRecv[_point];
 		break;
@@ -526,7 +526,7 @@ size_t CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data, NSHA
 		NSHARE::CBuffer::const_pointer const _header=_p_size-_header_size;
 
 		user_data_t _info;
-		NSHARE::CBuffer::offset_pointer_t const _data_size = get_sm_user_data(_header, &_info.FDataId);
+		NSHARE::CBuffer::offset_pointer_t const _data_size = deserialize_dg_head(_info.FDataId,_header).second;
 		CHECK_EQ(_data_size+_header_size+sizeof(uint32_t),_full_size);
 		//CHECK_EQ(_data.use_count(),1);
 

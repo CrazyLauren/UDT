@@ -16,7 +16,7 @@ set(${CUSTOMER_TARGET_NAME_UP}_WITH_STATIC_MODULES true CACHE BOOL "Build ${TARG
 #build library
 add_definitions(${LOGGING_DEFENITIONS})
 
-configure_version(CUSTOMER ${CMAKE_CURRENT_SOURCE_DIR}/src 0 2)
+configure_version(CUSTOMER ${CMAKE_CURRENT_SOURCE_DIR}/src 0 3)
 
 file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)			
 list (APPEND SOURCE_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/src/revision.c)

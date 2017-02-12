@@ -1,0 +1,5 @@
+customer 0.3
+-------------------
+
+  - Fixed bug: now the programm's version is specifyied at initilization.
+  - Added version for "raw" protocol 

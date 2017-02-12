@@ -13,14 +13,14 @@
 #include <Socket.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CDataObject.h"
+#include <core/kernel_type.h>
+#include <core/CDataObject.h>
 
-#include "../../core/CConfigure.h"
-#include "../../core/CDescriptors.h"
-#include "../ITcpIOManager.h"
-#include "../ILink.h"
-#include "../CChannelDiagnostics.h"
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <io/IIOManager.h>
+#include <io/ILink.h>
+#include <io/CChannelDiagnostics.h>
 
 #define RECEIVES /*получаемые пакеты*/ \
 	RECEIVE(E_USER_DATA,user_data_dg_t)/*Данные пользователя*/\

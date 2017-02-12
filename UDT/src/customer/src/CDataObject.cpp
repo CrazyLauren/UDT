@@ -87,7 +87,7 @@ void CDataObject::MPush(const progs_id_from_t & aVal)
 void CDataObject::MPush(const recv_data_from_t & aVal)
 {
 	VLOG(2) << "USER DATA Push " << recv_data_from_t::NAME << " data size = "
-						<< sizeof(aVal);
+						<< aVal.FData.FData.size();
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FUserDataMutex);
 		FUserDataFIFO.push_back(aVal);

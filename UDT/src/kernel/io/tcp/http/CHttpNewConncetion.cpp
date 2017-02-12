@@ -11,14 +11,16 @@
  */
 #include <deftype>
 #include <udt_share.h>
-#include "../../core/IState.h"
-#include "../../core/kernel_type.h"
+#include <core/IState.h>
+#include <core/kernel_type.h>
+#include <io/http/CHttpRequest.h>
+#include <io/CLinkDiagnostic.h>
+#include <io/ILink.h>
+
 #include "../CConnectionHandlerFactory.h"
 #include "../ILinkBridge.h"
-#include "../CLinkDiagnostic.h"
-#include "../ILink.h"
 #include "CHttpNewConncetion.h"
-#include "CHttpRequest.h"
+
 #include "CHttpLink.h"
 namespace NUDT
 {

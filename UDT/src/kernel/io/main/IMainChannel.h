@@ -12,7 +12,7 @@
 #ifndef IMAINCHANNEL_H_
 #define IMAINCHANNEL_H_
 
-#include "../../core/IState.h"
+#include <core/IState.h>
 namespace NUDT
 {
 class ILink;

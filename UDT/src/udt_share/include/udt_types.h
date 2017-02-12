@@ -51,7 +51,7 @@ struct required_header_t
 	{
 		NSHARE::CConfig _conf("rh");
 		_conf.MAdd("buf",FReserved,sizeof(FReserved));
-		_conf.MAdd("ver", FVersion.MSerialize());
+		_conf.MAdd(FVersion.MSerialize());
 		return _conf;
 	}
 	bool MIsValid()const

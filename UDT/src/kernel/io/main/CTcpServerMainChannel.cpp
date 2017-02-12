@@ -15,13 +15,13 @@
 #include <udt_share.h>
 #include <internel_protocol.h>
 #include <parser_in_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CConfigure.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
+#include <core/kernel_type.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
 #include "../CChannelDiagnostics.h"
-#include "../ITcpIOManager.h"
-#include "../ILink.h"
+#include <io/IIOManager.h>
+#include <io/ILink.h>
 
 
 #include "CTcpServerMainChannel.h"

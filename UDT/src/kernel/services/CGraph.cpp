@@ -136,7 +136,7 @@ CRouteGraph::vertexs_t CRouteGraph::MRemoveNode(node_t const& name)
 void CRouteGraph::MReset()
 {
 	FVertices.clear();
-	FPathes.clear();
+	MResetCache();
 }
 void CRouteGraph::MResetCache()
 {
@@ -148,8 +148,8 @@ CRouteGraph::path_t CRouteGraph::MShortestPath(node_t const& start,
 {
 	VLOG(2) << "Shortest path from " << start << " to " << finish;
 
-	DCHECK(FVertices.find(start) != FVertices.end());
-	DCHECK(FVertices.find(finish) != FVertices.end());
+//	DCHECK(FVertices.find(start) != FVertices.end());
+//	DCHECK(FVertices.find(finish) != FVertices.end());
 
 	path_t _path;
 	pathes_t::const_iterator _it = FPathes.find(start);
@@ -158,7 +158,7 @@ CRouteGraph::path_t CRouteGraph::MShortestPath(node_t const& start,
 		MDijkstraComputePathsFor(start);
 		_it = FPathes.find(start);
 	}
-	DCHECK(_it != FPathes.end());
+//	DCHECK(_it != FPathes.end());
 
 	if (_it == FPathes.end())
 		return _path;
@@ -178,6 +178,7 @@ CRouteGraph::path_t CRouteGraph::MShortestPath(node_t const& start,
 		_jt = _prev.find(_val);
 	}
 	std::reverse(_path.begin(), _path.end());
+	//todo cache start - finish
 	return _path;
 }
 bool CRouteGraph::MIsEnge(node_t const& name, node_t const& edge) const

@@ -313,7 +313,10 @@ bool CThread::sMYield()
 #if __cplusplus >=201103L
 	std::this_thread::yield();
 #else
-	Sleep(1);
+	if (!SwitchToThread())
+	{
+		Sleep(0);
+	}
 #endif
 	return true;
 }
@@ -366,7 +369,7 @@ namespace NSHARE
 		_conf.MAdd("run",MIsRunning());
 		if(MIsRunning())
 		{
-			_conf.MAdd("id",MThreadId());
+			_conf.MAdd("tid",MThreadId());
 			_conf.MAdd("pr",MGetPriority());
 			_conf.MAdd("cpu",FCPUNum);
 		}

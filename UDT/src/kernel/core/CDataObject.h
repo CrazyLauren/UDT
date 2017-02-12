@@ -37,7 +37,7 @@ public:
 	void MPush(const open_descriptor &);
 	void MPush(const close_descriptor &);
 	void MPush(const new_id_t &);
-	void MPush(const user_data_id_t &);
+	void MPush(routing_user_data_t &);//moved
 	void MPush(const demands_id_t &);
 
 	void MPush(const kernel_infos_array_id_t &);
@@ -77,13 +77,13 @@ private:
 
 		}
 
-		void MPush(const user_data_id_t & aVal);
+		void MPush(routing_user_data_t & aVal);
 		static int sMUserDataOperation(NSHARE::CThread const* WHO,
 				NSHARE::operation_t* WHAT, void* YOU_DATA);
 		void MUserOperation(NSHARE::CThread const* WHO, NSHARE::operation_t* WHAT,
 				NSHARE::CText const &aWhat);
 
-		std::list<user_data_id_t> FUserDataFIFO;
+		routing_user_data_t FUserData;
 		CDataObject& FThis;
 		bool FIsWorking;
 	};

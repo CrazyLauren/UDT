@@ -20,7 +20,7 @@ class SHARE_EXPORT CDynamicModule
 public:
 	static const NSHARE::CText NAME;
 	typedef CText string_t;
-    CDynamicModule(const string_t& name);
+    CDynamicModule(const string_t& name,const string_t& aPath =string_t());
 
     ~CDynamicModule();
 

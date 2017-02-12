@@ -26,7 +26,7 @@ CExampleProtocolParser::~CExampleProtocolParser()
 }
 
 CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
-		const uint8_t* aItBegin, const uint8_t* aItEnd,uint8_t aMask, required_header_t const*)
+		const uint8_t* aItBegin, const uint8_t* aItEnd,NSHARE::uuid_t aFrom,uint8_t aMask)
 {
 	//Parsing buffer aItBegin:aItEnd
 	result_t _result;

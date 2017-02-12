@@ -38,7 +38,7 @@ public:
 	virtual NSHARE::CConfig MSerialize() const
 	{
 		NSHARE::CConfig _conf("reg");
-		_conf.MAdd("Type",FType);
+		_conf.MAdd("type",FType);
 		_conf.MAdd(FVersion.MSerialize());
 		return _conf;
 	}

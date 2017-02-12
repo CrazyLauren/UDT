@@ -12,9 +12,9 @@
 #include <deftype>
 #include <Socket.h>
 #include <internel_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/IState.h"
-#include "../ITcpIOManager.h"
+#include <core/kernel_type.h>
+#include <core/IState.h>
+#include <io/IIOManager.h>
 #include "CMainChannelFactory.h"
 
 template<>

@@ -13,22 +13,24 @@
 #include <Socket.h>
 
 #include <udt_share.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CConfigure.h"
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <core/CConfigure.h>
+#include <io/ILink.h>
+#include <io/main/CMainChannelFactory.h>
+#include <io/CKernelIo.h>
+#include <io/CLinkDiagnostic.h>
+#include <internel_protocol.h>
+
 #include "../ILinkBridge.h"
-#include "../ILink.h"
-#include "../main/CMainChannelFactory.h"
-#include "../CKernelIo.h"
 #include "../CConnectionHandlerFactory.h"
-#include "../CLinkDiagnostic.h"
-#include "internel_protocol.h"
+
 #define RECEIVES /*получаемые пакеты*/ \
 	RECEIVE(E_PROTOCOL_MSG,protocol_type_dg_t)/*Протокол КД*/\
 	RECEIVE(E_INFO,dg_info2_t)/*Ответ на КД Запрос информации*/\
 	/*END*/
-#include "parser_in_protocol.h"
+#include <parser_in_protocol.h>
 
 #include "CKernelServerLink.h"
 #include "CServerLinkConnectionHandler.h"

@@ -10,24 +10,25 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include "../core/CDataObject.h"
-#include "../core/CDescriptors.h"
+#include <core/CDataObject.h>
+#include <core/CDescriptors.h>
 #include "../core/CConfigure.h"
-#include "../core/kernel_type.h"
+#include <core/kernel_type.h>
 #include "CKernelIo.h"
 #include "../services/CRoutingService.h"
 #include "../services/CPacketDivisor.h"
 
-
 template<>
 NUDT::CKernelIo::singleton_pnt_t NUDT::CKernelIo::singleton_t::sFSingleton =
 		NULL;
+//#define NO_PACKET_DIVISOR
 namespace NUDT
 {
 const NSHARE::CText CKernelIo::BUFFERS = "buffers";
 const NSHARE::CText CKernelIo::DEFAULT = "default";
 const NSHARE::CText CKernelIo::NAME = "io";
-CKernelIo::CKernelIo():IState(NAME)
+CKernelIo::CKernelIo() :
+		IState(NAME)
 {
 	FIsInited = false;
 }
@@ -166,11 +167,11 @@ void CKernelIo::MReceivedData(user_data_t const& aWhat,
 		const descriptor_t& aFrom)
 {
 	{
-		LOG(INFO)<< "Receive packet #" << aWhat.FDataId.FPacketNumber<<" from "<<aWhat.FDataId.FFrom;
+		LOG(INFO)<< "Receive packet #" << aWhat.FDataId.FPacketNumber<<" from "<<aWhat.FDataId.FRouting.FFrom;
 		VLOG_IF(5,aWhat.FData.size()<100)<<aWhat.FData;
-		user_data_id_t _data;
-		_data.FId=aFrom;
-		_data.FVal=aWhat;
+		routing_user_data_t _data;
+		_data.FDesc=aFrom;
+		_data.FData.push_back(aWhat);
 		CDataObject::sMGetInstance().MPush(_data);
 	}
 }
@@ -307,21 +308,23 @@ void CKernelIo::MRemoveChannelFor(descriptor_t const& aVal, IIOManager* aWhere)
 	CBuffering::data_list_t _not_sent_data;
 	MRemoveManagerFor(aVal, _not_sent_data);
 
-	std::vector<user_data_info_t> _fail;
+	fail_send_array_t _fails;
 	CBuffering::data_list_t::const_iterator _it = _not_sent_data.begin(),
 			_it_end(_not_sent_data.end());
-	for(;_it!=_it_end;++_it)
+	for (; _it != _it_end; ++_it)
 	{
-		_fail.push_back(_it->FDataId);
+		fail_send_t _sent(_it->FDataId);
+		_sent.MSetError(fail_send_t::E_SOCKET_CLOSED);
+		_fails.push_back(_sent);
 	}
 	_not_sent_data.clear();
 
 	CPacketDivisor::sMGetInstance().MRemoveLimitsFor(aVal);
 
-	if(!_fail.empty())
+	if (!_fails.empty())
 	{
-		VLOG(2)<<"Some data is not sent.";
-		MNoteFailSend(_fail,aVal);
+		VLOG(2) << "Some data is not sent.";
+		CRoutingService::sMGetInstance().MNoteFailSend(_fails);
 	}
 }
 void CKernelIo::MFactoryAdded(factory_t* factory)
@@ -357,8 +360,8 @@ void CKernelIo::MFactoryRemoved(factory_t* factory)
 NSHARE::CConfig CKernelIo::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	factory_its_t _its=MGetIterator();
-	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)//todo mutex
+	factory_its_t _its = MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin) //todo mutex
 	{
 		_conf.MAdd((*_its.FBegin).second->MSerializeRef());
 	}
@@ -372,97 +375,52 @@ int CKernelIo::sMSendUser(NSHARE::CThread const* WHO,
 	return 0;
 }
 
-
-
 void CKernelIo::MSendingUserDataTo(descriptor_t aTo, IIOManager* aBy,
-		CBuffering::data_list_t& _data,
-		std::vector<user_data_info_t>& _non_sent) const
+		CBuffering::data_list_t& aData, fail_send_array_t& aError) const
 {
-	//The iteration method is used instead of the pop_back method
-	//for avoiding dead looks
-	CBuffering::data_list_t::iterator _it = _data.begin();
-	DCHECK(!_data.empty());
+	DCHECK(!aData.empty());
 	VLOG(3) << "Sending data to " << aTo;
-	bool _is_not_closed=true;
-	for (; _it != _data.end();)
+	bool _is_not_closed = true;
+	CBuffering::data_list_t _fails;
+	for (; !aData.empty();)
 	{
-		VLOG(2) << "Send #" <<_it->FDataId.FPacketNumber<<" offset"<< _it->FData.offset() << " use="
-							<< _it->FData.use_count();
-		if (!aBy->MSend(*_it, aTo))
-		{
-			if (_is_not_closed && (_is_not_closed=CDescriptors::sMGetInstance().MGet(aTo).second))	//may be closed
-			{
-				LOG(ERROR)<<"Cannot send "<<_it->FDataId << "  to "<<aTo;
-				_non_sent.push_back(_it->FDataId);
-
-				++_it;
-			}
-			else
-			{
-				LOG(ERROR)<<"Cannot send "<<_it->FDataId << "  to "<<aTo<<" as closed";
-				for(;_it!=_data.end();++_it)
-				{
-					_non_sent.push_back(_it->FDataId);
-				}
-			}
-		}
-		else
-		_it=_data.erase(_it);
-	}
-}
-
-void CKernelIo::MNoteFailSend(std::vector<user_data_info_t> const& aWhat,
-		descriptor_t aTo)
-{
-	std::pair<descriptor_info_t, bool> const _info =
-			CDescriptors::sMGetInstance().MGet(aTo);
-
-	std::vector<user_data_info_t>::const_iterator _it =
-			aWhat.begin(), _it_end(aWhat.end());
-	std::set<unsigned> _repeaters;
-	for (; _it != _it_end; ++_it)
-	{
-		VLOG(5) << "Next fail #" << _it->FPacketNumber << " from "
-							<< _it->FFrom;
-		if (!_repeaters.insert(_it->FPacketNumber).second)
-		{
-			VLOG(2) << " Fail info for " << _it->FPacketNumber
-								<< " has been set already. Ignoring....";
-			continue;
-		}
-		if (_it->FUUIDTo.MIs() && _info.first.FProgramm.FType!=E_CONSUMER)
-			CRoutingService::sMGetInstance().MNoteFailSend(*_it,
-					_it->FUUIDTo.MGetConst());
-		else if (_info.second)
-		{
-			uuids_t _fail;
-			_fail.push_back(_info.first.FProgramm.FId.FUuid);
-			CRoutingService::sMGetInstance().MNoteFailSend(*_it, _fail);
-		}
+		user_data_t const& _data = aData.front();
+		VLOG(4) << "Send #" << _data.FDataId.FPacketNumber << " offset"
+							<< _data.FData.offset() << " use="
+							<< _data.FData.use_count();
+		if (_is_not_closed && aBy->MSend(_data, aTo))
+			aData.pop_front();
 		else
 		{
-			LOG(ERROR)<<"Cannot send "<<*_it<<" to closed descriptor "<<aTo;
+			_is_not_closed = _is_not_closed
+					&& CDescriptors::sMGetInstance().MGet(aTo).second; //check only ones
+
+			LOG(ERROR)<<"Cannot send "<<_data.FDataId << "  to "<<aTo;
+
+			fail_send_t _sent(_data.FDataId);
+			_sent.MSetError(_is_not_closed ? //
+					fail_send_t::E_SOCKET_CLOSED : //
+					fail_send_t::E_UNKNOWN_ERROR);
+			aError.push_back(_sent);
+			_fails.splice(_fails.end(), aData, aData.begin());
 		}
 	}
+	aData.splice(aData.end(), _fails);
 }
-bool CKernelIo::MNextSend(descriptor_t aDesc,
-		CBuffering::data_list_t& _data)
-{
-	_data.clear();
-	 //fix the clients were noted about the unsuccessful sending data
-	//but it are not removed from sending queue, they added to the end, therefore it were send again in next time
 
+bool CKernelIo::MNextSend(descriptor_t aDesc, CBuffering::data_list_t& _data)
+{
 	safe_manager_t::RAccess<> const _access = FIoManagers.MGetRAccess();
 	managers_t const& _man = _access.MGet();
 	managers_t::const_iterator _man_it = _man.find(aDesc);
-	if(_man_it==_man.end())
+	if (_man_it == _man.end())
 		return false;
-	manager_t const & _m=*_man_it->second.MGetConst();
-	bool _is=false;
+	manager_t const & _m = *_man_it->second.MGetConst();
+	bool _is = false;
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _lock(_m.FBufMutex);
-				_m.FDataBuffer.MFinish(_data, false);
-		_is=_m.FDataBuffer.MTry(_data);
+		_m.FDataBuffer.MFinish(_data, false);
+		_is = _m.FDataBuffer.MTry(_data);
 	}
 	VLOG_IF(2,_is) << "There is some more data";
 	return _is;
@@ -495,7 +453,7 @@ std::pair<descriptor_t, IIOManager*> CKernelIo::MBeginSend(
 		LOG(ERROR)<<"There is not manager for "<<_desc;
 		return _rval_t(-1,NULL);
 	}
-	manager_t const & _m=*_m_it->second.MGetConst();
+	manager_t const & _m = *_m_it->second.MGetConst();
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _lock(_m.FBufMutex);
 		if (_m.FDataBuffer.MIsWorking())
@@ -514,60 +472,78 @@ std::pair<descriptor_t, IIOManager*> CKernelIo::MBeginSend(
 }
 void CKernelIo::MSendUserDataImpl()
 {
-	VLOG(2)<<"Start sending";
+	VLOG(2) << "Start sending";
 	//NSHARE::CRAII<NSHARE::CMutex> _lock_io(FBlockChangingIOMangersList);
-	VLOG(5)<<"Our turn";
+	VLOG(5) << "Our turn";
 	CBuffering::data_list_t _data;
-
 	std::pair<descriptor_t, IIOManager*> _d = MBeginSend(_data);
+
 	if (CDescriptors::sMIsValid(_d.first))
 	{
-		do
+		std::pair<descriptor_info_t, bool> _resalt =
+				CDescriptors::sMGetInstance().MGet(_d.first);
+		if (_resalt.second)
 		{
-			std::vector<user_data_info_t> _non_sent;
-			MSendingUserDataTo(_d.first, _d.second, _data, _non_sent);
-			if (!_non_sent.empty())
+			bool const _is_consumer = _resalt.first.FProgramm.FType
+					== E_CONSUMER;
+			do
 			{
-				MNoteFailSend(_non_sent, _d.first);
-			}
-		} while (MNextSend(_d.first, _data));
+				CBuffering::data_list_t _sending;
+				fail_send_array_t _fails;
+				if (_is_consumer)	//filing callbacks of data
+				{
+					VLOG(2) << "To consumer";
+					CRoutingService::sMGetInstance().MFillMsgHandlersFor(_data,
+							_sending, _fails);
+				}
+				else
+				{
+					VLOG(2) << "To kernel";
+					_sending.swap(_data);
+				}
+
+				MSendingUserDataTo(_d.first, _d.second, _sending, _fails);
+				if (!_fails.empty())
+				{
+					CRoutingService::sMGetInstance().MNoteFailSend(_fails);
+				}
+				_data.splice(_data.end(), _sending);
+				_data.clear();	//todo To Not Sent global array
+
+			} while (MNextSend(_d.first, _data));
+		}
 
 	}
 	else
 	{
 		VLOG(1) << "Wtf?! No data.";
 	}
-	VLOG(2) << "End send of "<<_d.first;
+	VLOG(2) << "End send of " << _d.first;
 }
 
-bool CKernelIo::MPutUserDataToSendFifo(const descriptor_t& _by,
-		user_data_t const& _data)
+fail_send_t::eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
+		user_datas_t& _data)
 {
-	bool _does_sent;
+	fail_send_t::eError _rval;
 	const safe_manager_t::RAccess<> _access = FIoManagers.MGetRAccess();
 	const managers_t& _man = _access.MGet();
 	managers_t::const_iterator _it_man = _man.find(_by);
 	if (_it_man == _man.end())
 	{
 		LOG(ERROR)<<"There is not manager for "<<_by;
-		_does_sent=false;
+		_rval=fail_send_t::E_SOCKET_CLOSED;
 	}
 	else
 	{
 		manager_t const & _m=*_it_man->second.MGetConst();
-		CHECK(!_data.FData.empty());
+		CHECK(!_data.empty());
 		{
 			NSHARE::CRAII<NSHARE::CMutex> _lock(_m.FBufMutex);
 
-			if (!_m.FDataBuffer.MPut(_data))
-			{
-				_does_sent=false;
-				LOG(ERROR)<<"Cannot put the data to buffer.";
-			}
-			else
+			_rval=_m.FDataBuffer.MPut(_data)?fail_send_t::E_NO_ERROR:fail_send_t::E_BUFFER_IS_FULL;
+			LOG_IF(ERROR,_rval!=fail_send_t::E_NO_ERROR)<<"Cannot put all  data to buffer.";
 			{
 				VLOG(2) << "Put data to buffer";
-				_does_sent=true;
 				if (!_m.FDataBuffer.MIsWorking())
 				{
 					VLOG(2) << "Is not working.";
@@ -585,110 +561,45 @@ bool CKernelIo::MPutUserDataToSendFifo(const descriptor_t& _by,
 			}
 		}
 	}
-	return _does_sent;
+	return _rval;
 }
 
-bool CKernelIo::MSendUserData(descriptor_t const& _by, uuids_t const& _to,
-		user_data_t & _data, uuids_t& _non_sent)
+fail_send_t::eError CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
 {
-	VLOG(4) << "Send to " << _to << " by " << _by << " " << _data.FDataId;
-	bool _does_put = false;
-	if (CDescriptors::sMIsValid(_by))
+	VLOG(4) << "Send to " << _by;
+	if (!CDescriptors::sMIsValid(_by))
+		return fail_send_t::E_SOCKET_CLOSED;
+	return MPutUserDataToSendFifo(_by, _data);
+}
+void CKernelIo::MSendTo(output_user_data_t& aData, fail_send_array_t & aNoSent,
+		user_datas_t& aFailedData)
+{
+
+	for (output_user_data_t::iterator _it = aData.begin(); _it != aData.end();
+			++_it)
 	{
-		//NSHARE::CRAII<NSHARE::CMutex> _lock(FMutex);
-		std::pair<descriptor_info_t, bool> _resalt =
-				CDescriptors::sMGetInstance().MGet(_by);
-		CHECK(_resalt.second);
-		if(_resalt.first.FProgramm.FType!=E_CONSUMER)
-			_data.FDataId.FUUIDTo = _to;		//by historical reason
-		else
+		user_datas_t _to;
+#ifdef NO_PACKET_DIVISOR
+		_to.swap(_it->FData);
+#else
+		CPacketDivisor::sMGetInstance().MSplitOrMergeIfNeed(_it->FDesc,_it->FData,_to,aNoSent);
+		aFailedData.splice(aFailedData.end(),_it->FData);
+#endif
+		int error=fail_send_t::E_NO_ERROR;
+
+		if ((error=MSendUserData(_it->FDesc, _to))!=fail_send_t::E_NO_ERROR)
 		{
-			_data.FDataId.FUUIDTo.MGet().clear();
-			_data.FDataId.FUUIDTo.MUnSet();
-
-			CRequiredDG::req_uuids_t const _req_uuids(CRoutingService::sMGetInstance().MGetCustomersFor( _data));
-			CRequiredDG::req_uuids_t::const_iterator _it=_req_uuids.find(_resalt.first.FProgramm.FId.FUuid);
-			CHECK(_it!=_req_uuids.end());
-			std::vector<uint32_t>::const_iterator _begin(_it->second.begin()),_end(_it->second.end());
-
-			for(;_begin!=_end;++_begin)
-				_data.FDataId.FUUIDTo.MGet().push_back(NSHARE::uuid_t(*_begin));
-		}
-		_does_put = MPutUserDataToSendFifo(_by,  _data);
-	}
-
-	if (!_does_put)
-	{
-		_non_sent.insert(_non_sent.end(), _to.begin(), _to.end());
-	}
-	return _does_put;
-}
-void CKernelIo::MSendTo(output_vector_t& aBy, std::vector<user_data_t> & _data,
-		uuids_t & _non_sent)
-{
-	CPacketDivisor::limits_t::const_iterator _jt = aBy.begin(), _jt_end(
-			aBy.end());
-	for (; _jt != _jt_end; ++_jt)
-	{
-		std::vector<user_data_t>::iterator _uit = _data.begin(), _uit_end(
-				_data.end());
-		VLOG(2) << "Number of parts " << _data.size();
-		for (; _uit != _uit_end; ++_uit)
-			if (!MSendUserData(_jt->first, _jt->second, *_uit, _non_sent))
+			user_datas_t::const_iterator _jt = _to.begin(), _jt_end(
+					_to.end());
+			for (; _jt != _jt_end; ++_jt)
 			{
-				LOG(ERROR)<<"Cannot sent split packet #"<<_uit->FDataId.FPacketNumber<<" Part:"<<_uit->FDataId.FSplit;
-				//todo send fail to packet destination
-				break;
+				fail_send_t _sent(_jt->FDataId);
+				_sent.MSetError(error);
+				aNoSent.push_back(_sent);
 			}
-	}
-}
 
-void CKernelIo::MSendTo(output_decriptors_for_t & aBy, user_data_t & _data, //the data is not const
-		//to does not copy it for every descriptor
-		fail_send_array_t & aNoSent)
-{
-	CPacketDivisor::packed_user_data_t _list;
-	CPacketDivisor::eError _error;
-	uuids_t _not_sent;
-	switch ((_error = CPacketDivisor::sMGetInstance().MSplitOrMergeIfNeed(_data,
-			aBy, _list, aNoSent)))
-	{
-	case CPacketDivisor::E_EOK:
-	{
-		CPacketDivisor::packed_user_data_t::iterator _it = _list.begin(),
-				_it_end(_list.end());		//it's not const for optimization!
-		for (; _it != _it_end; ++_it)
-		{
-			VLOG(2) << "The packet #" << _data.FDataId.FPacketNumber
-								<< " is split. ";
-
-			MSendTo(_it->FFor, _it->FDataList, _not_sent);
+			aFailedData.splice(aFailedData.end(), _to);
 		}
 	}
-		break;
-		case CPacketDivisor::E_DOES_NOT_NEED:
-		{
-			VLOG(2) << "Send packet #" << _data.FDataId.FPacketNumber<< " directly";
-			for (output_decriptors_for_t::iterator _it = aBy.begin();
-					_it != aBy.end(); ++_it)
-			{
-				MSendUserData(_it->first, _it->second, _data, _not_sent);
-			}
-		}
-		break;
-		case CPacketDivisor::E_PACKET_LOST:
-		{
-			LOG(ERROR)<<"Some part of #"<< _data.FDataId.FPacketNumber<<" has been lost.";
-			//todo clean send fifo
-			//send fail to packet destination
-		}
-		break;
-	}
-	if (!_not_sent.empty())
-	{
-		aNoSent.push_back(fail_send_t(_data.FDataId));
-		aNoSent.back().FUUIDTo = _not_sent;
-	}
-
 }
 } /* namespace NUDT */

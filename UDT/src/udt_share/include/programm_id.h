@@ -12,12 +12,14 @@
 #ifndef PROGRAMM_ID_H_
 #define PROGRAMM_ID_H_
 
+#include <udt_share_macros.h>
+
 #ifdef uuid_t
 #error "Fucking programmer"
 #endif
 namespace NUDT
 {
-struct id_t
+struct UDT_SHARE_EXPORT id_t
 {
 	NSHARE::uuid_t FUuid;
 	NSHARE::CText FName;
@@ -45,15 +47,18 @@ struct id_t
 		return FUuid.FVal < aRht.FUuid.FVal;
 	}
 #ifdef SHARE_CONFIG_DEFINED
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText KEY_NAME;
+	
 	id_t(NSHARE::CConfig const& aConf):FUuid(aConf.MChild(NSHARE::uuid_t::NAME))
 	{
-		aConf.MGetIfSet("n", FName);
+		aConf.MGetIfSet(KEY_NAME, FName);
 	}
 	NSHARE::CConfig MSerialize() const
 	{
-		NSHARE::CConfig _conf("id");
+		NSHARE::CConfig _conf(NAME);
 		_conf.MAdd(FUuid.MSerialize());
-		_conf.MSet("n", FName);
+		_conf.MSet(KEY_NAME, FName);
 		return _conf;
 	}
 	bool MIsValid()const{
@@ -68,7 +73,7 @@ enum eType
 	E_CONSUMER = 2, //
 	//E_FRONT_END = 3, //
 };
-struct program_id_t
+struct UDT_SHARE_EXPORT program_id_t
 {
 
 	id_t FId;
@@ -85,25 +90,31 @@ struct program_id_t
 		FType = E_KERNEL;
 	}
 #ifdef SHARE_CONFIG_DEFINED
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText KEY_TIME;
+	static const NSHARE::CText KEY_PID;
+	static const NSHARE::CText KEY_PATH;
+	static const NSHARE::CText KEY_TYPE;
+	
 	program_id_t(NSHARE::CConfig const& aConf):
-		FId(aConf.MChild("id")),//
+		FId(aConf.MChild(id_t::NAME)),//
 		FKernelVersion(aConf.MChild(NSHARE::version_t::NAME)),//
 		FTime(0),//
 		FPid(0)//
 	{
-		aConf.MGetIfSet("tm", FTime);
-		aConf.MGetIfSet("pid", FPid);
-		aConf.MGetIfSet("path", FPath);
-		FType=static_cast<eType>(aConf.MValue("type", 0));
+		aConf.MGetIfSet(KEY_TIME, FTime);
+		aConf.MGetIfSet(KEY_PID, FPid);
+		aConf.MGetIfSet(KEY_PATH, FPath);
+		FType=static_cast<eType>(aConf.MValue(KEY_TYPE, 0));
 	}
 	NSHARE::CConfig MSerialize() const
 	{
-		NSHARE::CConfig _conf("info");
-		_conf.MSet("tm", FTime);
-		_conf.MSet("pid", FPid);
-		_conf.MAdd("path", FPath);
-		_conf.MAdd<unsigned>("type", FType);
-		_conf.MAdd("id", FId.MSerialize());
+		NSHARE::CConfig _conf(NAME);
+		_conf.MSet(KEY_TIME, FTime);
+		_conf.MSet(KEY_PID, FPid);
+		_conf.MAdd(KEY_PATH, FPath);
+		_conf.MAdd<unsigned>(KEY_TYPE, FType);
+		_conf.MAdd(FId.MSerialize());
 		_conf.MAdd(FKernelVersion.MSerialize());
 		return _conf;
 	}

@@ -336,10 +336,16 @@ bool CUrl::MParser(NSHARE::CText const& aFrom, bool aIsConnect,
 						NSHARE::CText::size_type const _pos_val = std::min(
 								_pos_equal, _query_end);
 
+						NSHARE::CText::size_type const _array_val =
+														_text.find_first_of("[]", _query_begin);
+
+						NSHARE::CText::size_type const _real_pos_val = std::min(
+								_pos_val, _array_val);
+
 						NSHARE::CText const _var = _text.substr(_query_begin,
-								_pos_val == NSHARE::CText::npos ?
+								_real_pos_val == NSHARE::CText::npos ?
 										NSHARE::CText::npos :
-										_pos_val - _query_begin);
+										_real_pos_val - _query_begin);
 						NSHARE::CText const _val =
 								_pos_val == NSHARE::CText::npos ?
 										NSHARE::CText() :
@@ -352,8 +358,9 @@ bool CUrl::MParser(NSHARE::CText const& aFrom, bool aIsConnect,
 
 						VLOG(2)<<_var<<" = "<<_val;
 
-						CHECK(FQuery.find(_var)==FQuery.end());
-						FQuery[_var]=_val;
+						//CHECK(FQuery.find(_var)==FQuery.end());
+						FQuery.insert(qeury_t::value_type(_var,_val));
+						//FQuery[_var]=_val;
 
 						_query_begin =
 								_query_end == NSHARE::CText::npos ?
@@ -452,9 +459,10 @@ bool CUrl::sMUintTest()
 			"http://user:pass@foo.com:8080/exmaple/index.html?bar=1&for=2;hello=3#some",
 			0);
 	qeury_t _qeury;
-	_qeury["bar"] = "1";
-	_qeury["for"] = "2";
-	_qeury["hello"] = "3";
+	_qeury.insert(qeury_t::value_type("bar","1"));
+	_qeury.insert(qeury_t::value_type("for","2"));
+	_qeury.insert(qeury_t::value_type("hello","3"));
+
 	CHECK(_url.MIsValid());
 
 	CHECK_EQ(_url.MSchema().MGetConst(), "http");

@@ -147,7 +147,7 @@ extern NSHARE::CText http_error_description(eHtppError);
 extern NSHARE::CText http_status_str(eStatusCode);
 struct CUrl
 {
-	struct qeury_t:std::map<NSHARE::CText,NSHARE::CText>
+	struct qeury_t:std::multimap<NSHARE::CText,NSHARE::CText>
 	{
 		 ;
 	};

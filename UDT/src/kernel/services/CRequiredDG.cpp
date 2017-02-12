@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include "../core/kernel_type.h"
+#include <core/kernel_type.h>
 #include <CParserFactory.h>
 #include "CRequiredDG.h"
 namespace NUDT
@@ -34,7 +34,7 @@ std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
 	if (aReqDgs.empty())
 	{
 		VLOG(2) << "no demands";
-		MRemoveDemandsDG(aFor.FUuid, _rval.second);
+		MRemoveReceiversFor(aFor.FUuid, _rval.second);
 		return _rval;
 	}
 	demand_dgs_t _added;
@@ -43,127 +43,208 @@ std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
 	FDGs[aFor] = aReqDgs;
 
 	if (!_removed.empty())
-		MUnSendPacketToFrom(aFor.FUuid, _removed, _rval.second);
+		MRemoveDemandsFor(aFor.FUuid, _removed, _rval.second);
 	if (!_added.empty())
-		MUpdateRequrementFor(_added, aFor, _rval.first);
+		MAddDemandsFor(aFor.FUuid, _added, _rval.first);
 	return _rval;
 }
 
 void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 		NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
-		demand_dgs_for_t& aNew)
+		demand_dgs_for_t* aNew)
 {
-	protocol_of_uuid_t::iterator _customer_it = FNeedSendTo.find(aFrom);
+	VLOG(2) << "Send " << aWhat << " from " << aFrom << " to " << aTo;
+	bool const _is_real_customer = aNew != NULL;
 
-	VLOG_IF(2,_customer_it==FNeedSendTo.end()) << "Packets from " << aFrom
-														<< " still were not required.";
+	protocol_of_uuid_t::iterator _customer_it = FWhatIsSendingBy.find(aFrom);
 
-	if (_customer_it == FNeedSendTo.end())
-		_customer_it = FNeedSendTo.insert(_customer_it,
+	VLOG_IF(2,_customer_it==FWhatIsSendingBy.end()) << "The consumer " << aFrom
+															<< " still was not sent.";
+
+	if (_customer_it == FWhatIsSendingBy.end())
+		_customer_it = FWhatIsSendingBy.insert(_customer_it,
 				std::make_pair(aFrom, protocols_t()));
 
-	DCHECK(_customer_it != FNeedSendTo.end());
-	if (_customer_it == FNeedSendTo.end())
-		return;
+	CHECK(_customer_it != FWhatIsSendingBy.end());
+
 	protocols_t& _proto = _customer_it->second;
-	VLOG(2) << "Add new customer to " << _customer_it->first;
+
+	VLOG(2) << "Add new 'receiver' for " << _customer_it->first;
 	protocols_t::iterator _prot_it = _proto.find(aWhat.FProtocol);
 
 	VLOG_IF(2,_prot_it==_proto.end()) << "Packets from '" << aFrom << "' by '"
 												<< aWhat.FProtocol
-												<< "' protocol still were not required.";
+												<< "' protocol still were not sent.";
+
 	if (_prot_it == _proto.end())
 		_prot_it = _proto.insert(_prot_it,
 				std::make_pair(aWhat.FProtocol, uuids_of_expecting_dg_t()));
 
-	DCHECK(_prot_it != _proto.end());
-	if (_prot_it == _proto.end())
-		return;
+	CHECK(_prot_it != _proto.end());
+
+	//looking for header
 	uuids_of_expecting_dg_t& _uuids = _prot_it->second;
 	uuids_of_expecting_dg_t::iterator _exp_it = _uuids.find(aWhat.FWhat);
 
 	VLOG_IF(2,_exp_it==_uuids.end())
-											<< "The Packet has not been  received of yet.";
+											<< "The Packet has not been received of yet.";
 
 	if (_exp_it == _uuids.end())
 		_exp_it = _uuids.insert(_exp_it,
-				std::make_pair(aWhat.FWhat, req_uuids_t()));
+				std::make_pair(aWhat.FWhat, uuids_of_receiver_t()));
 
 	CHECK(_exp_it != _uuids.end());
 
-	 _exp_it->second[aTo].push_back(aWhat.FHandler);
-	bool const _is = _exp_it->second[aTo].size() == 1;
-	LOG_IF(INFO,_is) << "Now The packet:" << aWhat << " from " << aFrom
-								<< " is received of by " << aTo;
-	LOG_IF(INFO,!_is) << "The packet has been received twice of by " << aTo;
+	uuids_of_receiver_t& _r_uuid = _exp_it->second;
 
-	if (_is)
+	CHECK_GE(_r_uuid.FNumberOfRealReceivers, 0);
+
+	if (_is_real_customer)
+		++_r_uuid.FNumberOfRealReceivers;
+	else if (_r_uuid.FNumberOfRealReceivers == 0)
+	{
+		LOG(INFO)<<"Cannot register sending msg "<<aWhat<< " from " << aFrom
+		<< " to "<< aTo<<" as no 'real' consumer";
+		return;
+	}
+
+	msg_handlers_t& _handlers = _r_uuid[aTo];
+	_handlers.push_back(aWhat.FHandler);
+
+	bool const _is_new = _handlers.FNumberOfRealHandlers == 0;
+
+	LOG_IF(INFO,_is_new) << "Now The packet:" << aWhat << " from " << aFrom
+									<< " is received of by " << aTo;
+	LOG_IF(INFO,!_is_new) << "The packet has been received twice of by "
+									<< aTo;
+
+	if (_is_real_customer)
+		++_handlers.FNumberOfRealHandlers;
+
+	if (_is_new && _is_real_customer)
 	{
 		demand_dg_t _new(aWhat);
 		_new.FUUIDFrom.MSet(aTo);
-		aNew[id_t(aFrom)].push_back(_new);
+		(*aNew)[id_t(aFrom)].push_back(_new);
 	}
 }
-void CRequiredDG::MUnSendPacketToFrom(NSHARE::uuid_t const& aTo,
+void CRequiredDG::MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
+		NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
+		demand_dgs_for_t* aOld)
+{
+	VLOG(2) << "Unsent " << aWhat << " from " << aFrom << " to " << aTo;
+	bool const _is_real_customer = aOld != NULL;
+
+	protocol_of_uuid_t::iterator _customer_it = FWhatIsSendingBy.find(aFrom);
+
+//	DCHECK(_customer_it != FWhatIsSendingBy.end());
+
+	if (_customer_it == FWhatIsSendingBy.end()) //if send some DG to uuid
+		return;
+	protocols_t& _proto = _customer_it->second;
+
+	VLOG(2) << "Remove 'receiver' for " << _customer_it->first;
+	protocols_t::iterator _prot_it = _proto.find(aWhat.FProtocol);
+
+	if (_prot_it == _customer_it->second.end()) //there is the protocol
+		return;
+
+	VLOG(2) << "The protocol is exit";
+	//looking for header
+	uuids_of_expecting_dg_t& _uuids = _prot_it->second;
+	uuids_of_expecting_dg_t::iterator _exp_it = _uuids.find(aWhat.FWhat);
+
+	if (_exp_it == _uuids.end())
+		return;
+
+	VLOG(3) << "Head is found ";
+	uuids_of_receiver_t& _r_uuid = _exp_it->second;
+	CHECK(_r_uuid.FNumberOfRealReceivers > 0 || _r_uuid.empty());
+
+	//looking for handlers for  UUID
+	uuids_of_receiver_t::iterator _list_it = _exp_it->second.find(aTo);
+	if (_list_it == _exp_it->second.end())
+		return;
+
+	msg_handlers_t& _handlers = _list_it->second;
+
+	LOG(INFO)<<"Now The packet:"<<_exp_it->first<<" from "<<_customer_it->first<<" is not received of by "<<aTo;
+	if (_is_real_customer)
+	{
+		CHECK_GT(_handlers.FNumberOfRealHandlers, 0);
+
+		//decrease number of "real" callbacks
+		//if zero remove all
+		--_handlers.FNumberOfRealHandlers;
+		--_r_uuid.FNumberOfRealReceivers;
+
+		demand_dg_t _tmp_dem(aWhat);
+		_tmp_dem.FUUIDFrom.MSet(aTo);
+		(*aOld)[id_t(_customer_it->first)].push_back(_tmp_dem);
+
+		bool const _is_remove_all = _r_uuid.FNumberOfRealReceivers == 0;
+		VLOG_IF(1,_is_remove_all)
+											<< "Removing all 'receivers' as the latest 'real' consumer will removed";
+
+		if (_is_remove_all)
+			_r_uuid.clear();
+		else
+			_r_uuid.erase(_list_it);
+	}
+	else
+		_r_uuid.erase(_list_it);
+
+	//cleanup maps
+	if (_r_uuid.empty())
+		_uuids.erase(_exp_it);
+
+	if (_uuids.empty())
+		_proto.erase(_prot_it);
+
+	if (_proto.empty())
+		FWhatIsSendingBy.erase(_customer_it);
+
+}
+void CRequiredDG::MAddDemandsFor(NSHARE::uuid_t const& aFor,
+		const demand_dgs_t& aAdded, demand_dgs_for_t& aNew)
+{
+	//update protocol_of_uuid_t
+	//1) find MSGs which are required to aFor from existing UUID
+	//2) add all demands to protocol_of_uuid_t
+	demand_dgs_t::const_iterator _req_it = aAdded.begin();
+	for (; _req_it != aAdded.end(); ++_req_it)
+	{
+		VLOG(2) << "Try received " << *_req_it;
+		unique_uuids_t const _uuids = MGetUUIDFor(_req_it->FNameFrom);
+
+		//VLOG(2) << " Founded uuids: " << _uuids;
+		bool const _is_registator = (_req_it->FFlags
+				& demand_dg_t::E_REGISTRATOR) != 0;
+
+		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
+		for (; _uuid_it != _uuids.end(); ++_uuid_it)
+			MSendPacketFromTo(*_uuid_it, aFor, *_req_it,
+					_is_registator ? NULL : &aNew);
+	}
+}
+void CRequiredDG::MRemoveDemandsFor(NSHARE::uuid_t const& aTo,
 		demand_dgs_t const& aFrom, demand_dgs_for_t & aOld)
 {
-//	unique_uuids_t _res;
-	std::set<id_t>::const_iterator _it = FIds.begin(), _it_end(FIds.end());
-	for (; _it != _it_end; ++_it)
+	demand_dgs_t::const_iterator _jt = aFrom.begin(), _jt_end(aFrom.end());
+	for (; _jt != _jt_end; ++_jt)
 	{
-		id_t const& _id = *_it;
-		VLOG(4) << "Handle " << _id;
-		demand_dgs_t::const_iterator _jt = aFrom.begin(), _jt_end(aFrom.end());
-		for (; _jt != _jt_end; ++_jt)
+		bool const _is_registator = (_jt->FFlags & demand_dg_t::E_REGISTRATOR)
+				!= 0;
+
+		unique_uuids_t const _uuids = MGetUUIDFor(_jt->FNameFrom);
+
+		//VLOG(2) << " Founded uuids: " << _uuids;
+
+		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
+		for (; _uuid_it != _uuids.end(); ++_uuid_it)
 		{
-			NSHARE::CRegistration const& _reg = _jt->FNameFrom;
-			VLOG(4) << "Reg " << _reg;
-			if (MDoesIdConformTo(_id, _reg))
-			{
-				VLOG(2) << "Is for me " << _reg << " id: " << _id;
-
-				protocol_of_uuid_t::iterator _customer_it = FNeedSendTo.find(
-						_id.FUuid);
-
-				DCHECK(_customer_it != FNeedSendTo.end());
-
-				if (_customer_it != FNeedSendTo.end()) //if send some DG to uuid
-				{
-					NSHARE::CText const& _protocol=_jt->FProtocol;
-					VLOG(3) <<"Protocol:" <<_protocol;
-
-					protocols_t::iterator _prot_it = _customer_it->second.find(
-							_protocol);
-					if (_prot_it != _customer_it->second.end()) //there is the protocol
-					{
-						required_header_t const& _head=_jt->FWhat;
-						VLOG(3) << "The protocol is exist Header= "<<_head;
-
-						//looking for header
-						uuids_of_expecting_dg_t& _uuids = _prot_it->second;
-						uuids_of_expecting_dg_t::iterator _exp_it = _uuids.find(
-								_head);
-						if (_exp_it != _uuids.end())
-						{
-							VLOG(3)<<"Head is found ";
-							//looking for our UUID
-							req_uuids_t::iterator _list_it =
-									_exp_it->second.find(aTo);
-
-							if (_list_it != _exp_it->second.end())
-							{
-								LOG(INFO)<<"Now The packet:"<<_exp_it->first<<" from "<<_customer_it->first<<" is not received of by "<<aTo;
-								demand_dg_t _tmp_dem(*_jt);
-								_tmp_dem.FUUIDFrom.MSet(aTo);
-								aOld[id_t( _customer_it->first)].push_back(_tmp_dem);
-								_exp_it->second.erase(_list_it);
-								break;
-							}
-						}
-					}
-
-				}
-			}
+			MUnSendPacketFromTo(*_uuid_it, aTo, *_jt,
+					_is_registator ? NULL : &aOld);
 		}
 	}
 }
@@ -209,25 +290,15 @@ bool CRequiredDG::MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew,
 	}
 	return true;
 }
-bool CRequiredDG::MRemoveDemandsDG(NSHARE::uuid_t const& aUUID,
-		demand_dgs_for_t & aOld)
+
+demand_dgs_for_t CRequiredDG::MAddClient(id_t const& aId)
 {
-	VLOG(2) << "Remove demands for " << aUUID;
-
-	id_t _id;
-	_id.FUuid = aUUID; //id_t comapred by it uuid only
-
-	demand_dgs_for_t::iterator _it = FDGs.find(_id);
-	if (_it != FDGs.end())
-	{
-		demand_dgs_t _old;
-		_old.swap(_it->second);
-		FDGs.erase(_it);
-
-		MUnSendPacketToFrom(aUUID, _old, aOld);
-		return true;
-	}
-	return false;
+	VLOG(2) << "Add new client " << aId;
+	const bool _is = FIds.insert(aId).second;
+	CHECK(_is);
+	demand_dgs_for_t _new;
+	MAddReceiversFor(aId, _new);
+	return _new;
 }
 demand_dgs_for_t CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
 {
@@ -238,20 +309,247 @@ demand_dgs_for_t CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
 	{
 		VLOG(2) << "Erased " << _val;
 		CHECK_EQ(_val, 1);
-		MRemoveDemandsDG(aUUID, _old);
-		FNeedSendTo.erase(aUUID);
+		MRemoveReceiversFor(aUUID, _old);
+		FWhatIsSendingBy.erase(aUUID);
 	}
 	return _old;
 }
-CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
+void CRequiredDG::MFillByRawProtocol(user_datas_t& aFrom, user_datas_t& aFailed,
+		fail_send_array_t& aFail) const
+{
+	CHECK_EQ(aFrom.size(), 1);
+	uuids_of_receiver_t _receivers;
+	user_data_t& _data = aFrom.front();
+	int const _error = MGetCustomersFor(_receivers,
+			_data.FDataId.FRouting.FFrom.FUuid,
+			_data.FDataId.FRawProtocolNumber);
+
+	if (_error < 0)
+	{
+		fail_send_t _sent(_data.FDataId, _data.FDataId.FDestination,
+				(fail_send_t::eError) _error);
+		aFail.push_back(_sent);
+
+		aFailed.splice(aFailed.end(), aFrom, aFrom.begin());
+	}
+	else
+	{
+		VLOG(4) << " OK " << " filling info";
+
+		MFillRouteAndDestanationInfo(_receivers, _data.FDataId, aFail);
+	}
+}
+void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
+		fail_send_array_t & aError) const
+{
+	user_datas_t _fails;
+	for (; !aFrom.empty();)
+	{
+		int _error = fail_send_t::E_NO_ERROR;
+		user_data_info_t & _data_info = aFrom.front().FDataId;
+		CHECK_EQ(_data_info.FRouting.size(), 1);
+
+		required_header_t _header;
+		protocols_t::const_iterator _prot_it;
+		uuids_of_expecting_dg_t::const_iterator _header_it;
+		uuids_of_receiver_t::const_iterator _uuid_it;
+
+		NSHARE::CText const _protocol =
+				_data_info.MIsRaw() ? RAW_PROTOCOL_NAME : _data_info.FProtocol;
+
+		NSHARE::uuid_t const& _from = _data_info.FRouting.FFrom.FUuid;
+		NSHARE::uuid_t const& _for = _data_info.FRouting.back();
+
+		protocol_of_uuid_t::const_iterator _it = FWhatIsSendingBy.find(_from);
+
+		if (_it == FWhatIsSendingBy.end())
+		{
+			LOG(ERROR)<< "The  "<<_from<<" is not sent msg to "<<_for;
+			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			goto error;
+		}
+		_prot_it = _it->second.find(_protocol);
+
+		if (_prot_it == _it->second.end())
+		{
+			LOG(ERROR)<< "No handler for " << _protocol
+			<< " is not exist";
+			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			goto error;
+		}
+		if (_data_info.MIsRaw())
+		{
+			_header.FNumber = _data_info.FRawProtocolNumber;
+		}
+		else
+		{
+			IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
+					_protocol);
+
+			if (!_p)
+			{
+				LOG(ERROR)<< "Parsing module for " << _protocol
+				<< " is not exist";
+				_error=fail_send_t::E_PARSER_IS_NOT_EXIST;
+				goto error;
+			}
+			const size_t _size = aFrom.front().FData.size();
+
+			IExtParser::result_t const _msgs = _p->MParserData(
+					(const uint8_t*) aFrom.front().FData.ptr_const(),
+					(const uint8_t*) aFrom.front().FData.ptr_const() + _size,
+					_data_info.FRouting.FFrom.FUuid);
+
+			if (_msgs.size() != 1)
+			{
+				LOG(ERROR)<< "No msg or the number of msg more then 1: "<<_size;
+				_error=fail_send_t::E_PARSER_NO_MSG;
+				goto error;
+			}
+			else if(_msgs.front().FErrorCode!=0)
+			{
+				LOG(ERROR) << "Error occurred during parsing packet:"<<_msgs.front().FErrorCode;
+				_error=_msgs.front().FErrorCode;
+				goto error;
+			}
+			_header = _msgs.front().FType;
+		}
+
+		_header_it = _prot_it->second.find(_header);
+
+		if (_header_it == _prot_it->second.end() )
+		{
+			LOG(ERROR)<< "No handler for " << _header
+			<< " is not exist";
+			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			goto error;
+		}
+		_uuid_it=_header_it->second.find(_for);
+
+		if (_uuid_it == _header_it->second.end() || _uuid_it->second.empty())
+		{
+			LOG(ERROR)<< "No handler for " << _header
+			<< " is not exist";
+			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			goto error;
+		}
+		if(_uuid_it->second.FNumberOfRealHandlers==0 || _uuid_it->second.FNumberOfRealHandlers==_uuid_it->second.size())
+		{
+			VLOG(4)<<"A good programmer as he is not blending  a registrator and a real software.";
+			_data_info.FEventsList = _uuid_it->second;
+		}else
+		{
+			LOG(FATAL)<<"The programmer is a pervert as he is blending  a registrator and a real software !!! Please, Refractoring the code.";
+			//todo parsing again
+		}
+
+		aTo.splice(aTo.end(), aFrom, aFrom.begin());
+
+		continue;
+
+		error:
+
+		fail_send_t _sent(_data_info);
+		_sent.MSetError(_error);
+		aError.push_back(_sent);
+
+		_fails.splice(_fails.end(), aFrom, aFrom.begin());
+
+	}
+	//return data back
+	aFrom.splice(aFrom.end(), _fails);
+}
+
+void CRequiredDG::MFillMsgReceivers(user_datas_t & aFrom, user_datas_t& aTo,
+		fail_send_array_t& aFail) const
+{
+	//todo caching of result!!!!!!!!!!
+	//when sent by name the result can be calculated previously
+	//when sent by UUID the result is not defined
+	user_datas_t _fail_packets;
+	for (; !aFrom.empty();)
+	{
+		user_datas_t _handling;	//for convenience
+		_handling.splice(_handling.end(), aFrom, aFrom.begin());
+
+		VLOG(4) << "Next packet:" << _handling.front().FDataId;
+
+		if (_handling.front().FDataId.MIsRaw())	//simplified parser for raw protocol
+			MFillByRawProtocol(_handling, _fail_packets, aFail);
+		else
+			MFillByUserProtocol(_handling, _fail_packets, aFail);
+
+		aTo.splice(aTo.end(), _handling);
+	}
+
+	VLOG(3) << "Move back failed packets";
+	aFrom.splice(aFrom.end(), _fail_packets);
+}
+void CRequiredDG::MFillRouteAndDestanationInfo(
+		uuids_of_receiver_t const& aRoute, user_data_info_t& aInfo,
+		fail_send_array_t& aFail) const
+{
+	VLOG(2) << "Filling " << aInfo;
+	const bool _is_sent_by_uuid = !aInfo.FDestination.empty();
+	uuids_t _no_handled = aInfo.FDestination;
+
+	//if sending by uuid than
+	//1) put to routing list only if exist registrators
+	//2) checking if uuid exist
+	//if sending by name than
+	//1) put to routing all
+	//2) put to destination only if exist 'real receivers'
+
+	for (CRequiredDG::uuids_of_receiver_t::const_iterator _kt = aRoute.begin();
+			_kt != aRoute.end(); ++_kt)
+	{
+		NSHARE::uuid_t const& _uuid = _kt->first;
+		bool const _is_registrator_exist = _kt->second.FNumberOfRealHandlers
+				!= _kt->second.size();
+
+		if (!_is_sent_by_uuid)
+		{
+			if (_kt->second.FNumberOfRealHandlers > 0)
+				aInfo.FDestination.push_back(_uuid);
+
+			aInfo.FRouting.push_back(_uuid);
+		}
+		else
+		{
+			if (_is_registrator_exist)
+			{
+				aInfo.FRouting.push_back(_uuid);
+			}
+
+			uuids_t::iterator _it = _no_handled.begin(), _it_end =
+					_no_handled.end();
+			for (; _it != _it_end && *_it != _uuid; ++_it)
+				;
+
+			if (_it != _it_end)
+			{
+				aInfo.FRouting.push_back(_uuid);
+				_no_handled.erase(_it);
+			}
+		}
+	}
+	if (!_no_handled.empty())
+	{
+
+		fail_send_t _sent(aInfo, _no_handled, fail_send_t::E_HANDLE_NOT_EXIST);
+		LOG(ERROR)<<" ERROR "<<_sent;
+		aFail.push_back(_sent);
+	}
+}
+int CRequiredDG::MGetCustomersFor(uuids_of_receiver_t& aTo,
 		NSHARE::uuid_t const& aFor, unsigned const aNumber) const
 {
-	VLOG(2) << "Get uuids for " << aFor << " by " << RAW_PROTOCOL_NAME;
-	protocol_of_uuid_t::const_iterator _it = FNeedSendTo.find(aFor);
-	VLOG_IF(2, _it == FNeedSendTo.end()) << "There is not customers for "
-												<< aFor;
-	if (_it == FNeedSendTo.end())
-		return req_uuids_t();
+	VLOG(3) << "Get uuids for " << aFor << " by " << RAW_PROTOCOL_NAME;
+	protocol_of_uuid_t::const_iterator _it = FWhatIsSendingBy.find(aFor);
+	VLOG_IF(2, _it == FWhatIsSendingBy.end()) << "There is not customers for "
+														<< aFor;
+	if (_it == FWhatIsSendingBy.end())
+		return 0;
 	protocols_t::const_iterator _prot_it = _it->second.find(RAW_PROTOCOL_NAME);
 	LOG_IF(INFO,_prot_it==_it->second.end()) << "Nobody expects of data from '"
 														<< _it->first
@@ -259,7 +557,7 @@ CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
 														<< RAW_PROTOCOL_NAME
 														<< "' protocol.";
 	if (_prot_it == _it->second.end())
-		return req_uuids_t();
+		return 0;
 
 	VLOG(2) << "Receive by raw protocol.";
 	required_header_t _header;
@@ -269,113 +567,181 @@ CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
 			_header);
 	if (_jt != _prot_it->second.end())
 	{
-		return _jt->second;
+		aTo = _jt->second;
 	}
-	return req_uuids_t();
+	return 0;
 }
-
-CRequiredDG::req_uuids_t CRequiredDG::MGetCustomersFor(
-		NSHARE::uuid_t const& aFor, NSHARE::CText const& aProtocol,
-		void const* aData, unsigned const aSize) const
+void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
+		user_datas_t& aFailed, fail_send_array_t& aFail) const
 {
-	if (aProtocol == RAW_PROTOCOL_NAME)
-		return MGetCustomersFor(aFor, 0);
+	CHECK_EQ(aFrom.size(), 1);
 
-	VLOG(2) << "Get uuids for " << aFor;
-	protocol_of_uuid_t::const_iterator _it = FNeedSendTo.find(aFor);
-	VLOG_IF(2, _it == FNeedSendTo.end()) << "There is not customers for "
-												<< aFor;
-	if (_it == FNeedSendTo.end())
-		return req_uuids_t();
-	protocols_t::const_iterator _prot_it = _it->second.find(aProtocol);
+	user_data_t& _data = aFrom.front();
+	const NSHARE::uuid_t _from = _data.FDataId.FRouting.FFrom.FUuid;
+
+	VLOG(3) << "Get uuids for " << _from;
+
+	protocol_of_uuid_t::const_iterator _it = FWhatIsSendingBy.find(_from);
+	VLOG_IF(2, _it == FWhatIsSendingBy.end()) << "There is not receivers for "
+														<< _from;
+	if (_it == FWhatIsSendingBy.end())
+		return;
+
+	protocols_t::const_iterator _prot_it = _it->second.find(
+			_data.FDataId.FProtocol);
 	LOG_IF(INFO,_prot_it==_it->second.end()) << "Nobody expects of data from '"
 														<< _it->first
 														<< "' by  '"
-														<< aProtocol
+														<< _data.FDataId.FProtocol
 														<< "' protocol.";
 	if (_prot_it == _it->second.end())
-		return req_uuids_t();
+		return;
 
-	IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(aProtocol);
-	LOG_IF(DFATAL,!_p) << "Parsing module for " << aProtocol
+	IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
+			_data.FDataId.FProtocol);
+	LOG_IF(DFATAL,!_p) << "Parsing module for " << _data.FDataId.FProtocol
 								<< " is not exist";
-	if (!_p || aSize == 0)
-		return req_uuids_t();
-	IExtParser::result_t _result = _p->MParserData((const uint8_t*) aData,
-			(const uint8_t*) aData + aSize);
-	VLOG(1) << "Founded " << _result.size() << " dg.";
-	CHECK(_result.size() == 1);
-	uuids_of_expecting_dg_t::const_iterator _jt = _prot_it->second.find(
-			_result.front().FType);
 
-	LOG_IF(INFO, _jt==_prot_it->second.end()) << "Packet "
-														<< _p->MToConfig(
-																_result.front().FType).MToJSON(
-																true)
-														<< " from " << aFor
-														<< " does not required. Ignoring ...";
-
-	if (_jt != _prot_it->second.end())
+	if (!_p || _data.FData.empty())
 	{
-		return _jt->second;
+		fail_send_t _sent(_data.FDataId);
+		_sent.FError = fail_send_t::E_PARSER_IS_NOT_EXIST;
+		LOG(ERROR)<<" ERROR "<<_sent;
+		aFail.push_back(_sent);
+		return;
+	}
+	const size_t _size = _data.FData.size();
+
+	IExtParser::result_t const _msgs = _p->MParserData(
+			(const uint8_t*) _data.FData.ptr_const(),
+			(const uint8_t*) _data.FData.ptr_const() + _size, _from);
+
+	VLOG(1) << "Founded " << _msgs.size() << " dg.";
+	IExtParser::result_t::const_iterator _mt = _msgs.begin(), _mt_end(
+			_msgs.end());
+
+	bool const _is_only_one = _msgs.size() == 1;
+	bool _has_to_be_pop = false;
+
+	for (; _mt != _mt_end; ++_mt)
+	{
+		IExtParser::obtained_dg_t const& _msg = *_mt;
+
+		if (!_is_only_one)	//Spiting buffer if need
+		{
+
+			user_data_t _new_packet;
+			_new_packet.FDataId = _data.FDataId;
+
+			CHECK(_msg.FBegin != _msg.FEnd);
+
+			_new_packet.FData = NSHARE::CBuffer(NULL, _msg.FBegin, _msg.FEnd);
+			aFrom.push_back(_new_packet);
+
+			_has_to_be_pop = true;
+		}
+		user_data_t& _handling_data = aFrom.back();
+
+		if (_msg.FErrorCode != 0)
+		{
+			fail_send_t _sent(_handling_data.FDataId);
+			_sent.MSetUserError(_msg.FErrorCode);
+			aFail.push_back(_sent);
+
+			aFailed.splice(aFailed.end(), aFrom, --aFrom.end());//not begin as the data can be added above
+		}
+		else
+		{
+			uuids_of_expecting_dg_t::const_iterator _jt = _prot_it->second.find(
+					_msg.FType);
+			LOG_IF(INFO, _jt==_prot_it->second.end()) << "Packet "
+																<< _p->MToConfig(
+																		_msg.FType).MToJSON(
+																		true)
+																<< " from "
+																<< _from
+																<< " does not required. Ignoring ...";
+
+			if (_jt != _prot_it->second.end())
+			{
+				VLOG(4) << " OK " << " filling info";
+
+				MFillRouteAndDestanationInfo(_jt->second,
+						_handling_data.FDataId, aFail);
+			}
+		}
 	}
 
-
-	return req_uuids_t();
+	if (_has_to_be_pop)	//as we split input buffer
+		aFrom.pop_front();
 }
 
-void CRequiredDG::MUpdateRequrementFor(const demand_dgs_t& aAdded,
-		const id_t& aFor, demand_dgs_for_t& aNew)
+bool CRequiredDG::MRemoveReceiversFor(NSHARE::uuid_t const& aUUID,
+		demand_dgs_for_t & aOld)
 {
-	//update protocol_of_uuid_t
-	//1) to find DGs which are required to aFor from existing UUID
-	//2) to add all demands to protocol_of_uuid_t
-	demand_dgs_t::const_iterator _req_it = aAdded.begin();
-	for (; _req_it != aAdded.end(); ++_req_it)
+	VLOG(2) << "Remove demands for " << aUUID;
+//todo
+	id_t _id;
+	_id.FUuid = aUUID; //id_t comapred by it uuid only
+
+	demand_dgs_for_t::iterator _it = FDGs.find(_id);
+	if (_it != FDGs.end())
 	{
-		VLOG(2) << "Try received " << *_req_it;
-		unique_uuids_t const _uuids = MGetUUIDFor(_req_it->FNameFrom);
+		demand_dgs_t _old;
+		_old.swap(_it->second);
+		FDGs.erase(_it);
 
-		//VLOG(2) << " Founded uuids: " << _uuids;
-
-		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
-		for (; _uuid_it != _uuids.end(); ++_uuid_it)
-			MSendPacketFromTo(*_uuid_it, aFor.FUuid, *_req_it, aNew);
+		MRemoveDemandsFor(aUUID, _old, aOld);
+		return true;
 	}
+	return false;
 }
-void CRequiredDG::MUpdateRecipientOf(id_t const& aUId, demand_dgs_for_t& aNew)
+
+void CRequiredDG::MAddReceiversFor(id_t const& aUId, demand_dgs_for_t& aNew)
 {
 	//update protocol_of_uuid_t
-	//1) to find DGs which are required from aUUID
-	//2) to add all demands to protocol_of_uuid_t
+	//1) find DGs which are required from aUUID
+	//2) add all demands to protocol_of_uuid_t
 
 	typedef std::vector<std::pair<id_t, demand_dg_t> > dgs_t;
 	dgs_t _demands;
+	dgs_t _registrator;
 	for (demand_dgs_for_t::const_iterator _it = FDGs.begin(); _it != FDGs.end();
 			++_it)
 	{
 		demand_dgs_t::const_iterator _dem_it = _it->second.begin();
 		for (; _dem_it != _it->second.end(); ++_dem_it)
 		{
-			if(MDoesIdConformTo(aUId,_dem_it->FNameFrom))
+			if (MDoesIdConformTo(aUId, _dem_it->FNameFrom))
 			{
 				VLOG(2) << *_dem_it << " from " << aUId.FUuid
 									<< " is required of by " << _it->first;
 				std::pair<id_t, demand_dg_t> _val(_it->first, *_dem_it);
-				_demands.push_back(_val);
+				if ((_dem_it->FFlags & demand_dg_t::E_REGISTRATOR) != 0)
+					_registrator.push_back(_val);
+				else
+					_demands.push_back(_val);
 			}
 		}
 	}
-	for (dgs_t::const_iterator _it = _demands.begin(); _it != _demands.end();
-			++_it)
-		MSendPacketFromTo(aUId.FUuid, _it->first.FUuid, _it->second, aNew);
+
+	if (!_demands.empty())
+	{
+		for (dgs_t::const_iterator _it = _demands.begin();
+				_it != _demands.end(); ++_it)
+			MSendPacketFromTo(aUId.FUuid, _it->first.FUuid, _it->second, &aNew);
+
+		for (dgs_t::const_iterator _it = _registrator.begin();
+				_it != _registrator.end(); ++_it)
+			MSendPacketFromTo(aUId.FUuid, _it->first.FUuid, _it->second, NULL);
+	}
 }
 bool CRequiredDG::MDoesIdConformTo(id_t const& _id,
 		NSHARE::CRegistration const& _reg) const
 {
-	VLOG(4)<<"Id "<<_id<<" reg "<<_reg;
+	VLOG(4) << "Id " << _id << " reg " << _reg;
 	bool const _is_name = _reg.MIsName();
-	VLOG(4)<<"Is name ="<<_is_name;
+	VLOG(4) << "Is name =" << _is_name;
 	bool const _has_sended =
 			((_is_name && _reg.MIsForMe(_id.FName)) || //
 					(!_is_name
@@ -387,7 +753,7 @@ CRequiredDG::unique_uuids_t CRequiredDG::MGetUUIDFor(
 		NSHARE::CRegistration const& aName) const
 {
 	VLOG(2) << "Get uuids for " << aName;
-	VLOG(4)<<" Size="<<FIds.size();
+	VLOG(4) << " Size=" << FIds.size();
 	unique_uuids_t _res;
 	std::set<id_t>::const_iterator _it = FIds.begin(), _it_end(FIds.end());
 	for (; _it != _it_end; ++_it)
@@ -398,21 +764,12 @@ CRequiredDG::unique_uuids_t CRequiredDG::MGetUUIDFor(
 	VLOG_IF(1,_res.empty()) << "No clients for " << aName;
 	return _res;
 }
-demand_dgs_for_t CRequiredDG::MAddClient(id_t const& aId)
-{
-	VLOG(2)<<"Add new client "<<aId;
-	const bool _is=FIds.insert(aId).second;
-	CHECK(_is);
-	demand_dgs_for_t _new;
-	MUpdateRecipientOf(aId, _new);
-	return _new;
-}
 
 NSHARE::CConfig CRequiredDG::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	protocol_of_uuid_t::const_iterator _it = FNeedSendTo.begin(), _it_end(
-			FNeedSendTo.end());
+	protocol_of_uuid_t::const_iterator _it = FWhatIsSendingBy.begin(), _it_end(
+			FWhatIsSendingBy.end());
 
 	for (; _it != _it_end; ++_it)
 	{
@@ -422,7 +779,7 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 
 		{
 			NSHARE::CConfig _prot("demand");
-			_prot.MAdd("from", _it->first.MSerialize());
+			_prot.MAdd(/*"from",*/_it->first.MSerialize());
 
 			_prot.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, _prot_it->first);
 
@@ -438,14 +795,14 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 					_dg.MAdd(_p->MToConfig(_jt->first));
 				else
 				{
-					_dg.MAdd("raw", _jt->first.MSerialize());
+					_dg.MAdd(/*"raw",*/_jt->first.MSerialize());
 				}
 
-				for (req_uuids_t::const_iterator _kt = _jt->second.begin();
-						_kt != _jt->second.end(); ++_kt)
+				for (uuids_of_receiver_t::const_iterator _kt =
+						_jt->second.begin(); _kt != _jt->second.end(); ++_kt)
 				{
-					_dg.MAdd(user_data_info_t::KEY_PACKET_TO,
-							_kt->first.MSerialize());
+					_dg.MAdd(/*user_data_info_t::KEY_PACKET_TO,*/
+					_kt->first.MSerialize());
 				}
 				_conf.MAdd(_dg);
 			}

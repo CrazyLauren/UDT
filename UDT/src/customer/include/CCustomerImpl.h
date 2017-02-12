@@ -35,7 +35,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 //	typedef std::map<NSHARE::CText, header_for_protocol_t, NSHARE::CStringFastLessCompare> protocol_parser_t;
 
 	_pimpl(CCustomer& aThis);
-	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName);
+	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const& aVersion);
 	~_pimpl();
 
 
@@ -56,10 +56,11 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf, eSendToFlags);
 
 
-	int MSettingDgParserFor(const NSHARE::CText& aTo, dg_parser_t aNumber,
+	int MSettingDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber,
 			const callback_t& aHandler);
-	int MRemoveDgParserFor(const NSHARE::CText& aTo, dg_parser_t aNumber);
+	int MRemoveDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber);
 	customers_t MCustomers() const;
+	program_id_t MCustomer(NSHARE::uuid_t const&) const;
 	NSHARE::CBuffer MGetNewBuf(unsigned aSize) const;
 //	static void sMReceiver(id_t const& aFrom, data_t::value_type const* aData,
 //			unsigned aSize);
@@ -68,7 +69,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	void MEventConnected();
 	void MEventDisconnected();
 	void MWaitForReady(double aSec);
-	id_t const MGetIdFor(NSHARE::uuid_t const&) const;
+
 private:
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
@@ -77,7 +78,7 @@ private:
 
 	void MReceiver(recv_data_from_t & _from);
 
-	int MInitId(NSHARE::CText const& aProgram, NSHARE::CText const& aName);
+	int MInitId(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const& aVersion);
 	int MInitCallBacks();
 	int MLoadLibraries();
 	int MInitFactorys();

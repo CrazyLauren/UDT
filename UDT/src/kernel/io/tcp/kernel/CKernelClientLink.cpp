@@ -16,16 +16,16 @@
 #include <internel_protocol.h>
 #include "receive_from_client_link.h"
 #include <parser_in_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../../core/CConfigure.h"
-#include "../main/CMainChannelFactory.h"
+#include <core/kernel_type.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <core/CConfigure.h>
+#include <io/main/CMainChannelFactory.h>
+#include <io/CKernelIo.h>
+#include <io/ILink.h>
+#include <io/CLinkDiagnostic.h>
 #include "../ILinkBridge.h"
-#include "../CKernelIo.h"
 #include "../CConnectionHandlerFactory.h"
-#include "../ILink.h"
-#include "../CLinkDiagnostic.h"
 #include "CKernelLinkRegister.h"
 #include "CKernelClientLink.h"
 #include "CClientLinkConnectionHandler.h"
@@ -557,7 +557,7 @@ NSHARE::CConfig CKernelClientLink::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	FServiceParser.MGetState().MSerialize(_conf);
-	_conf.MAdd("id",Fd);
+	_conf.MAdd(CDescriptors::DESCRIPTOR_NAME,Fd);
 	_conf.MAdd(FKernel.MSerialize());
 	FDiagnostic.MSerialize(_conf);
 	return _conf;

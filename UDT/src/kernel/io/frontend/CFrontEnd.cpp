@@ -14,13 +14,13 @@
 #include <Socket/ISocket.h>
 #include <Socket/socket_parser.h>
 #include <CParserFactory.h>
-#include "../../core/kernel_type.h"
-#include "../../core/IState.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
-#include "../../services/CInfoService.h"
+#include <core/kernel_type.h>
+#include <core/IState.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <services/CInfoService.h>
 
-#include "../CKernelIo.h"
+#include <io/CKernelIo.h>
 #include "CExternalChannel.h"
 #include "CFrontEnd.h"
 
@@ -239,7 +239,7 @@ void IMPL::MRawReceivedData(data_t::const_iterator aBegin,
 	user_data_t _user;
 	_user.FDataId.FProtocol=RAW_PROTOCOL_NAME;
 	_user.FDataId.FPacketNumber=++FPacketNumber;
-	_user.FDataId.FFrom =FProgId.FId;
+	_user.FDataId.FRouting.FFrom =FProgId.FId;
 	NSHARE::CBuffer _data(CDataObject::sMGetInstance().MDefAllocater(),aBegin,aEnd);
 	_data.MMoveTo(_user.FData);
 
@@ -266,7 +266,7 @@ bool IMPL::MReceiveByProtocol(
 			user_data_t _user;
 			_user.FDataId.FProtocol = FProtocol;
 			_user.FDataId.FPacketNumber = ++FPacketNumber;
-			_user.FDataId.FFrom = FProgId.FId;
+			_user.FDataId.FRouting.FFrom = FProgId.FId;
 			NSHARE::CBuffer _data(CDataObject::sMGetInstance().MDefAllocater(),
 			_jt->FBegin, _jt->FEnd);
 			_data.MMoveTo(_user.FData);
@@ -334,7 +334,7 @@ bool IMPL::MSendPacketsFromAnotherCustomer()
 
 bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 {
-	if (FLastSplitedPacket.MGetConst().FFrom == aVal.FDataId.FFrom)
+	if (FLastSplitedPacket.MGetConst().FRouting.FFrom == aVal.FDataId.FRouting.FFrom)
 	{
 		if (FLastSplitedPacket.MGetConst().FPacketNumber
 				!= aVal.FDataId.FPacketNumber)
@@ -360,7 +360,7 @@ bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 	}
 	else
 	{
-		if(!CInfoService::sMGetInstance().MIsVertex(FLastSplitedPacket.MGetConst().FFrom.FUuid))
+		if(!CInfoService::sMGetInstance().MIsVertex(FLastSplitedPacket.MGetConst().FRouting.FFrom.FUuid))
 		{
 			LOG(ERROR)<<"Not all data sent last packet "<<FLastSplitedPacket.MGetConst();
 			FLastSplitedPacket.MUnSet();
@@ -440,9 +440,9 @@ NSHARE::CConfig IMPL::MSerialize() const
 	}
 	_conf.MAdd("conf",FConfig);
 	_conf.MAdd("desc",Fd);
-	_conf.MAdd(DEMAND,FDemands.MSerialize());
+	_conf.MAdd(/*DEMAND,*/FDemands.MSerialize());
 	_conf.MAdd(EXIT_PROTOCOL,FProtocol);
-	_conf.MAdd("info",FProgId.MSerialize());
+	_conf.MAdd(/*"info",*/FProgId.MSerialize());
 
 	return _conf;
 }

@@ -575,9 +575,9 @@ void CControlByTCP::MReceivedData(user_data_t const & aData)
 {
 	LOG_IF(ERROR,FState!=E_CONNECTED) << "Invalid state" << (unsigned) FState;
 	recv_data_from_t _data;
-	LOG_IF(DFATAL,!aData.FDataId.FUUIDTo.MIs()) << "Unrelated packet from "
-												<< aData.FDataId.FFrom
-												<< " has been received";
+//	LOG_IF(DFATAL,aData.FDataId.FDestination.empty()) << "Unrelated packet from "
+//												<< aData.FDataId.FFrom
+//												<< " has been received";
 	_data.FData = aData;
 	CDataObject::sMGetInstance().MPush(_data);
 }

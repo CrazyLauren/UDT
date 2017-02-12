@@ -12,8 +12,9 @@
 #include <deftype>
 #include <dymamic_modules.h>
 #include <stdexcept>
-typedef NSHARE::CDynamicModule::string_t String;
 
+namespace NSHARE
+{
 #ifdef MINGW_WITHOUT_DLFCN
 #undef __MINGW32__
 #undef __MINGW64__
@@ -26,7 +27,7 @@ typedef NSHARE::CDynamicModule::string_t String;
 #   endif
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
-#   define DYN_LIB_LOAD( a ) LoadLibrary( (a).c_str() )
+#   define DYN_LIB_LOAD( a ) LoadLibraryEx( (a).c_str(),NULL,LOAD_WITH_ALTERED_SEARCH_PATH )
 #   define DYN_LIB_GETSYM( a, b ) GetProcAddress( a, (b).c_str() )
 #   define DYN_LIB_UNLOAD( a ) !FreeLibrary( a )
 typedef HMODULE DYN_LIB_HANDLE;
@@ -41,13 +42,12 @@ typedef void* DYN_LIB_HANDLE;
 #endif
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
-static const String g_libraryExtension(".dll");
+static const NSHARE::CDynamicModule::string_t g_libraryExtension(".dll");
 #else
-static const String g_libraryExtension(".so");
+static const NSHARE::CDynamicModule::string_t g_libraryExtension(".so");
 #endif
 
-namespace NSHARE
-{
+
 const NSHARE::CText CDynamicModule::NAME = "lib";
 struct CDynamicModule::CImpl
 {
@@ -94,16 +94,16 @@ static void add_suffixes(CText& name)
 }
 
 //----------------------------------------------------------------------------//
-static String get_module_env_var()
+static NSHARE::CDynamicModule::string_t get_module_env_var()
 {
 	//TODO
-	return String();
+	return NSHARE::CDynamicModule::string_t();
 }
 
 //----------------------------------------------------------------------------//
-static String get_failure_str()
+static NSHARE::CDynamicModule::string_t get_failure_str()
 {
-	String retMsg;
+	NSHARE::CDynamicModule::string_t retMsg;
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__) || defined(__MINGW32__) ||defined(__QNX__)
 	retMsg = dlerror();
 #elif defined(__WIN32__) || defined(_WIN32)
@@ -128,11 +128,11 @@ static String get_failure_str()
 	return retMsg;
 }
 
-static DYN_LIB_HANDLE dyn_lib_load(const CText& name)
+static DYN_LIB_HANDLE dyn_lib_load(const CText& name,const CText& aPath)
 {
 	DYN_LIB_HANDLE handle = 0;
 
-	const String envModuleDir(get_module_env_var());
+	const NSHARE::CDynamicModule::string_t envModuleDir(/*aPath.empty()?get_module_env_var():*/aPath);
 
 	if (!envModuleDir.empty())
 		handle = DYN_LIB_LOAD(envModuleDir + '/' + name);
@@ -146,7 +146,7 @@ static DYN_LIB_HANDLE dyn_lib_load(const CText& name)
 	return handle;
 }
 
-CDynamicModule::CDynamicModule(const string_t& name) :
+CDynamicModule::CDynamicModule(const string_t& name,const string_t& aPath) :
 		FPimpl(new CImpl(name))
 {
 	MASSERT_1 (!name.empty());
@@ -154,13 +154,13 @@ CDynamicModule::CDynamicModule(const string_t& name) :
 	if (!has_extension(FPimpl->FModuleName))
 	add_suffixes(FPimpl->FModuleName);
 
-	FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName);
+	FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
 
 #if defined(__linux__)  || defined(__MINGW32__) || defined(__FreeBSD__) || defined(__NetBSD__)||defined(__QNX__)
 	if (!FPimpl->FHandle && FPimpl->FModuleName.compare(0, 3, "lib") != 0)
 	{
 		FPimpl->FModuleName.insert(0, "lib");
-		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName);
+		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
 	}
 #endif
 
@@ -169,7 +169,7 @@ CDynamicModule::CDynamicModule(const string_t& name) :
 	if (!FPimpl->FHandle && FPimpl->FModuleName.compare(0, 3, "cyg") != 0)
 	{
 		FPimpl->FModuleName.insert(0, "cyg");
-		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName);
+		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
 	}
 #endif
 

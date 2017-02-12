@@ -23,7 +23,15 @@ class UDT_SHARE_EXPORT IExtParser:public NSHARE::IFactory
 public:
 	struct obtained_dg_t
 	{
+		obtained_dg_t():
+			FErrorCode(0),//
+			FBegin(NULL),
+			FEnd(NULL)
+		{
+
+		}
 		required_header_t FType;
+		uint8_t FErrorCode;
 		const uint8_t* FBegin;
 		const uint8_t* FEnd;//equal vector::end()
 	};
@@ -35,7 +43,7 @@ public:
 	typedef std::vector<obtained_dg_t> result_t;
 
 	virtual result_t MParserData(const uint8_t* aItBegin,
-			const uint8_t* aItEnd,uint8_t aMask=ORDER_LE, required_header_t const* aLast =NULL)=0;
+			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=ORDER_LE)=0;
 
 	virtual required_header_t MHeader(const NSHARE::CConfig& aFrom) const=0;
 	virtual NSHARE::CConfig MToConfig(const required_header_t&) const=0;

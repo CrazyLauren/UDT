@@ -20,6 +20,7 @@ class CDescriptors:public NSHARE::CSingleton<CDescriptors>,public IState
 {
 public:
 	static const NSHARE::CText NAME;
+	static const NSHARE::CText DESCRIPTOR_NAME;
 	//static const descriptor_t MAX;
 	static const descriptor_t INVALID;
 	typedef NSHARE::smart_field_t<descriptor_info_t> smart_info_t;

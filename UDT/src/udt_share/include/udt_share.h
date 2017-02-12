@@ -25,12 +25,16 @@ extern UDT_SHARE_EXPORT bool is_id_initialized();
 extern UDT_SHARE_EXPORT int init_id(char const *aName,eType aType,NSHARE::version_t const& aVer);
 
 extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat,size_t aFullSize,const program_id_t& aFrom,bool aIsNeedCrc =false);
-extern UDT_SHARE_EXPORT bool deserialize(user_data_t& aTo,const user_data_dg_t*,NSHARE::IAllocater*);
+extern UDT_SHARE_EXPORT bool deserialize(user_data_t& aTo,
+		const user_data_dg_t*, NSHARE::IAllocater*);
+extern UDT_SHARE_EXPORT std::pair<size_t, size_t> deserialize_dg_head(
+		user_data_info_t& aTo, NSHARE::CBuffer::const_pointer aFrom);
 
 extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* aTo,const user_data_info_t& aWhat,size_t aSize);
 extern UDT_SHARE_EXPORT size_t serialize(NSHARE::CBuffer* aTo,const user_data_t& aWhat,bool aIsNeedCrc =false);
 extern  size_t UDT_SHARE_EXPORT get_full_size(user_data_info_t const& aData);
 extern  size_t UDT_SHARE_EXPORT get_full_size(user_data_t const& aData);
+extern  size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer  aTo,user_data_info_t const& aData,NSHARE::CBuffer::offset_pointer_t aOffset);
 
 template<class aKdTypeY,class T>
 inline unsigned serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t& aRoute,error_info_t const&aError)
@@ -40,12 +44,12 @@ inline unsigned serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t&
 	{
 		VLOG(4) << "Add route " << aRoute;
 		DCHECK(aRoute.MIsValid());
-		_conf.MAdd("route_", aRoute.MSerialize());
+		_conf.MAdd(aRoute.MSerialize());
 	}
 	if (aError.MIsValid())
 	{
 		VLOG(4)<<"Add error "<<aError;
-		_conf.MAdd("error_",aError.MSerialize());
+		_conf.MAdd(/*"error_",*/aError.MSerialize());
 	}
 
 	NSHARE::CText _text;
@@ -88,7 +92,7 @@ inline void deserialize_route_impl(NSHARE::CConfig  const& aConf,routing_t* aRou
 {
 	if (aRoute)
 		{
-			*aRoute = routing_t(aConf.MChild("route_"));
+			*aRoute = routing_t(aConf.MChild(routing_t::NAME));
 			DCHECK(aRoute->MIsValid());
 		}
 }
@@ -97,7 +101,7 @@ inline void deserialize_error_impl(NSHARE::CConfig  const& aConf,error_info_t* a
 	if (aError)
 	{
 		VLOG(2) <<"Deserialize error";
-		*aError = error_info_t(aConf.MChild("error_"));
+		*aError = error_info_t(aConf.MChild(error_info_t::NAME));
 		DCHECK(aError->MIsValid());
 	}
 }
@@ -114,7 +118,7 @@ inline Tto deserialize_impl(NSHARE::CConfig  const& aConf,routing_t* aRoute,erro
 template<>
 inline program_id_t deserialize_impl<program_id_t>(NSHARE::CConfig  const& aConf,routing_t* aRoute,error_info_t *aError)
 {
-	NSHARE::CConfig const& _conf=aConf.MChild("info");
+	NSHARE::CConfig const& _conf=aConf.MChild(program_id_t::NAME);
 	deserialize_route_impl(_conf, aRoute);
 	deserialize_error_impl(_conf, aError);
 

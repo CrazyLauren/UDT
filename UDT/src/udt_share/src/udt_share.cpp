@@ -82,169 +82,239 @@ extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat, size_t aFullSize,
 			head_t::crc_head_t::sMCheckingConstant());
 	return true;
 }
+extern UDT_SHARE_EXPORT std::pair<size_t,size_t> deserialize_dg_head(
+		user_data_info_t &_user,NSHARE::CBuffer::const_pointer  aFrom)
+{
+	user_data_header_t const& _from =
+			*(user_data_header_t const*) aFrom;
+
+	VLOG(2) << "Handle user data " << _from;
+	const size_t _events_size = _from.FEventList
+			* sizeof(demand_dg_t::event_handler_t);
+	const size_t _dest_size = _from.FDestination
+			* sizeof(uuids_t::value_type);
+	const size_t _routing_size = _from.FRouting
+			* sizeof(uuids_t::value_type);
+
+	//user_data_t _data;
+	_user.FRouting.FFrom.FUuid = _from.FUUIDFrom;
+	_user.FPacketNumber = _from.FNumber;
+	_user.FRawProtocolNumber = _from.FRawNumber;
+
+	_user.FSplit.FIsLast = _from.FIsLast;
+	_user.FSplit.FCounter = _from.FSplitCounter;
+	_user.FSplit.FCoefficient = _from.FSplitCoefficient;
+
+	size_t _offset = sizeof(user_data_header_t);
+	if (_events_size)
+	{
+		demand_dg_t::event_handler_t const *_p_begin =
+				(demand_dg_t::event_handler_t const *) (aFrom
+						+ _offset);
+		demand_dg_t::event_handler_t const *_p_end = _p_begin
+				+ _from.FEventList;
+
+		for (; _p_begin != _p_end; ++_p_begin)
+			_user.FEventsList.push_back(*_p_begin);
+	}
+	_offset += _events_size;
+
+	if (_dest_size)
+	{
+		uuids_t::value_type const *_p_begin =
+				(uuids_t::value_type const *) (aFrom + _offset);
+		uuids_t::value_type const *_p_end = _p_begin
+				+ _from.FDestination;
+
+		for (; _p_begin != _p_end; ++_p_begin)
+			_user.FDestination.push_back(
+					uuids_t::value_type(*_p_begin));
+	}
+	_offset += _dest_size;
+
+	if (_routing_size)
+	{
+		uuids_t::value_type const *_p_begin =
+				(uuids_t::value_type const *) (aFrom + _offset);
+		uuids_t::value_type const *_p_end = _p_begin
+				+ _from.FRouting;
+
+		for (; _p_begin != _p_end; ++_p_begin)
+			_user.FRouting.push_back(uuids_t::value_type(*_p_begin));
+	}
+	_offset += _routing_size;
+
+	//	if (_from.FName)
+	//	{
+	//		if (_from.FUUIDsLen)
+	//			_user.FDataId.FFrom.FName = NSHARE::CText(
+	//					(const utf8*) (aP->MUserDataBegin()) + _offset);
+	//		//		else
+	//		//			_user.FDataId.FDestName.push_back(
+	//		//					NSHARE::CText((utf8 const*) aFrom + _offset));
+	//	}
+	//_offset += _from.FName;
+
+	if (_from.FProtocolName)
+	{
+		_user.FProtocol = NSHARE::CText(
+				(const utf8*) (aFrom + _offset));
+	}
+	_offset += _from.FProtocolName;
+
+	return std::pair<size_t, size_t>(_offset, _from.FDataSize);
+}
 extern UDT_SHARE_EXPORT bool deserialize(user_data_t& _user,
 		const user_data_dg_t* aP, NSHARE::IAllocater* aBufferAlloc)
 {
-	VLOG(2) << "Handle user data " << *aP;
-	CHECK_EQ(
-			sizeof(user_data_dg_t) + aP->FUserHeader.FDataSize
-					+ aP->FUserHeader.FUUIDsLen //+ aP->FUserHeader.FName
-					+ aP->FUserHeader.FProtocolName,
-			aP->FDataSize + aP->FHeadSize);
+//	CHECK_EQ(sizeof(user_data_dg_t) + _from.FDataSize //
+//			+ _events_size//
+//			+ _dest_size//
+//			+ _routing_size//
+//			//+ _from.FName
+//			+ _from.FProtocolName//
+//			,//==
+//			aP->FDataSize + aP->FHeadSize);
+	NSHARE::CBuffer::const_pointer const  _begin=(NSHARE::CBuffer::const_pointer)aP;
+	const size_t _size_dg_header=sizeof(user_data_dg_t)-sizeof(user_data_header_t);
+	size_t _offset = _size_dg_header;
 
-	//user_data_t _data;
-	_user.FDataId.FFrom.FUuid = aP->FUserHeader.FUUIDFrom;
-	_user.FDataId.FPacketNumber = aP->FUserHeader.FNumber;
-	_user.FDataId.FRawProtocolNumber = aP->FUserHeader.FRawNumber;
+	CHECK_EQ(((uintptr_t)&aP->FUserHeader-(uintptr_t)aP),(uintptr_t)_offset);
 
-	_user.FDataId.FSplit.FIsLast = aP->FUserHeader.FIsLast;
-	_user.FDataId.FSplit.FCounter = aP->FUserHeader.FSplitCounter;
-	_user.FDataId.FSplit.FCoefficient = aP->FUserHeader.FSplitCoefficient;
+	const std::pair<size_t, size_t> _sizes = deserialize_dg_head(_user.FDataId,
+			_begin+_offset);
 
-	size_t _offset = 0;
-	if (aP->FUserHeader.FUUIDsLen)
+	_offset +=_sizes.first;
+	//paranoid check
+	CHECK_EQ(_sizes.first + _sizes.second+_size_dg_header,
+			aP->FDataSize+ aP->FHeadSize);
+
+	LOG_IF(WARNING,!_sizes.second) << "No data sent by "
+														<< _user.FDataId.FRouting.FFrom;
+
+	if(_sizes.second)
 	{
-		uint64_t const *_begin_uuid = (uint64_t const *) aP->MUserDataBegin();
-		uint64_t const *_end_uuid = (uint64_t const *) (aP->MUserDataBegin()
-				+ aP->FUserHeader.FUUIDsLen);
-		CHECK(
-				(unsigned )(_end_uuid - _begin_uuid)
-						== (aP->FUserHeader.FUUIDsLen / sizeof(uint64_t)));
-
-		for (; _begin_uuid != _end_uuid; ++_begin_uuid)
-			_user.FDataId.FUUIDTo.MGet().push_back(
-					NSHARE::uuid_t(*_begin_uuid));
-		_offset += aP->FUserHeader.FUUIDsLen;
-	}
-//	if (aP->FUserHeader.FName)
-//	{
-//		if (aP->FUserHeader.FUUIDsLen)
-//			_user.FDataId.FFrom.FName = NSHARE::CText(
-//					(const utf8*) (aP->MUserDataBegin()) + _offset);
-//		//		else
-//		//			_user.FDataId.FDestName.push_back(
-//		//					NSHARE::CText((utf8 const*) aP->MUserDataBegin() + _offset));
-//	}
-	//_offset += aP->FUserHeader.FName;
-	if (aP->FUserHeader.FProtocolName)
-		_user.FDataId.FProtocol = NSHARE::CText(
-				(const utf8*) (aP->MUserDataBegin()) + _offset);
-
-	_offset += aP->FUserHeader.FProtocolName;
-	//allocate memory
-	//	data_t::const_iterator const _p(
-	//			(data_t::value_type const*) ((utf8 const*) aP->MUserDataBegin()
-	//					+ _offset));
-	{
-		const NSHARE::CBuffer::value_type* _data_begin =
-				(const NSHARE::CBuffer::value_type*) (&aP->MUserDataBegin()[aP->FUserHeader.FUUIDsLen
-						+ aP->FUserHeader.FProtocolName/* + aP->FUserHeader.FName*/]);
 		VLOG_IF(5,aP->FUserHeader.FDataSize<100)
 														<< NSHARE::print_buffer_t<
-																NSHARE::CBuffer::value_type const*>(
-																_data_begin,
-																_data_begin
+														NSHARE::CBuffer::const_pointer>(
+																		_begin+_offset,//
+																		_begin+_offset//
 																		+ aP->FUserHeader.FDataSize);
 		NSHARE::CBuffer _data(
 				(!_user.FDataId.FSplit.MIsSplited()) ? aBufferAlloc : NULL,	//dead lock protection. using aBufferAlloc only for not split packet
-				_data_begin,	//
-				_data_begin + aP->FUserHeader.FDataSize);
+						_begin+_offset,	//
+						_begin+_offset + aP->FUserHeader.FDataSize);
 		_data.MMoveTo(_user.FData);
 	}
-	_offset += aP->FUserHeader.FDataSize;
+	_offset +=_sizes.second;
+
 	//paranoid check
 	CHECK_EQ(_user.FData.size(), aP->FUserHeader.FDataSize);
-	//paranoid check
-	CHECK_EQ(_offset, (aP->FUserHeader.FDataSize + aP->FUserHeader.FUUIDsLen
-	/*+ aP->FUserHeader.FName*/+ aP->FUserHeader.FProtocolName));
+	CHECK_EQ(_offset, aP->FDataSize+aP->FHeadSize);
+
+
 	VLOG(5) << _user;
 	return true;
 }
 extern size_t UDT_SHARE_EXPORT get_full_size(user_data_t const& _id)
 {
-	const size_t _name_protocol = _id.FDataId.FProtocol.length_code();
-	const size_t _len_uuids =
-			_id.FDataId.FUUIDTo.MIs()
-					&& !_id.FDataId.FUUIDTo.MGetConst().empty() ?
-					sizeof(uint64_t) * _id.FDataId.FUUIDTo.MGetConst().size() :
-					0;
-	const size_t _name_from_len = 0;// _id.FDataId.FFrom.FName.length_code(); //utf8 len
-	const size_t _size = _id.FData.size();
-	const size_t full_size = sizeof(user_data_dg_t) //
-	+ (_name_from_len ? _name_from_len + 1 : 0) //
-			+ (_name_protocol ? _name_protocol + 1 : 0) //
-			+ _len_uuids //
-			+ _size;
-	return full_size;
+	return _id.FData.size()+get_full_size(_id.FDataId);
 }
-extern size_t UDT_SHARE_EXPORT get_full_size(user_data_info_t const& aData)
-{
-	const size_t _name_from_len = 0; //aData.FFrom.FName.length_code();
-	const size_t _name_protocol = aData.FProtocol.length_code();
-	const size_t _len_uuids =
-			aData.FUUIDTo.MIs() && !aData.FUUIDTo.MGetConst().empty() ?
-					sizeof(uint64_t) * aData.FUUIDTo.MGetConst().size() : 0;
 
-	return sizeof(user_data_header_t) + //
-			(_name_from_len ? _name_from_len + 1 : 0) + //
-			(_name_protocol ? _name_protocol + 1 : 0) + //
-			_len_uuids;
-}
-extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* _data,
+extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 		const user_data_info_t& _id, size_t aSize)
 {
-	uuids_t const& _uuids_to = _id.FUUIDTo.MGetConst();
+	VLOG(3)<<"Serialize size="<<aSize<<" "<<_id;
+	std::vector<demand_dg_t::event_handler_t> const& _events = _id.FEventsList;
+	uuids_t const& _dest = _id.FDestination;
+	uuids_t const& _routing = _id.FRouting;
+
 	const size_t _name_protocol = _id.FProtocol.length_code();
-	const size_t _uuids_size = _uuids_to.size() * sizeof(uint64_t);
+
+	const size_t _events_size = _events.size()
+			* sizeof(demand_dg_t::event_handler_t);
+	const size_t _dest_size = _dest.size() * sizeof(uuids_t::value_type);
+	const size_t _routing_size = _routing.size() * sizeof(uuids_t::value_type);
+
 	const size_t _name_from_len = 0; //_id.FFrom.FName.length_code(); //utf8 len
-	const size_t full_size = sizeof(user_data_dg_t) //
+	const size_t full_size = sizeof(user_data_header_t) //
 	+ (_name_from_len ? _name_from_len + 1 : 0) //
 			+ (_name_protocol ? _name_protocol + 1 : 0) //
-			+ _uuids_size;
+			+ _events_size+_dest_size+_routing_size;
 
-	//allocate memory
-	_data->resize(full_size);
-	char * const _begin = (char*) &_data->front();
-
-	CHECK_EQ(full_size, _data->size());
+	if(!_begin)
+		return full_size;//calculate size
 
 	//fill dg
-	user_data_dg_t * _user_data = new (_begin) user_data_dg_t();
+	user_data_header_t * _user_data = new (_begin) user_data_header_t();
 	CHECK_NOTNULL(_user_data);
-	_user_data->FUserHeader.FUUIDsLen = _uuids_size;
+	_user_data->FEventList = _events.size();
+	_user_data->FDestination = _dest.size();
+	_user_data->FRouting = _routing.size();
 
-	_user_data->FUserHeader.FUUIDFrom = _id.FFrom.FUuid.FVal;
 
-	_user_data->FUserHeader.FIsLast = _id.FSplit.FIsLast;
-	_user_data->FUserHeader.FSplitCounter = _id.FSplit.FCounter;
-	_user_data->FUserHeader.FSplitCoefficient = _id.FSplit.FCoefficient;
+	_user_data->FUUIDFrom = _id.FRouting.FFrom.FUuid.FVal;
 
-	_user_data->FUserHeader.FRawNumber = _id.FRawProtocolNumber;
+	_user_data->FIsLast = _id.FSplit.FIsLast;
+	_user_data->FSplitCounter = _id.FSplit.FCounter;
+	_user_data->FSplitCoefficient = _id.FSplit.FCoefficient;
+
+	_user_data->FRawNumber = _id.FRawProtocolNumber;
 //	if (_name_from_len)
-//		_user_data->FUserHeader.FName = _name_from_len + 1;
+//		_user_data->FName = _name_from_len + 1;
 
 	if (_name_protocol)
-		_user_data->FUserHeader.FProtocolName = _name_protocol + 1;
+		_user_data->FProtocolName = _name_protocol + 1;
 
-	_user_data->FUserHeader.FNumber = _id.FPacketNumber;
-	_user_data->FUserHeader.FDataSize = aSize;
+	_user_data->FNumber = _id.FPacketNumber;
+	_user_data->FDataSize = aSize;
 
 	//fill dynamic data
-	char* _p = (char*) _user_data->MUserDataBegin();
+	NSHARE::CBuffer::pointer _p = _begin;
+	_p+=sizeof(user_data_header_t);
 
-	if (_uuids_size)
+	if (_events_size)
 	{
-		uuids_t::const_iterator _it = _uuids_to.begin();
+		const size_t _it_size=sizeof(demand_dg_t::event_handler_t);
 
-		for (; _it != _uuids_to.end(); ++_it)
+		std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
+				_events.begin(), _it_end(_events.end());
+
+		for (; _it != _it_end; ++_it)
 		{
-			memcpy(_p, &(*_it), sizeof(uint64_t));
-			_p += sizeof(uint64_t);
+			memcpy(_p, &(*_it), _it_size);
+			_p += _it_size;
+		}
+	}
+	if (_dest_size)
+	{
+		const size_t _it_size=sizeof(uuids_t::value_type);
+
+		uuids_t::const_iterator _it =
+				_dest.begin(), _it_end(_dest.end());
+
+		for (; _it != _it_end; ++_it)
+		{
+			memcpy(_p, &(*_it), _it_size);
+			_p += _it_size;
+		}
+	}
+	if (_routing_size)
+	{
+		const size_t _it_size=sizeof(uuids_t::value_type);
+
+		uuids_t::const_iterator _it =
+				_routing.begin(), _it_end(_routing.end());
+
+		for (; _it != _it_end; ++_it)
+		{
+			memcpy(_p, &(*_it), _it_size);
+			_p += _it_size;
 		}
 	}
 	if (_name_from_len)
 	{
-		memcpy(_p, _id.FFrom.FName.c_str(), _name_from_len);
+		memcpy(_p, _id.FRouting.FFrom.FName.c_str(), _name_from_len);
 		_p += _name_from_len;
 		*_p++ = '\0';
 	}
@@ -254,6 +324,31 @@ extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* _data,
 		_p += _name_protocol;
 		*_p++ = '\0';
 	}
+
+	//paranoid check
+	CHECK_EQ(full_size, static_cast<size_t>(_p - _begin));
+	VLOG(4)<<"Data "<<*_user_data;
+	return full_size;
+}
+extern size_t UDT_SHARE_EXPORT get_full_size(user_data_info_t const& aData)
+{
+	return fill_header(NULL,aData,0);
+}
+
+extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* _data,
+		const user_data_info_t& _id, size_t aSize)
+{
+	const size_t _size_dg_header=sizeof(user_data_dg_t)-sizeof(user_data_header_t);
+	const size_t full_size =get_full_size(_id)+_size_dg_header;
+	//allocate memory
+	_data->resize(full_size);
+	CHECK_EQ(full_size, _data->size());
+
+	NSHARE::CBuffer::pointer const _begin =(NSHARE::CBuffer::pointer) &_data->front();
+	NSHARE::CBuffer::pointer _p=_begin;
+	new(_p) user_data_dg_t;
+	_p+=_size_dg_header;
+	_p+=fill_header(_p,_id,aSize);
 
 	//paranoid check
 	CHECK_EQ(full_size, static_cast<size_t>(_p - _begin));
@@ -267,73 +362,22 @@ extern UDT_SHARE_EXPORT bool serialize(NSHARE::CBuffer* _data,
 					+ reinterpret_cast<user_data_dg_t*>(_begin)->FDataSize));
 	return true;
 }
+
 extern UDT_SHARE_EXPORT size_t serialize(NSHARE::CBuffer* _data,
 		const user_data_t& _id, bool aIsNeedCrc)
 {
-	CHECK(_id.FDataId.FUUIDTo.MIs());
-	//CHECK(!_id.FDataId.FFrom.FName.empty());
-
-	uuids_t const& _uuids_to = _id.FDataId.FUUIDTo.MGetConst();
-	const size_t _name_protocol = _id.FDataId.FProtocol.length_code();
-	const size_t _uuids_size = _uuids_to.size() * sizeof(uint64_t);
-	const size_t _name_from_len = 0; // _id.FDataId.FFrom.FName.length_code(); //utf8 len
 	const size_t _size = _id.FData.size();
-	const size_t full_size = sizeof(user_data_dg_t) //
-	+ (_name_from_len ? _name_from_len + 1 : 0) //
-			+ (_name_protocol ? _name_protocol + 1 : 0) //
-			+ _uuids_size //
-			+ _size;
+	const size_t full_size = get_full_size(_id) + _size;
 	//allocate memory
 	_data->resize(full_size);
-	char * const _begin = (char*) &_data->front();
-
 	CHECK_EQ(full_size, _data->size());
 
-	//fill dg
-	user_data_dg_t * _user_data = new (_begin) user_data_dg_t();
-	CHECK_NOTNULL(_user_data);
-	_user_data->FUserHeader.FUUIDsLen = _uuids_size;
-
-	_user_data->FUserHeader.FUUIDFrom = _id.FDataId.FFrom.FUuid.FVal;
-
-//		if (_name_from_len)
-//			_user_data->FUserHeader.FName = _name_from_len + 1;
-
-	if (_name_protocol)
-		_user_data->FUserHeader.FProtocolName = _name_protocol + 1;
-
-	_user_data->FUserHeader.FRawNumber = _id.FDataId.FRawProtocolNumber;
-	_user_data->FUserHeader.FNumber = _id.FDataId.FPacketNumber;
-
-	_user_data->FUserHeader.FDataSize = _size;
-
-	//fill dynamic data
-	char* _p = (char*) _user_data->MUserDataBegin();
-
-	if (_uuids_size)
-	{
-		uuids_t::const_iterator _it = _uuids_to.begin();
-
-		for (; _it != _uuids_to.end(); ++_it)
-		{
-			memcpy(_p, &(*_it), sizeof(uint64_t));
-			_p += sizeof(uint64_t);
-		}
-	}
-	if (_name_from_len)
-	{
-		memcpy(_p, _id.FDataId.FFrom.FName.c_str(), _name_from_len);
-		_p += _name_from_len;
-		*_p++ = '\0';
-	}
-	if (_name_protocol)
-	{
-		memcpy(_p, _id.FDataId.FProtocol.c_str(), _name_protocol);
-		_p += _name_protocol;
-		*_p++ = '\0';
-	}
-	memcpy(_p, _id.FData.ptr_const(), _size);
-	_p += _size;
+	NSHARE::CBuffer::pointer const _begin = (NSHARE::CBuffer::pointer) &_data->front();
+	NSHARE::CBuffer::pointer _p=_begin;
+	new(_p) user_data_dg_t;
+	_p+=sizeof(user_data_dg_t)-sizeof(user_data_header_t);
+	_p+=fill_header(_p,_id.FDataId,_size);
+	_p+=_size;
 
 	//paranoid check
 	CHECK_EQ(full_size, static_cast<size_t>(_p - _begin));

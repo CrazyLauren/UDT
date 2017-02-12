@@ -14,14 +14,14 @@
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
-#include "../../core/kernel_type.h"
-#include "../../core/CConfigure.h"
-#include "../../core/CDescriptors.h"
-#include "../../core/CDataObject.h"
+#include <core/kernel_type.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
 
 #include "../CChannelDiagnostics.h"
-#include "../ITcpIOManager.h"
-#include "../ILink.h"
+#include <io/IIOManager.h>
+#include <io/ILink.h>
 
 #define RECEIVES /*получаемые пакеты*/ \
 	RECEIVE(E_USER_DATA,user_data_dg_t)/*Данные пользователя*/\
@@ -500,7 +500,7 @@ NSHARE::CConfig CUdpMainChannel::MSerialize() const
 				CDescriptors::sMGetInstance().MGet(_it->first);
 
 		NSHARE::CConfig _cust(_info.first.FProgramm.FId.FName);
-		_cust.MAdd("Info",_info.first.MSerialize());
+		_cust.MAdd(/*"Info",*/_info.first.MSerialize());
 
 		parser_t::state_t const& _state=_it->second->FParser.MGetState();
 		_cust.MAdd("St",(unsigned)_it->second->FState);

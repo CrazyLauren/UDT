@@ -14,19 +14,20 @@
 #include <string.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
-#include "../core/kernel_type.h"
-#include "../core/CConfigure.h"
-#include "../core/CDescriptors.h"
-#include "../core/CDataObject.h"
+#include <core/kernel_type.h>
+#include <core/CConfigure.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
 
 #include "receive_from.h"
-#include "parser_in_protocol.h"
+#include <parser_in_protocol.h>
 
 #include "ILinkBridge.h"
+#include <io/CKernelIo.h>
+
 #include "CKernelIOByTCP.h"
-#include "CNewConnection.h"
 #include "CServerBridge.h"
-#include "CKernelIo.h"
+#include "CNewConnection.h"
 
 using namespace NSHARE;
 namespace NUDT

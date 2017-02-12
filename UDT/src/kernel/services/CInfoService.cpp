@@ -12,12 +12,13 @@
 #include <deftype>
 #include <algorithm>
 #include <iterator>
-#include "../core/IState.h"
-#include "../core/CDescriptors.h"
-#include "../core/CDataObject.h"
-#include "../core/kernel_type.h"
+#include <core/IState.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <core/kernel_type.h>
+#include <io/CKernelIo.h>
 #include "CInfoService.h"
-#include "../io/CKernelIo.h"
+
 
 #include <boost/version.hpp>
 #include <boost/interprocess/detail/atomic.hpp>
@@ -31,7 +32,7 @@ NUDT::CInfoService::singleton_pnt_t NUDT::CInfoService::singleton_t::sFSingleton
 		NULL;
 namespace NUDT
 {
-const NSHARE::CText CInfoService::NAME = "info";
+const NSHARE::CText CInfoService::NAME = "udt_net";
 CInfoService::CInfoService():IState(NAME)
 {
 	MInit();
@@ -235,6 +236,7 @@ bool CInfoService::MRebuild(_data_info_t& _new_array,
 
 	CHECK(_new_array.FInfo.empty());
 
+	_new_array.MResetCache();
 	_new_array.FWayCounter.clear();
 	_new_array.FGraph.MReset();
 
@@ -570,6 +572,7 @@ void CInfoService::MHandleOpen(const descriptor_t& aFrom,
 			_v[_what.FProgramm.FId.FUuid] = _what.FLatency;
 			_d_info.FGraph.MAddNode(get_my_id().FId.FUuid, _v);
 		}
+		_d_info.MResetCache();
 	}
 	MSendInfo(_sent_to);
 	if (_diff.MIsValid())
@@ -673,6 +676,7 @@ void CInfoService::MHandleClose(const descriptor_t& aFrom,
 		{
 			MSynchronize2(_sent_to, _d_info, _is_changed);
 		}
+		_d_info.MResetCache();
 	}
 	MSendInfo(_sent_to);
 	if (_diff.MIsValid())
@@ -706,13 +710,16 @@ void CInfoService::MHandle(const kernel_infos_array_t& aFrom, descriptor_t aId)
 									<< aFrom.MSerialize().MToJSON(true);
 			}
 			else
-				VLOG(2)<<"Does not change.";
+			{
+				VLOG(2) << "Does not change.";
 			}
+		}
 		if (_is_new)
 		{
 			_is_changed = MRebuild(_d_info, _diff);
 			MSynchronize2(_sent_to, _d_info, _is_changed);
 		}
+		_d_info.MResetCache();
 	}
 	MSendInfo(_sent_to);
 	if (_is_changed)
@@ -749,14 +756,36 @@ inline void CInfoService::MInit()
 	}
 }
 
-CRouteGraph::path_t CInfoService::MShortestPath(CRouteGraph::node_t const& aTo) const
+std::vector<descriptor_t> CInfoService::MNextDestinations(CRouteGraph::node_t const& aTo) const
 {
-	const r_access _ac = FData.MGetRAccess();
-	const _data_info_t& _info = _ac.MGet();
-	if (_info.FGraph.MIsVertex(aTo))
-		return _info.FGraph.MShortestPath(get_my_id().FId.FUuid, aTo);
-	else
-		return CRouteGraph::path_t();
+	{
+		const r_access _ac = FData.MGetRAccess();
+		const _data_info_t& _info = _ac.MGet();
+		next_destination_t::const_iterator _it = _info.FDestianationCache.find(
+				aTo);
+		if (_it != _info.FDestianationCache.end())
+			return _it->second;
+	}
+	{
+		w_access _ac = FData.MGetWAccess();
+		_data_info_t& _info = _ac.MGet();
+		CRouteGraph::path_t const _short = _info.FGraph.MShortestPath(
+				get_my_id().FId.FUuid, aTo);		//todo all
+
+		std::vector<descriptor_t> _next;
+		if (!_short.empty())
+		{
+			descriptor_t const _val = CDescriptors::sMGetInstance().MGet(
+					_short.front());
+			if (_val != CDescriptors::INVALID)
+			{
+				_next.push_back(_val);
+			}
+		}
+		_info.FDestianationCache[aTo] = _next;
+		LOG_IF(INFO,_next.empty()) << "No pathes to " << aTo;
+		return _next;
+	}
 }
 bool CInfoService::MIsVertex(const CRouteGraph::node_t& name) const
 {
@@ -795,5 +824,10 @@ NSHARE::CConfig CInfoService::MSerialize() const
 		_config.MAdd(_info.FGraph.MSerialize());
 	}
 	return _config;
+}
+void CInfoService::_data_info_t::MResetCache()
+{
+	FGraph.MResetCache();
+	FDestianationCache.clear();
 }
 } /* namespace NUDT */

@@ -13,34 +13,32 @@
 #include "IState.h"
 #include "CResources.h"
 
-
 #if defined(RRD_STATIC)
 extern "C"
 {
-NSHARE::factory_registry_t*get_factory_registry();
+	NSHARE::factory_registry_t*get_factory_registry();
 }
 #endif
 using namespace NSHARE;
 template<>
-NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton = NULL;
+NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton =
+		NULL;
 namespace NUDT
 {
-const NSHARE::CText CResources::NAME="res";
+const NSHARE::CText CResources::NAME = "res";
 CResources::CResources(std::vector<NSHARE::CText> const& aResources,
-		NSHARE::CText const& aExtPath):IState(NAME)
+		NSHARE::CText const& aExtPath) :
+		IState(NAME), FExtLibraryPath(aExtPath)
 {
-	std::vector<NSHARE::CText>::const_iterator _it=aResources.begin();
+	std::vector<NSHARE::CText>::const_iterator _it = aResources.begin();
 	for (; _it != aResources.end(); ++_it)
 	{
 		module_t _mod;
-		_mod.FName=*_it;
-		_mod.FRegister=NULL;
+		_mod.FName = *_it;
+		_mod.FRegister = NULL;
 		FModules.push_back(_mod);
 	}
-	if(aExtPath.length())
-	{
-		LOG(ERROR)<<"Not implemented";
-	}
+
 }
 
 CResources::~CResources()
@@ -70,17 +68,18 @@ void CResources::MLoadChannels()
 			++_it)
 	{
 		VLOG(2) << "Load '" << _it->FName << "' dynamic module";
-		LOG_IF(WARNING,_it->FRegister)
-				<< "The Dynamic module '" << _it->FName
-						<< "' has been loaded already";
+		LOG_IF(WARNING,_it->FRegister) << "The Dynamic module '" << _it->FName
+												<< "' has been loaded already";
 		if (!_it->FRegister)
 		{
 			// load dynamic module
 			if (!_it->FDynamic.get())
 			{
+				const NSHARE::CText& _name=_it->FName;
 				try
 				{
-					SHARED_PTR<CDynamicModule> _module(new CDynamicModule(_it->FName));//throw std::invalid_argument if failed
+
+					SHARED_PTR<CDynamicModule> _module(new CDynamicModule(_name)); //throw std::invalid_argument if failed
 					_it->FDynamic=_module;
 
 					factory_registry_func_t _func = (factory_registry_func_t)(
@@ -88,7 +87,7 @@ void CResources::MLoadChannels()
 
 					LOG_IF(DFATAL,!_func)<<
 					"Required function export '"<<FACTORY_REGISTRY_FUNC_NAME<<
-					"' was not found in dynamic module '" << _it->FName<< "'.";
+					"' was not found in dynamic module '" <<_name<< "'.";
 					if(!_func)
 					continue;
 					// get the WindowRendererModule object for this module.
@@ -101,11 +100,10 @@ void CResources::MLoadChannels()
 					LOG(WARNING) << "The dynamic module '" << _it->FName << "' is static ";
 					_it->FRegister = get_factory_registry();
 #else
-					LOG(ERROR)<<"Library "<<_it->FName<<" is not exist. Ignoring ...";
+					LOG(ERROR)<<"Library "<<_name<<" is not exist. Ignoring ...";
 					continue;
 
 #endif //defined(RRD_STATIC)
-
 				}
 			}
 		}
@@ -153,21 +151,22 @@ void CResources::MUnloadChannels()
 NSHARE::CConfig CResources::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	_conf.MAdd("epath",FExtLibraryPath);
-	mod_channels_t::const_iterator _it=FModules.begin(),_it_end(FModules.end());
-	for(;_it!=_it_end;++_it)
+	_conf.MAdd("epath", FExtLibraryPath);
+	mod_channels_t::const_iterator _it = FModules.begin(), _it_end(
+			FModules.end());
+	for (; _it != _it_end; ++_it)
 	{
-		_conf.MAdd("mod",_it->MSerialize());
+		_conf.MAdd(_it->MSerialize());
 	}
 	return _conf;
 }
 NSHARE::CConfig CResources::module_t::MSerialize() const
 {
-	NSHARE::CConfig _conf("mod");
-	_conf.MAdd("name",FName);
-	if(FDynamic.get())
+	NSHARE::CConfig _conf("emod");
+	_conf.MAdd("ename", FName);
+	if (FDynamic.get())
 	{
-		_conf.MAdd(NSHARE::CDynamicModule::NAME,FDynamic->MSerialize());
+		_conf.MAdd(NSHARE::CDynamicModule::NAME, FDynamic->MSerialize());
 	}
 	if (FRegister)
 	{
@@ -175,14 +174,14 @@ NSHARE::CConfig CResources::module_t::MSerialize() const
 				FRegister->end();
 		for (; _it != _it_end; ++_it)
 		{
-			if(*_it)
+			if (*_it)
 				_conf.MAdd((*_it)->MSerialize());
 			else
 			{
-				_conf.MAdd("null","null");
+				_conf.MAdd("null", "null");
 			}
 		}
 	}
 	return _conf;
 }
-}//
+} //

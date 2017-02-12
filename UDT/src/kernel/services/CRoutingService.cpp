@@ -13,11 +13,11 @@
 #include <Socket.h>
 #include <internel_protocol.h>
 
-#include "../core/kernel_type.h"
-#include "../core/IState.h"
-#include "../core/CDescriptors.h"
-#include "../core/CDataObject.h"
-#include "../io/CKernelIo.h"
+#include <core/kernel_type.h>
+#include <core/IState.h>
+#include <core/CDescriptors.h>
+#include <core/CDataObject.h>
+#include <io/CKernelIo.h>
 
 #include "CRoutingService.h"
 #include "CInfoService.h"
@@ -308,85 +308,157 @@ int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
 {
 	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
 	CHECK_NOTNULL(_this);
-	CHECK_EQ(user_data_id_t::NAME, WHAT->FType);
-	user_data_id_t const* _p =
-			reinterpret_cast<user_data_id_t*>(WHAT->FPointToData);
-	CHECK_NOTNULL(_p);
-	_this->MHandleFrom(&_p->FVal, _p->FId);
+	CHECK_EQ(routing_user_data_t::NAME, WHAT->FType);
+	CHECK_NOTNULL(WHAT->FPointToData);
+	routing_user_data_t & _p =
+			*reinterpret_cast<routing_user_data_t*>(WHAT->FPointToData);
+
+	_this->MHandleFrom(_p);
 	return 0;
 }
 
-void CRoutingService::MNoteFailSend(const user_data_info_t& aInfo,
-		const uuids_t& _non_sent)
+void CRoutingService::MNoteFailSend(const fail_send_array_t& aFail)
 {
-	fail_send_t _sent(aInfo);
-	_sent.FUUIDTo = _non_sent;
-	MNoteFailSend(_sent);
+	fail_send_array_t::const_iterator _it=aFail.begin(),_it_end=aFail.end();
+	for(;_it!=_it_end;++_it)
+	{
+		MNoteFailSend(*_it);
+	}
 }
 void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 {
-	LOG(ERROR)<<"Cannot send  packet #"<<_sent.FPacketNumber<<" from " << _sent.FFrom << " to " << _sent.FUUIDTo.MGetConst();
+	LOG(ERROR)<<"Cannot send  packet #"<<_sent.FPacketNumber<<" from " << _sent.FRouting.FFrom << " to " << _sent.FRouting;
 	routing_t _f_to;
-	_f_to.push_back(_sent.FFrom.FUuid);
+	_f_to.push_back(_sent.FRouting.FFrom.FUuid);
 	_f_to.FFrom = get_my_id().FId;
 	MSendTo(_f_to, _sent);
 }
-CRequiredDG::req_uuids_t CRoutingService::MGetCustomersFor(
-		user_data_t const& aData)
+void CRoutingService::MFillMsgReceivers(user_datas_t & aFrom, user_datas_t& aTo, fail_send_array_t&aFail)
 {
 	r_route_access _access = FRouteData.MGetRAccess();
 	CRequiredDG const& _rdg = _access->FRequiredDG;
-	NSHARE::CBuffer const & _data = aData.FData;
-
-	return (!aData.FDataId.FProtocol.empty() && aData.FDataId.FProtocol!=RAW_PROTOCOL_NAME) ? //if empty ==> numbered raw protocol
-			_rdg.MGetCustomersFor(aData.FDataId.FFrom.FUuid, aData.FDataId.FProtocol,
-			_data.ptr_const(), _data.size()) :
-	//simplified parser for raw protocol
-	_rdg.MGetCustomersFor(aData.FDataId.FFrom.FUuid,
-			aData.FDataId.FRawProtocolNumber);
+	_rdg.MFillMsgReceivers(aFrom,aTo,aFail);
 }
-void CRoutingService::MHandleFrom(user_data_t const* aP, descriptor_t aFrom)
+void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t & aError)
 {
-	VLOG(2) << "New  " << aP->FDataId << " From: " << aFrom;
-	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aFrom))<<aFrom<<" has been closed already. The msg is ignored...";
+	r_route_access _access = FRouteData.MGetRAccess();
+	CRequiredDG const& _rdg = _access->FRequiredDG;
+	_rdg.MFillMsgHandlersFor(aFrom,aTo,aError);
 
-	uuids_t _to;
-	if (aP->FDataId.FUUIDTo.MIs())
-		_to = aP->FDataId.FUUIDTo.MGetConst(); //todo ignoring flags. Some program has to intercept packet. For example, Registrators
-	/*else if (!aP->FDataId.FDestName.empty())
-	 {
-	 customers_names_t::const_iterator _it = aP->FDestName.begin();
-	 r_route_access _access = FRouteData.MGetRAccess();
-	 for (; _it != aP->FDestName.begin(); ++_it)
-	 {
-	 uuids_t const _var = _access->FRequiredDG.MGetClientsFor(*_it);
-	 _to.insert(_to.end(), _var.begin(), _var.end());
-	 }
-	 }*/
-	else
+}
+void CRoutingService::MHandleFrom(routing_user_data_t& aData)
+{
+	CHECK(!aData.FData.empty());
+	VLOG(2) << "New  From: " << aData.FDesc;
+	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aData.FDesc))<<aData.FDesc<<" has been closed already. The msg is ignored...";
+
+
+	fail_send_array_t _non_sent;
+
+	user_datas_t _routed;
+	user_datas_t _not_routed;
 	{
-		CRequiredDG::req_uuids_t const _req_uuids(MGetCustomersFor(*aP));
+		//divide into two group from consumer and other
+		for (user_datas_t& _recv_data = aData.FData; !_recv_data.empty();)
+		{
+			if (_recv_data.front().FDataId.FRouting.empty())	//from consumer
+			{
+				VLOG(3) << " It's from consumer "
+									<< _recv_data.front().FDataId;
+				_not_routed.splice(_not_routed.end(), _recv_data,
+						_recv_data.begin());
+			}
+			else
+			{
+				VLOG(3) << " It's from kernel "
+									<< _recv_data.front().FDataId;
+				_routed.splice(_routed.end(), _recv_data, _recv_data.begin());
+			}
+		}
+		if(!_not_routed.empty())
+		MFillMsgReceivers(_not_routed, _routed, _non_sent);
+	}
 
-		for (CRequiredDG::req_uuids_t::const_iterator _kt = _req_uuids.begin();
-				_kt != _req_uuids.end(); ++_kt)
-			_to.push_back(_kt->first);
+	output_user_data_t _route_by_desc;
+
+	user_datas_t::iterator _it = _routed.begin(), _it_end = _routed.end();
+
+	for (; _it != _it_end; ++_it)
+	{
+		user_data_t &_data = *_it;
+		LOG_IF(INFO,_data.FDataId.FRouting.empty())
+															<< "There are no any receivers for "
+															<< _data.FDataId
+															<< ". Msg don't send. Ignoring...";
+
+		if (!_data.FDataId.FRouting.empty())
+		{
+			VLOG(2) << "Send  packet #" << _data.FDataId.FPacketNumber
+								<< " from " << _data.FDataId.FRouting.FFrom << " to "
+								<< _data.FDataId.FRouting;
+
+			//converting uuid to descriptor
+
+			output_decriptors_for_t _descr;
+			uuids_t _fail;
+			MGetOutputDescriptors( _data.FDataId.FRouting,
+					_descr, _fail);
+
+			if (!_fail.empty())
+			{
+				fail_send_t _sent(_data.FDataId);
+				_sent.FRouting.swap(_fail);
+				_sent.FError = fail_send_t::E_NO_ROUTE;
+				_non_sent.push_back(_sent);
+			}
+
+			LOG_IF(ERROR,_descr.empty()) << "There are not descriptors. WTF?";
+
+			VLOG_IF(1,_descr.size()<_data.FDataId.FRouting.size())
+																			<< "It has been reduced the number of packets for "
+																			<< (_descr.size())
+																			<< " from "
+																			<< _data.FDataId.FRouting.size();
+			output_decriptors_for_t::const_iterator _jt = _descr.begin(),
+					_jt_end = _descr.end();
+			for (; _jt != _jt_end; ++_jt)
+			{
+				_data.FDataId.FRouting=_jt->second;
+
+				output_user_data_t::iterator _kt = _route_by_desc.begin(),
+						_kt_end = _route_by_desc.end();
+
+				for (; _kt != _kt_end && _kt->FDesc != _jt->first; ++_kt)//todo optimize
+					;
+
+				if (_kt == _kt_end)
+				{
+					_route_by_desc.push_back(routing_user_data_t());
+					_kt =--_route_by_desc.end();
+					_kt->FDesc=_jt->first;
+				}
+				_kt->FData.push_back(_data);
+			}
+
+		}
 
 	}
-	LOG_IF(INFO,_to.empty()) << "There are not any uuids for "
-										<< aP->FDataId.FFrom
-										<< ". Msg don't send. Ignoring...";
-	if (!_to.empty())
+
+	//when for all send data
+	if (!_route_by_desc.empty())
 	{
-		VLOG(2) << "Try send";
-		fail_send_array_t _non_sent;
-		MSendTo(aP, routing_t(get_my_id().FId, _to), _non_sent, aFrom); //get uuid for
-		if (!_non_sent.empty())
-		{
-			fail_send_array_t::const_iterator _it = _non_sent.begin(), _it_end(
-					_non_sent.end());
-			for (; _it != _it_end; ++_it)
-				MNoteFailSend(*_it);
-		}
+		CKernelIo::sMGetInstance().MSendTo(_route_by_desc, _non_sent,_not_routed);
+	}
+
+	if (!_non_sent.empty())
+	{
+		MNoteFailSend(_non_sent);
+	}
+
+	if(!_not_routed.empty())
+	{
+		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
+		aData.FData.splice(aData.FData.end(),_not_routed);
 	}
 }
 
@@ -397,22 +469,17 @@ void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
 		for (uuids_t::const_iterator _it = aSendTo.begin();
 				_it != aSendTo.end(); ++_it)
 		{
-			descriptor_t _d = MNextDestinationNode(*_it);
-			if (CDescriptors::sMIsValid(_d))
+			std::vector<descriptor_t> const _d =  CInfoService::sMGetInstance().MNextDestinations(*_it);
+			//todo several destination
+			if (!_d.empty() && CDescriptors::sMIsValid(_d.front()))
 			{
-				//todo если _d я вляется получаетелем, что делать?
-				//loop back protection
-				//				if (_d != aFrom
-				//						|| CDescriptors::sMIsValid(
-				//								CDescriptors::sMGetInstance().MGet(*_it)))
-				output_decriptors_for_t::iterator _jt = _descr.find(_d);
+				output_decriptors_for_t::iterator _jt = _descr.find(_d.front());
 				if (_jt == _descr.end())
 				{
 					_jt =
 							_descr.insert(
-									output_decriptors_for_t::value_type(_d,
-											aSendTo)).first;
-					_jt->second.clear();
+									output_decriptors_for_t::value_type(_d.front(),
+											routing_t(aSendTo.FFrom,uuids_t()))).first;
 				}
 				_jt->second.push_back(*_it);
 			}
@@ -422,96 +489,7 @@ void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
 	}
 }
 
-inline void CRoutingService::MSendTo(user_data_t const* aP,
-		routing_t const& aTo, fail_send_array_t & _non_sent, descriptor_t aFrom)
-{
-	CHECK(!aTo.empty());
-	VLOG(2) << "Send  packet #" << aP->FDataId.FPacketNumber << " from "
-						<< aP->FDataId.FFrom << " to " << aTo;
-	user_data_t _data(*aP);
-//	if (_data.FDataId.FFrom.FName.empty())//fixme remove add only if sent to customer
-//	{
-//		VLOG(2) << "New name ";
-//		std::pair<descriptor_info_t, bool> _info =
-//				CDescriptors::sMGetInstance().MGet(aFrom);
-//		if (_info.second)
-//			_data.FDataId.FFrom = _info.first.FProgramm.FId;
-//		else
-//			_data.FDataId.FFrom.FName = "Unknown";
-//		VLOG(2) << "New name is " << _data.FDataId.FFrom;
-//	}
 
-	output_decriptors_for_t _descr;
-
-	uuids_t _fail;
-	MGetOutputDescriptors(aTo, _descr, _fail);
-	if (!_fail.empty())
-	{
-		fail_send_t _sent(aP->FDataId);
-		_sent.FUUIDTo = _fail;
-		_non_sent.push_back(_sent);
-	}
-
-	LOG_IF(ERROR,_descr.empty()) << "There are not descriptors. WTF?";
-
-	VLOG_IF(1,_descr.size()<aTo.size())
-												<< "It has been reduced the number of packets for "
-												<< (_descr.size()) << " from "
-												<< aTo.size();
-
-	if (!_descr.empty())
-	{
-		CKernelIo::sMGetInstance().MSendTo(_descr, _data, _non_sent);
-//		for (output_decriptors_for_t::const_iterator _it =
-//				_descr.begin(); _it != _descr.end(); ++_it)
-//		{
-//			_data.FDataId.FUUIDTo = _it->second;		//by historical reason
-//
-//			if (CKernelIo::sMGetInstance().MSendTo(_it->first, _data,
-//					_it->second))
-//			{
-//				LOG(INFO)<< "Sent  packet #"<<aP->FDataId.FPacketNumber<<" from " << aP->FDataId.FFrom << " to " << _data.FDataId.FUUIDTo.MGet();
-//			}
-//			else
-//			{
-//				//LOG(ERROR)<<"Cannot send  packet #"<<aP->FDataId.FPacketNumber<<" from " << aP->FDataId.FFrom << " to " << _data.FDataId.FUUIDTo.MGet();
-//				_non_sent.insert(_non_sent.end(),_it->second.begin(),_it->second.end());
-//				CHECK(!_non_sent.empty());
-//			}
-//		}
-	}
-}
-descriptor_t CRoutingService::MNextDestinationNode(
-		NSHARE::uuid_t const& aTo) const
-{
-	//find route
-	descriptor_t _d = CDescriptors::sMGetInstance().MGet(aTo); //fast check for customers
-	if (!CDescriptors::sMIsValid(_d))
-	{
-		r_route_access _access = FRouteData.MGetRAccess();
-//		bool _is = CDescriptors::sMGetInstance().MIs(_d);
-//		if (!_is)
-//		{
-//			LOG(ERROR)<<"The descriptor has been closed. Ignoring...";
-//			return CDescriptors::INVALID;
-//		}
-		CRouteGraph::path_t _path = CInfoService::sMGetInstance().MShortestPath(
-				aTo);
-		if (_path.empty())
-		{
-			LOG(ERROR)<< "There is not path for " << aTo;
-			return CDescriptors::INVALID;
-		}
-		//LOG_IF(ERROR,_path.size()==1) << "There is not path for " << aTo;
-//		if (_path.size() == 1)
-//			return CDescriptors::INVALID;
-		VLOG(2) << "Route for " << aTo << ":" << _path;
-		_d = CDescriptors::sMGetInstance().MGet(_path.front());
-		LOG_IF(ERROR,!CDescriptors::sMIsValid(_d))<<"Invalid descriptor  for "<<_path.front();
-
-	}
-	return _d;
-}
 
 inline void CRoutingService::MInit()
 {
@@ -527,7 +505,7 @@ inline void CRoutingService::MInit()
 	}
 	{
 		callback_data_t _cb(sMHandleUserDataId, this);
-		CDataObject::value_t _val(user_data_id_t::NAME, _cb);
+		CDataObject::value_t _val(routing_user_data_t::NAME, _cb);
 		CDataObject::sMGetInstance() += _val;
 	}
 

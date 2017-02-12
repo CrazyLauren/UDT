@@ -36,8 +36,8 @@ public:
 	{
 	}
 
-	result_t MParserData(
-			const uint8_t* , const uint8_t* , uint8_t, required_header_t const*)
+	result_t MParserData(const uint8_t* aItBegin,
+			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=ORDER_LE)
 	{
 		//Parsing buffer aItBegin:aItEnd
 		static result_t _result(1);
@@ -65,7 +65,7 @@ public:
 	{
 		NSHARE::CConfig _conf("head");
 		_conf.MAdd("num", aHeader.FNumber);
-		_conf.MAdd("ver", aHeader.FVersion.MSerialize());
+		_conf.MAdd( aHeader.FVersion.MSerialize());
 		return _conf;
 	}
 };

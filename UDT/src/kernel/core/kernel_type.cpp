@@ -20,12 +20,12 @@ const NSHARE::CText destroy_descriptor::NAME = "DestroyDescriptor";
 
 const NSHARE::CText open_descriptor::NAME = "OpenDescriptor";
 const NSHARE::CText close_descriptor::NAME = "CloseDescriptor";
+const NSHARE::CText routing_user_data_t::NAME = "UserDataId";
 //const NSHARE::CText user_data_t::NAME = "UserData";
 
 template<>
 const NSHARE::CText new_id_t::NAME = "NewId";
-template<>
-const NSHARE::CText user_data_id_t::NAME = "UserDataId";
+
 
 template<>
 const NSHARE::CText demands_id_t::NAME = "DemandsId";
@@ -47,7 +47,7 @@ const NSHARE::CText fail_send_by_id_t::NAME = "FailById";
 //		return false;
 //	return FAddr < aRht;
 //}
-
+const NSHARE::CText descriptor_info_t::CONNECTION_INFO="con_info";
 bool descriptor_info_t::operator<(descriptor_info_t const& aRht) const
 {
 	return FProgramm < aRht.FProgramm;
@@ -59,8 +59,9 @@ bool descriptor_info_t::operator==(descriptor_info_t const& aRht) const
 NSHARE::CConfig descriptor_info_t::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	_conf.MAdd("po", FProgramm.MSerialize());
-	_conf.MAdd("info",FInfo);
+	_conf.MAdd( FProgramm.MSerialize());
+	if(!FInfo.MIsEmpty())
+	_conf.MAdd(/*CONNECTION_INFO,*/FInfo);
 
 	return _conf;
 }

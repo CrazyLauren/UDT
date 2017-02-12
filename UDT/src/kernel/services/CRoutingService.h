@@ -26,10 +26,11 @@ public:
 	~CRoutingService();
 	NSHARE::CConfig MSerialize() const;
 
-	void MNoteFailSend(const user_data_info_t& aP, const uuids_t& _non_sent);
 	void MNoteFailSend(const fail_send_t&);
-	CRequiredDG::req_uuids_t MGetCustomersFor(user_data_t const&);
+	void MNoteFailSend(const fail_send_array_t&);
 
+	void MFillMsgReceivers(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t&);
+	void MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t & aError);
 	template<class T>
 	uuids_t MSendTo(routing_t const&, const T &);
 	template<class T>
@@ -39,6 +40,8 @@ private:
 	{
 		CRequiredDG FRequiredDG;
 	};
+
+
 	typedef NSHARE::CSafeData<_route_t> route_data_t;
 	typedef route_data_t::RAccess<> const r_route_access;
 	typedef route_data_t::WAccess<> w_route_access;
@@ -69,13 +72,10 @@ private:
 			kern_links_t const& _vertex);
 	void MHandleCloseId(bool aIs, program_id_t const&,
 			kern_links_t const& _vertex);
-	void MHandleFrom(user_data_t const*, descriptor_t aFrom);
+	void MHandleFrom(routing_user_data_t& aData);
 
 	void MHandleNewDemands( descriptor_t aFrom, const demand_dgs_for_t&);
 
-	void MSendTo(user_data_t const* aP, routing_t const& aTo, fail_send_array_t & aNonSent,
-			descriptor_t aFrom);
-	descriptor_t MNextDestinationNode(NSHARE::uuid_t const& aUUID) const;
 	void MGetOutputDescriptors(const routing_t& aSendTo,
 			output_decriptors_for_t& _descr, uuids_t& _non_sent) const;
 	void MInformNewReceiver(demand_dgs_for_t &);
@@ -85,6 +85,7 @@ private:
 template<class T>
 inline uuids_t CRoutingService::MSendTo(routing_t const& aTo, const T & aWhat)
 {
+	VLOG(2)<<"Routing to "<<aTo;
 	uuids_t _non_sent;
 	output_decriptors_for_t _descr;
 	MGetOutputDescriptors(aTo, _descr, _non_sent);

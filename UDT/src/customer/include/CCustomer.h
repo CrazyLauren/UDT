@@ -23,17 +23,23 @@
 namespace NUDT
 {
 class CCustomer;
-struct dg_parser_t
+struct msg_parser_t
 {
 	NSHARE::CText FProtocolName; //Name of protocol
 	required_header_t FRequired;
 	enum eFLags{
-
+		E_NO_FLAGS=0,
+		E_REGISTRATOR=0x1<<0
 	} FFlags;
+
+	msg_parser_t():FFlags(E_NO_FLAGS)
+	{
+
+	}
 };
 struct args_t
 {
-	id_t FFrom;
+	NSHARE::uuid_t FFrom;
 	NSHARE::CText FProtocolName;
 	const uint8_t* FBegin;//pointer to the data
 	const uint8_t* FEnd;//equal vector::end()
@@ -41,12 +47,14 @@ struct args_t
 							//are equal to FBuffer.begin(),FBuffer.end().
 	unsigned FPacketNumber;
 	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
+	std::vector<NSHARE::uuid_t> FTo;
 };
 struct fail_sent_args_t
 {
 	NSHARE::CText FProtocolName;
 	uint32_t FPacketNumber;
 	std::vector<NSHARE::uuid_t> FTo;
+	std::vector<NSHARE::uuid_t> FFails;
 };
 
 struct customers_updated_args_t
@@ -58,7 +66,7 @@ struct new_receiver_args_t
 {
 	struct what_t
 	{
-		dg_parser_t FWhat;
+		msg_parser_t FWhat;
 		NSHARE::uuid_t FWho;
 		NSHARE::CText FRegExp;//see the first argument of MSettingDgParserFor
 	};
@@ -185,11 +193,9 @@ public:
 	///@param argv - An array of pointers to strings that contain the arguments to the program
 	///@param aName - Name of Customer
 	///@param aConf - Config
-	static int sMInit(int argc, char* argv[], char const* aName);
-	static int sMInit(int argc, char* argv[], char const* aName,
-			const NSHARE::CText& aConf);
-	static int sMInit(int argc, char* argv[], NSHARE::CText const& aName,
-			const NSHARE::CConfig& aConf);
+	static int sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& =NSHARE::version_t(),const NSHARE::CText& aConfPath="");
+	static int sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConf);
+
 	///@brief free library
 	static void sMFree();
 	static const NSHARE::version_t& sMVersion();
@@ -218,6 +224,8 @@ public:
 	const program_id_t& MGetID() const;
 	///@brief Return all registered ID
 	customers_t MCustomers() const;
+	program_id_t MCustomer(NSHARE::uuid_t const& aUUID) const;
+
 
 	///@brief Send data to customer
 	///@param aProtocolName The fixed protocol name that refers to the  sending buffer. there is default Protocol - raw
@@ -250,14 +258,16 @@ public:
 	///@param aHeader Parsing a header type
 	///@param aCB Callback handler
 	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
-			const unsigned& aMSGNumber, const callback_t& aHandler);
+			const unsigned& aMSGNumber, const callback_t& aHandler,
+			NSHARE::version_t const& = NSHARE::version_t(),
+			msg_parser_t::eFLags const& = msg_parser_t::E_NO_FLAGS);
 	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 			const unsigned& aNumber);
 
 	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
-			const dg_parser_t& aMSGHeader, const callback_t& aHandler);
+			const msg_parser_t& aMSGHeader, const callback_t& aHandler);
 	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-			const dg_parser_t& aNumber);
+			const msg_parser_t& aNumber);
 
 
 
@@ -275,18 +285,18 @@ public:
 	NSHARE::CBuffer MGetNewBuf(unsigned aSize) const;
 
 	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const dg_parser_t& aHeader, const callback_t& aCB);
+			const msg_parser_t& aHeader, const callback_t& aCB);
 	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
-			const dg_parser_t& aNumber);
+			const msg_parser_t& aNumber);
 
 	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const unsigned& aHeader, const callback_t& aCB);
+			const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& =NSHARE::version_t(),msg_parser_t::eFLags const& =msg_parser_t::E_NO_FLAGS);
 	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
 			const unsigned& aNumber);
 private:
 
 	CCustomer();
-	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName);
+	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const&);
 
 	~CCustomer();
 
@@ -294,17 +304,17 @@ private:
 	_pimpl* FImpl;
 };
 inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const dg_parser_t& aHeader, const callback_t& aCB){
+		const msg_parser_t& aHeader, const callback_t& aCB){
 	return MSettingDgParserFor(aFrom,aHeader,aCB);
 }
 inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-		const dg_parser_t& aNumber){
+		const msg_parser_t& aNumber){
 	return MRemoveDgParserFor(aFrom,aNumber);
 }
 
 inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const unsigned& aHeader, const callback_t& aCB){
-	return MSettingDgParserFor(aFrom,aHeader,aCB);
+		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVal,msg_parser_t::eFLags const& aFlags){
+	return MSettingDgParserFor(aFrom,aHeader,aCB,aVal,aFlags);
 }
 inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber){

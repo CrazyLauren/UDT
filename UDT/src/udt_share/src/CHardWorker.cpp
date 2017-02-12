@@ -158,7 +158,7 @@ void CHardWorker::MFree(object_data_t& aWhat)
 NSHARE::CConfig CHardWorker::MSerialize() const
 {
 	NSHARE::CConfig _conf("hw");
-	_conf.MAdd(NSHARE::CThreadPool::NAME, FPool.MSerialize());
+	_conf.MAdd(/*NSHARE::CThreadPool::NAME,*/ FPool.MSerialize());
 
 	NSHARE::CRAII<NSHARE::CMutex> _blocked(FMutex);
 

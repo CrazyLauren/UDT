@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include "../core/kernel_type.h"
+#include <core/kernel_type.h>
 #include "CConnectionHandlerFactory.h"
 
 template<>
