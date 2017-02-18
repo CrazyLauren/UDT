@@ -48,8 +48,10 @@ bool CSharedMemory::mem_info_t::MUpdateCRC()
 {
 	const mem_info_t::crc_t::type_t* _begin =
 			(mem_info_t::crc_t::type_t*) (&FSize);
-	FCrc = crc_t::sMCalcCRCofBuf(_begin,
-			_begin + (sizeof(FPidOffCreator)+sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t));
+	const size_t _crc_length = sizeof(FPidOffCreator) + sizeof(FSize);
+	const mem_info_t::crc_t::type_t* _end =
+		_begin+ _crc_length / sizeof(mem_info_t::crc_t::type_t);
+	FCrc = crc_t::sMCalcCRCofBuf(_begin, _end);
 	return true;
 }
 

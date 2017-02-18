@@ -341,7 +341,8 @@ SHARED_PACKED(struct user_data_header_t
 
 
 	uint16_t FProtocolName; //(+ '\0')
-	uint16_t :16;
+	uint16_t FMinor:8;
+	uint16_t FMajor:8;
 	uint32_t FNumber:32;
 
 	uint32_t FDataSize;
@@ -705,7 +706,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	return aStream << "Number:"<<aVal.FNumber<<" Data size:" << aVal.FDataSize << std::endl  << "RawNumber:" << aVal.FRawNumber<< std::endl//"Name:" << aVal.FName<< std::endl
 			<< "UUID From:" << aVal.FUUIDFrom << std::endl << " Destination len:"
 			<< (int)aVal.FDestination<<", Routing:"<<(int)aVal.FRouting<<", Events:"<<(int)aVal.FEventList<< std::endl <<"ProtocolLen:"
-			<< aVal.FProtocolName<<" Packet:"<<aVal.FSplitCounter<<" Coefficient:"<<aVal.FSplitCoefficient<<" IsLast"<<(bool)aVal.FIsLast;
+			<< aVal.FProtocolName<<" Packet:"<<aVal.FSplitCounter<<" Coefficient:"<<aVal.FSplitCoefficient<<" IsLast"<<(bool)aVal.FIsLast<<" Minor:"<<aVal.FMinor<<" Major:"<<aVal.FMajor;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::user_data_received_t const& aVal)

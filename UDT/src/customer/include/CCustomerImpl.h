@@ -52,8 +52,8 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 
 	int MSendTo(const NSHARE::CText& aProtocolName, NSHARE::CBuffer & aBuf, const NSHARE::CText& aTo, eSendToFlags);
 	int MSendTo(const NSHARE::CText& aProtocolName,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo, eSendToFlags);
-	int MSendTo(unsigned aNumber,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo, eSendToFlags);
-	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf, eSendToFlags);
+	int MSendTo(unsigned aNumber,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags);
+	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer, eSendToFlags);
 
 
 	int MSettingDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber,
@@ -69,6 +69,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	void MEventConnected();
 	void MEventDisconnected();
 	void MWaitForReady(double aSec);
+	void MJoin();
 
 private:
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);

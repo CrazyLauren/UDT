@@ -317,12 +317,73 @@ int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
 	return 0;
 }
 
+namespace
+{
+struct _compare_fail
+{
+	bool operator()(const fail_send_t& a, const fail_send_t& b) const
+	{
+		return a.FPacketNumber == b.FPacketNumber
+				&& a.FRouting.FFrom.FUuid == b.FRouting.FFrom.FUuid;
+	}
+};
+}
 void CRoutingService::MNoteFailSend(const fail_send_array_t& aFail)
 {
-	fail_send_array_t::const_iterator _it=aFail.begin(),_it_end=aFail.end();
-	for(;_it!=_it_end;++_it)
+
+	typedef std::set<fail_send_t, _compare_fail> _packet_repeated;
+	//for instance. If splitted packet has been lost the same error is occurred for all packets
+
+	_packet_repeated _repeates;
 	{
-		MNoteFailSend(*_it);
+		fail_send_array_t::const_iterator _it = aFail.begin(), _it_end =
+				aFail.end();
+		for (; _it != _it_end; ++_it)
+		{
+			_packet_repeated::iterator _jt = _repeates.find(*_it);
+			if (_jt == _repeates.end())
+			{
+				_jt = _repeates.insert(*_it).first;
+			}
+			else
+			{
+				fail_send_t _new(*_jt);
+				_new.MSetError(_it->FError.MGetMask());
+
+				std::set<NSHARE::uuid_t> _unique;
+				uuids_t _new_uuids;
+				{
+					uuids_t::const_iterator _ut = _new.FRouting.begin(), _ut_end(
+							_new.FRouting.end());
+					for (; _ut != _ut_end; ++_ut)
+					{
+						if(_unique.insert(*_ut).second)
+							_new_uuids.push_back(*_ut);
+					}
+				}
+				{
+					uuids_t::const_iterator _ut = _it->FRouting.begin(),
+							_ut_end(_it->FRouting.end());
+					for (; _ut != _ut_end; ++_ut)
+					{
+						if (_unique.insert(*_ut).second)
+							_new_uuids.push_back(*_ut);
+					}
+				}
+				_new.FRouting.swap(_new_uuids);
+
+				_repeates.erase(_jt);
+				_repeates.insert(_jt, _new);
+			}
+		}
+	}
+	{
+		_packet_repeated::const_iterator _it = _repeates.begin(), _it_end =
+				_repeates.end();
+		for (; _it != _it_end; ++_it)
+		{
+			MNoteFailSend(*_it);
+		}
 	}
 }
 void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
@@ -333,17 +394,19 @@ void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 	_f_to.FFrom = get_my_id().FId;
 	MSendTo(_f_to, _sent);
 }
-void CRoutingService::MFillMsgReceivers(user_datas_t & aFrom, user_datas_t& aTo, fail_send_array_t&aFail)
+void CRoutingService::MFillMsgReceivers(user_datas_t & aFrom, user_datas_t& aTo,
+		fail_send_array_t&aFail)
 {
 	r_route_access _access = FRouteData.MGetRAccess();
 	CRequiredDG const& _rdg = _access->FRequiredDG;
-	_rdg.MFillMsgReceivers(aFrom,aTo,aFail);
+	_rdg.MFillMsgReceivers(aFrom, aTo, aFail);
 }
-void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t & aError)
+void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,
+		user_datas_t& aTo, fail_send_array_t & aError)
 {
 	r_route_access _access = FRouteData.MGetRAccess();
 	CRequiredDG const& _rdg = _access->FRequiredDG;
-	_rdg.MFillMsgHandlersFor(aFrom,aTo,aError);
+	_rdg.MFillMsgHandlersFor(aFrom, aTo, aError);
 
 }
 void CRoutingService::MHandleFrom(routing_user_data_t& aData)
@@ -352,13 +415,13 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	VLOG(2) << "New  From: " << aData.FDesc;
 	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aData.FDesc))<<aData.FDesc<<" has been closed already. The msg is ignored...";
 
-
 	fail_send_array_t _non_sent;
 
 	user_datas_t _routed;
 	user_datas_t _not_routed;
 	{
-		//divide into two group from consumer and other
+		//divide into two group from consumer and other.
+		//the sequence is not broken
 		for (user_datas_t& _recv_data = aData.FData; !_recv_data.empty();)
 		{
 			if (_recv_data.front().FDataId.FRouting.empty())	//from consumer
@@ -375,8 +438,8 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 				_routed.splice(_routed.end(), _recv_data, _recv_data.begin());
 			}
 		}
-		if(!_not_routed.empty())
-		MFillMsgReceivers(_not_routed, _routed, _non_sent);
+		if (!_not_routed.empty())
+			MFillMsgReceivers(_not_routed, _routed, _non_sent);
 	}
 
 	output_user_data_t _route_by_desc;
@@ -394,21 +457,20 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		if (!_data.FDataId.FRouting.empty())
 		{
 			VLOG(2) << "Send  packet #" << _data.FDataId.FPacketNumber
-								<< " from " << _data.FDataId.FRouting.FFrom << " to "
-								<< _data.FDataId.FRouting;
+								<< " from " << _data.FDataId.FRouting.FFrom
+								<< " to " << _data.FDataId.FRouting;
 
 			//converting uuid to descriptor
 
 			output_decriptors_for_t _descr;
 			uuids_t _fail;
-			MGetOutputDescriptors( _data.FDataId.FRouting,
-					_descr, _fail);
+			MGetOutputDescriptors(_data.FDataId.FRouting, _descr, _fail);
 
 			if (!_fail.empty())
 			{
 				fail_send_t _sent(_data.FDataId);
 				_sent.FRouting.swap(_fail);
-				_sent.FError = fail_send_t::E_NO_ROUTE;
+				_sent.MSetError(E_NO_ROUTE);
 				_non_sent.push_back(_sent);
 			}
 
@@ -423,19 +485,20 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 					_jt_end = _descr.end();
 			for (; _jt != _jt_end; ++_jt)
 			{
-				_data.FDataId.FRouting=_jt->second;
+				_data.FDataId.FRouting = _jt->second;
 
 				output_user_data_t::iterator _kt = _route_by_desc.begin(),
 						_kt_end = _route_by_desc.end();
 
-				for (; _kt != _kt_end && _kt->FDesc != _jt->first; ++_kt)//todo optimize
+				for (; _kt != _kt_end && _kt->FDesc != _jt->first; ++_kt)
+					//todo optimize
 					;
 
 				if (_kt == _kt_end)
 				{
 					_route_by_desc.push_back(routing_user_data_t());
-					_kt =--_route_by_desc.end();
-					_kt->FDesc=_jt->first;
+					_kt = --_route_by_desc.end();
+					_kt->FDesc = _jt->first;
 				}
 				_kt->FData.push_back(_data);
 			}
@@ -447,7 +510,8 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	//when for all send data
 	if (!_route_by_desc.empty())
 	{
-		CKernelIo::sMGetInstance().MSendTo(_route_by_desc, _non_sent,_not_routed);
+		CKernelIo::sMGetInstance().MSendTo(_route_by_desc, _non_sent,
+				_not_routed);
 	}
 
 	if (!_non_sent.empty())
@@ -455,7 +519,7 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		MNoteFailSend(_non_sent);
 	}
 
-	if(!_not_routed.empty())
+	if (!_not_routed.empty())
 	{
 		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
 		aData.FData.splice(aData.FData.end(),_not_routed);
@@ -469,17 +533,17 @@ void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
 		for (uuids_t::const_iterator _it = aSendTo.begin();
 				_it != aSendTo.end(); ++_it)
 		{
-			std::vector<descriptor_t> const _d =  CInfoService::sMGetInstance().MNextDestinations(*_it);
+			std::vector<descriptor_t> const _d =
+					CInfoService::sMGetInstance().MNextDestinations(*_it);
 			//todo several destination
 			if (!_d.empty() && CDescriptors::sMIsValid(_d.front()))
 			{
 				output_decriptors_for_t::iterator _jt = _descr.find(_d.front());
 				if (_jt == _descr.end())
 				{
-					_jt =
-							_descr.insert(
-									output_decriptors_for_t::value_type(_d.front(),
-											routing_t(aSendTo.FFrom,uuids_t()))).first;
+					_jt = _descr.insert(
+							output_decriptors_for_t::value_type(_d.front(),
+									routing_t(aSendTo.FFrom, uuids_t()))).first;
 				}
 				_jt->second.push_back(*_it);
 			}
@@ -488,8 +552,6 @@ void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
 		}
 	}
 }
-
-
 
 inline void CRoutingService::MInit()
 {

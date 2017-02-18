@@ -77,8 +77,8 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	std::cerr << "The packet " << _recv_arg->FPacketNumber
 			<< " has not been delivered to ";
 
-	std::vector<NSHARE::uuid_t>::const_iterator _it(_recv_arg->FTo.begin()),
-			_it_end(_recv_arg->FTo.end());
+	std::vector<NSHARE::uuid_t>::const_iterator _it(_recv_arg->FFails.begin()),
+			_it_end(_recv_arg->FFails.end());
 	for (; _it != _it_end; ++_it)
 	{
 		std::cerr << (*_it) << ", ";

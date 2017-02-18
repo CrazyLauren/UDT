@@ -12,109 +12,68 @@
 #include <deftype>
 #include <Socket.h>
 #include <string.h>
-#include <internel_protocol.h>
-#include "receive_from.h"
-#include <parser_in_protocol.h>
+
 #include <core/kernel_type.h>
 #include <core/CDescriptors.h>
 #include "CKernelIOByTCP.h"
 #include "CServerBridge.h"
 #include <io/ILink.h>
 #include "CConnectionHandlerFactory.h"
+
+#include <internel_protocol.h>
+#define RECEIVES /*получаемые пакеты*/ \
+	RECEIVE(E_PROTOCOL_MSG,protocol_type_dg_t)/*Протокол КД*/\
+	/*END*/
+#include <parser_in_protocol.h>
 #include "CNewConnection.h"
 
 namespace NUDT
 {
 
 CKernelIOByTCP::CConnectionHandler::CConnectionHandler(uint64_t aTime,
-		CServerBridge* aBridge, handlers_name_t const& aHandlers) :
+		CServerBridge* aBridge,handlers_name_t const& aHandlers ) :
 		FTime(aTime), //
 		FBridge(aBridge), //
-		Fd(CDescriptors::INVALID), //
-		FHandlerTypes(
-				aHandlers/*FKernel->FConfig.MChildren(CKernelIOByTCP::LINKS)*/)
+		Fd(CDescriptors::INVALID),//
+		FParser(this),//
+		FHandlerTypes(aHandlers)
 {
-	CHECK(!FHandlerTypes.empty());
-
-	FIteration = 0;
 
 	Fd = CDescriptors::sMGetInstance().MCreate();
-	MCreateConnectionHandler();
-}
-bool CKernelIOByTCP::CConnectionHandler::MCreateConnectionHandler()
-{
-	if (FIteration)
-	{
-		LOG(ERROR)<<"Cannot change handler as some data has been sent. Iteration="<<FIteration;
-		FHandler.MRelease();
-		return false;
-	}
-	else if (FHandlerTypes.empty())
-	{
-		VLOG(2) << "There are no more handlers.";
-		FHandler.MRelease();
-		return false;
-	}
-	else
-	{
-		FIteration=0;
-		handlers_name_t::iterator _it = FHandlerTypes.begin();
-		for (; _it != FHandlerTypes.end();)
-		{
-			IConnectionHandlerFactory* _factory =
-					CConnectionHandlerFactory::sMGetInstance().MGetFactory(
-							*_it);
-			FCurrent = *_it;
-			_it = FHandlerTypes.erase(_it);
-
-			CHECK_NOTNULL(_factory);
-			IConnectionHandler* _p = _factory->MCreateHandler(Fd, FTime,
-					FBridge.MGet());
-			CHECK_NOTNULL(_p);
-
-
-			if (_p->MState() != IConnectionHandler::E_ERROR)
-			{
-				LOG(INFO)<<FBridge->FAddr<<" protocol :"<<_factory->MGetType();
-				FHandler = handler_t(_p);
-				break;
-			}
-			else
-			{
-				delete _p;
-			}
-		}
-		return FHandler.MIs();
-	}
 }
 CKernelIOByTCP::CConnectionHandler::~CConnectionHandler()
 {
 	if (!FLinks.MIs() && CDescriptors::sMIsValid(Fd))
 		CDescriptors::sMGetInstance().MClose(Fd);
 }
-bool CKernelIOByTCP::CConnectionHandler::MConnect()
+template<class T>
+void CKernelIOByTCP::CConnectionHandler::MProcess(T const* aP, parser_t* aThis)
 {
-	VLOG(2) << "New Connect.";
-	CHECK_NOTNULL(FHandler.MGet());
-	IConnectionHandler::eState _state = IConnectionHandler::E_ERROR;
 
-	for (; _state == IConnectionHandler::E_ERROR && FHandler;)
+}
+template<>
+void CKernelIOByTCP::CConnectionHandler::MProcess(protocol_type_dg_t const* aP,
+		parser_t* aThis)
+{
+	handlers_name_t::const_iterator _it=FHandlerTypes.begin(),_it_end=FHandlerTypes.end();
+
+
+	for (; _it !=_it_end; ++_it)
 	{
-		if (FHandler->MConnect())
-			++FIteration;
-		_state = FHandler->MState();
-		if (_state == IConnectionHandler::E_ERROR)
+		IConnectionHandlerFactory* _factory=CConnectionHandlerFactory::sMGetInstance().MGetFactory(*_it);
+		DCHECK_NOTNULL(_factory);
+		if (_factory && aP->FProtocol == _factory->MGetProtocolNumber())
 		{
-			MCreateConnectionHandler();
+			IConnectionHandler* _p = _factory->MCreateHandler(Fd,
+					FTime, FBridge.MGet());
+			CHECK_NOTNULL(_p);
+			LOG(INFO)<<FBridge->FAddr<<" protocol :"<<(*_it);
+			FHandler = handler_t(_p);
+			FHandler->MConnect();
 		}
 	}
+}
 
-	return FHandler;
-}
-NSHARE::CText const& CKernelIOByTCP::CConnectionHandler::MCurrentHandler() const
-{
-	return FCurrent;
-}
 smart_link_t const& CKernelIOByTCP::CConnectionHandler::MGetLink() const
 {
 	return FLinks;
@@ -127,34 +86,27 @@ IConnectionHandler::eState CKernelIOByTCP::CConnectionHandler::MReceivedData(
 		data_t::const_iterator aBegin, data_t::const_iterator aEnd)
 {
 	VLOG(2) << "Receive data";
-
 	IConnectionHandler::eState _state = IConnectionHandler::E_ERROR;
-
-	for (; _state == IConnectionHandler::E_ERROR && FHandler;)
+	if (!FHandler.MIs())
+	{
+		if (CInParser<void>::sMIsValidProtocol(aBegin, aEnd))
+			FParser.MReceivedData(aBegin, aEnd);
+	}
+	if (FHandler.MIs())
 	{
 		CHECK_NOTNULL(FHandler.MGet());
-		VLOG(2)<<"handling by "<<FCurrent;
-		if (FHandler->MReceivedData(aBegin, aEnd))
-			++FIteration;
-
+		FHandler->MReceivedData(aBegin, aEnd);
 		_state = FHandler->MState();
-		VLOG(2)<<"state="<<_state;
+		VLOG(2) << "state=" << _state;
 		switch (_state)
 		{
-		case IConnectionHandler::E_ERROR:
-		{
-			VLOG(2) << "The new client " << FBridge->FAddr
-								<< " will be closed as  the protocol is invalid.";
-			if (MCreateConnectionHandler())
-				MConnect();
-			break;
-		}
 		case IConnectionHandler::E_OK:
 		{
-			VLOG(2)<<"Creating new link";
+			VLOG(2) << "Creating new link";
 			FLinks = smart_link_t(FHandler->MCreateLink());
 			break;
 		}
+		case IConnectionHandler::E_ERROR:
 		case IConnectionHandler::E_CONTINUE:
 		case IConnectionHandler::E_CLOSE:
 			break;

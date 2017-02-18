@@ -49,7 +49,7 @@ public:
 	}
 	virtual IConnectionHandler* MCreateHandler(descriptor_t aFD, uint64_t aTime,
 			ILinkBridge* aKer)=0;
-
+	virtual  unsigned MGetProtocolNumber() const=0;
 protected:
 	IConnectionHandlerFactory(const NSHARE::CText& type) :
 			NSHARE::IFactory(type)

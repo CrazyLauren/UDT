@@ -123,6 +123,7 @@ void CHttpResponse::MRawHeaders(NSHARE::CText& aTo) const
 	for (; _it != FHeaders.end(); ++_it)
 	{
 		_buf << _it->first << ": " << _it->second << "\r\n";
+		VLOG(5)<< _it->first << ": " << _it->second;
 	}
 	aTo = _buf.str();
 }
@@ -136,9 +137,9 @@ NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 	}
 	{
 		header_array_t::const_iterator const _it = FHeaders.find(g_length_key);
-		if (_it == FHeaders.end() && !FBody.empty())
+		if (_it == FHeaders.end())
 		{
-			LOG(WARNING)<<g_length_key<<" is not setting.Chucked is not supported";
+			//LOG(WARNING)<<g_length_key<<" is not setting.Chucked is not supported";
 			CText _num;
 			_num.MPrintf("%d",FBody.size());
 			MAppendHeader(g_length_key,_num);
@@ -161,7 +162,8 @@ NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 	CText _head;
 	MRawHeaders(_head);
 	aBuf << _head << "\r\n";
-	aBuf.insert(aBuf.end(), FBody.begin(), FBody.end());
+	if(!FBody.empty())
+		aBuf.insert(aBuf.end(), FBody.begin(), FBody.end());
 	return aBuf;
 }
 bool CHttpResponse::MWriteFile(NSHARE::CText const& _path)

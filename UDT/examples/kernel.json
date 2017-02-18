@@ -28,7 +28,7 @@
 					"default":"tcpser"
 				}
 			},
-			"protocol":["consumer","udt_server","http"]
+			"protocol":["consumer","udt_server"]
 		},
 		"tcp_client_io_manager":{
 			
@@ -37,6 +37,9 @@
 		{
 			"frontend":{
 			}
+		},
+		"http_gui":
+		{
 		},
 		"buffers":
 		{

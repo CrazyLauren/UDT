@@ -309,11 +309,14 @@ void CInfoService::MAddingNewKernelTo(kernel_infos_t& _new,
 			_new.FCustomerInfo.insert(*_jt);
 
 			VLOG(2) << "Add customer" << *_jt;
-
-			if (_jt->FProgramm.FType != E_CONSUMER)
+			switch(_jt->FProgramm.FType)
 			{
-				VLOG(2) << "Founding the other kernels";
-				MAddNewKernelTo(*_jt, _new_array, aKernelList);
+				case  E_CONSUMER:
+				break;
+				case E_KERNEL:
+					VLOG(2) << "Founding the other kernels";
+					MAddNewKernelTo(*_jt, _new_array, aKernelList);
+				break;
 			}
 		}
 	}
@@ -550,20 +553,21 @@ void CInfoService::MHandleOpen(const descriptor_t& aFrom,
 //			VLOG(2) << "does not change";
 //			return;
 //		}
-		if (_what.FProgramm.FType == E_CONSUMER)
+		switch(_what.FProgramm.FType )
 		{
-			_is_changed = MAddCustomerOptimizing(_what, _diff);
-			DCHECK(_is_changed);
+				case  E_CONSUMER:
+					_is_changed = MAddCustomerOptimizing(_what, _diff);
+					DCHECK(_is_changed);
 
-			MSynchronize2(_sent_to, _d_info, _is_changed);
-		}
-		else
-		{
-			_is_changed = MAddNewKernel(_what, _d_info, _diff);
-			DCHECK(_is_changed);
+					MSynchronize2(_sent_to, _d_info, _is_changed);
+				break;
+				case E_KERNEL:
+					_is_changed = MAddNewKernel(_what, _d_info, _diff);
+					DCHECK(_is_changed);
 
-			_sent_to.push_back(aFrom);
-			CHECK(_sent_to.size() == 1 && _sent_to.front() == aFrom);
+					_sent_to.push_back(aFrom);
+					CHECK(_sent_to.size() == 1 && _sent_to.front() == aFrom);
+				break;
 		}
 		//MSynchronize2(_sent_to, _d_info, _is_changed);
 		//updating routing graph
@@ -660,17 +664,18 @@ void CInfoService::MHandleClose(const descriptor_t& aFrom,
 			LOG(ERROR)<< "The customer " << _what << " is not exist.";
 			return;
 		}
-		if (_what.FProgramm.FType == E_CONSUMER)
+		switch(_what.FProgramm.FType )
 		{
-			//MRemoveCustomerOptimizing(_what, _diff, _d_info);
+				case  E_CONSUMER:
+					//MRemoveCustomerOptimizing(_what, _diff, _d_info);
 
-			_is_changed = MRemoveCustomer(_what, _d_info, _diff);
-		}
-		else
-		{
-			VLOG(2) << "looking for the kernel in the kernel list";
+					_is_changed = MRemoveCustomer(_what, _d_info, _diff);
+				break;
+				case E_KERNEL:
+					VLOG(2) << "looking for the kernel in the kernel list";
 
-			_is_changed = MRemoveKernelImpl(_what, aFrom, _d_info, _diff);
+					_is_changed = MRemoveKernelImpl(_what, aFrom, _d_info, _diff);
+				break;
 		}
 		if (_is_changed)
 		{

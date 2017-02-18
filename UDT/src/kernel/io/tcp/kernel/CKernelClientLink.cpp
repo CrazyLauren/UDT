@@ -596,7 +596,10 @@ public:
 	{
 		return new CKernelClientLink::CConnectionHandler(aFD, aTime, aKer);
 	}
-
+	virtual  unsigned MGetProtocolNumber() const
+	{
+		return E_KERNEL;
+	}
 };
 }
 ;

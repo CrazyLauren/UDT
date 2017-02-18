@@ -12,17 +12,15 @@
 
 #include <deftype>
 #include <shared_types.h>
+#include <CParserFactory.h>
 //#include <udt_share.h>
 #include <string.h>
-
-
-
-
-
 
 using namespace NSHARE;
 namespace NUDT
 {
+extern UDT_SHARE_EXPORT error_type const USER_ERROR_MASK = std::numeric_limits<
+		error_type>::max() << eUserErrorStartBits;
 //---------------------------------------
 const NSHARE::CText id_t::NAME = "id";
 const NSHARE::CText id_t::KEY_NAME = "n";
@@ -53,7 +51,7 @@ NSHARE::CConfig uuids_t::MSerialize() const
 
 	if (!empty())
 	{
-		const_iterator _it = begin(), _it_end =end();
+		const_iterator _it = begin(), _it_end = end();
 		for (; _it != _it_end; ++_it)
 		{
 			_conf.MAdd(_it->MSerialize());
@@ -63,8 +61,7 @@ NSHARE::CConfig uuids_t::MSerialize() const
 }
 bool uuids_t::MIsValid() const
 {
-	const_iterator _it(begin()), _end(
-			end());
+	const_iterator _it(begin()), _end(end());
 	for (; _it != _end; ++_it)
 	{
 		if (!_it->MIsValid())
@@ -82,7 +79,7 @@ split_packet_t::split_packet_t(NSHARE::CConfig const& aConf) :
 		FCounter(0), //
 		FCoefficient(0)
 {
-	VLOG(2)<<"Create split_packet_t from "<<aConf;
+	VLOG(2) << "Create split_packet_t from " << aConf;
 	aConf.MGetIfSet(LAST, FIsLast);
 	aConf.MGetIfSet(COUNTER, FCounter);
 	aConf.MGetIfSet(COEFFICIENT, FCoefficient);
@@ -97,7 +94,7 @@ NSHARE::CConfig split_packet_t::MSerialize() const
 }
 bool split_packet_t::MIsValid() const
 {
-	return FCounter>0 && FCoefficient>0;
+	return FCounter > 0 && FCoefficient > 0;
 }
 bool split_packet_t::MIsSplited() const
 {
@@ -121,10 +118,11 @@ const NSHARE::CText user_data_info_t::KEY_RAW_PROTOCOL_NUM = "nr";
 
 user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		//FFrom(aConf.MChild(KEY_PACKET_FROM)),//
-		FRawProtocolNumber(0),//
-		FSplit(aConf.MChild(split_packet_t::NAME)),//
-		FDestination(aConf.MChild(uuids_t::NAME)),//
-		FRouting(aConf.MChild(routing_t::NAME))//
+		FRawProtocolNumber(0), //
+		FSplit(aConf.MChild(split_packet_t::NAME)), //
+		FDestination(aConf.MChild(uuids_t::NAME)), //
+		FRouting(aConf.MChild(routing_t::NAME)), //
+		FVersion(aConf.MChild(NSHARE::version_t::NAME)) //
 {
 	VLOG(2) << "Create user_data_info_t from " << aConf;
 	aConf.MGetIfSet(KEY_PACKET_NUMBER, FPacketNumber);
@@ -148,6 +146,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	_conf.MSet(KEY_PACKET_PROTOCOL, FProtocol);
 	//_conf.MAdd(KEY_PACKET_FROM, FFrom.MSerialize());
 	_conf.MAdd(FSplit.MSerialize());
+	_conf.MAdd(FVersion.MSerialize());
 
 	if (!FDestination.empty())
 	{
@@ -155,14 +154,14 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	}
 	if (!FEventsList.empty())
 	{
-		std::vector<NUDT::demand_dg_t::event_handler_t>::const_iterator _it = FEventsList.begin(), _it_end =
-				FEventsList.end();
+		std::vector<NUDT::demand_dg_t::event_handler_t>::const_iterator _it =
+				FEventsList.begin(), _it_end = FEventsList.end();
 		for (; _it != _it_end; ++_it)
 		{
 			_conf.MAdd(demand_dg_t::HANDLER, *_it);
 		}
 	}
-	_conf.MAdd(routing_t::NAME,FRouting.MSerialize());
+	_conf.MAdd(routing_t::NAME, FRouting.MSerialize());
 
 	_conf.MSet(KEY_RAW_PROTOCOL_NUM, FRawProtocolNumber);
 
@@ -170,8 +169,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 }
 bool user_data_info_t::MIsRaw() const
 {
-	return FProtocol.empty()
-						||FProtocol == RAW_PROTOCOL_NAME;
+	return FProtocol.empty() || FProtocol == RAW_PROTOCOL_NAME;
 }
 bool user_data_info_t::MIsValid() const
 {
@@ -183,17 +181,17 @@ const NSHARE::CText kernel_link::TIME = "ctime";
 const NSHARE::CText kernel_link::LINK = "link";
 kernel_link::kernel_link(NSHARE::CConfig const& aConf) :
 		FProgramm(aConf.MChild(program_id_t::NAME)), //
-		FConnectTime(NSHARE::get_unix_time()),
-		FLatency(std::numeric_limits<uint16_t>::max())//
+		FConnectTime(NSHARE::get_unix_time()), FLatency(
+				std::numeric_limits<uint16_t>::max()) //
 {
 	aConf.MGetIfSet(LATENCY, FLatency);
 	aConf.MGetIfSet(TIME, FConnectTime);
 	aConf.MGetIfSet(LINK, FTypeLink);
 }
-kernel_link::kernel_link(program_id_t const& aInfo, uint16_t aLink):
-		FProgramm(aInfo),//
-		FConnectTime(NSHARE::get_unix_time()),//
-		FLatency(aLink)//
+kernel_link::kernel_link(program_id_t const& aInfo, uint16_t aLink) :
+		FProgramm(aInfo), //
+		FConnectTime(NSHARE::get_unix_time()), //
+		FLatency(aLink) //
 {
 	;
 }
@@ -210,7 +208,8 @@ NSHARE::CConfig kernel_link::MSerialize() const
 }
 bool kernel_link::MIsValid() const
 {
-	return FProgramm.MIsValid() && FLatency != std::numeric_limits<unsigned>::max();
+	return FProgramm.MIsValid()
+			&& FLatency != std::numeric_limits<unsigned>::max();
 }
 
 const NSHARE::CText kernel_infos_t::NAME = "kinf";
@@ -218,8 +217,8 @@ const NSHARE::CText kernel_infos_t::CLIENT = kernel_link::NAME;
 const NSHARE::CText kernel_infos_t::NUMBER = "indx";
 
 kernel_infos_t::kernel_infos_t(NSHARE::CConfig const& aConf) :
-		FKernelInfo(aConf.MChild(program_id_t::NAME)),//
-		FIndexNumber(0)//
+		FKernelInfo(aConf.MChild(program_id_t::NAME)), //
+		FIndexNumber(0) //
 {
 	VLOG(2) << "Create kernel_infos_t from " << aConf;
 	aConf.MGetIfSet(NUMBER, FIndexNumber);
@@ -269,21 +268,55 @@ const NSHARE::CText demand_dg_t::KEY_FLAGS = "dflag";
 
 const uint32_t demand_dg_t::NO_HANDLER = -1;
 
+std::pair<required_header_t, bool> demand_dg_t::sMParseHead(
+		NSHARE::CConfig const& aConf)
+{
+	if (!aConf.MIsChild("rh"))
+	{
+		NSHARE::CText _proto;
+		aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, _proto);
+		if (IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
+				_proto))
+		{
+			try
+			{
+				return std::make_pair(_p->MHeader(aConf.MChild(_proto)), true);
+			} catch (...)
+			{
+				LOG(DFATAL)<<"No demand header.	User fail "<<_proto;
+				return std::make_pair(required_header_t(),false);
+			}
+		}
+		else
+		{
+			LOG(DFATAL)<<"No demand header. No key 'rh' and no parser for "<<_proto;
+			return std::make_pair(required_header_t(),false);
+		}
+	}
+	else
+	return std::make_pair(required_header_t(aConf.MChild("rh")),true);
+}
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
-		FWhat(aConf.MChild("rh")),//
-		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)),//
-		FHandler(NO_HANDLER),//
+		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)), //
+		FHandler(NO_HANDLER), //
 		FFlags(E_NO_DEMAND_FLAGS)
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
-	aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
-	aConf.MGetIfSet(HANDLER, FHandler);
-	aConf.MGetIfSet(KEY_FLAGS, FFlags);
-
-	NSHARE::CConfig const & _set = aConf.MChild(NSHARE::uuid_t::NAME);
-	if (!_set.MIsEmpty())
+	std::pair<required_header_t, bool> const _val=sMParseHead(aConf);
+	if (!_val.second)
+		(void)0;//Head is not checking in MIsValid(), Therefore corrupting the other option
+	else
 	{
-		FUUIDFrom.MSet(NSHARE::uuid_t (_set));
+		FWhat=_val.first;
+		aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
+		aConf.MGetIfSet(HANDLER, FHandler);
+		aConf.MGetIfSet(KEY_FLAGS, FFlags);
+
+		NSHARE::CConfig const & _set = aConf.MChild(NSHARE::uuid_t::NAME);
+		if (!_set.MIsEmpty())
+		{
+			FUUIDFrom.MSet(NSHARE::uuid_t(_set));
+		}
 	}
 }
 NSHARE::CConfig demand_dg_t::MSerialize() const
@@ -295,7 +328,7 @@ NSHARE::CConfig demand_dg_t::MSerialize() const
 	_conf.MAdd(HANDLER, FHandler);
 	_conf.MAdd(KEY_FLAGS, FFlags);
 
-	if(FUUIDFrom.MIs())
+	if (FUUIDFrom.MIs())
 	{
 		_conf.MAdd(FUUIDFrom.MGetConst().MSerialize());
 	}
@@ -304,14 +337,15 @@ NSHARE::CConfig demand_dg_t::MSerialize() const
 }
 bool demand_dg_t::MIsValid() const
 {
-	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs()) && FHandler!=NO_HANDLER;
+	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs())
+			&& FHandler != NO_HANDLER;
 }
 bool demand_dg_t::operator==(demand_dg_t const& aRht) const
 {
 	return FProtocol == aRht.FProtocol && //
 			FNameFrom == aRht.FNameFrom && //
-			memcmp(FWhat.FReserved, aRht.FWhat.FReserved, sizeof(FWhat.FReserved))
-					== 0 && //
+			memcmp(FWhat.FReserved, aRht.FWhat.FReserved,
+					sizeof(FWhat.FReserved)) == 0 && //
 			FUUIDFrom == aRht.FUUIDFrom;
 }
 //---------------------------
@@ -399,12 +433,11 @@ NSHARE::CConfig kernel_infos_diff_t::MSerialize() const
 		_conf.MAdd(OPENED_KERNELS, CConfig());
 		CConfig *_new = _conf.MMutableChild(OPENED_KERNELS);
 		CHECK_NOTNULL(_new);
-		k_diff_t::const_iterator _it = FOpened.begin(),
-				_it_end = FOpened.end();
+		k_diff_t::const_iterator _it = FOpened.begin(), _it_end = FOpened.end();
 		for (; _it != _it_end; ++_it)
 		{
 			NSHARE::CConfig _con(_it->first.MSerialize());
-			_con.MAdd("kop",_it->second);
+			_con.MAdd("kop", _it->second);
 			_new->MAdd(_con);
 		}
 	}
@@ -413,12 +446,11 @@ NSHARE::CConfig kernel_infos_diff_t::MSerialize() const
 		_conf.MAdd(CLOSED_KERNELS, CConfig());
 		CConfig *_new = _conf.MMutableChild(CLOSED_KERNELS);
 		CHECK_NOTNULL(_new);
-		k_diff_t::const_iterator _it = FClosed.begin(),
-				_it_end = FClosed.end();
+		k_diff_t::const_iterator _it = FClosed.begin(), _it_end = FClosed.end();
 		for (; _it != _it_end; ++_it)
 		{
 			NSHARE::CConfig _con(_it->first.MSerialize());
-			_con.MAdd("kcl",_it->second);
+			_con.MAdd("kcl", _it->second);
 			_new->MAdd(_con);
 		}
 	}
@@ -480,8 +512,7 @@ error_info_t::error_info_t() :
 	;
 }
 error_info_t::error_info_t(NSHARE::CConfig const& aConf) :
-		FError(
-				static_cast<eErrorCode>(aConf.MValue<unsigned>(CODE, E_NO_ERROR))), //
+		FError(static_cast<eError>(aConf.MValue<error_type>(CODE, E_NO_ERROR))), //
 		FWhere(FError != E_NO_ERROR ? id_t(aConf.MChild(WHERE)) : id_t()), //
 		FTo(
 				FError != E_NO_ERROR ?
@@ -493,26 +524,25 @@ error_info_t::error_info_t(NSHARE::CConfig const& aConf) :
 NSHARE::CConfig error_info_t::MSerialize() const
 {
 	CConfig _conf(NAME);
-	_conf.MSet<unsigned>(CODE, FError);
-	if(MIsValid())
+	_conf.MSet<error_type>(CODE, FError);
+	if (MIsValid())
 	{
-		_conf.MAdd(WHERE,FWhere.MSerialize());
+		_conf.MAdd(WHERE, FWhere.MSerialize());
 		_conf.MAdd(FTo.MSerialize());
 	}
 	return _conf;
 }
 bool error_info_t::MIsValid() const
 {
-	return FError!=E_NO_ERROR;
+	return FError != E_NO_ERROR;
 }
 
 //-----------------
 const NSHARE::CText routing_t::NAME = "rtg_";
 const NSHARE::CText routing_t::FROM = user_data_info_t::KEY_PACKET_FROM;
 
-routing_t::routing_t(NSHARE::CConfig const& aConf):
-		uuids_t(aConf.MChild(uuids_t::NAME)),
-		FFrom(aConf.MChild(FROM))
+routing_t::routing_t(NSHARE::CConfig const& aConf) :
+		uuids_t(aConf.MChild(uuids_t::NAME)), FFrom(aConf.MChild(FROM))
 {
 	;
 }
@@ -524,8 +554,8 @@ NSHARE::CConfig routing_t::MSerialize() const
 		_conf.MAdd(FROM, FFrom.MSerialize());
 		_conf.MAdd(uuids_t::MSerialize());
 	}
-	else
-		DCHECK(empty());
+//	else
+//		DCHECK(empty());
 	return _conf;
 }
 bool routing_t::MIsValid() const
@@ -574,45 +604,67 @@ bool progs_id_t::MIsValid() const
 }
 
 const NSHARE::CText fail_send_t::NAME = "fsend";
-const NSHARE::CText fail_send_t::CODE = "code";
+const NSHARE::CText fail_send_t::CODE = "ecode";
 
-fail_send_t::fail_send_t(NSHARE::CConfig const& aConf) :
-		user_data_info_t(aConf.MChild(user_data_info_t::NAME)),//
-		FError(
-						static_cast<eError>(aConf.MValue<int>(CODE, E_NO_ERROR)))
+fail_send_t::fail_send_t(user_data_info_t const& aRht) :
+		user_data_info_t(aRht), //
+		FError(E_NO_ERROR)
 {
+}
+fail_send_t::fail_send_t(user_data_info_t const& aRht, const uuids_t& aTo,
+		error_type aError) :
+		user_data_info_t(aRht)
+{
+	MSetError(aError);
+	FRouting.clear();
+	FRouting.insert(FRouting.end(), aTo.begin(), aTo.end());
+}
+fail_send_t::fail_send_t(NSHARE::CConfig const& aConf) :
+		user_data_info_t(aConf.MChild(user_data_info_t::NAME)), //
+		FError(aConf.MValue<error_type>(CODE, E_NO_ERROR))
+{
+	VLOG(5) << "Result: " << *this;
 }
 NSHARE::CConfig fail_send_t::MSerialize() const
 {
 	CConfig _conf(NAME);
 	_conf.MAdd(user_data_info_t::MSerialize());
-	_conf.MSet<int>(CODE, FError);
+	_conf.MSet(CODE, FError.MGetMask());
 	return _conf;
 }
-bool fail_send_t::MIsValid()const
+bool fail_send_t::MIsError() const
+{
+	return FError.MGetMask() == E_NO_ERROR;
+}
+bool fail_send_t::MIsValid() const
 {
 	return user_data_info_t::MIsValid();
 }
-uint8_t fail_send_t::MGetUserError() const
+error_type fail_send_t::MGetInnerError() const
 {
-	if(FError>=E_USER_ERROR_BEGIN)
-		return 0;
+	return FError.MGetMask() & (~USER_ERROR_MASK);
+}
+user_error_type fail_send_t::MGetUserError() const
+{
+	if (!FError.MGetFlag(E_USER_ERROR_BEGIN))
+		return E_NO_ERROR;
 	else
 	{
-		int const _error=E_USER_ERROR_BEGIN - FError;
-		CHECK_LE(_error,std::numeric_limits<uint8_t>::max());
+		error_type const _error = (FError.MGetMask() & USER_ERROR_MASK)
+				>> eUserErrorStartBits;
+		CHECK_LE(_error, std::numeric_limits<user_error_type>::max());
 		return _error;
 	}
 }
-void fail_send_t::MSetUserError(uint8_t aError)
+void fail_send_t::MSetUserError(user_error_type aError)
 {
-	FError=E_USER_ERROR_BEGIN-aError;
+	const error_type _user = aError;
+	error_type const _error = (_user << eUserErrorStartBits)
+			| E_USER_ERROR_BEGIN;
+	MSetError(_error);
 }
-void fail_send_t::MSetError(int aError)
+void fail_send_t::MSetError(error_type aError)
 {
-	if(aError<=0)
-		FError=static_cast<eError>(aError);
-	else
-		MSetUserError(aError);
+	FError.MSetFlag(aError, true);
 }
 }

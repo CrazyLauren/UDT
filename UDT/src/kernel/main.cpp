@@ -46,13 +46,12 @@
 #include "io/tcp/CConnectionHandlerFactory.h"
 
 #include "io/tcp/customer/CLocalLinkRegister.h"
-#include "io/tcp/http/CHttpNewConncetion.h"
+#include "io/http/CHttpIOManagerRegister.h"
 #include "io/tcp/kernel/CKernelServerLinkRegister.h"
 #include "io/tcp/kernel/CKernelLinkRegister.h"
 
 #include "services/CRoutingService.h"
 #include "services/CInfoService.h"
-#include "services/http/CHttpRequestHandler.h"
 #include "services/CPacketDivisor.h"
 
 using namespace NUDT;
@@ -127,9 +126,6 @@ void initialize_def_links()
 	// clink
 	CIOLocalLinkRegister _link;
 	_link.MRegisterFactory();
-	//http
-	CIOHttplLinkRegister _http;
-	_http.MRegisterFactory();
 	//kernel client
 	CIOKernelLinkRegister _ker;
 	_ker.MRegisterFactory();
@@ -152,6 +148,9 @@ void initialize_def_io_managers()
 	if (CConfigure::sMGetInstance().MGet().MFind(
 		CExternalChannel::NAME))
 		CExternalChannelRegister().MRegisterFactory();
+
+	if (CConfigure::sMGetInstance().MGet().MFind(CHttpIOManagerRegister::NAME))
+		CHttpIOManagerRegister().MRegisterFactory();
 }
 void initialize_extern_modules()
 {
@@ -163,7 +162,6 @@ void initialize_def_sevices()
 	new CRoutingService();
 	new CInfoService();
 	new CPacketDivisor();
-	new CHttpRequestHandler();
 }
 
 void initialize_core(int argc, char* argv[])

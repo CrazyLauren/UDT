@@ -525,19 +525,23 @@ bool CBuffer::_buffer_t::MIsRestored() const
 	return FBeginOfStorage&& MGetBuff().MIs(E_BUF_RESORED);
 }
 CBuffer::CBuffer(size_t aSize,int aBeginSize,IAllocater* aAlloc,eAllocatorType aType) :
-		BEGIN_SIZE(aBeginSize<0?DEF_BUF_RESERVE:aBeginSize), FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType), //
+		BEGIN_SIZE(aBeginSize<0?DEF_BUF_RESERVE:aBeginSize),//
+		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType), //
 		FIsDetached(false) //
 {
 	if(aSize)
 		resize(aSize);
 }
 CBuffer::CBuffer(IAllocater* aAlloc,eAllocatorType aType) :
-		BEGIN_SIZE(DEF_BUF_RESERVE), FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType), FIsDetached(
-				false)
+		BEGIN_SIZE(DEF_BUF_RESERVE),//
+		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType),//
+		FIsDetached(false)
 {
 }
 CBuffer::CBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc,eAllocatorType aType) :
-		BEGIN_SIZE(DEF_BUF_RESERVE), FBuffer(&aAlloc, Offset,aCheckCrc,aType), FIsDetached(false)
+		BEGIN_SIZE(DEF_BUF_RESERVE),//
+		FBuffer(&aAlloc, Offset,aCheckCrc,aType),//
+		FIsDetached(false)
 {
 	;
 }

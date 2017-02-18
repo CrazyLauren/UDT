@@ -31,17 +31,32 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 	//Parsing buffer aItBegin:aItEnd
 	result_t _result;
 
-	obtained_dg_t _founded_dg;
-
-	for (; aItBegin < aItEnd;)
+	for (; aItBegin != aItEnd;)
 	{
-		msg_head_t const *_phead=(msg_head_t const*)aItBegin;
+		const size_t _rem=aItEnd-aItBegin;
+		obtained_dg_t _founded_dg;
 
 		_founded_dg.FBegin = aItBegin;
-		aItBegin += _phead->FSize;
-		_founded_dg.FEnd = aItBegin;
 
-		_founded_dg.FType.FNumber = _phead->FType;
+		if (_rem < sizeof(msg_head_t))
+		{
+			aItBegin=aItEnd;
+			_founded_dg.FErrorCode=E_INVALID_HEADER_SIZE;
+		}
+		else
+		{
+			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
+			if(_rem<_phead->FSize)
+			{
+				aItBegin=aItEnd;
+				_founded_dg.FErrorCode=E_INVALID_MSG_SIZE;
+			}else
+			{
+				aItBegin += _phead->FSize;
+				_founded_dg.FType.FNumber = _phead->FType;
+			}
+		}
+		_founded_dg.FEnd = aItBegin;
 
 		_result.push_back(_founded_dg);
 	}

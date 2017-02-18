@@ -149,6 +149,10 @@ typedef std::list<user_data_t> user_datas_t;
 struct routing_user_data_t
 {
 	static const NSHARE::CText NAME;
+	routing_user_data_t():
+		FDesc(-1)//
+	{
+	}
 	descriptor_t FDesc;
 	user_datas_t FData;
 };

@@ -3,7 +3,7 @@
 #include <udt_example_protocol.h>
 
 using namespace NUDT;
-
+#define INDITIFICATION_NAME "uex@guex" //!<Indintification program name. Recommended using a short name
 #define RECEIVE_MSG_TEST_FROM INDITIFICATION_NAME
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -27,7 +27,6 @@ int main(int argc, char *argv[])
 	{	//!< I want to receive msg E_MSG_TEST of protocol PROTOCOL_NAME
 		// from RECEIVE_MSG_TEST_FROM and it will be  handled  by function msg_test_handler
 		msg_parser_t _msg;
-		_msg.FRequired.FVersion.FMinor=1;
 		_msg.FRequired.FNumber = E_MSG_TEST;
 		_msg.FProtocolName = PROTOCOL_NAME;
 
@@ -42,7 +41,7 @@ int main(int argc, char *argv[])
 		//and it will be  handled  by function sniffer_handler
 		callback_t _handler(sniffer_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-			"@guex", 0, _handler,NSHARE::version_t(),msg_parser_t::E_REGISTRATOR);
+			"@guex", 0, _handler,msg_parser_t::E_REGISTRATOR);
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function

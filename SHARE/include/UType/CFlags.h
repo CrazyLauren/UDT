@@ -12,7 +12,7 @@
 
 #ifndef CFLAGS_H_
 #define CFLAGS_H_
-
+#include <bitset>
 namespace NSHARE
 {
 //Flag 0 - �� ���������� ��������
@@ -20,6 +20,8 @@ template<typename TFlags = unsigned, typename TVal = unsigned>
 class  CFlags
 {
 public:
+	typedef TFlags flags_t;
+	typedef TVal value_type;
 	explicit CFlags(TVal const& aVal = TFlags()) :
 			FFlags(aVal)
 	{
@@ -86,5 +88,15 @@ inline TVal const& CFlags<TFlags, TVal>::MGetMask() const
 	return FFlags;
 }
 } //namespace USHARE
-
+namespace std
+{
+template<class T,class Y>
+inline std::ostream& operator<<(std::ostream & aStream,
+		NSHARE::CFlags<T,Y> const& aVal)
+{
+	std::bitset<sizeof(typename NSHARE::CFlags<T,Y>::value_type)*8> const _val(aVal.MGetMask());
+	aStream<<_val;
+	return aStream;
+}
+}
 #endif /* CFLAGS_H_ */

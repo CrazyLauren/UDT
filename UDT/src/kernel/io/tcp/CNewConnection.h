@@ -18,32 +18,30 @@ namespace NUDT
 class CKernelIOByTCP::CConnectionHandler:NSHARE::CDenyCopying,public NSHARE::CIntrusived
 {
 public:
-	typedef std::list<NSHARE::CText> handlers_name_t;
+	typedef CInParser<CKernelIOByTCP::CConnectionHandler> parser_t;
 
 	CConnectionHandler( uint64_t aTime,
-			CServerBridge* aKer,handlers_name_t const& aHandlers );
+			CServerBridge* aKer,handlers_name_t const& aHandlers);
 	~CConnectionHandler();
-	bool MConnect();
 
 	IConnectionHandler::eState  MReceivedData(data_t::const_iterator aBegin,
 				data_t::const_iterator aEnd);
 
 	uint64_t const FTime; //ms
-	NSHARE::CText const& MCurrentHandler() const;
 	smart_link_t const&  MGetLink() const;
 	NSHARE::intrusive_ptr<CServerBridge> const&  MGetBridge() const;
+	template<class DG_T>
+	void MProcess(DG_T const* aP, parser_t*);
 private:
 	typedef NSHARE::intrusive_ptr<IConnectionHandler> handler_t;
 
-	bool MCreateConnectionHandler();
 
 	NSHARE::intrusive_ptr<CServerBridge>  FBridge;
 	smart_link_t FLinks;
 	descriptor_t Fd;
 	handler_t FHandler;
-	handlers_name_t FHandlerTypes;
-	NSHARE::CText FCurrent;
-	unsigned FIteration;
+	parser_t FParser;
+	handlers_name_t const FHandlerTypes;
 };
 
 } /* namespace NUDT */

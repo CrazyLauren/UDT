@@ -415,7 +415,7 @@ int CControlByTCP::MSend(data_t & aData)
 	if (!FTcpSocket->MIsConnected())
 	{
 		LOG(INFO)<< (*FTcpSocket);
-		return CCustomer::E_NOT_CONNECTED;
+		return -static_cast<int>(CCustomer::E_NOT_CONNECTED_TO_KERNEL);
 	}
 	return FTcpSocket->MSend(aData.ptr(), aData.size()).FError;
 }

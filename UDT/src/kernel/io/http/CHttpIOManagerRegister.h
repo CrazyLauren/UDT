@@ -1,5 +1,5 @@
 /*
- * CHttpNewConncetion.h
+ * CHttpIOManagerRegister.h
  *
  * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
  *
@@ -14,11 +14,11 @@
 
 namespace NUDT
 {
-class CIOHttplLinkRegister: public NSHARE::CFactoryRegisterer
+class CHttpIOManagerRegister: public NSHARE::CFactoryRegisterer
 {
 public:
 	static NSHARE::CText const NAME;
-	CIOHttplLinkRegister();
+	CHttpIOManagerRegister();
 	void MUnregisterFactory() const;
 protected:
 	void MAdding() const;

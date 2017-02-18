@@ -70,8 +70,21 @@ public:
 	}
 };
 
+const NSHARE::CText CParserFactory::NAME="parsers";
+const NSHARE::CText CParserFactory::PARSER="parser";
 CParserFactory::CParserFactory()
 {
 	MAddFactory(new CRawProtocolParser());
+}
+NSHARE::CConfig CParserFactory::MSerialize() const
+{
+	NSHARE::CConfig _conf(NAME);
+
+	factory_its_t _its = MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		_conf.MAdd(_its.FBegin->first, _its.FBegin->second->MDescription());
+	}
+	return _conf;
 }
 }

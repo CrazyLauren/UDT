@@ -134,7 +134,7 @@ bool IMPL::MHandling(NSHARE::CBuffer::const_iterator aBegin,
 			break;
 		}
 		default:
-		LOG(FATAL)<<"Invalid state.";
+		LOG(FATAL)<<"Invalid state. "<<FConnectionState;
 		break;
 	}
 	return false;

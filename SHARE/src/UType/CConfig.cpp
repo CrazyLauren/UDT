@@ -19,6 +19,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
+#include <rapidjson/memorystream.h>
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/ostreamwrapper.h>
 
@@ -775,6 +776,20 @@ bool CConfig::MFromJSON(std::istream& aStream)
 {
 	Reader _reader;
 	IStreamWrapper _buf(aStream);
+
+	CJsonReader handler(*this);
+
+	return _reader.Parse(_buf, handler);
+}
+bool CConfig::MFromJSON(NSHARE::CBuffer const& aBuf)
+{
+	if (aBuf.empty())
+	{
+		LOG(ERROR)<<"Empty string.";
+		return false;
+	}
+	Reader _reader;
+	MemoryStream _buf((char*)aBuf.ptr_const(),aBuf.size());
 
 	CJsonReader handler(*this);
 

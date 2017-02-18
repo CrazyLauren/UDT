@@ -509,6 +509,9 @@ public:
 	{
 		return new CLocalLink::CConnectionHandler(aFD, aTime, aKer);
 	}
+	unsigned MGetProtocolNumber() const{
+		return E_CONSUMER;
+	}
 };
 }
 ;

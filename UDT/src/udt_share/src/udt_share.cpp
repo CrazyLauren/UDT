@@ -104,6 +104,8 @@ extern UDT_SHARE_EXPORT std::pair<size_t,size_t> deserialize_dg_head(
 	_user.FSplit.FIsLast = _from.FIsLast;
 	_user.FSplit.FCounter = _from.FSplitCounter;
 	_user.FSplit.FCoefficient = _from.FSplitCoefficient;
+	_user.FVersion.FMajor=_from.FMajor;
+	_user.FVersion.FMinor=_from.FMinor;
 
 	size_t _offset = sizeof(user_data_header_t);
 	if (_events_size)
@@ -260,6 +262,8 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FSplitCoefficient = _id.FSplit.FCoefficient;
 
 	_user_data->FRawNumber = _id.FRawProtocolNumber;
+	_user_data->FMajor=_id.FVersion.FMajor;
+	_user_data->FMinor=_id.FVersion.FMinor;
 //	if (_name_from_len)
 //		_user_data->FName = _name_from_len + 1;
 

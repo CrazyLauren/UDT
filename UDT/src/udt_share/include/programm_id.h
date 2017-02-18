@@ -71,7 +71,8 @@ enum eType
 {
 	E_KERNEL = 1, //
 	E_CONSUMER = 2, //
-	//E_FRONT_END = 3, //
+	//E_GUI = 3, //todo front end
+	//todo gui
 };
 struct UDT_SHARE_EXPORT program_id_t
 {

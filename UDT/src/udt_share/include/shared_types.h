@@ -16,6 +16,42 @@
 #include <udt_types.h>
 namespace NUDT
 {
+typedef uint32_t error_type;
+typedef uint8_t user_error_type;
+
+enum
+{
+	eUserErrorStartBits=(sizeof(error_type)-sizeof(user_error_type))*8
+};
+enum eError
+{
+	E_NO_ERROR=0x0,
+	//Resreved=0x1<<1,
+	E_CANNOT_READ_CONFIGURE=0x1<<2,
+	E_CONFIGURE_IS_INVALID= 0x1<<3,
+	E_NO_NAME= 0x1<<4,
+	E_NOT_OPEN = 0x1<<5,
+	E_NAME_IS_INVALID= 0x1<<6,
+	E_NOT_CONNECTED_TO_KERNEL=0x1<<7,
+	E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= 0x1<<8,
+
+	//reserved=0x1<<9,
+	E_HANDLER_IS_NOT_EXIST=0x1<<10,
+	E_NO_ROUTE=0x1<<11,
+	E_UNKNOWN_ERROR=0x1<<12,
+	E_PARSER_IS_NOT_EXIST=0x1<<13,
+	E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=0x1<<14,
+	E_SOCKET_CLOSED=0x1<<15,
+	E_BUFFER_IS_FULL=0x1<<16,
+	E_PACKET_LOST=0x1<<17,
+	E_MERGE_ERROR=0x1<<19,
+	E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=0x1<<20,
+	E_INCORRECT_USING_OF_UDT_1 = 0x1<<21,
+//	Resreved = 0x1<<22,
+	E_USER_ERROR_BEGIN=(0x1)<<(eUserErrorStartBits-1)
+};
+extern UDT_SHARE_EXPORT  error_type const USER_ERROR_MASK;
+
 extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME;
 typedef std::vector<NSHARE::CText> customers_names_t;
 
@@ -94,6 +130,7 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
 	bool operator==(demand_dg_t const& aRht) const;
+	static std::pair<required_header_t,bool> sMParseHead(NSHARE::CConfig const& aConf);
 };
 //
 //-------------------------
@@ -143,6 +180,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 
 	//id_t FFrom;//from.FName - Depreciated
 	uint32_t FPacketNumber;
+	NSHARE::version_t FVersion;
 
 	NSHARE::CText FProtocol;
 	unsigned FRawProtocolNumber;//it's optimization
@@ -338,64 +376,36 @@ struct UDT_SHARE_EXPORT fail_send_t:user_data_info_t
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText CODE;
 
-	enum eError
-	{
-		E_NO_ERROR,
-		E_THE_BUFFER_IS_SMALL=-1,
-		E_HANDLE_NOT_EXIST=-2,
-		E_NO_ROUTE=-3,
-		E_UNKNOWN_ERROR=-4,
-		E_PARSER_IS_NOT_EXIST=-5,
-		E_PARSER_NO_MSG=-6,
-		E_SOCKET_CLOSED=-7,
-		E_BUFFER_IS_FULL=-8,
-		E_PACKET_LOST=-9,
-		E_MERGE_ERROR=-10,
+	user_error_type MGetUserError() const;
+	error_type MGetInnerError() const;//without user code
+	void MSetUserError(user_error_type);
+	void MSetError(error_type);
 
-		E_USER_ERROR_BEGIN=-255,
-	};
-	uint8_t MGetUserError() const;
-	void MSetUserError(uint8_t);
-	void MSetError(int);
 	fail_send_t() :
 			FError(E_NO_ERROR)	//
 	{
 
 	}
 	explicit fail_send_t(NSHARE::CConfig const& aConf);
-	explicit fail_send_t(user_data_info_t const& aRht) :
-			user_data_info_t(aRht),FError(E_NO_ERROR)
-	{
-	}
-	explicit fail_send_t(user_data_info_t const& aRht, const uuids_t& aTo,int aError =E_NO_ERROR) :
-			user_data_info_t(aRht)
-	{
-		MSetError(aError);
-		FRouting.clear();
-		FRouting.insert(FRouting.end(),aTo.begin(),aTo.end());
-	}
+	explicit fail_send_t(user_data_info_t const& aRht);
+	explicit fail_send_t(user_data_info_t const& aRht, const uuids_t& aTo,error_type aError =E_NO_ERROR);
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
+	bool MIsError()const;
 
-	int FError;
+	NSHARE::CFlags<error_type,error_type> FError;
 };
 typedef std::vector<fail_send_t> fail_send_array_t;
 //
 //-------------------------
 //
-enum eErrorCode
-{
-	E_NO_ERROR = 0,
-	E_SENT_ERROR = 1,
-	E_ROUTING_ERROR = 2,
-};
 struct UDT_SHARE_EXPORT error_info_t
 {
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText WHERE;
 	static const NSHARE::CText CODE;
 
-	eErrorCode FError;
+	eError FError;
 	id_t FWhere;
 	uuids_t FTo;
 
@@ -458,11 +468,16 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::user_data_info_t const& aVal)
 {
 
-	aStream <<"#" <<aVal.FPacketNumber<<" From:" << aVal.FRouting.FFrom << ";";
+	aStream <<"#" <<aVal.FPacketNumber;
+	if (aVal.FVersion.MIsExist())
+	{
+		aStream << " v" << aVal.FVersion;
+	}
+	aStream<<" From:" << aVal.FRouting.FFrom << ";";
 	//aStream << "To:" << aVal.FDestName;
 	if (!aVal.FDestination.empty())
 	{
-		aStream << "(" << aVal.FDestination << ")" << ";";
+		aStream << "dest(" << aVal.FDestination << ")" << ";";
 	}
 	else
 		aStream << "();";
@@ -499,7 +514,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::fail_send_t const& aVal)
 {
-	 aStream<<static_cast<NUDT::user_data_info_t const&>(aVal);
+	 aStream<<static_cast<NUDT::user_data_info_t const&>(aVal)<<" Error:"<<aVal.FError;
 	 return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
@@ -597,6 +612,93 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::error_info_t const& aVal)
 {
 	aStream << "Error:" << aVal.FError<<" Where:"<<aVal.FWhere<<" To:"<<aVal.FTo << std::endl;
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::eError const& aVal)
+{
+	NSHARE::CFlags<NUDT::eError,NUDT::error_type> const _val(aVal);
+	if (_val.MGetFlag(NUDT::E_CANNOT_READ_CONFIGURE))
+	{
+		aStream << " Cannot read configure,";
+	}
+	if (_val.MGetFlag(NUDT::E_CONFIGURE_IS_INVALID))
+	{
+		aStream << " Configure is invalid,";
+	}
+
+	if (_val.MGetFlag(NUDT::E_NO_NAME))
+	{
+		aStream << " Name is not exist,";
+	}
+	if (_val.MGetFlag(NUDT::E_NOT_OPEN))
+	{
+		aStream << " Not Opened,";
+	}
+	if (_val.MGetFlag(NUDT::E_NAME_IS_INVALID))
+	{
+		aStream << " Name is invalid,";
+	}
+	if (_val.MGetFlag(NUDT::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE))
+	{
+		aStream << " Cannot allocate buffer of requrement size,";
+	}
+
+	if (_val.MGetFlag(NUDT::E_HANDLER_IS_NOT_EXIST))
+	{
+		aStream << " Handler is not exist,";
+	}
+
+	if (_val.MGetFlag(NUDT::E_NO_ROUTE))
+	{
+		aStream << " No route,";
+	}
+	if (_val.MGetFlag(NUDT::E_UNKNOWN_ERROR))
+	{
+		aStream << " Unknown error,";
+	}
+	if (_val.MGetFlag(NUDT::E_PARSER_IS_NOT_EXIST))
+	{
+		aStream << " Parser is not exist,";
+	}
+	if (_val.MGetFlag(NUDT::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE))
+	{
+		aStream << " No msg in the buffer or the number of msg is more than one,";
+	}
+	if (_val.MGetFlag(NUDT::E_SOCKET_CLOSED))
+	{
+		aStream << " Connection closed,";
+	}
+	if (_val.MGetFlag(NUDT::E_BUFFER_IS_FULL))
+	{
+		aStream << " The kernel buffer is full,";
+	}
+	if (_val.MGetFlag(NUDT::E_PACKET_LOST))
+	{
+		aStream << " The packet is lost,";
+	}
+	if (_val.MGetFlag(NUDT::E_MERGE_ERROR))
+	{
+		aStream << " Cannot merge msg,";
+	}
+	if (_val.MGetFlag(NUDT::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE))
+	{
+		aStream << " Protocol version is not compatible,";
+	}
+	if (_val.MGetFlag(NUDT::E_INCORRECT_USING_OF_UDT_1))
+	{
+		aStream
+				<< " There are two msg's handler with different type:  registrator and  'real'!!! Please, Refractoring your code or not sent this msg by uuid, ";
+	}
+
+	if (_val.MGetFlag(NUDT::E_USER_ERROR_BEGIN))
+	{
+		aStream << " User error code="
+				<< ((_val.MGetMask() & NUDT::USER_ERROR_MASK)
+						>> NUDT::eUserErrorStartBits) << ",";
+	}
+
+
 	return aStream;
 }
 

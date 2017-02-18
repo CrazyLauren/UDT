@@ -182,7 +182,8 @@ namespace NSHARE
 #	define DCHECK_GT(val1, val2) \
 		DLOG(INFO)
 
-#	define DCHECK_NOTNULL(val) (val)
+#	define DCHECK_NOTNULL(val) \
+		DLOG(INFO)
 
 #	define DCHECK_STREQ(str1, str2) \
 		DLOG(INFO)

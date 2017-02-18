@@ -71,6 +71,7 @@ public:
 	bool MToJSON(std::ostream&,bool aPretty=false) const;
 	bool MToJSON(NSHARE::CText&,bool aPretty=false) const;
 
+	bool MFromJSON(NSHARE::CBuffer const&);
 	bool MFromJSON(NSHARE::CText const&);
 	bool MFromJSON(std::istream&);
 	NSHARE::CText MToJSON(bool aPretty=false) const;

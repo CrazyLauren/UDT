@@ -11,6 +11,7 @@
  */
 #include <deftype>
 #include <udt_share.h>
+#include <CParserFactory.h>
 #include "IState.h"
 #include "CDiagnostic.h"
 #include "kernel_type.h"
@@ -40,7 +41,15 @@ NSHARE::CConfig CDiagnostic::MSerialize(NSHARE::CText const& aName,bool aDeep) c
 		program_id_t const& _info(get_my_id());
 		_rval.MAdd(_info.MSerialize());
 		return _rval;
+	}else if(aName==CParserFactory::NAME)
+	{
+		_rval.MAdd(static_cast<CParserFactory*>(CParserFactory::sMGetInstancePtr())->MSerialize());
+		return _rval;
 	}
+
+
+
+
 	void* _pointer = NULL;
 	CText::size_type _pos = aName.find(REFFRENCE_PREFIX);
 	if (_pos == 0)

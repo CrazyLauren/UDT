@@ -70,29 +70,13 @@ void CExternalChannel::CFrontEnd::MParseDemands(const NSHARE::CConfig& aConf)
 		{
 			VLOG(2) << "dem info " << *_it;
 			demand_dg_t _dem(*_it);
-			_dem.FHandler=0;
+			_dem.FHandler = 0;
 			LOG_IF(ERROR,!_dem.MIsValid()) << "Cannot create demands from "
 													<< _it->MToJSON(true);
 			if (_dem.MIsValid())
 			{
-				bool _can_add = true;
-				if (!_it->MIsChild("rh"))
-				{
-					if (IExtParser* _p =
-							CParserFactory::sMGetInstance().MGetFactory(
-									_dem.FProtocol))
-					{
-						VLOG(2) << "Set up header by parser";
-						_dem.FWhat = _p->MHeader(*_it);
 
-					}
-					else
-					{
-						_can_add = false;
-						LOG(ERROR)<<"No demand header. No key 'rh' and no parser for "<<_dem.FProtocol<<" Ignoring demand...";
-					}
-				}
-				if (_can_add && _it->MIsChild(EXIT_PROTOCOL))
+				if (_it->MIsChild(EXIT_PROTOCOL))
 				{
 
 					VLOG(2) << "There is exit protocol";
@@ -100,12 +84,9 @@ void CExternalChannel::CFrontEnd::MParseDemands(const NSHARE::CConfig& aConf)
 																									<< "The Method is not implemented."; //todo
 					//NSHARE::CText _exit_protocol(RAW_PROTOCOL_NAME);
 				}
-				if (_can_add)
-				{
-					LOG(INFO)<<"Demand "<<_dem;
-					FDemands.push_back(_dem);
-					FSendProtocol.insert(_dem.FProtocol);
-				}
+				LOG(INFO)<<"Demand "<<_dem;
+				FDemands.push_back(_dem);
+				FSendProtocol.insert(_dem.FProtocol);
 			}
 		}
 	}
@@ -257,7 +238,7 @@ bool IMPL::MReceiveByProtocol(
 	}
 
 	IExtParser::result_t _result = _p->MParserData(
-	(const uint8_t*) (aBegin.base()), (const uint8_t*) (aEnd.base()));
+			(const uint8_t*) (aBegin.base()), (const uint8_t*) (aEnd.base()));
 	VLOG(1) << "Founded " << _result.size() << " dg.";
 	{
 		IExtParser::result_t::const_iterator _jt = _result.begin();
@@ -268,7 +249,7 @@ bool IMPL::MReceiveByProtocol(
 			_user.FDataId.FPacketNumber = ++FPacketNumber;
 			_user.FDataId.FRouting.FFrom = FProgId.FId;
 			NSHARE::CBuffer _data(CDataObject::sMGetInstance().MDefAllocater(),
-			_jt->FBegin, _jt->FEnd);
+					_jt->FBegin, _jt->FEnd);
 			_data.MMoveTo(_user.FData);
 			CKernelIo::sMGetInstance().MReceivedData(_user, Fd);
 		}
@@ -276,7 +257,7 @@ bool IMPL::MReceiveByProtocol(
 		{
 			VLOG(2) << "Buffer Size:" << FBuf.size();
 			NSHARE::CBuffer::const_iterator _end(
-			(NSHARE::CBuffer::const_pointer) _result.back().FEnd);
+					(NSHARE::CBuffer::const_pointer) _result.back().FEnd);
 			if (FBuf.empty())
 			FBuf.insert(FBuf.end(), _end, aEnd);
 			else
@@ -334,7 +315,8 @@ bool IMPL::MSendPacketsFromAnotherCustomer()
 
 bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 {
-	if (FLastSplitedPacket.MGetConst().FRouting.FFrom == aVal.FDataId.FRouting.FFrom)
+	if (FLastSplitedPacket.MGetConst().FRouting.FFrom
+			== aVal.FDataId.FRouting.FFrom)
 	{
 		if (FLastSplitedPacket.MGetConst().FPacketNumber
 				!= aVal.FDataId.FPacketNumber)
@@ -344,8 +326,8 @@ bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 
 			MSendPacketsFromAnotherCustomer();
 
-			if(aVal.FDataId.FSplit.MIsSplited())//fixme call MSend again
-				return MSendFirstSplitedPacket(aVal);
+			if(aVal.FDataId.FSplit.MIsSplited()) //fixme call MSend again
+			return MSendFirstSplitedPacket(aVal);
 		}
 		else if(aVal.FDataId.FSplit.FIsLast)
 		{
@@ -356,7 +338,7 @@ bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 			return _is;
 		}
 		else
-			FLastSplitedPacket=aVal.FDataId;
+		FLastSplitedPacket=aVal.FDataId;
 	}
 	else
 	{
@@ -366,7 +348,7 @@ bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
 			FLastSplitedPacket.MUnSet();
 			MSendPacketsFromAnotherCustomer();
 
-			if(aVal.FDataId.FSplit.MIsSplited()) return MSendFirstSplitedPacket(aVal);//fixme call MSend again
+			if(aVal.FDataId.FSplit.MIsSplited()) return MSendFirstSplitedPacket(aVal); //fixme call MSend again
 		}
 		else
 		{

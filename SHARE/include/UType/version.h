@@ -31,6 +31,9 @@ SHARED_PACKED(struct SHARE_EXPORT version_t
 	version_t(uint8_t aMajor=0,uint8_t aMinor=0,uint16_t aRelease=0);
 
 	inline bool MIsExist() const;
+	inline bool MIsCompatibleWith(version_t const&) const;
+	inline bool operator==(version_t const& aRht) const;
+	inline bool operator!=(version_t const& aRht) const;
 	version_t( SHARED_CONFIG_MSVC_FIX const& aConf);
 	SHARED_CONFIG_MSVC_FIX MSerialize() const;
 });
@@ -44,6 +47,19 @@ inline version_t::version_t(uint8_t aMajor,uint8_t aMinor,uint16_t aRelease):
 	FMinor(aMinor),
 	FRelease(aRelease)
 {
+}
+inline bool version_t::operator==(version_t const& aRht) const
+{
+	return FMajor==aRht.FMajor&&FMinor==aRht.FMinor&&FRelease==aRht.FRelease;
+}
+inline bool version_t::operator!=(version_t const& aRht) const
+{
+	return !operator==(aRht);
+}
+
+inline bool version_t::MIsCompatibleWith(version_t const& aVal) const
+{
+	return FMajor == aVal.FMajor && FMinor <= aVal.FMinor;
 }
 #ifdef SHARE_CONFIG_DEFINED
 inline version_t::version_t(NSHARE::CConfig const& aConf):

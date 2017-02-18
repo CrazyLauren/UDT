@@ -23,14 +23,14 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number 0
+	{	//!< I want to receive msg number 0 version 1.1
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				"uex2@guex", 0, _handler);
+				INDITIFICATION_NAME, 0, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
 	}
 	{	
-		//!< I want to receive msg number 0
+		//!< I want to receive msg number 0 of any version
 		// from any customer of "guex" group  and it will be  handled  by function group_handler
 		callback_t _handler(group_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(

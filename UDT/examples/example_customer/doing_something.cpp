@@ -50,7 +50,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	}
 	
 	STREAM_MUTEX_LOCK
-	std::cout << "Message #"<<_recv_arg->FPacketNumber<<" size "<<_recv_arg->FBuffer.size()<<" bytes received from "<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<< std::endl;
+	std::cout << "Message #"<<_recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion<<" size "<<_recv_arg->FBuffer.size()<<" bytes received from "<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<< std::endl;
 	STREAM_MUTEX_UNLOCK
 	return 0;
 }
@@ -60,7 +60,7 @@ extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	//!<Now You can handle the received data.
 	
 	STREAM_MUTEX_LOCK
-		std::cout << "Message #" << _recv_arg->FPacketNumber << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
+		std::cout << "Message #" << _recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
 	STREAM_MUTEX_UNLOCK
 		return 0;
 }
@@ -98,14 +98,14 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	STREAM_MUTEX_LOCK
 	std::cerr<<"The packet "<<_recv_arg->FPacketNumber<<" has not been delivered to ";
 	
-	std::vector<NSHARE::uuid_t>::const_iterator _it(_recv_arg->FTo.begin()),
-			_it_end(_recv_arg->FTo.end());
+	std::vector<NSHARE::uuid_t>::const_iterator _it(_recv_arg->FFails.begin()),
+			_it_end(_recv_arg->FFails.end());
 	for (; _it != _it_end; ++_it)
 	{
 		std::cerr<<(*_it)<<", ";
 	}
 	
-	std::cerr<<" by UDT kernel."<<std::endl;
+	std::cerr<<" by UDT kernel as "<<_recv_arg->FErrorCode<<std::endl;
 	STREAM_MUTEX_UNLOCK
 	return 0;
 }
@@ -178,10 +178,10 @@ extern void doing_something()
 			}
 		}
 		
-		//!< Send the message number 0 (It's not necessary to specify the Receiver  
+		//!< Send the message number 0 ver 1.2 (It's not necessary to specify the Receiver  
 		//as If Somebody want to receive the message number 0 from us, It call method MIWantReceivingMSG and
 		//specify receiving the message number 0 from us.)
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf);
+		int _num = CCustomer::sMGetInstance().MSend(0, _buf,NSHARE::version_t(1,2));
 		
 		if (_num > 0)	//!<Hurrah!!! The data has been sent
 		{

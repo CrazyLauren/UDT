@@ -111,6 +111,18 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 	msg_handlers_t& _handlers = _r_uuid[aTo];
 	_handlers.push_back(aWhat.FHandler);
 
+	if (aWhat.FWhat.FVersion.MIsExist())
+	{
+		LOG_IF(DFATAL,(_handlers.FVersion.MIsExist()&& _handlers.FVersion!=aWhat.FWhat.FVersion))
+																											<< "Different version for msg "
+																											<< aWhat.FWhat
+																											<< " handler= "
+																											<< aWhat.FHandler
+																											<< " 'Old' version: "
+																											<< _handlers.FVersion;
+		_handlers.FVersion = aWhat.FWhat.FVersion;
+	}
+
 	bool const _is_new = _handlers.FNumberOfRealHandlers == 0;
 
 	LOG_IF(INFO,_is_new) << "Now The packet:" << aWhat << " from " << aFrom
@@ -327,7 +339,7 @@ void CRequiredDG::MFillByRawProtocol(user_datas_t& aFrom, user_datas_t& aFailed,
 	if (_error < 0)
 	{
 		fail_send_t _sent(_data.FDataId, _data.FDataId.FDestination,
-				(fail_send_t::eError) _error);
+				(eError) _error);
 		aFail.push_back(_sent);
 
 		aFailed.splice(aFailed.end(), aFrom, aFrom.begin());
@@ -345,7 +357,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 	user_datas_t _fails;
 	for (; !aFrom.empty();)
 	{
-		int _error = fail_send_t::E_NO_ERROR;
+		int _error = E_NO_ERROR;
 		user_data_info_t & _data_info = aFrom.front().FDataId;
 		CHECK_EQ(_data_info.FRouting.size(), 1);
 
@@ -365,7 +377,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		if (_it == FWhatIsSendingBy.end())
 		{
 			LOG(ERROR)<< "The  "<<_from<<" is not sent msg to "<<_for;
-			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			_error=E_HANDLER_IS_NOT_EXIST;
 			goto error;
 		}
 		_prot_it = _it->second.find(_protocol);
@@ -374,7 +386,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		{
 			LOG(ERROR)<< "No handler for " << _protocol
 			<< " is not exist";
-			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			_error=E_HANDLER_IS_NOT_EXIST;
 			goto error;
 		}
 		if (_data_info.MIsRaw())
@@ -390,7 +402,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			{
 				LOG(ERROR)<< "Parsing module for " << _protocol
 				<< " is not exist";
-				_error=fail_send_t::E_PARSER_IS_NOT_EXIST;
+				_error=E_PARSER_IS_NOT_EXIST;
 				goto error;
 			}
 			const size_t _size = aFrom.front().FData.size();
@@ -399,11 +411,11 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 					(const uint8_t*) aFrom.front().FData.ptr_const(),
 					(const uint8_t*) aFrom.front().FData.ptr_const() + _size,
 					_data_info.FRouting.FFrom.FUuid);
-
+			VLOG(2)<<"Number of msg:"<<_msgs.size();
 			if (_msgs.size() != 1)
 			{
 				LOG(ERROR)<< "No msg or the number of msg more then 1: "<<_size;
-				_error=fail_send_t::E_PARSER_NO_MSG;
+				_error=E_HANDLER_NO_MSG_OR_MORE_THAN_ONE;
 				goto error;
 			}
 			else if(_msgs.front().FErrorCode!=0)
@@ -421,7 +433,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		{
 			LOG(ERROR)<< "No handler for " << _header
 			<< " is not exist";
-			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			_error=E_HANDLER_IS_NOT_EXIST;
 			goto error;
 		}
 		_uuid_it=_header_it->second.find(_for);
@@ -430,7 +442,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		{
 			LOG(ERROR)<< "No handler for " << _header
 			<< " is not exist";
-			_error=fail_send_t::E_HANDLE_NOT_EXIST;
+			_error=E_HANDLER_IS_NOT_EXIST;
 			goto error;
 		}
 		if(_uuid_it->second.FNumberOfRealHandlers==0 || _uuid_it->second.FNumberOfRealHandlers==_uuid_it->second.size())
@@ -439,8 +451,25 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			_data_info.FEventsList = _uuid_it->second;
 		}else
 		{
-			LOG(FATAL)<<"The programmer is a pervert as he is blending  a registrator and a real software !!! Please, Refractoring the code.";
-			//todo parsing again
+			LOG(WARNING)<<"The programmer is a pervert as he is blending  a registrator and a real software !!! Please, Refractoring the code.";
+			uuids_t::const_iterator _ut=_data_info.FDestination.begin(),_ut_end=_data_info.FDestination.end();
+			for(;_ut!=_ut_end && _for!=*_ut;++_ut)
+				;
+
+			bool const _has_sent_by_uuid_to_registator=_ut==_ut_end;
+			if(_has_sent_by_uuid_to_registator)
+			{
+				LOG(ERROR)<<"Is not implemented";
+				_error=E_INCORRECT_USING_OF_UDT_1;
+				goto error;
+				//todo parsing again
+				//filling only  registrator handler
+			}
+			else //
+			{
+				VLOG(2)<<"Can fill all handlers for the packet as it has been sent not by uuid";
+				_data_info.FEventsList = _uuid_it->second;
+			}
 		}
 
 		aTo.splice(aTo.end(), aFrom, aFrom.begin());
@@ -491,7 +520,8 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 {
 	VLOG(2) << "Filling " << aInfo;
 	const bool _is_sent_by_uuid = !aInfo.FDestination.empty();
-	uuids_t _no_handled = aInfo.FDestination;
+	uuids_t _dest = aInfo.FDestination;
+	uuids_t _fail_version;
 
 	//if sending by uuid than
 	//1) put to routing list only if exist registrators
@@ -507,36 +537,79 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 		bool const _is_registrator_exist = _kt->second.FNumberOfRealHandlers
 				!= _kt->second.size();
 
+		NSHARE::version_t const& _req_version=_kt->second.FVersion;
+		bool _is_fail=false;
+		//checking version
+		if(_req_version.MIsExist())
+		{
+			if (aInfo.FVersion.MIsExist())
+			{
+				if (!_req_version.MIsCompatibleWith(aInfo.FVersion))
+				{
+					LOG(ERROR)<<"Protocol version for "<<aInfo<<" is not compatible. Requirement "<<_req_version;
+					_fail_version.push_back(_uuid);
+					_is_fail=true;
+				}
+			}
+			else
+			{
+				LOG(WARNING)<<"The parser is not set up msg version but  it's requirement for "<<_uuid;
+			}
+			//if not compatible
+		}
+
 		if (!_is_sent_by_uuid)
 		{
 			if (_kt->second.FNumberOfRealHandlers > 0)
 				aInfo.FDestination.push_back(_uuid);
 
-			aInfo.FRouting.push_back(_uuid);
-		}
-		else
-		{
-			if (_is_registrator_exist)
-			{
+			if(!_is_fail)
 				aInfo.FRouting.push_back(_uuid);
-			}
+		}
+		else if(!_is_fail)
+		{
+			//checking if handler exist
 
-			uuids_t::iterator _it = _no_handled.begin(), _it_end =
-					_no_handled.end();
+			uuids_t::iterator _it = _dest.begin(), _it_end =
+					_dest.end();
 			for (; _it != _it_end && *_it != _uuid; ++_it)
 				;
 
 			if (_it != _it_end)
 			{
 				aInfo.FRouting.push_back(_uuid);
-				_no_handled.erase(_it);
+				_dest.erase(_it);
+			}
+			else if (_is_registrator_exist)
+			{
+				aInfo.FRouting.push_back(_uuid);
+			}
+		}else
+		{
+			//remove double error
+			uuids_t::iterator _it = _dest.begin(), _it_end =
+					_dest.end();
+			for (; _it != _it_end && *_it != _uuid; ++_it)
+				;
+
+			if (_it != _it_end)
+			{
+				_dest.erase(_it);
 			}
 		}
 	}
-	if (!_no_handled.empty())
+
+	if (!_fail_version.empty())
 	{
 
-		fail_send_t _sent(aInfo, _no_handled, fail_send_t::E_HANDLE_NOT_EXIST);
+		fail_send_t _sent(aInfo, _fail_version, E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
+		LOG(ERROR)<<" ERROR "<<_sent;
+		aFail.push_back(_sent);
+	}
+	if (!_dest.empty())
+	{
+
+		fail_send_t _sent(aInfo, _dest, E_HANDLER_IS_NOT_EXIST);
 		LOG(ERROR)<<" ERROR "<<_sent;
 		aFail.push_back(_sent);
 	}
@@ -604,17 +677,16 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 
 	if (!_p || _data.FData.empty())
 	{
-		fail_send_t _sent(_data.FDataId);
-		_sent.FError = fail_send_t::E_PARSER_IS_NOT_EXIST;
+		fail_send_t _sent(_data.FDataId,_data.FDataId.FDestination,E_PARSER_IS_NOT_EXIST);
 		LOG(ERROR)<<" ERROR "<<_sent;
 		aFail.push_back(_sent);
 		return;
 	}
 	const size_t _size = _data.FData.size();
 
-	IExtParser::result_t const _msgs = _p->MParserData(
-			(const uint8_t*) _data.FData.ptr_const(),
-			(const uint8_t*) _data.FData.ptr_const() + _size, _from);
+	const uint8_t*_begin=(const uint8_t*)_data.FData.ptr_const();
+	VLOG(4) << "Parsing " << _size << " bytes  by "<<_data.FDataId.FProtocol;
+	IExtParser::result_t const _msgs = _p->MParserData(_begin,_begin + _size, _from);
 
 	VLOG(1) << "Founded " << _msgs.size() << " dg.";
 	IExtParser::result_t::const_iterator _mt = _msgs.begin(), _mt_end(
@@ -637,7 +709,7 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 
 			_new_packet.FData = NSHARE::CBuffer(NULL, _msg.FBegin, _msg.FEnd);
 			aFrom.push_back(_new_packet);
-
+			VLOG(2)<<"Split big packet "<<(_msg.FEnd-_msg.FBegin)<<" bytes";
 			_has_to_be_pop = true;
 		}
 		user_data_t& _handling_data = aFrom.back();
@@ -646,8 +718,11 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 		{
 			fail_send_t _sent(_handling_data.FDataId);
 			_sent.MSetUserError(_msg.FErrorCode);
-			aFail.push_back(_sent);
+			_sent.FRouting.insert(_sent.FRouting.end(),
+					_sent.FDestination.begin(), _sent.FDestination.end());
 
+			aFail.push_back(_sent);
+			VLOG(2)<<"Fail "<<_sent;
 			aFailed.splice(aFailed.end(), aFrom, --aFrom.end());//not begin as the data can be added above
 		}
 		else
@@ -665,7 +740,7 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 			if (_jt != _prot_it->second.end())
 			{
 				VLOG(4) << " OK " << " filling info";
-
+				_handling_data.FDataId.FVersion=_msg.FType.FVersion;
 				MFillRouteAndDestanationInfo(_jt->second,
 						_handling_data.FDataId, aFail);
 			}
@@ -680,7 +755,7 @@ bool CRequiredDG::MRemoveReceiversFor(NSHARE::uuid_t const& aUUID,
 		demand_dgs_for_t & aOld)
 {
 	VLOG(2) << "Remove demands for " << aUUID;
-//todo
+
 	id_t _id;
 	_id.FUuid = aUUID; //id_t comapred by it uuid only
 

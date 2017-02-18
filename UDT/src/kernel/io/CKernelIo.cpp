@@ -73,7 +73,7 @@ void CKernelIo::MRouteOperation(void* aP, const routing_t& aTo,
 	if (!_r.empty())
 	{
 		error_info_t _error;
-		_error.FError = E_ROUTING_ERROR;
+		_error.FError = E_NO_ROUTE;
 		_error.FWhere = get_my_id().FId;
 		_error.FTo = _r;
 
@@ -148,7 +148,7 @@ void CKernelIo::MReceivedData(fail_send_t const& aWhat,
 		error_info_t const& aError)
 {
 	MRecvImpl(aRoute, aFrom, aWhat, aError);
-	//todo handle split packet
+
 }
 void CKernelIo::MReceivedData(demand_dgs_for_t const& aWhat,
 		const descriptor_t& aFrom, const routing_t& aRoute,
@@ -314,7 +314,7 @@ void CKernelIo::MRemoveChannelFor(descriptor_t const& aVal, IIOManager* aWhere)
 	for (; _it != _it_end; ++_it)
 	{
 		fail_send_t _sent(_it->FDataId);
-		_sent.MSetError(fail_send_t::E_SOCKET_CLOSED);
+		_sent.MSetError(E_SOCKET_CLOSED);
 		_fails.push_back(_sent);
 	}
 	_not_sent_data.clear();
@@ -399,8 +399,8 @@ void CKernelIo::MSendingUserDataTo(descriptor_t aTo, IIOManager* aBy,
 
 			fail_send_t _sent(_data.FDataId);
 			_sent.MSetError(_is_not_closed ? //
-					fail_send_t::E_SOCKET_CLOSED : //
-					fail_send_t::E_UNKNOWN_ERROR);
+					E_SOCKET_CLOSED : //
+					E_UNKNOWN_ERROR);
 			aError.push_back(_sent);
 			_fails.splice(_fails.end(), aData, aData.begin());
 		}
@@ -501,8 +501,8 @@ void CKernelIo::MSendUserDataImpl()
 					VLOG(2) << "To kernel";
 					_sending.swap(_data);
 				}
-
-				MSendingUserDataTo(_d.first, _d.second, _sending, _fails);
+				if(!_sending.empty())
+					MSendingUserDataTo(_d.first, _d.second, _sending, _fails);
 				if (!_fails.empty())
 				{
 					CRoutingService::sMGetInstance().MNoteFailSend(_fails);
@@ -521,17 +521,17 @@ void CKernelIo::MSendUserDataImpl()
 	VLOG(2) << "End send of " << _d.first;
 }
 
-fail_send_t::eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
+eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
 		user_datas_t& _data)
 {
-	fail_send_t::eError _rval;
+	eError _rval;
 	const safe_manager_t::RAccess<> _access = FIoManagers.MGetRAccess();
 	const managers_t& _man = _access.MGet();
 	managers_t::const_iterator _it_man = _man.find(_by);
 	if (_it_man == _man.end())
 	{
 		LOG(ERROR)<<"There is not manager for "<<_by;
-		_rval=fail_send_t::E_SOCKET_CLOSED;
+		_rval=E_SOCKET_CLOSED;
 	}
 	else
 	{
@@ -540,8 +540,8 @@ fail_send_t::eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
 		{
 			NSHARE::CRAII<NSHARE::CMutex> _lock(_m.FBufMutex);
 
-			_rval=_m.FDataBuffer.MPut(_data)?fail_send_t::E_NO_ERROR:fail_send_t::E_BUFFER_IS_FULL;
-			LOG_IF(ERROR,_rval!=fail_send_t::E_NO_ERROR)<<"Cannot put all  data to buffer.";
+			_rval=_m.FDataBuffer.MPut(_data)?E_NO_ERROR:E_BUFFER_IS_FULL;
+			LOG_IF(ERROR,_rval!=E_NO_ERROR)<<"Cannot put all  data to buffer.";
 			{
 				VLOG(2) << "Put data to buffer";
 				if (!_m.FDataBuffer.MIsWorking())
@@ -564,11 +564,11 @@ fail_send_t::eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
 	return _rval;
 }
 
-fail_send_t::eError CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
+eError CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
 {
 	VLOG(4) << "Send to " << _by;
 	if (!CDescriptors::sMIsValid(_by))
-		return fail_send_t::E_SOCKET_CLOSED;
+		return E_SOCKET_CLOSED;
 	return MPutUserDataToSendFifo(_by, _data);
 }
 void CKernelIo::MSendTo(output_user_data_t& aData, fail_send_array_t & aNoSent,
@@ -585,9 +585,9 @@ void CKernelIo::MSendTo(output_user_data_t& aData, fail_send_array_t & aNoSent,
 		CPacketDivisor::sMGetInstance().MSplitOrMergeIfNeed(_it->FDesc,_it->FData,_to,aNoSent);
 		aFailedData.splice(aFailedData.end(),_it->FData);
 #endif
-		int error=fail_send_t::E_NO_ERROR;
+		int error=E_NO_ERROR;
 
-		if ((error=MSendUserData(_it->FDesc, _to))!=fail_send_t::E_NO_ERROR)
+		if ((error=MSendUserData(_it->FDesc, _to))!=E_NO_ERROR)
 		{
 			user_datas_t::const_iterator _jt = _to.begin(), _jt_end(
 					_to.end());

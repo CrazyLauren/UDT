@@ -72,6 +72,7 @@ private:
 			NSHARE::net_address::CFastLessCompare> new_channels_t;
 	typedef std::map<NSHARE::net_address, NSHARE::CText,
 			NSHARE::net_address::CFastLessCompare> last_sampling_link_type_t;
+	typedef std::vector<NSHARE::CText> handlers_name_t;
 
 	void MInitTcp();
 
@@ -116,7 +117,7 @@ private:
 	mutable NSHARE::CMutex FMutex;
 	NSHARE::CConfig FConfig;
 	unsigned FTimeout;
-	last_sampling_link_type_t FSampling;
+	handlers_name_t FHandlers;
 };
 class CKernelIOByTCPRegister:public NSHARE::CFactoryRegisterer
 {

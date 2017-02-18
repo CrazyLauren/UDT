@@ -48,13 +48,7 @@ struct args_t
 	unsigned FPacketNumber;
 	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
 	std::vector<NSHARE::uuid_t> FTo;
-};
-struct fail_sent_args_t
-{
-	NSHARE::CText FProtocolName;
-	uint32_t FPacketNumber;
-	std::vector<NSHARE::uuid_t> FTo;
-	std::vector<NSHARE::uuid_t> FFails;
+	NSHARE::version_t FVersion;
 };
 
 struct customers_updated_args_t
@@ -156,22 +150,40 @@ public:
 	{
 		E_NO_RECV_FLAGS = 0
 	};
-	enum eError
+
+	//all error less zero and bitwise
+	typedef uint32_t error_t;
+	//error's
+	//reserved
+	static const error_t E_CANNOT_READ_CONFIGURE;//<<2
+	static const error_t E_CONFIGURE_IS_INVALID;//<<3
+	static const error_t E_NO_NAME;
+	static const error_t E_NOT_OPEN;
+	static const error_t E_NAME_IS_INVALID;
+	static const error_t E_NOT_CONNECTED_TO_KERNEL;
+	static const error_t E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;
+
+	//reserved;
+	static const error_t E_HANDLER_IS_NOT_EXIST;
+	static const error_t E_NO_ROUTE;
+	static const error_t E_UNKNOWN_ERROR;
+	static const error_t E_PARSER_IS_NOT_EXIST;
+	static const error_t E_HANDLER_NO_MSG_OR_MORE_THAN_ONE;
+	static const error_t E_SOCKET_CLOSED;
+	static const error_t E_BUFFER_IS_FULL;
+	static const error_t E_PACKET_LOST;
+	static const error_t E_MERGE_ERROR;
+	static const error_t E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;
+	static std::ostream& sMPrintError(std::ostream&,error_t const&);
+	//reserve
+
+	static const error_t E_USER_ERROR_EXIT;//if user's error is exit then the bit is set
+	static const unsigned FIRST_USER_ERROR_BIT;	//Number of the first bit of user's error
+	//then 8 bit for user's code
+
+	enum
 	{
-		E_NOT_OPEND = -127,
-		E_INVALID_NAME,
-		E_NOT_CONNECTED,
-		E_UNKNOWN_ERROR,
-		E_CANNOT_ALLOCATE_BUFFER,
-		E_CUSTOMER_IS_NOT_EXIST,
-		E_PARSER_IS_NOT_EXIST,
-		E_HANDLER_IS_NOT_EXIST,
-		E_PARSER_IS_NOT_EQUAL,//The Existing parser type for "customer"
-							  //is not equal the requiring parser.
-		E_KERNEL_IS_NOT_ANSWER,//kernel is not received user data
-		E_NO_CUSTOMER_NAME,
-		E_INVALID_CONFIG,
-		E_CANNOT_OPEN_CONFIG
+		E_KERNEL_IS_NOT_ANSWER		//deprecated
 	};
 
 	struct value_t
@@ -244,28 +256,27 @@ public:
 	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 			const NSHARE::uuid_t& aTo, eSendToFlags = E_NO_SEND_FLAGS);
 
-	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer, eSendToFlags = E_NO_SEND_FLAGS);
-	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,const NSHARE::uuid_t& aTo, eSendToFlags = E_NO_SEND_FLAGS);
-
-
-//	///@brief Wait for sent packet
-//	///@param aNumber Packet number, returned MSendTo Method
-//	///@param aTime waiting time, if 0 then time is unlimited
-//	int MWaitForSend(unsigned aNumber, unsigned aTime = 0);
+	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
+			NSHARE::version_t const& = NSHARE::version_t(), eSendToFlags =
+					E_NO_SEND_FLAGS);
+	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
+			const NSHARE::uuid_t& aTo, NSHARE::version_t const& =
+					NSHARE::version_t(), eSendToFlags = E_NO_SEND_FLAGS);
 
 	///@brief Add a parser callback entry to a handle list
 	///@param aFrom Name of Parsing  customer
 	///@param aHeader Parsing a header type
 	///@param aCB Callback handler
+	///@return  <0 if error, else handler ID
 	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
 			const unsigned& aMSGNumber, const callback_t& aHandler,
-			NSHARE::version_t const& = NSHARE::version_t(),
-			msg_parser_t::eFLags const& = msg_parser_t::E_NO_FLAGS);
-	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-			const unsigned& aNumber);
-
+			msg_parser_t::eFLags const& = msg_parser_t::E_NO_FLAGS,
+			NSHARE::version_t const& = NSHARE::version_t());
 	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
 			const msg_parser_t& aMSGHeader, const callback_t& aHandler);
+
+	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
+			const unsigned& aNumber);
 	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 			const msg_parser_t& aNumber);
 
@@ -293,6 +304,7 @@ public:
 			const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& =NSHARE::version_t(),msg_parser_t::eFLags const& =msg_parser_t::E_NO_FLAGS);
 	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
 			const unsigned& aNumber);
+	void MJoin();
 private:
 
 	CCustomer();
@@ -302,6 +314,16 @@ private:
 
 	struct _pimpl;
 	_pimpl* FImpl;
+};
+struct fail_sent_args_t
+{
+	NSHARE::CText FProtocolName;
+	uint32_t FPacketNumber;
+	CCustomer::error_t FErrorCode;//see CCustomer
+	uint8_t FUserCode;
+	std::vector<NSHARE::uuid_t> FTo;
+	std::vector<NSHARE::uuid_t> FFails;
+	NSHARE::version_t FVersion;
 };
 inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
 		const msg_parser_t& aHeader, const callback_t& aCB){
@@ -313,7 +335,7 @@ inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 }
 
 inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVal,msg_parser_t::eFLags const& aFlags){
+		const unsigned& aHeader, const callback_t& aCB,msg_parser_t::eFLags const& aFlags,NSHARE::version_t const& aVal){
 	return MSettingDgParserFor(aFrom,aHeader,aCB,aVal,aFlags);
 }
 inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,

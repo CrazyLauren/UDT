@@ -142,6 +142,16 @@ bool CKernelIOByTCP::MOpen(const void* aP)
 	VLOG(2) << "Open KernelIOByTcp";
 	MInitTcp();
 
+
+	ConfigSet _conf = FConfig.MChildren(CKernelIOByTCP::LINKS);
+	ConfigSet::const_iterator _it = _conf.begin(), _it_end(_conf.end());
+
+	for (; _it != _it_end; ++_it)
+	{
+		VLOG(2) << "Handler = " << _it->MValue();
+		FHandlers.push_back(_it->MValue());
+	}
+
 	NSHARE::operation_t _op(CKernelIOByTCP::sMReceiver, this, NSHARE::operation_t::IO);
 	CDataObject::sMGetInstance().MPutOperation(_op);
 
@@ -159,7 +169,7 @@ void CKernelIOByTCP::MServiceReceiver()
 	VLOG(2) << "Async receive";
 	ISocket::data_t _data;
 	LOG_IF(FATAL, !FTcpServiceSocket.MIsOpen()) << "Port is closed";
-	for (HANG_INIT; FTcpServiceSocket.MIsOpen(); HANG_CHECK)
+	for (; FTcpServiceSocket.MIsOpen(); )
 	{
 		_data.clear();
 		CTCPServer::recvs_t _from;
@@ -434,7 +444,7 @@ bool CKernelIOByTCP::MHandleNewLinkage(CTCPServer::client_t const& aAb,
 		ISocket::data_t::const_iterator aEnd)
 {
 	VLOG(1) << "Handle new abonent " << aAb;
-	smart_new_client_t _connect;
+	smart_new_client_t _new;
 	{
 		CRAII<CMutex> _blocked(FMutex);
 		new_channels_t::iterator _it = FNewChannels.find(aAb.FAddr);
@@ -442,28 +452,24 @@ bool CKernelIOByTCP::MHandleNewLinkage(CTCPServer::client_t const& aAb,
 														<< aAb;
 		if (_it != FNewChannels.end())
 		{
-			_connect = _it->second;
+			_new = _it->second;
 		}
 	}
-	DCHECK(_connect);
-	if (!_connect)
+	if (!_new)
 		return false;
 
-	switch (_connect->MReceivedData(aBegin, aEnd))
+	switch (_new->MReceivedData(aBegin, aEnd))
 	{
 	case IConnectionHandler::E_ERROR:
 	{
 		LOG(INFO)<<"The new client "<<aAb.FAddr<<" has to be closed.";
-		FSampling[aAb.FAddr]=_connect->MCurrentHandler();
 		return false;
 		break;
 	}
 	case IConnectionHandler::E_OK:
 	{
 		CRAII<CMutex> _blocked(FMutex);
-
-		FSampling.erase(aAb.FAddr);
-		bool _is = MAcceptLink(_connect);
+		bool _is = MAcceptLink(_new);
 		FNewChannels.erase(aAb.FAddr);
 		LOG_IF(INFO,_is)<<"The client "<<aAb.FAddr<<" is accepted.";
 		if (!_is)
@@ -506,30 +512,6 @@ void CKernelIOByTCP::MConnect(CTCPServer::client_t* aVal)
 
 	const  NSHARE::net_address& _addr = aVal->FAddr;
 	smart_new_client_t _link;
-	CConnectionHandler::handlers_name_t _handlers;
-
-	last_sampling_link_type_t::const_iterator _kt = FSampling.find(_addr);
-
-	ConfigSet _conf = FConfig.MChildren(CKernelIOByTCP::LINKS);
-	ConfigSet::const_iterator _it = _conf.begin(), _it_end(_conf.end());
-
-	bool _need_filter = _kt != FSampling.end()
-			&& _kt->second != _conf.back().MValue();
-	for (; _it != _it_end; ++_it)
-	{
-		VLOG(2) << "Handler = " << _it->MValue();
-		if (!_need_filter)
-			_handlers.push_back(_it->MValue());
-		else
-		{
-			VLOG(2) << "Filtering ...";
-			if (_it->MValue() == _kt->second)
-				_need_filter = false;
-			else
-				VLOG(2) << "Filtering " << _it->MValue();
-		}
-	}
-	CHECK(!_need_filter);
 	{
 		//CRAII<CMutex> _blocked(FMutex);
 		MDisconnectImpl(_addr); //make sure it's not connected.
@@ -537,20 +519,10 @@ void CKernelIOByTCP::MConnect(CTCPServer::client_t* aVal)
 		NSHARE::intrusive_ptr<CServerBridge> _bridge(
 				new CServerBridge(*this, _addr));
 		_link = smart_new_client_t(
-				new CConnectionHandler(NSHARE::get_unix_time(), _bridge.MGet(),
-						_handlers));
+				new CConnectionHandler(NSHARE::get_unix_time(), _bridge.MGet(),FHandlers));
 	}
-	if (_link->MConnect())
-	{
-		//CRAII<CMutex> _blocked(FMutex);
-		new_channels_t::value_type _val(_addr, _link);
-		FNewChannels.insert(_val);
-	}
-	else
-	{
-		LOG(ERROR)<<"Connecting error for "<<_addr;
-		MRefuseClient(_addr);
-	}
+	new_channels_t::value_type _val(_addr, _link);
+	FNewChannels.insert(_val);
 }
 int CKernelIOByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {

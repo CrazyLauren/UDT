@@ -25,6 +25,7 @@ public:
 		{
 
 		}
+		NSHARE::version_t FVersion;
 		int FNumberOfRealHandlers;//see demands_dg_t::FFlags.
 		//If At least one handler is not registrator than The consumer is not registator.
 	};

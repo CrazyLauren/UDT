@@ -58,6 +58,35 @@ const NSHARE::CText CCustomer::EVENT_CUSTOMERS_UPDATED =
 const NSHARE::CText CCustomer::EVENT_FAILED_SEND = "event_failed_send";
 const NSHARE::CText CCustomer::EVENT_NEW_RECEIVER = "event_receiver";
 
+
+//kernel's error
+COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SIZE);
+
+
+const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=(E_HANDLER_IS_NOT_EXIST);
+const CCustomer::error_t CCustomer::E_NO_ROUTE=(E_NO_ROUTE);
+const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=(E_UNKNOWN_ERROR);
+const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=-(E_PARSER_IS_NOT_EXIST);
+const CCustomer::error_t CCustomer::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=(E_HANDLER_NO_MSG_OR_MORE_THAN_ONE);
+const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=(E_SOCKET_CLOSED);
+const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=(E_BUFFER_IS_FULL);
+const CCustomer::error_t CCustomer::E_PACKET_LOST=(E_PACKET_LOST);
+const CCustomer::error_t CCustomer::E_MERGE_ERROR=(E_MERGE_ERROR);
+const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
+
+//reserverd
+//customer's error
+const CCustomer::error_t CCustomer::E_CANNOT_READ_CONFIGURE= E_CANNOT_READ_CONFIGURE;
+const CCustomer::error_t CCustomer::E_CONFIGURE_IS_INVALID= E_CONFIGURE_IS_INVALID;
+const CCustomer::error_t CCustomer::E_NO_NAME= E_NO_NAME;
+const CCustomer::error_t CCustomer::E_NOT_OPEN = E_NOT_OPEN;
+const CCustomer::error_t CCustomer::E_NAME_IS_INVALID= E_NAME_IS_INVALID;
+const CCustomer::error_t CCustomer::E_NOT_CONNECTED_TO_KERNEL= E_NOT_CONNECTED_TO_KERNEL;
+const CCustomer::error_t CCustomer::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;
+
+const CCustomer::error_t CCustomer::E_USER_ERROR_EXIT=E_USER_ERROR_BEGIN;
+const unsigned CCustomer::FIRST_USER_ERROR_BIT=eUserErrorStartBits;
+
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
 				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0)
@@ -135,7 +164,7 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 		}
 		if(_name.empty())
 		{
-			_rval = E_NO_CUSTOMER_NAME;
+			_rval = -static_cast<int>(E_NO_NAME);
 			LOG(ERROR)<<"Invalid customer name";
 		}
 	}
@@ -143,7 +172,7 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 	{
 		if (init_id((char*) _name.c_str(), E_CONSUMER, aVersion) != 0)
 		{
-			_rval = E_INVALID_NAME;
+			_rval = -static_cast<int>(E_NAME_IS_INVALID);
 		}
 		else
 			FMyId = get_my_id();
@@ -176,7 +205,7 @@ int CCustomer::_pimpl::MLoadLibraries()
 	<< " is not exist.";
 
 	if (!_p)
-	return E_INVALID_CONFIG;
+	return -static_cast<int>(E_CONFIGURE_IS_INVALID);
 	ConfigSet::const_iterator _it = _p->MChildren().begin();
 
 	for (; _it != _p->MChildren().end(); ++_it)
@@ -346,6 +375,9 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	_fail.FProtocolName = _prog.FProtocol;
 	_fail.FTo = _prog.FDestination;
 	_fail.FFails = _prog.FRouting;
+	_fail.FUserCode=_prog.MGetUserError();
+	_fail.FErrorCode=_prog.MGetInnerError();
+	_fail.FVersion = _prog.FVersion;
 	_impl->MCall(EVENT_FAILED_SEND, &_fail);
 	VLOG(2) << "Fail sent";
 	return 0;
@@ -445,6 +477,8 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 						RAW_PROTOCOL_NAME : aFrom.FData.FDataId.FProtocol;
 		_raw_args.FRawProtocolNumber = aFrom.FData.FDataId.FRawProtocolNumber;
 		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
+		_raw_args.FVersion=aFrom.FData.FDataId.FVersion;
+
 
 		aFrom.FData.FData.MMoveTo(_raw_args.FBuffer);
 
@@ -646,7 +680,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return E_NOT_OPEND;
+		return -static_cast<int>(E_NOT_OPEN);
 	}
 
 	CRAII<CMutex> _block(FCommonMutex);
@@ -670,7 +704,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		NSHARE::CBuffer& aBuf, const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
-	if (aTo == FMyId.FId.FUuid)
+/*	if (aTo == FMyId.FId.FUuid)
 	{
 		VLOG(1) << "Loopback send";
 		recv_data_from_t _data;
@@ -679,11 +713,11 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
 		CDataObject::sMGetInstance().MPush(_data);
 		return 0;
-	}
+	}*/
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return E_NOT_OPEND;
+		return -static_cast<int>(E_NOT_OPEN);
 	}
 
 	CRAII<CMutex> _block(FCommonMutex);
@@ -704,9 +738,9 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	return _number;
 }
 int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
-		const NSHARE::uuid_t& aTo, eSendToFlags)
+		const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags)
 {
-	if (aTo == FMyId.FId.FUuid)
+/*	if (aTo == FMyId.FId.FUuid)
 	{
 		VLOG(1) << "Loopback send";
 		recv_data_from_t _data;
@@ -715,11 +749,11 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
 		CDataObject::sMGetInstance().MPush(_data);
 		return 0;
-	}
+	}*/
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return E_NOT_OPEND;
+		return -static_cast<int>(E_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -728,6 +762,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	aBuf.release(); //optimization
 	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber = aNumber;
+	_data.FDataId.FVersion=aVer;
 	_data.FDataId.FDestination.push_back(aTo);
 	int _number = FWorker->MSend(_data);
 	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
@@ -738,13 +773,13 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	}
 	return _number;
 }
-int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
+int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer,
 		eSendToFlags)
 {
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aNumber<<" as library is not opened.";
-		return E_NOT_OPEND;
+		return -static_cast<int>(E_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -753,6 +788,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	aBuf.release(); //optimization
 	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber=aNumber;
+	_data.FDataId.FVersion=aVer;
 	//_data.FDataId.FDestName.push_back(aTo);
 	int _number= FWorker->MSend(_data);
 	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
@@ -774,6 +810,13 @@ NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(unsigned aSize) const
 CCustomer::customers_t CCustomer::_pimpl::MCustomers() const
 {
 	return FCustomers.MGetRAccess().MGet();
+}
+void CCustomer::_pimpl::MJoin()
+{
+	for (;FWorker;)
+	{
+		NSHARE::sleep(1);
+	}
 }
 void CCustomer::_pimpl::MWaitForReady(double aSec)
 {
@@ -865,22 +908,22 @@ int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_
 			if (_name.find_last_of(".xml") != NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from xml configuration file "<<_name;
-				_rval=_conf.MFromXML(_stream)?_rval:E_INVALID_CONFIG;
+				_rval=_conf.MFromXML(_stream)?_rval:-static_cast<int>(E_CONFIGURE_IS_INVALID);
 			}
 			else if(_name.find_last_of(".json")!=NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from json configuration file "<<_name;
-				_rval=_conf.MFromJSON(_stream)?_rval:E_INVALID_CONFIG;
+				_rval=_conf.MFromJSON(_stream)?_rval:-static_cast<int>(E_CONFIGURE_IS_INVALID);
 			}
 			else
 			{
 				LOG(DFATAL)<<"Unknown file format "<<_name;
-				_rval= E_CANNOT_OPEN_CONFIG;
+				_rval= -static_cast<int>(E_CANNOT_READ_CONFIGURE);
 			}
 			_stream.close();
 		}
 		else
-		_rval=E_CANNOT_OPEN_CONFIG;
+		_rval=-static_cast<int>(E_CANNOT_READ_CONFIGURE);
 	}
 
 	if(_rval==0)
@@ -991,7 +1034,7 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 	CHECK_NOTNULL(FImpl);
 	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
-		return E_CANNOT_ALLOCATE_BUFFER;
+		return -static_cast<int>(E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
 	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, "", aFlag);
@@ -1003,26 +1046,26 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 	CHECK_NOTNULL(FImpl);
 	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
-		return E_CANNOT_ALLOCATE_BUFFER;
+		return -static_cast<int>(E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
 	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, aTo,
 			aFlag);
 	return _result;
 }
-int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
+int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,NSHARE::version_t const& aVer,
 		eSendToFlags aFlag)
 {
 	CHECK_NOTNULL(FImpl);
 
-	int _result = FImpl->MSendTo(aNumber, aBuffer, aFlag);
+	int _result = FImpl->MSendTo(aNumber, aBuffer, aVer,aFlag);
 	return _result;
 }
 int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
-		const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
+		const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags aFlag)
 {
 	CHECK_NOTNULL(FImpl);
-	int _result = FImpl->MSendTo(aNumber, aBuffer, aTo, aFlag);
+	int _result = FImpl->MSendTo(aNumber, aBuffer, aTo,aVer, aFlag);
 	return _result;
 }
 program_id_t CCustomer::MCustomer(NSHARE::uuid_t const& aUUID) const
@@ -1085,5 +1128,14 @@ void CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
 {
 	CHECK_NOTNULL(FImpl);
 	return FImpl->MWaitForReady(aSec);
+}
+void CCustomer::MJoin()
+{
+	CHECK_NOTNULL(FImpl);
+	return FImpl->MJoin();
+}
+std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
+{
+	return aStream<<static_cast<eError>(aVal);
 }
 } //

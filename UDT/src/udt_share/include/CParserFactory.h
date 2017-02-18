@@ -24,7 +24,10 @@ class UDT_SHARE_EXPORT CParserFactory: public NSHARE::CFactoryManager<
 		NUDT::IExtParser>
 {
 public:
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText PARSER;
 	CParserFactory();
+	NSHARE::CConfig MSerialize() const;
 };
 } //
 //easy-to-use macro registrator

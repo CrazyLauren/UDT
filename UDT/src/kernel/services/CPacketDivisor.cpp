@@ -134,7 +134,7 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 			_remove.MSet(FFor.FRouting.FFrom.FUuid);
 			int error;
 			if ((error = CKernelIo::sMGetInstance().MSendUserData(FDescriptor,
-					_data)) != fail_send_t::E_NO_ERROR)
+					_data)) != E_NO_ERROR)
 			{
 				fail_send_t _fail(_data.front().FDataId);
 				_fail.MSetError(error);
@@ -172,12 +172,12 @@ CPacketDivisor::merge_operation_t::merge_operation_t(CPacketDivisor& aThis,
 		FThis(aThis),	//
 		FIsWorking(false),	//
 		FFor(aFor), FDescriptor(aDesc),	//
-		FError(fail_send_t::E_NO_ERROR)
+		FError(E_NO_ERROR)
 {
 	if (aFor.FSplit.FCounter != 1)
 	{
 		LOG(ERROR)<<"Receive not the first packet";
-		FError=fail_send_t::E_PACKET_LOST;
+		FError=E_PACKET_LOST;
 	}
 	else
 	{
@@ -203,7 +203,7 @@ bool CPacketDivisor::merge_operation_t::MCheckingSequence(
 		LOG(ERROR)<<"Several part of packet #"<<_data.FDataId.FPacketNumber<<" has been lost. Cur="
 		<<_data.FDataId.FSplit.FCounter<<" last="<<_it->second.FCounter;
 
-		FError=fail_send_t::E_PACKET_LOST;
+		FError=E_PACKET_LOST;
 		CHECK(_data.FDataId.FSplit.MIsSplited());
 		//return false;
 	}
@@ -227,9 +227,9 @@ bool CPacketDivisor::merge_operation_t::MMerging(user_datas_t& aTo)
 		VLOG(2) << "The packet was merged";
 		CHECK(FSplitedPackets.empty());
 		if(!MCreatePacket(aTo))
-			FError=fail_send_t::E_MERGE_ERROR;
+			FError=E_MERGE_ERROR;
 	}
-	return FError==fail_send_t::E_NO_ERROR;
+	return FError==E_NO_ERROR;
 }
 
 void CPacketDivisor::merge_operation_t::MMerge(user_datas_t & aVal,
@@ -244,13 +244,13 @@ void CPacketDivisor::merge_operation_t::MMerge(user_datas_t & aVal,
 				!= aVal.front().FDataId.FPacketNumber)
 		{
 			LOG(ERROR)<<"The packet #"<<FFor.FPacketNumber<<" has been lost. Ignoring ...";
-			if(FError==fail_send_t::E_NO_ERROR)//maybe the error is occurred in constructor
-				FError=fail_send_t::E_PACKET_LOST;
+			if(FError==E_NO_ERROR)//maybe the error is occurred in constructor
+				FError=E_PACKET_LOST;
 		}
 		else
 				FSplitedPackets.splice(FSplitedPackets.end(), aVal);
 	}
-	if(FError!=fail_send_t::fail_send_t::E_NO_ERROR)
+	if(FError!=E_NO_ERROR)
 		return;
 
 #ifndef		NO_MERGE_THREAD
@@ -312,7 +312,7 @@ void CPacketDivisor::MMerge(descriptor_t aFor, user_datas_t& aWhat,
 			_it = FMergeOp.insert(_val).first;
 		}
 		_it->second.MMerge(_merging, aTo);
-		if (_it->second.FError != fail_send_t::E_NO_ERROR)
+		if (_it->second.FError != E_NO_ERROR)
 		{
 			fail_send_t _fail(_it->second.FFor);
 			_fail.MSetError(_it->second.FError);
