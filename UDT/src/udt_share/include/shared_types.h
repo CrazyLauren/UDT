@@ -127,8 +127,9 @@ struct UDT_SHARE_EXPORT demand_dg_t
 		;
 	}
 	demand_dg_t(NSHARE::CConfig const& aConf);
-	NSHARE::CConfig MSerialize() const;
+	NSHARE::CConfig MSerialize(bool aIsSerializeHeadAsRaw=true) const;
 	bool MIsValid()const;
+	bool MIsEqual(demand_dg_t const& aRht) const;
 	bool operator==(demand_dg_t const& aRht) const;
 	static std::pair<required_header_t,bool> sMParseHead(NSHARE::CConfig const& aConf);
 };
@@ -191,10 +192,19 @@ struct UDT_SHARE_EXPORT user_data_info_t
 
 	split_packet_t FSplit;
 };
+class IExtParser;
 struct UDT_SHARE_EXPORT user_data_t
 {
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText DATA;
+	static const NSHARE::CText HEADER;
+
 	user_data_info_t FDataId;
 	NSHARE::CBuffer FData;
+
+	NSHARE::CConfig MSerialize(/*required_header_t const& =required_header_t(),*/IExtParser* =NULL) const;
+	NSHARE::CConfig MSerialize(NSHARE::CText const & aName) const;
+	bool MIsValid()const;
 };
 
 struct UDT_SHARE_EXPORT demand_dgs_t:std::vector<demand_dg_t>
@@ -205,7 +215,7 @@ struct UDT_SHARE_EXPORT demand_dgs_t:std::vector<demand_dg_t>
 	}
 
 	demand_dgs_t(NSHARE::CConfig const& aConf);
-	NSHARE::CConfig MSerialize() const;
+	NSHARE::CConfig MSerialize(bool aIsSerializeHeadAsRaw=true) const;
 	bool MIsValid()const;
 };
 struct UDT_SHARE_EXPORT demand_dgs_for_t:std::map<id_t,demand_dgs_t>

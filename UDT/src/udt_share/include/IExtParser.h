@@ -48,7 +48,7 @@ public:
 	virtual required_header_t MHeader(const NSHARE::CConfig& aFrom) const=0;
 	virtual NSHARE::CConfig MToConfig(const required_header_t&) const=0;
 
-	virtual NSHARE::CConfig MToConfig(const required_header_t&,
+	virtual NSHARE::CConfig MToConfig(const required_header_t& aHeader,//for parsing a raw protocol.
 			const uint8_t* aItBegin, const uint8_t* aItEnd) const
 	{
 		return NSHARE::CConfig();

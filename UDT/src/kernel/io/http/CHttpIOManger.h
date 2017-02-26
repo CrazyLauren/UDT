@@ -27,8 +27,12 @@ public:
 	static const NSHARE::CText PARSER_ERROR;
 	static const NSHARE::CText SNIFFER;
 	static const NSHARE::CText I_WHAT_RECEIVE;
+	static const NSHARE::CText DO_NOT_RECEIVE_MSG;
+	static const NSHARE::CText SNIFFER_STATE;
+	static const NSHARE::CText SNIFFED_DATA;
 	static const NSHARE::CText WWW_PATH;
 	static const NSHARE::CText SEQUENCE_NUMBER;
+	static const NSHARE::CText KERNEL_UUID;
 	CHttpIOManger();
 	virtual ~CHttpIOManger();
 
@@ -58,8 +62,8 @@ public:
 private:
 	typedef std::pair<required_header_t,IExtParser*> serializator_t;
 	typedef std::map<uint32_t,serializator_t > serializators_t;
+	typedef std::list<std::pair<size_t, NSHARE::CConfig> > sniffed_data_t;
 
-	typedef std::list<NSHARE::CConfig> sniffed_data_t;
 	inline void MCloseImpl();
 	static int sMConnect(void* aWho, void* aWhat, void* aThis);
 	static int sMDisconnect(void* aWho, void* aWhat, void* aThis);
@@ -72,10 +76,13 @@ private:
 	int MSettingDgParserFor(const NSHARE::CText& aReq,
 			NSHARE::CText FProtocolName, required_header_t aNumber,NSHARE::CText aParser);
 	bool MRemoveDgParserFor(uint32_t aNumber);
+	std::pair<demand_dg_t,bool> MGetDemand(uint32_t aNumber);
 	bool MReceive( demand_dgs_t::value_type& _val,NSHARE::CText aParser);
 	eStatusCode MReadFile(const NSHARE::CText& aPath, CHttpResponse& _response);
 	eStatusCode MGetStateInfo(const CUrl& _url,CHttpResponse& _response);
 	eStatusCode MHandleSniffer(const NSHARE::CConfig& aConf,const NSHARE::CText& aPath,CHttpResponse& _response);
+	void MPutAsJson(const NSHARE::CConfig& _data, CHttpResponse& _response);
+
 	CKernelIo * FIo;
 
 	descriptor_t Fd;

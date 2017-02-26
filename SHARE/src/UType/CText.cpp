@@ -25,6 +25,9 @@ namespace NSHARE
 //TODO copy on write
 //todo match
 //todo cmp no case
+//todo изначально буфер однобайтный, как только добавляется многобайтный символ
+//т.е. два режима - однобайтный или многобайтный?
+//может сделать таблицу?
 // definition of 'no position' value
 const CText::size_type CText::npos = static_cast<CText::size_type>(-1);
 const CText::size_type CText::S_MAX_SIZE = static_cast<size_type>(-1)
@@ -1227,7 +1230,8 @@ bool CText::MGrow(size_type new_size)
 
 	if (new_size > FReserve)
 	{
-		utf32* temp = new utf32[new_size];
+		const size_type _reserved_new_size=new_size*1.3;
+		utf32* temp = new utf32[_reserved_new_size];
 
 		if (FReserve > QUICKBUFF_SIZE)
 		{
@@ -1240,7 +1244,7 @@ bool CText::MGrow(size_type new_size)
 		}
 
 		FUCS4Buf = temp;
-		FReserve = new_size;
+		FReserve = _reserved_new_size;
 
 		return true;
 	}

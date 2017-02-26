@@ -22,6 +22,8 @@
 
 namespace NUDT
 {
+NSHARE::CText const CHttpIOManger::NAME = "http_gui";//Fucking windows!!! I don't know why if CHttpIOManger::NAME
+//is definition in the other translation unit, It's value in this translation unit is null. May be export problems.
 NSHARE::CText const CHttpIOManagerRegister::NAME =CHttpIOManger::NAME;
 CHttpIOManagerRegister::CHttpIOManagerRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 4))

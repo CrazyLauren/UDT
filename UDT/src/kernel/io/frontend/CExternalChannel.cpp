@@ -69,7 +69,8 @@ void CExternalChannel::MClose()
 
 bool CExternalChannel::MOpen(const void* aP)
 {
-	CConfig* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
+	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 	if(_p)
 	{
 		ConfigSet const _childs = _p->MChildren(CFrontEnd::NAME);

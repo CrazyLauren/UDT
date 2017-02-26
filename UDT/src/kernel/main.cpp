@@ -137,20 +137,27 @@ void initialize_def_links()
 void initialize_def_io_managers()
 {
 	//tcp
-	if(CConfigure::sMGetInstance().MGet().MFind(
-		CKernelIOByTCP::NAME))
+	if (CConfigure::sMGetInstance().MGet().MFind(CKernelIOByTCP::NAME))
 		CKernelIOByTCPRegister().MRegisterFactory();
+	else
+		VLOG(2) << "No " << CKernelIOByTCPRegister::NAME;
 
 	if (CConfigure::sMGetInstance().MGet().MFind(
 		CKernelIOByTCPClient::NAME))
 		CKernelIOByTCPClientRegister().MRegisterFactory();
+	else
+			VLOG(2)<<"No "<<CKernelIOByTCPClient::NAME;
 
 	if (CConfigure::sMGetInstance().MGet().MFind(
 		CExternalChannel::NAME))
 		CExternalChannelRegister().MRegisterFactory();
+	else
+		VLOG(2)<<"No "<<CExternalChannelRegister::NAME;
 
 	if (CConfigure::sMGetInstance().MGet().MFind(CHttpIOManagerRegister::NAME))
 		CHttpIOManagerRegister().MRegisterFactory();
+	else
+		VLOG(2)<<"No "<<CHttpIOManagerRegister::NAME;
 }
 void initialize_extern_modules()
 {
@@ -223,16 +230,16 @@ void initialize_core(int argc, char* argv[])
 
 	//parsers
 	{
-		const CConfig* _p = CConfigure::sMGetInstance().MGet().MChildPtr(
+		const CConfigPtr _p = CConfigure::sMGetInstance().MGet().MChildPtr(
 				"modules");
 		//LOG_IF(DFATAL,!_p) << "Invalid config file.Key modules is not exist.";
 		std::vector<NSHARE::CText> _text;
-		if (_p)
+		if (_p.MIs())
 		{
 			ConfigSet::const_iterator _it = _p->MChildren().begin();
 
 			for (; _it != _p->MChildren().end(); ++_it)
-				_text.push_back(_it->MKey());
+				_text.push_back((*_it)->MKey());
 		}
 
 		NSHARE::CText _ext_path;

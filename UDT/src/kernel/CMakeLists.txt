@@ -15,3 +15,4 @@ share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
 share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  )
 share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES})
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/gui)

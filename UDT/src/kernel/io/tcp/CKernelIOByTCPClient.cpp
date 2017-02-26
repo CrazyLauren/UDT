@@ -86,8 +86,9 @@ void CKernelIOByTCPClient::MClose()
 bool CKernelIOByTCPClient::MOpen(const void* aP)
 {
 	VLOG(2) << "Open KernelIOByTcp";
-	CConfig* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
-	LOG_IF(ERROR,_p==NULL)<<CKernelIOByTCPClient::NAME<<" is not exist";
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
+	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
+	LOG_IF(ERROR,!_p)<<CKernelIOByTCPClient::NAME<<" is not exist";
 	if (_p)
 	{
 		ConfigSet const _childs = _p->MChildren(CKernelChannel::NAME);

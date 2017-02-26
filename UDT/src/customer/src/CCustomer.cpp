@@ -197,19 +197,19 @@ int CCustomer::_pimpl::MLoadLibraries()
 	if (CResources::sMGetInstancePtr())
 		return 0;
 	//MODULE
-	CConfig const* _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
+	CConfigPtr const _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
 	std::vector<NSHARE::CText> _text;
 
 #ifndef CUSTOMER_WITH_STATIC_MODULES
-	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
+	LOG_IF(DFATAL,!_p.MIs()) << "Invalid config file.Key " << MODULES
 	<< " is not exist.";
 
-	if (!_p)
+	if (!_p.MIs())
 	return -static_cast<int>(E_CONFIGURE_IS_INVALID);
 	ConfigSet::const_iterator _it = _p->MChildren().begin();
 
 	for (; _it != _p->MChildren().end(); ++_it)
-	_text.push_back(_it->MKey());
+	_text.push_back((*_it)->MKey());
 #endif
 
 	NSHARE::CText _ext_path;

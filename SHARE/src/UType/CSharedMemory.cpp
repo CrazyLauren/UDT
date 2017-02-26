@@ -35,6 +35,7 @@ SHARED_PACKED(
 				memset(FAllocMutex,0,sizeof(FAllocMutex));
 			}
 			crc_t::type_t FCrc;
+			uint8_t FAligment[4-sizeof(crc_t::type_t)];
 			uint8_t FSharedMutex[CIPCSem::eReguredBufSize];
 			uint8_t FAllocMutex[CIPCSem::eReguredBufSize];
 			uint32_t FPIDOfLockedMutex;
@@ -474,7 +475,7 @@ bool CSharedMemory::CImpl::MInit(const NSHARE::CText& aName, size_t aSize,bool a
 
 		if (!_is_valid)
 		{
-			VLOG(2)<<"The ShM head is not valid";
+			VLOG(2)<<"The ShM head is not valid "<<FInfo->FSize<<" "<<MGetSize()<<" crc="<<FInfo->FCrc;
 			return false;
 		}
 		if (!FShareSem.MInit(FInfo->FSharedMutex,sizeof(FInfo->FSharedMutex), 1,

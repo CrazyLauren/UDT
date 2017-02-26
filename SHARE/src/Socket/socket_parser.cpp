@@ -56,7 +56,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 	for (ConfigSet::const_iterator _it_up = _child.begin();
 			_it_up != _child.end(); ++_it_up)
 	{
-		NSHARE::CText _name = _it_up->MKey();
+		NSHARE::CText _name = (*_it_up)->MKey();
 		VLOG(2)<<"Name Socket "<<_name;
 		if (_name == KEY_DEX)
 		{
@@ -70,7 +70,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 			ConfigSet::const_iterator _it_end = _child.end();
 			for (; _it != _it_end; ++_it)
 			{
-				CDex*_dex = new CDex(*_it);
+				CDex*_dex = new CDex(_it->MRead());
 				if (!_dex->MIsOpen())
 				{
 					std::cerr << "Cannot open dex channel." << std::endl;
@@ -172,7 +172,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 		else if (_name == KEY_UNIX)
 		{
 #	ifdef UNIX_SOCKET_EXIST
-			CUnixDGRAM* _unix = new CUnixDGRAM(*_it_up);
+			CUnixDGRAM* _unix = new CUnixDGRAM(_it_up->MRead());
 			if(_unix->MIsOpen())
 			_rval.push_back( _unix);
 			else
@@ -233,7 +233,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 			CSocketFile* _file_in = NULL;
 			CSocketFile* _file_out = NULL;
 
-			ConfigSet const& _child = _it_up->MChildren();
+			ConfigSet const& _child = (*_it_up)->MChildren();
 
 			ConfigSet::const_iterator _it = _child.begin();
 			ConfigSet::const_iterator _it_end = _child.end();

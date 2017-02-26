@@ -235,8 +235,8 @@ CFIFOServer::server_setting_t::server_setting_t(NSHARE::CConfig const& aConf)
 		ConfigSet::const_iterator _it=_set.begin();
 		for(;_it!=_set.end();++_it)
 		{
-			VLOG(2)<<"Push client "<<_it->MValue();
-			FClients.push_back(_it->MValue());
+			VLOG(2)<<"Push client "<<(*_it)->MValue();
+			FClients.push_back((*_it)->MValue());
 		}
 	}
 }

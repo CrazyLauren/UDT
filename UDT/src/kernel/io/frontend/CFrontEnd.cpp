@@ -72,15 +72,15 @@ void CExternalChannel::CFrontEnd::MParseDemands(const NSHARE::CConfig& aConf)
 			demand_dg_t _dem(*_it);
 			_dem.FHandler = 0;
 			LOG_IF(ERROR,!_dem.MIsValid()) << "Cannot create demands from "
-													<< _it->MToJSON(true);
+													<< (*_it)->MToJSON(true);
 			if (_dem.MIsValid())
 			{
 
-				if (_it->MIsChild(EXIT_PROTOCOL))
+				if ((*_it)->MIsChild(EXIT_PROTOCOL))
 				{
 
 					VLOG(2) << "There is exit protocol";
-					LOG_IF(FATAL,_it->MChild(EXIT_PROTOCOL).MValue()!=RAW_PROTOCOL_NAME)
+					LOG_IF(FATAL,(*_it)->MChild(EXIT_PROTOCOL).MValue()!=RAW_PROTOCOL_NAME)
 																									<< "The Method is not implemented."; //todo
 					//NSHARE::CText _exit_protocol(RAW_PROTOCOL_NAME);
 				}

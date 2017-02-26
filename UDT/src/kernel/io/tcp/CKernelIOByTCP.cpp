@@ -40,12 +40,12 @@ NSHARE::CText const CKernelIOByTCP::LINKS = "protocol";
 
 bool CKernelIOByTCP::CServerBridge::MConfig(NSHARE::CConfig & aTo)
 {
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
 	NSHARE::CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(
 			CKernelIOByTCP::NAME);
 	if (_p)
 		aTo = *_p;
-
-	return _p;
+	return _p!=NULL;
 }
 CKernelIOByTCP::CKernelIOByTCP() :
 		ITcpIOManager(NAME), //
@@ -58,7 +58,8 @@ CKernelIOByTCP::CKernelIOByTCP() :
 void CKernelIOByTCP::MInitTcp()
 {
 	CHECK(!FTcpServiceSocket.MIsOpen());
-	CConfig* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
+	NSHARE::CConfig const* _p= CConfigure::sMGetInstance().MGet().MFind(NAME);
 
 	unsigned _port = 18011;
 	if (_p)
@@ -148,8 +149,8 @@ bool CKernelIOByTCP::MOpen(const void* aP)
 
 	for (; _it != _it_end; ++_it)
 	{
-		VLOG(2) << "Handler = " << _it->MValue();
-		FHandlers.push_back(_it->MValue());
+		VLOG(2) << "Handler = " <<(* _it)->MValue();
+		FHandlers.push_back((*_it)->MValue());
 	}
 
 	NSHARE::operation_t _op(CKernelIOByTCP::sMReceiver, this, NSHARE::operation_t::IO);

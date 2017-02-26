@@ -40,6 +40,8 @@
 
 
 #include <UType/CDenyCopying.h>
+#include <UType/counter_t.h>
+#include <UType/CCOWPtr.h>
 #include <UType/CRAII.h>
 #include <UType/IAllocater.h>
 #include <UType/CBuffer.h>

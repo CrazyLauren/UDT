@@ -8,7 +8,7 @@
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */ 
+ */
 #include <deftype>
 #include <boost/config.hpp>
 #include <algorithm>
@@ -35,16 +35,16 @@ typedef boost::property_tree::basic_ptree<std::string, std::string,
 
 namespace NSHARE
 {
-static size_t base64_encode(NSHARE::CText& _dest,const char* src, size_t aLen);
+static size_t base64_encode(NSHARE::CText& _dest, const char* src, size_t aLen);
 CConfig::CConfig(const CText& key, void const* aTo, size_t aMaxLen) :
 		FKey(key)
 {
-	base64_encode(FValue,(char const*)aTo,aMaxLen);
+	base64_encode(FValue, (char const*) aTo, aMaxLen);
 }
 CConfig::CConfig(const CText& key, CBuffer const & aTo) :
 		FKey(key)
 {
-	base64_encode(FValue,(char const*)aTo.ptr_const(),aTo.size());
+	base64_encode(FValue, (char const*) aTo.ptr_const(), aTo.size());
 }
 
 CConfig::CConfig(const CConfig& rhs) :
@@ -52,12 +52,17 @@ CConfig::CConfig(const CConfig& rhs) :
 				rhs.FReferrer)
 {
 }
+CConfig::CConfig(const CText& key, const CConfig& rhs) :
+		FKey(key), FValue(rhs.FValue), FChildren(rhs.FChildren), FReferrer(
+				rhs.FReferrer)
+{
+}
 CConfig& CConfig::operator=(const CConfig& rhs)
 {
-	FKey=rhs.FKey;
-	FValue=rhs.FValue;
-	FChildren=rhs.FChildren;
-	FReferrer=rhs.FReferrer;
+	FKey = rhs.FKey;
+	FValue = rhs.FValue;
+	FChildren = rhs.FChildren;
+	FReferrer = rhs.FReferrer;
 	return *this;
 }
 
@@ -180,7 +185,8 @@ void CConfig::MSetReferrer(const CText& referrer)
 	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
 			++_it)
 	{
-		_it->MSetReferrer(getFullPath(FReferrer, _it->FReferrer));
+		CConfig& _new = _it->MWrite();
+		_new.MSetReferrer(getFullPath(FReferrer, _new.FReferrer));
 	}
 }
 
@@ -202,10 +208,10 @@ CConfig const& CConfig::MChild(const CText& childName) const
 	for (ConfigSet::const_iterator i = FChildren.begin(); i != FChildren.end();
 			++i)
 	{
-		VLOG(6) << "Child " << i->MKey();
-		if (i->MKey() == childName)
+		VLOG(6) << "Child " << (*i)->MKey();
+		if ((*i)->MKey() == childName)
 		{
-			VLOG(6) << "Found "<<childName<<" in "<<MKey();
+			VLOG(6) << "Found " << childName << " in " << MKey();
 			return *i;
 		}
 	}
@@ -217,23 +223,24 @@ CConfig const& CConfig::sMGetEmpty()
 	static CConfig const emptyConf;
 	return emptyConf;
 }
-const CConfig* CConfig::MChildPtr(const CText& childName) const
+const CConfigPtr CConfig::MChildPtr(const CText& childName) const
 {
 	for (ConfigSet::const_iterator i = FChildren.begin(); i != FChildren.end();
 			++i)
 	{
-		if (i->MKey() == childName)
-			return &(*i);
+		if ((*i)->MKey() == childName)
+			return *i;
 	}
-	return NULL;
+	return CConfigPtr();
 }
 
 CConfig* CConfig::MMutableChild(const CText& childName)
 {
-	for (ConfigSet::iterator i = FChildren.begin(); i != FChildren.end(); ++i)
+	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
+			++_it)
 	{
-		if (i->MKey() == childName)
-			return &(*i);
+		if ((*_it)->MKey() == childName)
+			return &_it->MWrite();
 	}
 
 	return NULL;
@@ -244,10 +251,9 @@ void CConfig::MMerge(const CConfig& rhs)
 	for (ConfigSet::const_iterator _it = rhs.FChildren.begin();
 			_it != rhs.FChildren.end(); ++_it)
 	{
-		MRemove(_it->MKey());
+		MRemove((*_it)->MKey());
 		MAdd(*_it);
 	}
-
 
 }
 void CConfig::MBlendWith(const CConfig& rhs)
@@ -255,35 +261,51 @@ void CConfig::MBlendWith(const CConfig& rhs)
 	for (ConfigSet::const_iterator _it = rhs.FChildren.begin();
 			_it != rhs.FChildren.end(); ++_it)
 	{
-		if(_it->MIsSimple())
+		if ((*_it)->MIsSimple())
 		{
 
 		}
 		else
 		{
-			if (MIsChild(_it->MKey()))
+			if (MIsChild((*_it)->MKey()))
 			{
-				MMutableChild(_it->MKey())->MBlendWith(*_it);
+				MMutableChild((*_it)->MKey())->MBlendWith(*_it);
 			}
 			else
 				MAdd(*_it);
 		}
 	}
 }
-const CConfig* CConfig::MFind(const CText& key, bool checkMe) const
+CConfigPtr CConfig::MFindPtr(const CText& key) const
 {
-	if (checkMe && key == this->MKey())
-		return this;
+	for (ConfigSet::const_iterator _it = FChildren.begin();
+			_it != FChildren.end(); ++_it)
+		if (key == (*_it)->MKey())
+			return *_it;
 
-	for (ConfigSet::const_iterator c = FChildren.begin(); c != FChildren.end();
-			++c)
-		if (key == c->MKey())
-			return &(*c);
-
-	for (ConfigSet::const_iterator c = FChildren.begin(); c != FChildren.end();
-			++c)
+	for (ConfigSet::const_iterator _it = FChildren.begin();
+			_it != FChildren.end(); ++_it)
 	{
-		const CConfig* r = c->MFind(key, false);
+		CConfigPtr r = (*_it)->MFindPtr(key);
+		if (r.MIs())
+			return r;
+	}
+
+	return CConfigPtr();
+}
+const CConfig* CConfig::MFind(const CText& key) const
+{
+	if (key == this->MKey())
+		return this;
+	for (ConfigSet::const_iterator _it = FChildren.begin();
+			_it != FChildren.end(); ++_it)
+		if (key == (*_it)->MKey())
+			return &_it->MRead();
+
+	for (ConfigSet::const_iterator _it = FChildren.begin();
+			_it != FChildren.end(); ++_it)
+	{
+		const CConfig* r = (*_it)->MFind(key);
 		if (r)
 			return r;
 	}
@@ -291,21 +313,20 @@ const CConfig* CConfig::MFind(const CText& key, bool checkMe) const
 	return NULL;
 }
 
-CConfig*
-CConfig::MFind(const CText& key, bool checkMe)
+CConfig* CConfig::MFind(const CText& key)
 {
-	if (checkMe && key == this->MKey())
+	if (key == this->MKey())
 		return this;
+	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
+			++_it)
+		if (key == (*_it)->MKey())
+			return &_it->MWrite();
 
-	for (ConfigSet::iterator c = FChildren.begin(); c != FChildren.end(); ++c)
-		if (key == c->MKey())
-			return &(*c);
-
-	for (ConfigSet::iterator c = FChildren.begin(); c != FChildren.end(); ++c)
+	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
+			++_it)
 	{
-		CConfig* r = c->MFind(key, false);
-		if (r)
-			return r;
+		if ((*_it)->MFind(key))
+			return _it->MWrite().MFind(key);
 	}
 
 	return NULL;
@@ -314,10 +335,10 @@ CConfig CConfig::operator -(const CConfig& rhs) const
 {
 	CConfig result(*this);
 
-	for (ConfigSet::const_iterator i = rhs.MChildren().begin();
-			i != rhs.MChildren().end(); ++i)
+	for (ConfigSet::const_iterator _it = rhs.MChildren().begin();
+			_it != rhs.MChildren().end(); ++_it)
 	{
-		result.MRemove(i->MKey());
+		result.MRemove((*_it)->MKey());
 	}
 
 	return result;
@@ -379,8 +400,8 @@ inline void CConfig::MReadFrom(ptree_t const& aTree, bool aFirst)
 							_set.end());
 					for (; _jt != _jt_end; ++_jt)
 					{
-						VLOG(2) << "Push attr " << _jt->MKey() << " == "
-											<< _jt->MValue();
+						VLOG(2) << "Push attr " << (*_jt)->MKey() << " == "
+											<< (*_jt)->MValue();
 						MAdd(*_jt);
 					}
 				}
@@ -430,7 +451,7 @@ inline void CConfig::MWriteTo(ptree_t& aTree, bool aFirst) const
 		ConfigSet::const_iterator _it = FChildren.begin();
 		for (; _it != FChildren.end(); ++_it)
 		{
-			if (_it->MIsEmpty())
+			if ((*_it)->MIsEmpty())
 			{
 				VLOG(2) << "Node empty";
 				continue;
@@ -442,7 +463,7 @@ inline void CConfig::MWriteTo(ptree_t& aTree, bool aFirst) const
 			CText const _path(
 					!_conf.MKey().empty() ?
 							_conf.MKey() : CText("EmptyKeyNotAllowed"));
-			if (_it->MIsSimple())
+			if ((*_it)->MIsSimple())
 			{
 				VLOG(6) << "Put leaf " << _path << " = " << _conf.MValue();
 				aTree.add(_path.c_str(), _conf.MValue().MToStdString());
@@ -537,40 +558,37 @@ struct CJsonReader
 
 	void MAddLeaf(NSHARE::CText const& aVal)
 	{
-		CHECK(!FStack.empty());
-		_stack_t& _stack = FStack.top();
 		VLOG(6) << "Add leaf " << FKey << " = " << aVal << " to "
-							<< _stack.FConf->MKey();
-		if (!_stack.FArrayKey.empty())
+							<< FStack.top().FConf->MKey();
+		if (!FStack.top().FArrayKey.empty())
 		{
-			_stack.FConf->MAdd(FStack.top().FArrayKey, aVal);
-			++_stack.FCurrentArrayLength;
+			FStack.top().FConf->MAdd(FStack.top().FArrayKey, aVal);
+			++FStack.top().FCurrentArrayLength;
 		}
 		else
-			_stack.FConf->MSet(FKey, aVal);
+			FStack.top().FConf->MSet(FKey, aVal);
 	}
 	bool StartObject()
 	{
 		if (FStack.empty())
 		{
-			VLOG(6)<<"Heading ";
+			VLOG(6) << "Heading ";
 			_stack_t _stack;
 			_stack.FConf = &FHead;
 			FStack.push(_stack);
 			return true;
 		}
-		_stack_t& _top = FStack.top();
-		if (!_top.FArrayKey.empty())
+		if (!FStack.top().FArrayKey.empty())
 		{
-			VLOG(6) << "StartObject() For Array " << _top.FArrayKey;
+			VLOG(6) << "StartObject() For Array " << FStack.top().FArrayKey;
 
-			NSHARE::CConfig _conf(_top.FArrayKey);
+			NSHARE::CConfig _conf(FStack.top().FArrayKey);
 
-			_top.FConf->MAdd(_conf);
-			++_top.FCurrentArrayLength;
+			FStack.top().FConf->MAdd(_conf);
+			++FStack.top().FCurrentArrayLength;
 
 			_stack_t _stack;
-			_stack.FConf = &_top.FConf->MChildren().back();
+			_stack.FConf = &FStack.top().FConf->MChildren().back().MWrite();
 			FStack.push(_stack);
 		}
 		else
@@ -578,9 +596,9 @@ struct CJsonReader
 			VLOG(6) << "StartObject() For Object";
 			VLOG(6) << "Add new object " << FKey;
 			NSHARE::CConfig _conf(FKey);
-			_top.FConf->MAdd(_conf);
+			FStack.top().FConf->MAdd(_conf);
 			_stack_t _stack;
-			_stack.FConf = &_top.FConf->MChildren().back();
+			_stack.FConf = &FStack.top().FConf->MChildren().back().MWrite();
 			FStack.push(_stack);
 		}
 		return true;
@@ -596,11 +614,10 @@ struct CJsonReader
 	{
 		if (!FStack.empty())
 		{
-			_stack_t& _top = FStack.top();
 			VLOG(6) << "EndObject(" << memberCount << ") for "
-								<< _top.FConf->MKey();
-			CHECK_EQ(_top.FConf->MChildren().size(),
-					memberCount + _top.FNumberOfArrayElements);
+								<< FStack.top().FConf->MKey();
+			CHECK_EQ(FStack.top().FConf->MChildren().size(),
+					memberCount + FStack.top().FNumberOfArrayElements);
 			FStack.pop();
 		}
 		return true;
@@ -608,30 +625,26 @@ struct CJsonReader
 
 	bool StartArray()
 	{
-		CHECK(!FStack.empty());
-		_stack_t& _top = FStack.top();
-		VLOG(6) << "StartArray() for " << _top.FConf->MKey()
+		VLOG(6) << "StartArray() for " << FStack.top().FConf->MKey()
 							<< " Key " << FKey << " Count = "
-							<< _top.FCurrentArrayLength;
-		_top.FArrayKey = FKey;
-		_top.FCurrentArrayLength = 0;
+							<< FStack.top().FCurrentArrayLength;
+		FStack.top().FArrayKey = FKey;
+		FStack.top().FCurrentArrayLength = 0;
 		CHECK(!FKey.empty());
 		return true;
 	}
 	bool EndArray(SizeType elementCount)
 	{
-		CHECK(!FStack.empty());
-		_stack_t& _top = FStack.top();
 		VLOG(6) << "EndArray(" << elementCount << ") for "
-							<< _top.FConf->MKey() << " Key " << FKey;
+							<< FStack.top().FConf->MKey() << " Key " << FKey;
 
-		_top.FArrayKey.clear();
-		CHECK_EQ(_top.FCurrentArrayLength, elementCount);
+		FStack.top().FArrayKey.clear();
+		CHECK_EQ(FStack.top().FCurrentArrayLength, elementCount);
 
-		_top.FNumberOfArrayElements +=
-			_top.FCurrentArrayLength > 0 ?
-			_top.FCurrentArrayLength - 1 : 0;
-		_top.FCurrentArrayLength = 0;
+		FStack.top().FNumberOfArrayElements +=
+				FStack.top().FCurrentArrayLength > 0 ?
+						FStack.top().FCurrentArrayLength - 1 : 0;
+		FStack.top().FCurrentArrayLength = 0;
 		return true;
 	}
 };
@@ -701,31 +714,31 @@ void write_json_impl(T & writer, NSHARE::CConfig const& aFrom, bool aIsArray)
 				writer.Key(aFrom.MKey().c_str());
 			writer.StartObject();
 		}
-		typedef std::map<NSHARE::CText, std::list<NSHARE::CConfig const*> > _arrays_t;
+		typedef std::map<NSHARE::CText, ConfigSet> _arrays_t;
 		typedef std::map<NSHARE::CText, unsigned> _counter_t;
 
-		NSHARE::ConfigSet const& _childs = aFrom.MChildren();
+		ConfigSet const& _childs = aFrom.MChildren();
 
-		std::list<NSHARE::CConfig const*> _objects;
+		ConfigSet _objects;
 		_arrays_t _arrays;
 		_counter_t _counter;
 		{
 			NSHARE::ConfigSet::const_iterator _it = _childs.begin();
 			for (; _it != _childs.end(); ++_it)
 			{
-				_counter[_it->MKey()]++;
+				_counter[(*_it)->MKey()]++;
 			}
 			_it = _childs.begin();
 			for (; _it != _childs.end(); ++_it)
 			{
-				if (_counter[_it->MKey()] > 1)
-					_arrays[_it->MKey()].push_back(&(*_it));
+				if (_counter[(*_it)->MKey()] > 1)
+					_arrays[(*_it)->MKey()].push_back(*_it);
 				else
-					_objects.push_back(&(*_it));
+					_objects.push_back(*_it);
 			}
 		}
 		{
-			std::list<NSHARE::CConfig const*>::const_iterator _it;
+			ConfigSet::const_iterator _it;
 			_it = _objects.begin();
 			for (; _it != _objects.end(); ++_it)
 			{
@@ -745,8 +758,8 @@ void write_json_impl(T & writer, NSHARE::CConfig const& aFrom, bool aIsArray)
 
 		for (; _jt != _arrays.end(); ++_jt)
 		{
-			std::list<NSHARE::CConfig const*>::const_iterator _it(
-					_jt->second.begin()), _it_end(_jt->second.end());
+			ConfigSet::const_iterator _it(_jt->second.begin()), _it_end(
+					_jt->second.end());
 			VLOG(2) << "put array " << _jt->first;
 			writer.Key(_jt->first.c_str());
 			writer.StartArray();
@@ -812,10 +825,10 @@ bool CConfig::MFromJSON(NSHARE::CText const& aText)
 NSHARE::CText CConfig::MToJSON(bool aPretty) const
 {
 	NSHARE::CText _rval;
-	MToJSON(_rval,aPretty);
+	MToJSON(_rval, aPretty);
 	return _rval;
 }
-bool CConfig::MToJSON(NSHARE::CText& aText,bool aPretty) const
+bool CConfig::MToJSON(NSHARE::CText& aText, bool aPretty) const
 {
 	if (aPretty)
 		write_json_to_pretty(*this, &aText);
@@ -841,7 +854,7 @@ bool CConfig::MToXML(std::ostream& aStream, bool aPretty) const
 #else
 	boost::property_tree::xml_writer_settings<std::string> settings('\t', 1);
 #endif
-	
+
 	try
 	{
 		if (aPretty)
@@ -873,8 +886,13 @@ bool CConfig::MFromXML(std::istream& aStream)
 	}
 	return true;
 }
+size_t base64_encode_len(size_t len)
+{
+    return ((len + 2) / 3 * 4) + 1;
+}
+
 //from StackOverflow
-size_t base64_encode(NSHARE::CText& _dest,const char* src, size_t aLen)
+size_t base64_encode(NSHARE::CText& _dest, const char* src, size_t aLen)
 {
 	using namespace boost::archive::iterators;
 	char tail[3] =
@@ -885,12 +903,14 @@ size_t base64_encode(NSHARE::CText& _dest,const char* src, size_t aLen)
 	size_t len_rounded_down = one_third_len * 3;
 	size_t j = len_rounded_down + one_third_len;
 
-	_dest.reserve(len_rounded_down);
+	_dest.reserve(base64_encode_len(aLen));
 
-	std::back_insert_iterator<CText> _back(_dest);
-
-	std::copy(base64_enc(src), base64_enc(src + len_rounded_down), _back);
-
+	base64_enc _begin(src);
+	base64_enc _end(src+ len_rounded_down);
+	for (; _begin != _end; ++_begin)
+	{
+		_dest.push_back(*_begin);
+	}
 	if (len_rounded_down != aLen)
 	{
 		size_t i = 0;
@@ -899,8 +919,12 @@ size_t base64_encode(NSHARE::CText& _dest,const char* src, size_t aLen)
 			tail[i] = src[len_rounded_down + i];
 		}
 
-		std::copy(base64_enc(tail), base64_enc(tail + 3), _back);
-
+		base64_enc _begin(tail);
+		base64_enc _end(tail + 3);
+		for (; _begin != _end; ++_begin)
+		{
+			_dest.push_back(*_begin);
+		}
 		for (i = aLen + one_third_len + 1; i < j + 4; ++i)
 		{
 			_dest[i] = '=';
@@ -909,78 +933,77 @@ size_t base64_encode(NSHARE::CText& _dest,const char* src, size_t aLen)
 		return i;
 	}
 
-    return j;
+	return j;
 }
 const char* base64_decode(char* dest, const char* src, size_t* len)
 {
 	using namespace boost::archive::iterators;
 	size_t output_len = *len;
 
-    typedef transform_width<binary_from_base64<const char*>, 8, 6> base64_dec;
+	typedef transform_width<binary_from_base64<const char*>, 8, 6> base64_dec;
 
-    size_t i=0;
-    try
-    {
-        base64_dec src_it(src);
-        for(; i < output_len; ++i)
-        {
-            *dest++ = *src_it;
-            ++src_it;
-        }
-    }
-    catch(dataflow_exception const& e)
-    {
-    	VLOG(1)<<"Overflow error:"<<e.what();
-    }
+	size_t i = 0;
+	try
+	{
+		base64_dec src_it(src);
+		for (; i < output_len; ++i)
+		{
+			*dest++ = *src_it;
+			++src_it;
+		}
+	} catch (dataflow_exception const& e)
+	{
+		VLOG(1) << "Overflow error:" << e.what();
+	}
 
-    *len = i;
-    return src + (i+2)/3*4; // bytes in = bytes out / 3 rounded up * 4
+	*len = i;
+	return src + (i + 2) / 3 * 4; // bytes in = bytes out / 3 rounded up * 4
 }
 void base64_decode(CBuffer & aTo, NSHARE::CText const& aFrom)
 {
 	using namespace boost::archive::iterators;
-    typedef transform_width<binary_from_base64<const uint8_t*>, 8, 6> base64_dec;
+	typedef transform_width<binary_from_base64<const uint8_t*>, 8, 6> base64_dec;
 
-    aTo.reserve(aFrom.length_code()/2);
-    CText::size_type const _len=aFrom.find_last_not_of('=');
-    CHECK_NE(_len,CText::npos);
-    try
-    {
-        base64_dec src_it(aFrom.c_str()),_it_end(aFrom.c_str()+_len);
-        for(; src_it!=_it_end; ++src_it)
-        {
-        	uint8_t _val=*src_it;
-        	aTo.push_back(_val);
-        }
-    }
-    catch(dataflow_exception const& e)
-    {
-    	LOG(ERROR)<<"Overflow error:"<<e.what();
-    }
+	aTo.reserve(aFrom.length_code() / 2);
+	CText::size_type const _len = aFrom.find_last_not_of('=');
+	CHECK_NE(_len, CText::npos);
+	try
+	{
+		base64_dec src_it(aFrom.c_str()), _it_end(aFrom.c_str() + _len);
+		for (; src_it != _it_end; ++src_it)
+		{
+			uint8_t _val = *src_it;
+			aTo.push_back(_val);
+		}
+	} catch (dataflow_exception const& e)
+	{
+		LOG(ERROR)<<"Overflow error:"<<e.what();
+	}
 
 }
 void CConfig::MValue(CBuffer & aTo) const
 {
-	base64_decode(aTo,MValue());
+	base64_decode(aTo, MValue());
 }
 
-size_t CConfig::MValueBuf(size_t aMaxLen,void* aTo) const
+size_t CConfig::MValueBuf(size_t aMaxLen, void* aTo) const
 {
-	base64_decode((char*)aTo,MValue().c_str(),&aMaxLen);
-	VLOG(2)<<"Buf length="<<aMaxLen;
+	base64_decode((char*) aTo, MValue().c_str(), &aMaxLen);
+	VLOG(2) << "Buf length=" << aMaxLen;
 	return aMaxLen;
 }
-CConfig&  CConfig::MAdd(const CText& key, void const* aTo, size_t aMaxLen)
+CConfig& CConfig::MAdd(const CText& key, void const* aTo, size_t aMaxLen)
 {
 	FChildren.push_back(CConfig(key));
-	FChildren.back().MInheritReferrer(FReferrer);
-	base64_encode(FChildren.back().FValue,(char const*)aTo,aMaxLen);
-	VLOG(6)<<"Data string for "<<key<<" is "<<FChildren.back().MValue();
-	return FChildren.back();
+	CConfig& _new = FChildren.back().MWrite();
+	_new.MInheritReferrer(FReferrer);
+	base64_encode(_new.FValue, (char const*) aTo, aMaxLen);
+	VLOG(6) << "Data string for " << key << " is " << _new.MValue();
+	return _new;
 }
 CConfig& CConfig::MAddTo(const CText& key, CBuffer const & aTo)
 {
-	return MAdd(key,aTo.ptr_const(),aTo.size());
+	return MAdd(key, aTo.ptr_const(), aTo.size());
 }
 
 } /* namespace NSHARE */

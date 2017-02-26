@@ -447,8 +447,9 @@ bool CControlByTCP::MOpen(const NSHARE::CThread::param_t* aParam)
 {
 	CHECK_NOTNULL(FCustomer);
 
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
 	NSHARE::CRAII<NSHARE::CMutex> _block(FControlLock);
-	CConfig* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
+	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 
 	LOG_IF(WARNING,!_p)<<" Configure for "<<NAME<<" is not exist.";
 

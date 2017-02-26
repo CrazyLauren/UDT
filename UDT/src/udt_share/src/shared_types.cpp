@@ -135,7 +135,7 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 	{
 		VLOG(5) << "Push handler " << *_it;
 		FEventsList.push_back(
-				_it->MValue(
+				(*_it)->MValue(
 						demand_dg_t::event_handler_t(demand_dg_t::NO_HANDLER)));
 	}
 }
@@ -302,12 +302,12 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FFlags(E_NO_DEMAND_FLAGS)
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
-	std::pair<required_header_t, bool> const _val=sMParseHead(aConf);
+	std::pair<required_header_t, bool> const _val = sMParseHead(aConf);
 	if (!_val.second)
-		(void)0;//Head is not checking in MIsValid(), Therefore corrupting the other option
+		(void) 0; //Head is not checking in MIsValid(), Therefore corrupting the other option
 	else
 	{
-		FWhat=_val.first;
+		FWhat = _val.first;
 		aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 		aConf.MGetIfSet(HANDLER, FHandler);
 		aConf.MGetIfSet(KEY_FLAGS, FFlags);
@@ -319,10 +319,39 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		}
 	}
 }
-NSHARE::CConfig demand_dg_t::MSerialize() const
+NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 {
 	CConfig _conf(NAME);
-	_conf.MAdd(FWhat.MSerialize());
+	if (aIsSerializeHeadAsRaw)
+		_conf.MAdd(FWhat.MSerialize());
+	else
+	{
+		NSHARE::CText _protcol =
+				FProtocol.empty() ? RAW_PROTOCOL_NAME : FProtocol;
+		bool _is_false = true;
+		if (IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
+				_protcol))
+		{
+			try
+			{
+				CConfig const _is = _p->MToConfig(FWhat);
+				if (!_is.MIsEmpty())
+				{
+					_conf.MAdd(_protcol, _is);
+					_is_false = false;
+				}
+			} catch (...)
+			{
+			}
+		}
+
+		if (_is_false)
+		{
+			LOG(DFATAL)<<"Cannot serialize head by custom protocol: "<<_protcol;
+			_conf.MAdd(FWhat.MSerialize());
+		}
+
+	}
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 	_conf.MAdd(HANDLER, FHandler);
@@ -340,13 +369,16 @@ bool demand_dg_t::MIsValid() const
 	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs())
 			&& FHandler != NO_HANDLER;
 }
-bool demand_dg_t::operator==(demand_dg_t const& aRht) const
+bool demand_dg_t::MIsEqual(demand_dg_t const& aRht) const
 {
 	return FProtocol == aRht.FProtocol && //
 			FNameFrom == aRht.FNameFrom && //
 			memcmp(FWhat.FReserved, aRht.FWhat.FReserved,
-					sizeof(FWhat.FReserved)) == 0 && //
-			FUUIDFrom == aRht.FUUIDFrom;
+					sizeof(FWhat.FReserved)) == 0;
+}
+bool demand_dg_t::operator==(demand_dg_t const& aRht) const
+{
+	return MIsEqual(aRht) && FUUIDFrom == aRht.FUUIDFrom;
 }
 //---------------------------
 const NSHARE::CText demand_dgs_t::NAME = "dems";
@@ -361,13 +393,13 @@ demand_dgs_t::demand_dgs_t(NSHARE::CConfig const& aConf)
 		push_back(demand_dg_t(*_it));
 	}
 }
-NSHARE::CConfig demand_dgs_t::MSerialize() const
+NSHARE::CConfig demand_dgs_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 {
 	CConfig _conf(NAME);
 	const_iterator _it(begin()), _end(end());
 	for (; _it != _end; ++_it)
 	{
-		_conf.MAdd(_it->MSerialize());
+		_conf.MAdd(_it->MSerialize(aIsSerializeHeadAsRaw));
 	}
 
 	return _conf;
@@ -431,7 +463,7 @@ NSHARE::CConfig kernel_infos_diff_t::MSerialize() const
 	if (!FOpened.empty())
 	{
 		_conf.MAdd(OPENED_KERNELS, CConfig());
-		CConfig *_new = _conf.MMutableChild(OPENED_KERNELS);
+		CConfig* _new = _conf.MMutableChild(OPENED_KERNELS);
 		CHECK_NOTNULL(_new);
 		k_diff_t::const_iterator _it = FOpened.begin(), _it_end = FOpened.end();
 		for (; _it != _it_end; ++_it)
@@ -444,7 +476,7 @@ NSHARE::CConfig kernel_infos_diff_t::MSerialize() const
 	if (!FClosed.empty())
 	{
 		_conf.MAdd(CLOSED_KERNELS, CConfig());
-		CConfig *_new = _conf.MMutableChild(CLOSED_KERNELS);
+		CConfig* _new = _conf.MMutableChild(CLOSED_KERNELS);
 		CHECK_NOTNULL(_new);
 		k_diff_t::const_iterator _it = FClosed.begin(), _it_end = FClosed.end();
 		for (; _it != _it_end; ++_it)
@@ -473,7 +505,7 @@ demand_dgs_for_t::demand_dgs_for_t(NSHARE::CConfig const& aConf)
 		VLOG(5) << "Push kernel info " << *_it;
 		insert(
 				value_type(id_t(*_it),
-						demand_dgs_t(_it->MChild(demand_dgs_t::NAME))));
+						demand_dgs_t((*_it)->MChild(demand_dgs_t::NAME))));
 	}
 }
 
@@ -666,5 +698,63 @@ void fail_send_t::MSetUserError(user_error_type aError)
 void fail_send_t::MSetError(error_type aError)
 {
 	FError.MSetFlag(aError, true);
+}
+const NSHARE::CText user_data_t::NAME = "udata";
+const NSHARE::CText user_data_t::DATA = "data";
+const NSHARE::CText user_data_t::HEADER = "head";
+NSHARE::CConfig user_data_t::MSerialize(NSHARE::CText const & aName) const
+{
+	return MSerialize(CParserFactory::sMGetInstance().MGetFactory(aName));
+}
+NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
+		IExtParser* aP) const
+{
+
+
+	const size_t _size = FData.size();
+	const uint8_t* _begin = (const uint8_t*) FData.ptr_const();
+
+	CConfig _conf(NAME);
+	_conf.MAdd(FDataId.MSerialize());
+
+	//NSHARE::CConfig _data;
+	bool _is_base64 = false;
+
+	if (aP)
+	{
+		required_header_t _raw_head;
+		_raw_head.FVersion = FDataId.FVersion;
+		_raw_head.FNumber = FDataId.FRawProtocolNumber;
+		try
+		{
+			NSHARE::CConfig const _data(DATA,
+					aP->MToConfig(
+							FDataId.MIsRaw() ? _raw_head : required_header_t(),
+							_begin, _begin + _size));
+			if (_data.MIsOnlyKey())
+				_is_base64 = true;
+			else
+				_conf.MAdd(_data);
+
+		} catch (...)
+		{
+			LOG(DFATAL)<<"Exception is occurred";
+			_is_base64 = true;
+		}
+
+	}
+	else
+	_is_base64=true;
+
+	if (_is_base64)
+	{
+		NSHARE::CConfig const _data(DATA, FData);
+		_conf.MAdd(_data);
+	}
+	return _conf;
+}
+bool user_data_t::MIsValid() const
+{
+	return FDataId.MIsValid() && !FData.empty();
 }
 }

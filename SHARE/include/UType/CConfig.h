@@ -20,8 +20,8 @@ namespace NSHARE
 
 class SHARE_EXPORT CConfig;
 class CBuffer;
-
-typedef std::list<class CConfig> ConfigSet;
+typedef CCOWPtr<class CConfig> CConfigPtr;
+typedef std::list<CConfigPtr> ConfigSet;
 
 class SHARE_EXPORT CConfig
 {
@@ -59,7 +59,7 @@ public:
 	}
 
 	CConfig(const CConfig& rhs);
-
+	CConfig(const CText& key,const CConfig& rhs);
 
 
 	CConfig& operator=(const CConfig& rhs);
@@ -88,7 +88,10 @@ public:
 	{
 		return FKey.empty() && FValue.empty() && FChildren.empty();
 	}
-
+	bool MIsOnlyKey() const
+	{
+		return FValue.empty() && FChildren.empty();
+	}
 	bool MIsSimple() const //leaf
 	{
 		return !FKey.empty() && !FValue.empty() && FChildren.empty();
@@ -153,7 +156,7 @@ public:
 		for (ConfigSet::const_iterator i = FChildren.begin();
 				i != FChildren.end(); ++i)
 		{
-			if (i->MKey() == key)
+			if ((*i)->MKey() == key)
 				r.push_back(*i);
 		}
 		return r;
@@ -163,7 +166,7 @@ public:
 	{
 		for (ConfigSet::const_iterator i = FChildren.begin();
 				i != FChildren.end(); ++i)
-			if (i->MKey() == key)
+			if ((*i)->MKey() == key)
 				return true;
 		return false;
 	}
@@ -172,7 +175,7 @@ public:
 	{
 		for (ConfigSet::iterator i = FChildren.begin(); i != FChildren.end();)
 		{
-			if (i->MKey() == key)
+			if ((*i)->MKey() == key)
 				i = FChildren.erase(i);
 			else
 				++i;
@@ -181,15 +184,16 @@ public:
 
 	CConfig const& MChild(const CText& key) const;
 
-	const CConfig* MChildPtr(const CText& key) const;
+	const CConfigPtr MChildPtr(const CText& key) const;
 
 	CConfig* MMutableChild(const CText& key);
 
 	void MMerge(const CConfig& rhs);
 	void MBlendWith(const CConfig& rhs);
 
-	CConfig* MFind(const CText& key, bool checkThis = true);
-	const CConfig* MFind(const CText& key, bool checkThis = true) const;
+	CConfigPtr MFindPtr(const CText& key)const;
+	CConfig* MFind(const CText& key);
+	const CConfig* MFind(const CText& key) const;
 
 #ifdef SMART_FIELD_EXIST
 	template<typename T>
@@ -211,8 +215,9 @@ public:
 		out << value;
 		FChildren.push_back(CConfig(key, out.str()));
 #endif
-		FChildren.back().MInheritReferrer(FReferrer);
-		return FChildren.back();
+		CConfig& _new=FChildren.back().MWrite();
+		_new.MInheritReferrer(FReferrer);
+		return _new;
 	}
 
 	CConfig&  MAdd(const CText& key,void const* aTo,size_t aMaxLen);
@@ -221,8 +226,9 @@ public:
 	{
 		FChildren.push_back(conf);
 
-		FChildren.back().MInheritReferrer(FReferrer);
-		return FChildren.back();
+		CConfig& _new=FChildren.back().MWrite();
+		_new.MInheritReferrer(FReferrer);
+		return _new;
 	}
 
 	CConfig& MAdd(const CText& key, const CConfig& conf)
@@ -377,8 +383,9 @@ CConfig& CConfig::MAdd<CText>(const CText& key, const CText& value)
 {
 	FChildren.push_back(CConfig(key, value));
 	//_children.back().setReferrer( _referrer );
-	FChildren.back().MInheritReferrer(FReferrer);
-	return FChildren.back();
+	CConfig& _new=FChildren.back().MWrite();
+	_new.MInheritReferrer(FReferrer);
+	return _new;
 }
 template<> inline
 CText CConfig::MValue<CText>(CText _val) const

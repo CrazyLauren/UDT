@@ -90,16 +90,16 @@ NSHARE::CConfig CDiagnostic::MSerialize(NSHARE::CText const& aName,bool aDeep) c
 		ConfigSet::iterator _ch_it=_childs.begin(),_ch_it_end(_childs.end());
 		for(;_ch_it!=_ch_it_end;++_ch_it)
 		{
-			const ConfigSet _set = _ch_it->MChildren(REFFRENCE_TO);
+			const ConfigSet _set = (*_ch_it)->MChildren(REFFRENCE_TO);
 			if (!_set.empty())
 			{
 				ConfigSet::const_iterator _it = _set.begin(), _it_end(
 						_set.end());
 				for (; _it != _it_end; ++_it)
 				{
-					_rval.MAdd(MSerialize(_it->MValue()));
+					_rval.MAdd(MSerialize((*_it)->MValue()));
 				}
-				_ch_it->MRemove(REFFRENCE_TO);
+				_ch_it->MWrite().MRemove(REFFRENCE_TO);
 			}
 		}
 	}

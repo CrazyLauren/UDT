@@ -167,6 +167,8 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <type_manip.h>
 //#include <type_utf8.h>
 #include <UType/CDenyCopying.h>
+#include <UType/counter_t.h>
+#include <UType/CCOWPtr.h>
 #include <UType/CRAII.h>
 #include <UType/CFlags.h>
 #include <UType/CMutex.h>

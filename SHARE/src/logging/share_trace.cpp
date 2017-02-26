@@ -60,6 +60,8 @@
 #include <UType/deftype.h>
 #include <UType/CEvent.h>
 #include <UType/CDenyCopying.h>
+#include <UType/counter_t.h>
+#include <UType/CCOWPtr.h>
 #include <UType/CConfig.h>
 #include <UType/CThread.h>
 #include <logging/CShareLogArgsParser.h>

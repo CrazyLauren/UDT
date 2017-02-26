@@ -49,6 +49,7 @@ CConfigure::CConfigure(NSHARE::CText const& aPath, eType const& aType) :
 		}
 		_stream.close();
 	}
+	VLOG(6)<<FConf.MToJSON(true);
 }
 
 
