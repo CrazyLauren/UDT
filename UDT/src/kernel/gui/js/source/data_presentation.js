@@ -1,6 +1,3 @@
-/**
- * Created by s.n.cherepanov on 03.03.2017.
- */
 function filling_data_style(_f)
 {
     _f.tooltip({//for uuid

@@ -1,7 +1,3 @@
-/**
- * Created by s.n.cherepanov on 01.03.2017.
- */
-
 (function ($)
 {
     jQuery.get_protocol_parser = function (aVal)
