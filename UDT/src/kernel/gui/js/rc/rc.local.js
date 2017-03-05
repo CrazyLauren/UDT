@@ -1,15 +1,12 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Created by s.n.cherepanov on 01.03.2017.
  */
-
-jQuery.get_protocol_parser().raw =
+jQuery.get_protocol_parser().my =
     {
         head: {
             getName:function()
             {
-                return "raw";
+                return "my";
             },
             entry_field: function (aPanel)
             {

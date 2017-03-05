@@ -166,6 +166,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	static const NSHARE::CText KEY_PACKET_NUMBER;
 	static const NSHARE::CText KEY_PACKET_FROM;
 	static const NSHARE::CText KEY_PACKET_TO;
+	static const NSHARE::CText KEY_REGISTRATORS;
 	static const NSHARE::CText KEY_PACKET_PROTOCOL;
 	static const NSHARE::CText KEY_RAW_PROTOCOL_NUM;
 	user_data_info_t() :
@@ -188,6 +189,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 
 	std::vector<demand_dg_t::event_handler_t> FEventsList;
 	uuids_t FDestination;
+	uuids_t FRegistrators;
 	routing_t FRouting;
 
 	split_packet_t FSplit;
@@ -198,6 +200,7 @@ struct UDT_SHARE_EXPORT user_data_t
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText DATA;
 	static const NSHARE::CText HEADER;
+	static const NSHARE::CText PARSER;
 
 	user_data_info_t FDataId;
 	NSHARE::CBuffer FData;
@@ -492,6 +495,13 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	else
 		aStream << "();";
 
+	if (!aVal.FRegistrators.empty())
+	{
+		aStream << " ++ " << aVal.FRegistrators << ";";
+	}
+	else
+		aStream << " ++;";
+	
 	if (!aVal.FRouting.empty())
 	{
 		aStream << " ==> " << aVal.FRouting << " <> " << ";";

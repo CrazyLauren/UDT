@@ -23,7 +23,7 @@ class CHttpIOManger:public IIOManager
 public:
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText PORT;
-	static const NSHARE::CText PARSER_NAME;
+	static const NSHARE::CText BUF_MAX_SIZE;
 	static const NSHARE::CText PARSER_ERROR;
 	static const NSHARE::CText SNIFFER;
 	static const NSHARE::CText I_WHAT_RECEIVE;
@@ -60,9 +60,17 @@ public:
 		return NSHARE::CConfig::sMGetEmpty();
 	}
 private:
-	typedef std::pair<required_header_t,IExtParser*> serializator_t;
+	struct ser_sniffed_data_t
+	{
+		size_t FSize;
+		size_t FSinffedNum;
+		NSHARE::CConfig FData;
+	};
+	typedef std::map<NSHARE::net_address,NSHARE::CBuffer> streamed_data_t;
+	typedef std::pair<required_header_t,NSHARE::CText> serializator_t;
 	typedef std::map<uint32_t,serializator_t > serializators_t;
-	typedef std::list<std::pair<size_t, NSHARE::CConfig> > sniffed_data_t;
+
+	typedef std::list<ser_sniffed_data_t> data_fifo_t;
 
 	inline void MCloseImpl();
 	static int sMConnect(void* aWho, void* aWhat, void* aThis);
@@ -82,6 +90,8 @@ private:
 	eStatusCode MGetStateInfo(const CUrl& _url,CHttpResponse& _response);
 	eStatusCode MHandleSniffer(const NSHARE::CConfig& aConf,const NSHARE::CText& aPath,CHttpResponse& _response);
 	void MPutAsJson(const NSHARE::CConfig& _data, CHttpResponse& _response);
+	void MPutSniffedDataFrom(const size_t _number,  NSHARE::CConfig& aTo) const;
+	void MPutToFifo(data_fifo_t::value_type const& _new_data);
 
 	CKernelIo * FIo;
 
@@ -98,10 +108,11 @@ private:
 	serializators_t FSerializators;
 	NSHARE::CMutex FParserMutex;
 
-	NSHARE::CMutex FSniffedMutex;
-	sniffed_data_t FSniffedData;
+	mutable NSHARE::CMutex FSniffedMutex;
+	data_fifo_t FSniffedData;
 	size_t FSinffedNum;
-	size_t FRemainderSize;
+	int FBufferingBytes;
+	streamed_data_t FStreamedData;
 };
 
 } /* namespace NUDT */

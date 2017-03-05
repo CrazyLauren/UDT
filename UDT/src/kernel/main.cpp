@@ -230,16 +230,16 @@ void initialize_core(int argc, char* argv[])
 
 	//parsers
 	{
-		const CConfigPtr _p = CConfigure::sMGetInstance().MGet().MChildPtr(
+		const CConfig* _p = CConfigure::sMGetInstance().MGet().MChildPtr(
 				"modules");
 		//LOG_IF(DFATAL,!_p) << "Invalid config file.Key modules is not exist.";
 		std::vector<NSHARE::CText> _text;
-		if (_p.MIs())
+		if (_p)
 		{
 			ConfigSet::const_iterator _it = _p->MChildren().begin();
 
 			for (; _it != _p->MChildren().end(); ++_it)
-				_text.push_back((*_it)->MKey());
+				_text.push_back(_it->MKey());
 		}
 
 		NSHARE::CText _ext_path;

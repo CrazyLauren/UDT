@@ -61,8 +61,9 @@ enum eHtppMethod
 };
 enum eHtppError
 {
-	E_HTTP_ERROR_NOT_SET = -1,
-	E_HTTP_OK = 0, E_INVALID_EOF_STATE = 11, //stream ended at an unexpected time
+	E_HTTP_ERROR_NOT_SET = -1,//
+	E_HTTP_OK = 0,//
+	E_INVALID_EOF_STATE = 11, //stream ended at an unexpected time
 	E_HEADER_OVERFLOW, //too many header bytes seen; overflow detected
 	E_CLOSED_CONNECTION, //data received after completed connection: close message
 	E_INVALID_VERSION, //invalid HTTP version
@@ -147,6 +148,7 @@ extern NSHARE::CText http_error_description(eHtppError);
 extern NSHARE::CText http_status_str(eStatusCode);
 struct CUrl
 {
+	static const NSHARE::CText TIMESTAMP_QUERY;
 	struct qeury_t:std::multimap<NSHARE::CText,NSHARE::CText>
 	{
 		 ;
@@ -169,6 +171,7 @@ struct CUrl
 	bool MIsValid() const;
 	static bool sMUintTest();
 	void MReset();
+	NSHARE::smart_field_t<uint64_t> FTimeStamp;
 private:
 	NSHARE::smart_field_t<NSHARE::CText> FSchema;
 	NSHARE::smart_field_t<NSHARE::CText> FHost;

@@ -45,7 +45,7 @@ public:
 	virtual result_t MParserData(const uint8_t* aItBegin,
 			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=ORDER_LE)=0;
 
-	virtual required_header_t MHeader(const NSHARE::CConfig& aFrom) const=0;
+	virtual std::pair<required_header_t,bool> MHeader(const NSHARE::CConfig& aFrom) const=0;
 	virtual NSHARE::CConfig MToConfig(const required_header_t&) const=0;
 
 	virtual NSHARE::CConfig MToConfig(const required_header_t& aHeader,//for parsing a raw protocol.

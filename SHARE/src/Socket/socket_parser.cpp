@@ -56,7 +56,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 	for (ConfigSet::const_iterator _it_up = _child.begin();
 			_it_up != _child.end(); ++_it_up)
 	{
-		NSHARE::CText _name = (*_it_up)->MKey();
+		NSHARE::CText _name = (_it_up)->MKey();
 		VLOG(2)<<"Name Socket "<<_name;
 		if (_name == KEY_DEX)
 		{
@@ -233,7 +233,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 			CSocketFile* _file_in = NULL;
 			CSocketFile* _file_out = NULL;
 
-			ConfigSet const& _child = (*_it_up)->MChildren();
+			ConfigSet const& _child = (_it_up)->MChildren();
 
 			ConfigSet::const_iterator _it = _child.begin();
 			ConfigSet::const_iterator _it_end = _child.end();

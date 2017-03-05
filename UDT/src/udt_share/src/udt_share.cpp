@@ -93,6 +93,8 @@ extern UDT_SHARE_EXPORT std::pair<size_t,size_t> deserialize_dg_head(
 			* sizeof(demand_dg_t::event_handler_t);
 	const size_t _dest_size = _from.FDestination
 			* sizeof(uuids_t::value_type);
+	const size_t _registrator_size = _from.FRegistrators
+			* sizeof(uuids_t::value_type);			
 	const size_t _routing_size = _from.FRouting
 			* sizeof(uuids_t::value_type);
 
@@ -134,6 +136,7 @@ extern UDT_SHARE_EXPORT std::pair<size_t,size_t> deserialize_dg_head(
 	}
 	_offset += _dest_size;
 
+	
 	if (_routing_size)
 	{
 		uuids_t::value_type const *_p_begin =
@@ -146,6 +149,20 @@ extern UDT_SHARE_EXPORT std::pair<size_t,size_t> deserialize_dg_head(
 	}
 	_offset += _routing_size;
 
+	
+	if (_registrator_size)
+	{
+		uuids_t::value_type const *_p_begin =
+				(uuids_t::value_type const *) (aFrom + _offset);
+		uuids_t::value_type const *_p_end = _p_begin
+				+ _from.FRegistrators;
+
+		for (; _p_begin != _p_end; ++_p_begin)
+			_user.FRegistrators.push_back(
+					uuids_t::value_type(*_p_begin));
+	}
+	_offset += _registrator_size;
+	
 	//	if (_from.FName)
 	//	{
 	//		if (_from.FUUIDsLen)
@@ -230,19 +247,21 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	std::vector<demand_dg_t::event_handler_t> const& _events = _id.FEventsList;
 	uuids_t const& _dest = _id.FDestination;
 	uuids_t const& _routing = _id.FRouting;
+	uuids_t const& _reg = _id.FRegistrators;
 
 	const size_t _name_protocol = _id.FProtocol.length_code();
 
 	const size_t _events_size = _events.size()
 			* sizeof(demand_dg_t::event_handler_t);
 	const size_t _dest_size = _dest.size() * sizeof(uuids_t::value_type);
+	const size_t _reg_size = _reg.size() * sizeof(uuids_t::value_type);
 	const size_t _routing_size = _routing.size() * sizeof(uuids_t::value_type);
 
 	const size_t _name_from_len = 0; //_id.FFrom.FName.length_code(); //utf8 len
 	const size_t full_size = sizeof(user_data_header_t) //
 	+ (_name_from_len ? _name_from_len + 1 : 0) //
 			+ (_name_protocol ? _name_protocol + 1 : 0) //
-			+ _events_size+_dest_size+_routing_size;
+			+ _events_size+_dest_size+_reg_size+_routing_size;
 
 	if(!_begin)
 		return full_size;//calculate size
@@ -253,6 +272,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FEventList = _events.size();
 	_user_data->FDestination = _dest.size();
 	_user_data->FRouting = _routing.size();
+	_user_data->FRegistrators = _reg.size();
 
 
 	_user_data->FUUIDFrom = _id.FRouting.FFrom.FUuid.FVal;
@@ -309,6 +329,19 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 
 		uuids_t::const_iterator _it =
 				_routing.begin(), _it_end(_routing.end());
+
+		for (; _it != _it_end; ++_it)
+		{
+			memcpy(_p, &(*_it), _it_size);
+			_p += _it_size;
+		}
+	}
+	if (_reg_size)
+	{
+		const size_t _it_size=sizeof(uuids_t::value_type);
+
+		uuids_t::const_iterator _it =
+				_reg.begin(), _it_end(_reg.end());
 
 		for (; _it != _it_end; ++_it)
 		{

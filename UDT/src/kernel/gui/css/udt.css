@@ -1,0 +1,129 @@
+#sniffer_pane {
+    display: table;
+    width: 100%;
+    height: 100%;
+}
+
+#buttons_region {
+    display: table-row;
+}
+
+#sniffer_region {
+    display: table-row;
+    width: 100%;
+    height: 100%;
+}
+
+#sniffer_data_region {
+    display: table-cell;
+    width: 50%;
+    height: 100%;
+    text-align: center;
+}
+
+#sniffer_data_detail {
+    display: table-cell;
+    width: 50%;
+    height: 100%;
+    text-align: center;
+}
+
+#sniffer_data_region p {
+
+}
+/*detail*/
+#sniffer_data_detail .data_detail_table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 .4em;
+}
+
+#sniffer_data_detail .data_detail_table table {
+    width: 100%;
+    background-color: white;
+}
+
+#sniffer_data_detail .data_detail_table td {
+    width: 100%;
+    text-align: left;
+    word-break: break-all;
+}
+
+#sniffer_data_detail .data_detail_table tr {
+    width: 100%;
+}
+
+#sniffer_data_detail .data_detail_table td:nth-child(1) {
+    width: 20%;
+    text-align: center;
+    vertical-align: text-top;
+}
+
+#sniffer_data_detail .data_detail_table tr:nth-child(odd) {
+    background-color: #e9e9e9;
+}
+
+/*Data table */
+#sniffer_data_region .data_table {
+    width: 100%;
+}
+
+#sniffer_data_region .data_table td,th:nth-child(-n+2) {
+     width: 25%;
+     text-align: center;
+     vertical-align: center;
+ }
+/*raw colors*/
+#sniffer_data_region .data_table tr:hover > td {
+    background-color: #f5f5f5;
+    color: #454545;
+    cursor: pointer;
+}
+#sniffer_data_region .handler-class-0.ui-state-active,
+.data_table tr.handler-class-0 >td
+{
+    background: lightslategray;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-1.ui-state-active,
+.data_table tr.handler-class-1 >td
+{
+    background: lightseagreen;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-2.ui-state-active,
+.data_table tr.handler-class-2 >td
+{
+    background: cornflowerblue;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-3.ui-state-active,
+.data_table tr.handler-class-3 >td
+{
+    background: darkkhaki;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-4.ui-state-active,
+.data_table tr.handler-class-4 >td
+{
+    background: sienna;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-5.ui-state-active,
+.data_table tr.handler-class-5 >td
+{
+    background: yellowgreen;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-6.ui-state-active,
+.data_table tr.handler-class-6 >td
+{
+    background: burlywood;
+    color: #ffffff;
+}
+#sniffer_data_region .handler-class-7.ui-state-active,
+.data_table tr.handler-class-7 >td
+{
+    background: darkorchid;
+    color: #ffffff;
+}

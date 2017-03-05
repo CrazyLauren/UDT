@@ -1431,33 +1431,48 @@ NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 	if (FUCS4Length)
 	{
 		COMPILE_ASSERT(sizeof(CCodeUTF8::utf8_t)>=sizeof(NSHARE::CBuffer::value_type),CannotConvertUtf8ToBuf);
+		const size_t _befor = aBuf.size();
+		
+		aBuf.reserve(_befor +FUCS4Length);
+		aBuf.resize(aBuf.capacity()-1/*de bene esse*/);
 
-		aBuf.reserve(aBuf.size()+FUCS4Length);
+//		const unsigned _factor=sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type);
 
-		const unsigned _factor=sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type);
-
-		NSHARE::CBuffer::value_type _buf[_factor*4]; //max 4 byte
-		CBuffer::const_iterator const _p_buf(_buf);
+//		NSHARE::CBuffer::value_type _buf[_factor*4]; //max 4 byte
+//		CBuffer::const_iterator const _p_buf(_buf);
 
 		size_type const src_len = FUCS4Length;
 		const utf32* _src_begin = ptr();
 		utf32 const* const _src_end = _src_begin + src_len;
-
+		
+		size_t i=0;
+		size_t _cur_size = aBuf.size();
+		CCodeUTF8::utf8_t* _p_base = reinterpret_cast<CCodeUTF8::utf8_t* const>(aBuf.ptr() +_befor);
 		for (; (_src_begin != _src_end); ++_src_begin)
 		{
-			size_t _count = (NSHARE::CBuffer::value_type*) CCodeUTF8::sMAppend(
-					*_src_begin, reinterpret_cast<CCodeUTF8::utf8_t*>(_buf)) - _buf;
+			if (_cur_size < (i + sizeof(utf32)))
+			{
+				aBuf.resize(_cur_size+ sizeof(utf32));
+				_p_base = reinterpret_cast<CCodeUTF8::utf8_t* const>(aBuf.ptr() + _befor);
+			}
+			
+			CCodeUTF8::utf8_t*const _p = _p_base +i;
 
-			CHECK_LE(_count, sizeof(_buf));
+			size_t _count = CCodeUTF8::sMAppend(
+					*_src_begin, _p) - _p;
+			i += _count;
+			//CHECK_LE(_count, sizeof(_buf));
 
-			aBuf.insert(aBuf.end(),_p_buf,_p_buf+_count);
+			//aBuf.insert(aBuf.end(),_p_buf,_p_buf+_count);
 
 			if (_count == 0)
 			{
 				LOG(DFATAL)<<"Invalid utf8 char code:"<<(*_src_begin);
 				break;
 			}
+
 		}
+		aBuf.resize(_befor + i);
 	}
 	else
 		VLOG(2) << "Print empty text";
@@ -2645,6 +2660,11 @@ void CText::sMUnitTest()
 		s1 = "1245452";
 		CHECK(s1.isdigit());
 	}
+}
+static CText g_empty;
+CText const& CText::sMEmpty()
+{
+	return g_empty;
 }
 } // NSHARE
 

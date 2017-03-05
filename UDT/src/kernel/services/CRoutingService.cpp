@@ -390,7 +390,8 @@ void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 {
 	LOG(ERROR)<<"Cannot send  packet #"<<_sent.FPacketNumber<<" from " << _sent.FRouting.FFrom << " to " << _sent.FRouting;
 	routing_t _f_to;
-	_f_to.push_back(_sent.FRouting.FFrom.FUuid);
+	_f_to.insert(_f_to.end(),_sent.FRegistrators.begin(),_sent.FRegistrators.end());
+	_f_to.push_back(_sent.FRouting.FFrom.FUuid);//todo add registrators
 	_f_to.FFrom = get_my_id().FId;
 	MSendTo(_f_to, _sent);
 }

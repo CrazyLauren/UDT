@@ -74,8 +74,8 @@ CText uuid_t::MToString() const
 	_text.MPrintf("%02x-%02x-"
 			"%02x-%02x-"
 			"%02x-%02x-"
-			"%02x-%02x", _this[0], _this[1], _this[2], _this[3], _this[4],
-			_this[5], _this[6], _this[7]);
+			"%02x-%02x", _this[7], _this[6], _this[5], _this[4], _this[3],
+			_this[2], _this[1], _this[0]);
 	return _text;
 }
 bool uuid_t::MIsValid() const
@@ -96,8 +96,8 @@ bool uuid_t::MFromString(CText const& aText)
 					"%*c%*c%02x%*c"//
 					"%*c%*c%02x%*c"//
 					"%*c%*c%02x"//
-			, &_data[0], &_data[1], &_data[2], &_data[3], &_data[4], &_data[5],
-			&_data[6], &_data[7]);
+			, &_data[7], &_data[6], &_data[5], &_data[4], &_data[3], &_data[2],
+			&_data[1], &_data[0]);
 	if (count == 8)
 	{
 		for (int i = 0; i < 8; ++i)

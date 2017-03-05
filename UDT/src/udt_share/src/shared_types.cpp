@@ -113,6 +113,8 @@ const NSHARE::CText user_data_info_t::KEY_PACKET_NUMBER = "pn";
 //const NSHARE::CText user_data_info_t::KEY_PACKET_FROM = "f";
 const NSHARE::CText user_data_info_t::KEY_PACKET_FROM = id_t::NAME;
 const NSHARE::CText user_data_info_t::KEY_PACKET_TO = "to";
+const NSHARE::CText user_data_info_t::KEY_REGISTRATORS = "reg";
+
 const NSHARE::CText user_data_info_t::KEY_PACKET_PROTOCOL = "pl";
 const NSHARE::CText user_data_info_t::KEY_RAW_PROTOCOL_NUM = "nr";
 
@@ -121,6 +123,7 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		FRawProtocolNumber(0), //
 		FSplit(aConf.MChild(split_packet_t::NAME)), //
 		FDestination(aConf.MChild(uuids_t::NAME)), //
+		FRegistrators(aConf.MChild(KEY_REGISTRATORS)), //
 		FRouting(aConf.MChild(routing_t::NAME)), //
 		FVersion(aConf.MChild(NSHARE::version_t::NAME)) //
 {
@@ -135,7 +138,7 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 	{
 		VLOG(5) << "Push handler " << *_it;
 		FEventsList.push_back(
-				(*_it)->MValue(
+				_it->MValue(
 						demand_dg_t::event_handler_t(demand_dg_t::NO_HANDLER)));
 	}
 }
@@ -151,6 +154,10 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	if (!FDestination.empty())
 	{
 		_conf.MAdd(FDestination.MSerialize());
+	}
+	if (!FRegistrators.empty())
+	{
+		_conf.MAdd(KEY_REGISTRATORS,FRegistrators.MSerialize());
 	}
 	if (!FEventsList.empty())
 	{
@@ -280,7 +287,8 @@ std::pair<required_header_t, bool> demand_dg_t::sMParseHead(
 		{
 			try
 			{
-				return std::make_pair(_p->MHeader(aConf.MChild(_proto)), true);
+				VLOG(2)<<aConf.MChild(_proto).MToJSON(true);
+				return _p->MHeader(aConf.MChild(_proto));
 			} catch (...)
 			{
 				LOG(DFATAL)<<"No demand header.	User fail "<<_proto;
@@ -505,7 +513,7 @@ demand_dgs_for_t::demand_dgs_for_t(NSHARE::CConfig const& aConf)
 		VLOG(5) << "Push kernel info " << *_it;
 		insert(
 				value_type(id_t(*_it),
-						demand_dgs_t((*_it)->MChild(demand_dgs_t::NAME))));
+						demand_dgs_t((_it)->MChild(demand_dgs_t::NAME))));
 	}
 }
 
@@ -702,9 +710,11 @@ void fail_send_t::MSetError(error_type aError)
 const NSHARE::CText user_data_t::NAME = "udata";
 const NSHARE::CText user_data_t::DATA = "data";
 const NSHARE::CText user_data_t::HEADER = "head";
+const NSHARE::CText user_data_t::PARSER = "by_parser";
+
 NSHARE::CConfig user_data_t::MSerialize(NSHARE::CText const & aName) const
 {
-	return MSerialize(CParserFactory::sMGetInstance().MGetFactory(aName));
+	return MSerialize(aName.empty()?NULL:CParserFactory::sMGetInstance().MGetFactory(aName));
 }
 NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 		IExtParser* aP) const
@@ -727,14 +737,21 @@ NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 		_raw_head.FNumber = FDataId.FRawProtocolNumber;
 		try
 		{
-			NSHARE::CConfig const _data(DATA,
+			NSHARE::CConfig _data(
 					aP->MToConfig(
 							FDataId.MIsRaw() ? _raw_head : required_header_t(),
 							_begin, _begin + _size));
+			_data.MValue()=DATA;
 			if (_data.MIsOnlyKey())
+				{
+				LOG(ERROR)<<"Cannot serialize by "<<aP->MGetType();
 				_is_base64 = true;
+				}
 			else
+			{
 				_conf.MAdd(_data);
+				_conf.MAdd(PARSER,aP->MGetType());
+			}
 
 		} catch (...)
 		{
@@ -749,6 +766,7 @@ NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 	if (_is_base64)
 	{
 		NSHARE::CConfig const _data(DATA, FData);
+		_conf.MAdd(PARSER,"base64");
 		_conf.MAdd(_data);
 	}
 	return _conf;

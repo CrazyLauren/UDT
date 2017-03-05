@@ -52,13 +52,13 @@ public:
 		_text.MPrintf("# %d", aHeader.FNumber);
 		return _text;
 	}
-	NUDT::required_header_t MHeader(
+	std::pair<NUDT::required_header_t, bool> MHeader(
 			const NSHARE::CConfig& aFrom) const
 	{
 		NUDT::required_header_t _header;
 		_header.FNumber = aFrom.MValue("num", 0u);
 		_header.FVersion = NSHARE::version_t(aFrom.MChild("ver"));
-		return _header;
+		return std::make_pair(_header, aFrom.MIsChild("num"));
 	}
 	NSHARE::CConfig MToConfig(
 			const NUDT::required_header_t& aHeader) const

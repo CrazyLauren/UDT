@@ -231,6 +231,7 @@ extern NSHARE::CText http_status_str(eStatusCode c)
 		return "Unknown";
 	}
 }
+const NSHARE::CText CUrl::TIMESTAMP_QUERY = "_";
 CUrl::CUrl() :
 		FIsValid(false)
 {
@@ -273,6 +274,7 @@ void CUrl::MReset()
 	FFragment.MUnSet();
 	FUser.MUnSet();
 	FPassword.MUnSet();
+	FTimeStamp.MUnSet();
 	FIsValid=false;
 }
 bool CUrl::MParser(NSHARE::CText const& aFrom, bool aIsConnect,
@@ -359,7 +361,14 @@ bool CUrl::MParser(NSHARE::CText const& aFrom, bool aIsConnect,
 						VLOG(2)<<_var<<" = "<<_val;
 
 						//CHECK(FQuery.find(_var)==FQuery.end());
-						FQuery.insert(qeury_t::value_type(_var,_val));
+						if (_var != TIMESTAMP_QUERY)
+							FQuery.insert(qeury_t::value_type(_var, _val));
+						else if (!NSHARE::from_string(_val, FTimeStamp.MGet()))
+						{
+
+							LOG(ERROR)<<"Cannot set up time stamp "<<_val;
+							FTimeStamp.MUnSet();
+						}
 						//FQuery[_var]=_val;
 
 						_query_begin =

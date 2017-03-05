@@ -29,10 +29,10 @@ namespace NUDT
 using namespace NSHARE;
 //CHttpIOManger::NAME is definition in CHttpIOManagerRegister.
 NSHARE::CText const CHttpIOManger::PORT = "port";
-NSHARE::CText const CHttpIOManger::PARSER_NAME = "by_parser";
+NSHARE::CText const CHttpIOManger::BUF_MAX_SIZE="maxbuf";
 NSHARE::CText const CHttpIOManger::PARSER_ERROR = "par_fail";
 NSHARE::CText const CHttpIOManger::SNIFFER = "sniffer";
-NSHARE::CText const CHttpIOManger::WWW_PATH = "q:/GIT/UDT/UDT/src/kernel/gui";
+NSHARE::CText const CHttpIOManger::WWW_PATH = "./gui";
 NSHARE::CText const CHttpIOManger::I_WHAT_RECEIVE = "i_what_receive";
 NSHARE::CText const CHttpIOManger::DO_NOT_RECEIVE_MSG = "do_not_receive_msg";
 NSHARE::CText const CHttpIOManger::SNIFFER_STATE = "snif_state";
@@ -47,7 +47,7 @@ CHttpIOManger::CHttpIOManger() :
 		FProgId(get_my_id()), //
 		FUniqueNumber(1), //
 		FSinffedNum(1), //
-		FRemainderSize(std::numeric_limits<size_t>::max())
+		FBufferingBytes(10*1024*1024)//max 10 mb
 
 {
 	FProgId.FId.FUuid = NSHARE::get_uuid(FProgId.FId.FName);
@@ -75,20 +75,20 @@ void CHttpIOManger::MInit(CKernelIo *aVal)
 }
 bool CHttpIOManger::MOpen(const void*)
 {
-	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(),NAME);
+	CHECK_NE(CConfigure::sMGetInstance().MGet().MKey(), NAME);
 	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 
 	unsigned _port = 18012;
 	if (_p)
 	{
-
+		VLOG(2)<<"From Config "<<_p->MToJSON(true);
 		bool _val = _p->MGetIfSet(PORT, _port);
 		(void) _val;
 		LOG_IF(WARNING,!_val)
 										<< "The port number is not present in the config file"
 										<< CConfigure::sMGetInstance().MGetPath()
 										<< ".Using standard port " << _port;
-
+		_p->MGetIfSet(BUF_MAX_SIZE, FBufferingBytes);
 	}
 	VLOG(2) << "Construct IOContol Port=" << _port << ":" << this;
 	FTcpServiceSocket.MOpen(net_address(_port));
@@ -141,21 +141,42 @@ void CHttpIOManger::MReceivedImpl(const NSHARE::ISocket::data_t& aData,
 		for (CTCPServer::recvs_t::const_iterator _it = aFrom.begin();
 				_it != aFrom.end(); ++_it)
 		{
+			CHttpRequest _request;
+			unsigned _count = 0;
+
 			VLOG(2) << "From " << _it->FClient << " " << _it->FSize
 								<< " bytes.";
-			CHttpRequest _request;
-			unsigned _count = _request.MParse(_it->FBufBegin.base(),
-					_it->FSize);
+			streamed_data_t::iterator _stream = FStreamedData.find(
+					_it->FClient.FAddr);
+
+			bool const _was_streamed = _stream != FStreamedData.end();
+
+			if (!_was_streamed)
+			{
+				_count = _request.MParse(_it->FBufBegin.base(), _it->FSize);
+			}
+			else
+			{
+				VLOG(2) << "Data from " << _it->FClient.FAddr
+									<< " was streamed";
+
+				_stream->second.insert(_stream->second.end(), _it->FBufBegin,
+						_it->FBufBegin + _it->FSize);
+
+				_count = _request.MParse(_stream->second.ptr_const(),
+						_stream->second.size());
+			}
+
 			VLOG(2) << "Parse " << _count << " bytes by http. Error="
 								<< _request.MError();
 
-			bool _do_close = true;
+			bool _is_streamed = false;
 			switch (_request.MError())
 			{
 			case E_HTTP_OK:
 			{
 				CHttpResponse _response;
-				_do_close = MHandleFrom(&_request, _response);
+				MHandleFrom(&_request, _response);
 				NSHARE::CBuffer const _buffer(_response.MRaw());
 				VLOG(2) << "Sending answer";
 				CHECK(!_buffer.empty());
@@ -164,13 +185,29 @@ void CHttpIOManger::MReceivedImpl(const NSHARE::ISocket::data_t& aData,
 				break;
 			}
 			case E_INVALID_EOF_STATE:
-				LOG(ERROR)<<"Invalid EOF state ";
-				break;
+			{
+				VLOG(1) << "Invalid EOF state ";
+				_is_streamed = true;
 
-				default:
-				LOG(ERROR)<<"Parsing http error."<<_count;
+				if (!_was_streamed)
+				{
+					ISocket::data_t _data(NULL, _it->FBufBegin,
+							_it->FBufBegin + _it->FSize);
+					FStreamedData[_it->FClient.FAddr] = _data;
+				}
 				break;
 			}
+			default:
+			{
+				LOG(ERROR)<<"Parsing http error."<<_count<<"("<<_request.MError()<<")";
+				//
+				break;
+			}
+			}
+
+			if (!_is_streamed && _was_streamed)
+				FStreamedData.erase(_stream);
+			//VLOG(2)<<_it->FClient<<" handled";
 		}
 	}
 	LOG_IF(INFO, aData.empty()) << "Empty Data.";
@@ -185,6 +222,7 @@ eStatusCode CHttpIOManger::MReadFile(const NSHARE::CText& aPath,
 	eStatusCode _code(E_STARUS_UNINITIALIZED);
 	if (!_response.MWriteFile(_path))
 	{
+		LOG(ERROR)<<"The page is not found:"<<_path;
 		_response.MSetBody("The page is not found:");
 		_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
 		_code = E_STARUS_NOT_FOUND;
@@ -295,6 +333,7 @@ bool CHttpIOManger::MHandleFrom(CHttpRequest const* aRequest,
 			}
 			else
 			{
+				LOG(ERROR)<<"The page is not found:";
 				_response.MSetBody("The page is not found:");
 				_response.MAppendHeader("Content-Type", "text/html; charset=utf-8");
 				_code = E_STARUS_NOT_FOUND;
@@ -322,8 +361,24 @@ bool CHttpIOManger::MHandleFrom(CHttpRequest const* aRequest,
 void CHttpIOManger::MPutAsJson(const NSHARE::CConfig& _data,
 		CHttpResponse& _response)
 {
-	_response.MSetBody(_data.MToJSON());
+	NSHARE::CBuffer _buf;
+	_data.MToJSON(_buf);
+	_response.MSetBody(_buf);
 	_response.MAppendHeader("Content-Type", "application/json; charset=utf-8");
+}
+
+void CHttpIOManger::MPutSniffedDataFrom(const size_t _number,
+		NSHARE::CConfig& aTo) const
+{
+
+	NSHARE::CRAII<NSHARE::CMutex> _block(FSniffedMutex);
+	data_fifo_t::const_reverse_iterator _it = FSniffedData.rbegin(),
+			_it_end = FSniffedData.rend();
+	for (; _it != _it_end && _it->FSinffedNum > _number; ++_it)
+	{
+		aTo.MAdd(_it->FData);
+		VLOG(6)<<_it->FData;
+	}
 }
 
 eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
@@ -340,8 +395,9 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 		_demamd.FHandler = 0; //will changed
 		if (_demamd.MIsValid())
 		{
-			VLOG(2) << "Can receive";
-			if (MReceive(_demamd, aConf.MValue(PARSER_NAME, CText())))
+			CText const _parser=aConf.MValue(user_data_t::PARSER, CText());
+			VLOG(2) << "Can receive "<<_parser;
+			if (MReceive(_demamd, _parser))
 				_code = E_STARUS_OK;
 			else
 				_code = E_STARUS_BAD_REQUEST;
@@ -373,21 +429,28 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 	}
 	else if((_pos = aPath.find(SNIFFER_STATE)) != CText::npos)
 	{
-		NSHARE::CConfig _data(SNIFFER_STATE);
-		_data.MAdd(FDemands.MSerialize(false));
+		NSHARE::CText const _req(aPath, _pos);
 		size_t const _number=aConf.MValue(SEQUENCE_NUMBER, 0);
 
+		NSHARE::CConfig _data(SNIFFER_STATE);
+		bool _is_partial_state=false;
+
+		if((_pos = _req.find(demand_dgs_t::NAME)) != CText::npos && (_is_partial_state=true))
 		{
-			NSHARE::CRAII<NSHARE::CMutex> _block(FSniffedMutex);
-
-			sniffed_data_t::const_reverse_iterator _it=FSniffedData.rbegin(),_it_end=FSniffedData.rend();
-
-			for (; _it != _it_end && _it->first > _number; ++_it)
-			{
-				_data.MAdd(_it->second);
-			}
+			_data.MAdd(FDemands.MSerialize(false));
+		}
+		if((_pos = _req.find(SNIFFED_DATA)) != CText::npos && (_is_partial_state=true))
+		{
+			MPutSniffedDataFrom(_number, _data);
 		}
 
+		if(!_is_partial_state)
+		{
+			_data.MAdd(FDemands.MSerialize(false));
+			MPutSniffedDataFrom(_number, _data);
+		}
+		VLOG(7)<<_data;
+		VLOG(7)<<_data.MToJSON(true);
 		MPutAsJson(_data, _response);
 		_code=E_STARUS_OK;
 	}
@@ -407,19 +470,29 @@ bool CHttpIOManger::MSend(const program_id_t& aVal, descriptor_t const&,
 {
 	return false;
 }
+
+void CHttpIOManger::MPutToFifo(data_fifo_t::value_type const& _new_data)
+{
+	CRAII<CMutex> _block(FSniffedMutex);
+	const size_t _size=_new_data.FSize;
+	for (; (FBufferingBytes < (int)_size) && !FSniffedData.empty();)
+	{
+		FBufferingBytes += FSniffedData.front().FSize;
+		FSniffedData.pop_front();
+	}
+	FBufferingBytes-=_new_data.FSize;
+	FSniffedData.push_back(_new_data);
+}
+
 bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 {
 	std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
 			aVal.FDataId.FEventsList.begin(), _it_end(
 			aVal.FDataId.FEventsList.end());
 
-	size_t _count = 0;
-	sniffed_data_t _new_data;
-
 	for (; _it != _it_end; ++_it) //the data can be parsed by different parsers
 	{
 		serializator_t _ser;
-		_ser.second = NULL;
 		{
 			CRAII<CMutex> _block(FParserMutex);
 			serializators_t::const_iterator _jt = FSerializators.find(*_it);
@@ -427,44 +500,24 @@ bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 				_ser = _jt->second;
 		}
 
-		++_count;
 
-		sniffed_data_t::value_type _conf(++FSinffedNum,
-				NSHARE::CConfig(SNIFFED_DATA));
-		_conf.second.MAdd(SEQUENCE_NUMBER, _conf.first);
-		_conf.second.MAdd(demand_dg_t::HANDLER, *_it);
+		data_fifo_t::value_type _conf;
+		_conf.FSinffedNum=++FSinffedNum;
+		_conf.FData=NSHARE::CConfig(SNIFFED_DATA);
+		_conf.FSize=aVal.FData.size();
+		_conf.FData.MAdd(SEQUENCE_NUMBER, _conf.FSinffedNum);
+		_conf.FData.MAdd(demand_dg_t::HANDLER, *_it);
 		//_conf.second.MAdd(aVal.FDataId.MSerialize());
 
-		if (!_ser.second)
-		{
-			LOG(ERROR)<< "Could not found parser for " << (*_it);
-			_conf.second.MAdd(PARSER_ERROR, true);
-		}
-		const NSHARE::CConfig _data=aVal.MSerialize(/*_ser.first,*/_ser.second);
-		_conf.second.MAdd(_data);
+		_conf.FData.MAdd(user_data_t::PARSER, _ser.second);
 
-		_new_data.push_back(_conf);
+		const NSHARE::CConfig _data = aVal.MSerialize(
+		/*_ser.first,*/_ser.second);
+		_conf.FData.MAdd(_data);
+		VLOG(7)<<_data;
+		VLOG(7)<<_data.MToJSON(true);
 
-	}
-	if (_count > 0)
-	{
-		CRAII<CMutex> _block(FSniffedMutex);
-
-		for (; FRemainderSize < _count && !FSniffedData.empty();
-				++FRemainderSize)
-			FSniffedData.pop_front();
-
-		DCHECK_GE(FRemainderSize, _count);
-
-		if (FRemainderSize < _count)
-			for (; FRemainderSize > 0; --FRemainderSize)
-				FSniffedData.splice(FSniffedData.end(), _new_data,
-						_new_data.begin());
-		else
-		{
-			FSniffedData.splice(FSniffedData.end(), _new_data);
-			FRemainderSize -= _count;
-		}
+		MPutToFifo(_conf);
 	}
 	return true;
 }
@@ -545,7 +598,7 @@ bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 	if (aParser.empty())
 		aParser = _val.FProtocol;
 	IExtParser* _ser = CParserFactory::sMGetInstance().MGetFactory(aParser);
-	if (!_ser)
+	if (!_ser && _val.FProtocol==aParser)
 		return false;
 	unsigned _i = 0;
 	unsigned const _size = FDemands.size();
@@ -553,11 +606,11 @@ bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 		;
 	if (_i == _size)
 	{
-		LOG(INFO)<< "Add additional parser for channel '" << _val.FNameFrom << "' by "<< _val.FProtocol<<"'";
+		LOG(INFO)<< "Add additional parser for channel '" << _val.FNameFrom << "' by "<< aParser<<"'";
 
 		_val.FHandler=++FUniqueNumber;
 		_val.FFlags = demand_dg_t::E_REGISTRATOR;
-		FSerializators[_val.FHandler] = serializator_t(_val.FWhat, _ser);
+		FSerializators[_val.FHandler] = serializator_t(_val.FWhat, aParser);
 		FDemands.push_back(_val);
 		CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
 				error_info_t());
@@ -565,8 +618,8 @@ bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 	}
 	else
 	{
-		LOG(WARNING) << "Replace handler ";
-		FSerializators[_val.FHandler].second=_ser;
+		LOG(ERROR) << "Replace handler ";
+		//FSerializators[_val.FHandler].second=aParser;
 		return false;
 	}
 
@@ -609,20 +662,35 @@ bool CHttpIOManger::MRemoveDgParserFor(uint32_t aNumber)
 {
 	VLOG(2) << "Remove parser for " << aNumber;
 
-	CRAII<CMutex> _block(FParserMutex);
-
-	unsigned _i = 0;
-	unsigned const _size = FDemands.size();
-	for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
-		VLOG(5) << FDemands[_i].FHandler << " != " << aNumber;
-	if (_i == _size)
 	{
-		return false;
+		CRAII<CMutex> _block(FParserMutex);
+
+		unsigned _i = 0;
+		unsigned const _size = FDemands.size();
+		for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
+			VLOG(5) << FDemands[_i].FHandler << " != " << aNumber;
+		if (_i == _size)
+		{
+			return false;
+		}
+		FSerializators.erase(aNumber);
+		FDemands.erase(FDemands.begin() + _i);
+		CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
+				error_info_t());
 	}
-	FSerializators.erase(aNumber);
-	FDemands.erase(FDemands.begin() + _i);
-	CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
-			error_info_t());
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(FSniffedMutex);
+		data_fifo_t::iterator _it = FSniffedData.begin(), _it_end =
+				FSniffedData.end();
+		for (; _it != _it_end;)
+		{
+			if (_it->FData.MValue(demand_dg_t::HANDLER,
+					demand_dg_t::NO_HANDLER) == aNumber)
+				_it = FSniffedData.erase(_it);
+			else
+				++_it;
+		}
+	}
 	return true;
 }
 } /* namespace NSHARE */

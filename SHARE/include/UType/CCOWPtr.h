@@ -173,7 +173,7 @@ private:
 	static void release(implementation_t* aVal)
 	{
 
-		if (aVal == 0 || aVal->FCounter.MDecrement() != 0)
+		if (aVal == 0 || aVal->FCounter.MDecrement() != 1)
 			return;
 		delete aVal;
 	}

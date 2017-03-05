@@ -28,7 +28,7 @@ public:
 
 	virtual result_t MParserData(const uint8_t* aItBegin,
 			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=ORDER_LE);
-	virtual NUDT::required_header_t MHeader(const NSHARE::CConfig& aFrom) const;
+	virtual std::pair<NUDT::required_header_t,bool> MHeader(const NSHARE::CConfig& aFrom) const;
 	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t&) const;
 
 

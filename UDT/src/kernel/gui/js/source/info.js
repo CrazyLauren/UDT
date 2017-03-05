@@ -13,10 +13,11 @@ function udt_info(aPanel)
                 dataType: "json"
             }).done(function (data)
     {
-        var _table=$("<table>");
+        let _table=$("<table>");
         //fill_table(data.state, _table);
-        var _data=$.to_representation_form(data.state, data_info);
+        let _data=$.to_representation_form(data.state, data_info);
         $.object_to_table(_data, _table);
+        filling_data_style(_table);
         $("table",_table).each(function()
         {
             $(this).attr("border","1");

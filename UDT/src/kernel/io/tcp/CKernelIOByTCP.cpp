@@ -149,8 +149,8 @@ bool CKernelIOByTCP::MOpen(const void* aP)
 
 	for (; _it != _it_end; ++_it)
 	{
-		VLOG(2) << "Handler = " <<(* _it)->MValue();
-		FHandlers.push_back((*_it)->MValue());
+		VLOG(2) << "Handler = " <<( _it)->MValue();
+		FHandlers.push_back((_it)->MValue());
 	}
 
 	NSHARE::operation_t _op(CKernelIOByTCP::sMReceiver, this, NSHARE::operation_t::IO);

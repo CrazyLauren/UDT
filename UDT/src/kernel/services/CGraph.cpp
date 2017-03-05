@@ -205,14 +205,14 @@ NSHARE::CConfig CRouteGraph::MSerialize() const
 	for (; _it != _it_end; ++_it)
 	{
 		NSHARE::CConfig _info("road");
-		_info.MAdd("from",_it->first);
+		_info.MAdd("from",_it->first.MSerialize());
 		{
 			vertexs_t::const_iterator _kt = _it->second.begin(), _kt_end =
 					_it->second.end();
 			for (; _kt != _kt_end; ++_kt)
 			{
 				NSHARE::CConfig _way("way");
-				_way.MAdd("to",_kt->first);
+				_way.MAdd("to",_kt->first.MSerialize());
 				_way.MAdd("lat",_kt->second);
 				_info.MAdd(_way);
 			}
@@ -229,7 +229,7 @@ NSHARE::CConfig CRouteGraph::MSerialize() const
 					for (; _rt != _rt_end; ++_rt)
 					{
 						NSHARE::CConfig _way("time");
-						_way.MAdd("to", _rt->first);
+						_way.MAdd("to", _rt->first.MSerialize());
 						_way.MAdd("lat", _rt->second);
 						_info.MAdd(_way);
 					}
@@ -240,8 +240,8 @@ NSHARE::CConfig CRouteGraph::MSerialize() const
 					for (; _rt != _rt_end; ++_rt)
 					{
 						NSHARE::CConfig _way("go");
-						_way.MAdd("to", _rt->first);
-						_way.MAdd("from", _rt->second);
+						_way.MAdd("to", _rt->first.MSerialize());
+						_way.MAdd("from", _rt->second.MSerialize());
 						_info.MAdd(_way);
 					}
 				}

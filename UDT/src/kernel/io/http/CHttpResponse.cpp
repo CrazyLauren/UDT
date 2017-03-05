@@ -102,10 +102,10 @@ void CHttpResponse::MSetBody(NSHARE::CText const & value)
 		MRemoveHeader(g_length_key);
 		FBody.clear();
 		return;
-	}
+	}	
 	FBody << value;
 	NSHARE::CText _length;
-	NSHARE::num_to_str(value.length_code(), _length);
+	NSHARE::num_to_str(FBody.size(), _length);
 	FHeaders[g_length_key] = _length;
 }
 void CHttpResponse::MSetStatus(eStatusCode code, NSHARE::CText const & msg)

@@ -34,7 +34,7 @@ inline void atomic_add(volatile boost::uint32_t *mem, int val)
 	atomic_add32(mem,val);
 #endif
 }
-counter_t::counter_t(value_type const& aVal)
+counter_t::counter_t(value_type const& aVal):FCount(0)
 {
 	MWrite(aVal);
 }

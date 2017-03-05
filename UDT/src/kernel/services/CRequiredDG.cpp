@@ -562,6 +562,10 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 		{
 			if (_kt->second.FNumberOfRealHandlers > 0)
 				aInfo.FDestination.push_back(_uuid);
+			
+			else if(!_is_fail)//ptotection in the event  of unsuccessfully 
+			//sending to uuid which is distanation and registrator 
+				aInfo.FRegistrators.push_back(_uuid);
 
 			if(!_is_fail)
 				aInfo.FRouting.push_back(_uuid);
@@ -580,9 +584,10 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 				aInfo.FRouting.push_back(_uuid);
 				_dest.erase(_it);
 			}
-			else if (_is_registrator_exist)
+			else if (_is_registrator_exist)//it's registrator
 			{
 				aInfo.FRouting.push_back(_uuid);
+				aInfo.FRegistrators.push_back(_uuid);
 			}
 		}else
 		{

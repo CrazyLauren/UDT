@@ -71,6 +71,7 @@ public:
 			CCodeUTF8());
 
 	~CText();
+	static CText const& sMEmpty();
 
 	CText& operator+=(const CText& str);
 	CText& operator+=(const std::string& std_str);

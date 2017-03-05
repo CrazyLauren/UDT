@@ -12,19 +12,18 @@ var data_info =
             },
             toRepresentation: function (aVer)
             {
-                var _tmp = {};
+                let _tmp = {};
                 if (aVer.hasOwnProperty("mj") || aVer.hasOwnProperty("mn") || aVer.hasOwnProperty("rs"))
-                    _tmp[data_info.ver.getName()] = aVer.mj + "." + aVer.mn + "." + aVer.rs;
+                    return aVer.mj + "." + aVer.mn + "." + aVer.rs;
                 else
-                    _tmp[data_info.ver.getName()] = "undefined";
-                return _tmp;
+                    return "undefined";
             },
             getFromString: function (aStr)
             {
                 console.log("Parsing " + aStr);
-                var _rval = {ver: {}};
-                var _reg = /^(\d+)\.?(\d+)?\.?(\d+)?/;
-                var _found = aStr.match(_reg);
+                let _rval = {ver: {}};
+                let _reg = /^(\d+)\.?(\d+)?\.?(\d+)?/;
+                let _found = aStr.match(_reg);
                 if (_found)
                 {
                     if (_found[1])
@@ -45,12 +44,12 @@ var data_info =
             },
             toRepresentation: function (aId)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["Name"] = aId.n;
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         uuid: aId.uuid
-                    },data_info));
+                    }, data_info));
                 //$.extend(_tmp,
                 //    data_info.uuid.toRepresentation(aId.uuid));
                 return _tmp;
@@ -63,8 +62,17 @@ var data_info =
             },
             toRepresentation: function (uuid)
             {
-                var _num = parseInt(uuid, 10);
-                return _num.toString(16).toUpperCase();
+                return uuid;
+ /*               let _num = parseInt(uuid, 10);
+                let _str = _num.toString(16).toUpperCase();
+                /!*"%02x-%02x-"
+                 "%02x-%02x-"
+                 "%02x-%02x-"
+                 "%02x-%02x"*!/
+                return "0x" + _str.substr(0,2) + "-0x" + _str.substr(2,2) +
+                    "-0x" + _str.substr(4,2) + "-0x" + _str.substr(6,2)+
+                    "-0x" + _str.substr(8,2) + "-0x" + _str.substr(10,2)+
+                    "-0x" + _str.substr(12,2) + "-0x" + _str.substr(14,2);*/
             }
         },
         type: {
@@ -74,14 +82,14 @@ var data_info =
             },
             toRepresentation: function (aInfo)
             {
-                var _tmp = {};
+                let _tmp = {};
                 switch (aInfo)
                 {
                     case "1":
-                        _tmp["Type"] = "Kernel";
+                        return "Kernel";
                         break;
                     case "2":
-                        _tmp["Type"] = "Consumer";
+                        return "Consumer";
                         break;
                 }
                 return _tmp;
@@ -94,10 +102,10 @@ var data_info =
             },
             toRepresentation: function (aInfo)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["PID"] = aInfo.pid;
                 _tmp["Path"] = aInfo.path;
-                var _date = new Date(1000 * aInfo.tm);
+                let _date = new Date(1000 * aInfo.tm);
                 _tmp["Start time"] = _date.toUTCString();
 
                 $.extend(_tmp, jQuery.to_representation_form(
@@ -105,7 +113,7 @@ var data_info =
                         type: aInfo.type,
                         id: aInfo.id,
                         ver: aInfo.ver
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -116,12 +124,12 @@ var data_info =
             },
             toRepresentation: function (aInfo)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["Number of connection"] = aInfo.last;
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         kerd: aInfo.kerd
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -132,12 +140,12 @@ var data_info =
             },
             toRepresentation: function (aInfo)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["#"] = aInfo.numd;
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         DescriptorInfo: aInfo.DescriptorInfo
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -148,12 +156,12 @@ var data_info =
             },
             toRepresentation: function (aInfo)
             {
-                var _tmp = {};
+                let _tmp = {};
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         info: aInfo.info,
                         addr: aInfo.addr
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -164,7 +172,7 @@ var data_info =
             },
             toRepresentation: function (aVal)
             {
-                var _tmp = {};
+                let _tmp = {};
                 if (aVal.hasOwnProperty("epath") && !$.isEmptyObject(aVal.epath))
                     _tmp["Search directory"] = aVal.epath;
                 else
@@ -172,7 +180,7 @@ var data_info =
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         emod: aVal.emod
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -183,21 +191,21 @@ var data_info =
             },
             toRepresentation: function (aVal)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["Name"] = aVal.ename;
 
                 if (aVal.hasOwnProperty("lib"))
                     $.extend(_tmp, jQuery.to_representation_form(
                         {
                             lib: aVal.lib
-                        },data_info));
+                        }, data_info));
                 else
                     _tmp[data_info.lib.getName()] = "Cannot load";
                 if (aVal.hasOwnProperty("reg"))
                     $.extend(_tmp, jQuery.to_representation_form(
                         {
                             reg: aVal.reg
-                        },data_info));
+                        }, data_info));
                 else
                     _tmp[data_info.reg.getName()] = "Not exist";
                 return _tmp;
@@ -210,12 +218,12 @@ var data_info =
             },
             toRepresentation: function (aVal)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["Registring"] = aVal.type;
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         ver: aVal.ver
-                    },data_info));
+                    }, data_info));
                 return _tmp;
             }
         },
@@ -226,7 +234,7 @@ var data_info =
             },
             toRepresentation: function (aVal, aTable)
             {
-                var _tmp = {};
+                let _tmp = {};
                 if (aVal.hasOwnProperty("name") && !$.isEmptyObject(aVal.name))
                     _tmp["From library"] = aVal.name;
                 else
@@ -237,9 +245,9 @@ var data_info =
         program_name: {
             checking: function (aVal)
             {
-                var _re1 = /^[^\s@\.]$/;
-                var _re2 = /^[^\s@\.]+@?[^\s@]+/;
-                var _re3 = /^@?[^\s@]+$/;
+                let _re1 = /^[^\s@\.]$/;
+                let _re2 = /^[^\s@\.]+@?[^\s@]+/;
+                let _re3 = /^@?[^\s@]+$/;
 
                 return _re1.test(aVal) || _re2.test(aVal) || _re3.test(aVal);
             }
@@ -251,14 +259,53 @@ var data_info =
             },
             toRepresentation: function (aVal)
             {
-                var _tmp = {};
+                let _tmp = {};
                 _tmp["IP"] = aVal.ip;
                 _tmp["Port"] = aVal.port;
                 return _tmp;
             }
-        }
+        },
+        usdt: {
+            getName: function ()
+            {
+                return "Data Info";
+            },
+            toRepresentation: function (aVal)
+            {
+                let _protocol;
+                if (!aVal.hasOwnProperty("pl") || $.isEmptyObject(aVal.pl))
+                    _protocol = "raw";
+                else
+                    _protocol = aVal.pl;
+                let _tmp = {};
+
+                // if(_tmp["Protocol"]=="raw")
+                //     _tmp["#"]=aVal.nr;
+                _tmp["Packet Number"] = aVal.pn;
+                _tmp["Protocol"] = _protocol;
+
+                let _ver = jQuery.to_representation_form(
+                    {
+                        ver: aVal.ver
+                    }, data_info);
+                $.extend(_tmp, _ver);
+
+                _tmp["From"] = data_info.id.toRepresentation(aVal.rtg_.id);
+
+                let _to = jQuery.to_representation_form(aVal.uuids, data_info);
+                _tmp["To"] = _to[data_info.uuid.getName()];
+
+                let _reg = jQuery.to_representation_form(aVal.reg, data_info);
+                _tmp["Registered By"] = _reg[data_info.uuid.getName()];
+
+                return _tmp;
+            }
+        },
     };
 function get_id_for(aVal)
 {
-    return aVal.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^{|}~]/g, '\\$&');
+    let _val = aVal.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^{|}~]/g, '\\$&');
+
+    return _val.replace(/[\s]/g, '_');
+    ;
 }

@@ -14,14 +14,8 @@
 #include <algorithm>
 #include <stack>
 
-#include <rapidjson/reader.h>
-#include <rapidjson/filereadstream.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/prettywriter.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/memorystream.h>
-#include <rapidjson/istreamwrapper.h>
-#include <rapidjson/ostreamwrapper.h>
+
+
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -35,37 +29,105 @@ typedef boost::property_tree::basic_ptree<std::string, std::string,
 
 namespace NSHARE
 {
+template<class T>
+	class CBufferWriter :NSHARE::CDenyCopying
+	{
+	public:
+		CBufferWriter(T& aBuf) :
+			FBuf(aBuf)
+		{
+		}
+
+
+		void Put(char c)
+		{
+			FBuf.push_back((typename T::value_type)c);
+		}
+		void PutUnsafe(char c)
+		{
+			FBuf.push_back((typename T::value_type)c);
+		}
+		void PutN(char c, size_t n)
+		{
+			FBuf.insert(FBuf.end(), n, (typename T::value_type)c);
+		}
+
+		void Flush()
+		{
+		}
+		char Peek() const { CHECK(false); return 0; }
+		char Take() { CHECK(false); return 0; }
+		size_t Tell() const { CHECK(false); return 0; }
+		char* PutBegin() { CHECK(false); return 0; }
+		size_t PutEnd(char*) { CHECK(false); return 0; }
+	private:
+		T& FBuf;
+	};
+}
+namespace rapidjson
+{
+	template<class T>
+	inline void PutUnsafe(NSHARE::CBufferWriter<T>& stream, char c)
+	{
+		stream.PutUnsafe(c);
+	}
+}
+
+#include <rapidjson/reader.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/memorystream.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/ostreamwrapper.h>
+namespace NSHARE
+{
 static size_t base64_encode(NSHARE::CText& _dest, const char* src, size_t aLen);
-CConfig::CConfig(const CText& key, void const* aTo, size_t aMaxLen) :
+CConfig::data_t::data_t(const CText& key) :
 		FKey(key)
 {
-	base64_encode(FValue, (char const*) aTo, aMaxLen);
+}
+
+CConfig::data_t::data_t(const CText& key, const CText& value) :
+		FKey(key), //
+		FValue(value)
+{
+
+}
+
+CConfig::CConfig(const CText& key, void const* aTo, size_t aMaxLen) :
+		FData(data_t(key))
+{
+	base64_encode(FData.MWrite().FValue, (char const*) aTo, aMaxLen);
 }
 CConfig::CConfig(const CText& key, CBuffer const & aTo) :
-		FKey(key)
+		FData(data_t(key))
 {
-	base64_encode(FValue, (char const*) aTo.ptr_const(), aTo.size());
+	base64_encode(FData.MWrite().FValue, (char const*) aTo.ptr_const(),
+			aTo.size());
+}
+CConfig::CConfig(const CText& key, const CConfig& rhs):
+		FData(rhs.FData)
+{
+	FData.MWrite().FKey=key;
 }
 
 CConfig::CConfig(const CConfig& rhs) :
-		FKey(rhs.FKey), FValue(rhs.FValue), FChildren(rhs.FChildren), FReferrer(
-				rhs.FReferrer)
+		FData(rhs.FData)
 {
-}
-CConfig::CConfig(const CText& key, const CConfig& rhs) :
-		FKey(key), FValue(rhs.FValue), FChildren(rhs.FChildren), FReferrer(
-				rhs.FReferrer)
-{
-}
-CConfig& CConfig::operator=(const CConfig& rhs)
-{
-	FKey = rhs.FKey;
-	FValue = rhs.FValue;
-	FChildren = rhs.FChildren;
-	FReferrer = rhs.FReferrer;
-	return *this;
 }
 
+CConfig& CConfig::operator=(const CConfig& rhs)
+{
+	if (&rhs != this)
+		FData = rhs.FData;
+	return *this;
+}
+CConfig::~CConfig()
+{
+	VLOG(5) << "destructing config";
+}
 const char UNIX_PATH_SEPARATOR = '/';
 const char WINDOWS_PATH_SEPARATOR = '\\';
 
@@ -181,35 +243,36 @@ CText getFullPath(const CText& relativeTo, const CText &relativePath)
 }
 void CConfig::MSetReferrer(const CText& referrer)
 {
-	FReferrer = referrer;
-	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
-			++_it)
-	{
-		CConfig& _new = _it->MWrite();
-		_new.MSetReferrer(getFullPath(FReferrer, _new.FReferrer));
-	}
+//	FData.MWrite().FReferrer = referrer;
+//	for (ConfigSet::iterator _it = FData.MWrite().FChildren.begin(); _it !=  FData.MWrite().FChildren.end();
+//			++_it)
+//	{
+//		CConfig& _new = *_it;
+//		_new.MSetReferrer(getFullPath( FData.MWrite().FReferrer, _new. FData.MWrite().FReferrer));
+//	}
 }
 
 void CConfig::MInheritReferrer(const CText& referrer)
 {
-	if (FReferrer.empty() || !is_relative(referrer))
-	{
-		MSetReferrer(referrer);
-	}
-	else if (!referrer.empty())
-	{
-		MSetReferrer(concatPaths(FReferrer, referrer));
-	}
+//	if (FData.MWrite().FReferrer.empty() || !is_relative(referrer))
+//	{
+//		MSetReferrer(referrer);
+//	}
+//	else if (!referrer.empty())
+//	{
+//		MSetReferrer(concatPaths(FData.MWrite().FReferrer, referrer));
+//	}
 }
 CConfig const& CConfig::MChild(const CText& childName) const
 {
+	data_t const& _data = FData.MRead();
 	VLOG(6) << "Find child:" << childName << "  Number of children:"
-						<< FChildren.size();
-	for (ConfigSet::const_iterator i = FChildren.begin(); i != FChildren.end();
-			++i)
+						<< _data.FChildren.size();
+	for (ConfigSet::const_iterator i = _data.FChildren.begin();
+			i != _data.FChildren.end(); ++i)
 	{
-		VLOG(6) << "Child " << (*i)->MKey();
-		if ((*i)->MKey() == childName)
+		VLOG(6) << "Child " << i->MKey();
+		if (i->MKey() == childName)
 		{
 			VLOG(6) << "Found " << childName << " in " << MKey();
 			return *i;
@@ -223,24 +286,24 @@ CConfig const& CConfig::sMGetEmpty()
 	static CConfig const emptyConf;
 	return emptyConf;
 }
-const CConfigPtr CConfig::MChildPtr(const CText& childName) const
+const CConfig* CConfig::MChildPtr(const CText& childName) const
 {
-	for (ConfigSet::const_iterator i = FChildren.begin(); i != FChildren.end();
-			++i)
+	for (ConfigSet::const_iterator i = FData.MRead().FChildren.begin();
+			i != FData.MRead().FChildren.end(); ++i)
 	{
-		if ((*i)->MKey() == childName)
-			return *i;
+		if (i->MKey() == childName)
+			return &(*i);
 	}
-	return CConfigPtr();
+	return NULL;
 }
 
 CConfig* CConfig::MMutableChild(const CText& childName)
 {
-	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
-			++_it)
+	for (ConfigSet::iterator _it = FData.MWrite().FChildren.begin();
+			_it != FData.MWrite().FChildren.end(); ++_it)
 	{
-		if ((*_it)->MKey() == childName)
-			return &_it->MWrite();
+		if (_it->MKey() == childName)
+			return &(*_it);
 	}
 
 	return NULL;
@@ -248,64 +311,47 @@ CConfig* CConfig::MMutableChild(const CText& childName)
 
 void CConfig::MMerge(const CConfig& rhs)
 {
-	for (ConfigSet::const_iterator _it = rhs.FChildren.begin();
-			_it != rhs.FChildren.end(); ++_it)
+	for (ConfigSet::const_iterator _it = rhs.FData.MRead().FChildren.begin();
+			_it != rhs.FData.MRead().FChildren.end(); ++_it)
 	{
-		MRemove((*_it)->MKey());
+		MRemove(_it->MKey());
 		MAdd(*_it);
 	}
 
 }
 void CConfig::MBlendWith(const CConfig& rhs)
 {
-	for (ConfigSet::const_iterator _it = rhs.FChildren.begin();
-			_it != rhs.FChildren.end(); ++_it)
+	for (ConfigSet::const_iterator _it = rhs.FData.MRead().FChildren.begin();
+			_it != rhs.FData.MRead().FChildren.end(); ++_it)
 	{
-		if ((*_it)->MIsSimple())
+		if (_it->MIsSimple())
 		{
 
 		}
 		else
 		{
-			if (MIsChild((*_it)->MKey()))
+			if (MIsChild(_it->MKey()))
 			{
-				MMutableChild((*_it)->MKey())->MBlendWith(*_it);
+				MMutableChild(_it->MKey())->MBlendWith(*_it);
 			}
 			else
 				MAdd(*_it);
 		}
 	}
 }
-CConfigPtr CConfig::MFindPtr(const CText& key) const
-{
-	for (ConfigSet::const_iterator _it = FChildren.begin();
-			_it != FChildren.end(); ++_it)
-		if (key == (*_it)->MKey())
-			return *_it;
-
-	for (ConfigSet::const_iterator _it = FChildren.begin();
-			_it != FChildren.end(); ++_it)
-	{
-		CConfigPtr r = (*_it)->MFindPtr(key);
-		if (r.MIs())
-			return r;
-	}
-
-	return CConfigPtr();
-}
 const CConfig* CConfig::MFind(const CText& key) const
 {
 	if (key == this->MKey())
 		return this;
-	for (ConfigSet::const_iterator _it = FChildren.begin();
-			_it != FChildren.end(); ++_it)
-		if (key == (*_it)->MKey())
-			return &_it->MRead();
+	for (ConfigSet::const_iterator _it = FData.MRead().FChildren.begin();
+			_it != FData.MRead().FChildren.end(); ++_it)
+		if (key == _it->MKey())
+			return &(*_it);
 
-	for (ConfigSet::const_iterator _it = FChildren.begin();
-			_it != FChildren.end(); ++_it)
+	for (ConfigSet::const_iterator _it = FData.MRead().FChildren.begin();
+			_it != FData.MRead().FChildren.end(); ++_it)
 	{
-		const CConfig* r = (*_it)->MFind(key);
+		const CConfig* r = _it->MFind(key);
 		if (r)
 			return r;
 	}
@@ -317,16 +363,17 @@ CConfig* CConfig::MFind(const CText& key)
 {
 	if (key == this->MKey())
 		return this;
-	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
-			++_it)
-		if (key == (*_it)->MKey())
-			return &_it->MWrite();
+	for (ConfigSet::iterator _it = FData.MWrite().FChildren.begin();
+			_it != FData.MWrite().FChildren.end(); ++_it)
+		if (key == _it->MKey())
+			return &(*_it);
 
-	for (ConfigSet::iterator _it = FChildren.begin(); _it != FChildren.end();
-			++_it)
+	for (ConfigSet::iterator _it = FData.MWrite().FChildren.begin();
+			_it != FData.MWrite().FChildren.end(); ++_it)
 	{
-		if ((*_it)->MFind(key))
-			return _it->MWrite().MFind(key);
+		CConfig* r = _it->MFind(key);
+		if (r)
+			return r;
 	}
 
 	return NULL;
@@ -334,29 +381,30 @@ CConfig* CConfig::MFind(const CText& key)
 CConfig CConfig::operator -(const CConfig& rhs) const
 {
 	CConfig result(*this);
-
-	for (ConfigSet::const_iterator _it = rhs.MChildren().begin();
-			_it != rhs.MChildren().end(); ++_it)
+	ConfigSet::const_iterator _it = rhs.MChildren().begin(), _it_end(
+			rhs.MChildren().end());
+	for (; _it != _it_end; ++_it)
 	{
-		result.MRemove((*_it)->MKey());
+		result.MRemove(_it->MKey());
 	}
 
 	return result;
 }
 std::ostream& CConfig::MPrint(std::ostream & aStream) const
 {
-	aStream << "Key:" << FKey;
-	if (!FValue.empty())
-		aStream << "; Value:" << FValue;
-	if (!FReferrer.empty())
-		aStream << "; Referer:" << FReferrer;
-	if (!FChildren.empty())
+	data_t const& _data = FData.MRead();
+	aStream << "Key:" << _data.FKey;
+	if (!_data.FValue.empty())
+		aStream << "; Value:" << _data.FValue<<":EndValue; ";
+//	if (!_data.FReferrer.empty())
+//		aStream << "; Referer:" << _data.FReferrer;
+	if (!_data.FChildren.empty())
 	{
-		aStream << "; Child of " << FKey;
-		for (ConfigSet::const_iterator _it = FChildren.begin();
-				_it != FChildren.end(); ++_it)
+		aStream << "; Child of " << _data.FKey;
+		for (ConfigSet::const_iterator _it = _data.FChildren.begin();
+				_it != _data.FChildren.end(); ++_it)
 			aStream << std::endl << *_it;
-		aStream << std::endl << "; End child of  " << FKey;
+		aStream << std::endl << "; End child of  " << _data.FKey;
 	}
 	return aStream;
 }
@@ -373,8 +421,9 @@ inline void CConfig::MReadFrom(ptree_t const& aTree, bool aFirst)
 	{
 		if (aFirst)
 		{
-			FKey = aTree.front().first;
-			FValue = aTree.data();
+			data_t &_data = FData.MWrite();
+			_data.FKey = aTree.front().first;
+			_data.FValue = aTree.data();
 			MReadFrom(aTree.front().second, false);
 		}
 		else
@@ -400,8 +449,8 @@ inline void CConfig::MReadFrom(ptree_t const& aTree, bool aFirst)
 							_set.end());
 					for (; _jt != _jt_end; ++_jt)
 					{
-						VLOG(2) << "Push attr " << (*_jt)->MKey() << " == "
-											<< (*_jt)->MValue();
+						VLOG(2) << "Push attr " << (_jt)->MKey() << " == "
+											<< (_jt)->MValue();
 						MAdd(*_jt);
 					}
 				}
@@ -448,10 +497,10 @@ inline void CConfig::MWriteTo(ptree_t& aTree, bool aFirst) const
 	}
 	else
 	{
-		ConfigSet::const_iterator _it = FChildren.begin();
-		for (; _it != FChildren.end(); ++_it)
+		ConfigSet::const_iterator _it = FData.MRead().FChildren.begin();
+		for (; _it != FData.MRead().FChildren.end(); ++_it)
 		{
-			if ((*_it)->MIsEmpty())
+			if (_it->MIsEmpty())
 			{
 				VLOG(2) << "Node empty";
 				continue;
@@ -463,7 +512,7 @@ inline void CConfig::MWriteTo(ptree_t& aTree, bool aFirst) const
 			CText const _path(
 					!_conf.MKey().empty() ?
 							_conf.MKey() : CText("EmptyKeyNotAllowed"));
-			if ((*_it)->MIsSimple())
+			if (_it->MIsSimple())
 			{
 				VLOG(6) << "Put leaf " << _path << " = " << _conf.MValue();
 				aTree.add(_path.c_str(), _conf.MValue().MToStdString());
@@ -588,7 +637,7 @@ struct CJsonReader
 			++FStack.top().FCurrentArrayLength;
 
 			_stack_t _stack;
-			_stack.FConf = &FStack.top().FConf->MChildren().back().MWrite();
+			_stack.FConf = &FStack.top().FConf->MChildren().back();
 			FStack.push(_stack);
 		}
 		else
@@ -598,7 +647,7 @@ struct CJsonReader
 			NSHARE::CConfig _conf(FKey);
 			FStack.top().FConf->MAdd(_conf);
 			_stack_t _stack;
-			_stack.FConf = &FStack.top().FConf->MChildren().back().MWrite();
+			_stack.FConf = &FStack.top().FConf->MChildren().back();
 			FStack.push(_stack);
 		}
 		return true;
@@ -670,6 +719,17 @@ void write_json_to_pretty(NSHARE::CConfig const& aFrom, std::ostream& aStream)
 	writer.EndObject();
 }
 
+void write_json_to(NSHARE::CConfig const& aFrom, NSHARE::CBuffer& aTo)
+{
+	typedef std::vector<NSHARE::CBuffer::value_type> _buf_t;
+	_buf_t _vec;
+	CBufferWriter<_buf_t> s(_vec);
+	Writer<CBufferWriter<_buf_t> > writer(s);
+	writer.StartObject();
+	write_json_impl(writer, aFrom, false);
+	writer.EndObject();
+	aTo=NSHARE::CBuffer(NULL, _vec.begin(), _vec.end());
+}
 void write_json_to(NSHARE::CConfig const& aFrom, NSHARE::CText* aTo)
 {
 	StringBuffer s;
@@ -726,13 +786,13 @@ void write_json_impl(T & writer, NSHARE::CConfig const& aFrom, bool aIsArray)
 			NSHARE::ConfigSet::const_iterator _it = _childs.begin();
 			for (; _it != _childs.end(); ++_it)
 			{
-				_counter[(*_it)->MKey()]++;
+				_counter[_it->MKey()]++;
 			}
 			_it = _childs.begin();
 			for (; _it != _childs.end(); ++_it)
 			{
-				if (_counter[(*_it)->MKey()] > 1)
-					_arrays[(*_it)->MKey()].push_back(*_it);
+				if (_counter[_it->MKey()] > 1)
+					_arrays[_it->MKey()].push_back(*_it);
 				else
 					_objects.push_back(*_it);
 			}
@@ -742,7 +802,7 @@ void write_json_impl(T & writer, NSHARE::CConfig const& aFrom, bool aIsArray)
 			_it = _objects.begin();
 			for (; _it != _objects.end(); ++_it)
 			{
-				NSHARE::CConfig const& _conf = *(*_it);
+				NSHARE::CConfig const& _conf = (*_it);
 				if (_conf.MIsEmpty())
 				{
 					VLOG(2) << "Node empty";
@@ -765,7 +825,7 @@ void write_json_impl(T & writer, NSHARE::CConfig const& aFrom, bool aIsArray)
 			writer.StartArray();
 			for (; _it != _it_end; ++_it)
 			{
-				NSHARE::CConfig const& _conf = *(*_it);
+				NSHARE::CConfig const& _conf = (*_it);
 				if (_conf.MIsEmpty())
 				{
 					VLOG(2) << "Node empty";
@@ -836,6 +896,11 @@ bool CConfig::MToJSON(NSHARE::CText& aText, bool aPretty) const
 		write_json_to(*this, &aText);
 	return true;
 }
+bool CConfig::MToJSON(NSHARE::CBuffer& aVal) const
+{
+	write_json_to(*this, aVal);
+	return true;
+}
 bool CConfig::MToJSON(std::ostream& aStream, bool aPretty) const
 {
 	if (aPretty)
@@ -888,7 +953,7 @@ bool CConfig::MFromXML(std::istream& aStream)
 }
 size_t base64_encode_len(size_t len)
 {
-    return ((len + 2) / 3 * 4) + 1;
+	return ((len + 2) / 3 * 4) + 1;
 }
 
 //from StackOverflow
@@ -906,7 +971,7 @@ size_t base64_encode(NSHARE::CText& _dest, const char* src, size_t aLen)
 	_dest.reserve(base64_encode_len(aLen));
 
 	base64_enc _begin(src);
-	base64_enc _end(src+ len_rounded_down);
+	base64_enc _end(src + len_rounded_down);
 	for (; _begin != _end; ++_begin)
 	{
 		_dest.push_back(*_begin);
@@ -994,12 +1059,13 @@ size_t CConfig::MValueBuf(size_t aMaxLen, void* aTo) const
 }
 CConfig& CConfig::MAdd(const CText& key, void const* aTo, size_t aMaxLen)
 {
-	FChildren.push_back(CConfig(key));
-	CConfig& _new = FChildren.back().MWrite();
-	_new.MInheritReferrer(FReferrer);
-	base64_encode(_new.FValue, (char const*) aTo, aMaxLen);
+	FData.MWrite().FChildren.push_back(CConfig(key));
+	CConfig& _new = FData.MWrite().FChildren.back();
+//	_new.MInheritReferrer(FData.MWrite().FReferrer);
+	base64_encode(_new.FData.MWrite().FValue, (char const*) aTo, aMaxLen);
 	VLOG(6) << "Data string for " << key << " is " << _new.MValue();
-	return _new;
+	VLOG(7)<<(*this);
+	return *this;
 }
 CConfig& CConfig::MAddTo(const CText& key, CBuffer const & aTo)
 {

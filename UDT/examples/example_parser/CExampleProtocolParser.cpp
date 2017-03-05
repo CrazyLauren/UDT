@@ -64,13 +64,14 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 	return _result;
 
 }
-NUDT::required_header_t CExampleProtocolParser::MHeader(
+std::pair<NUDT::required_header_t,bool> CExampleProtocolParser::MHeader(
 		const NSHARE::CConfig& aFrom) const
 {
+	std::cout<<aFrom<<std::endl;
 	NUDT::required_header_t _header;
 	_header.FNumber=aFrom.MValue("num",0u);
 	_header.FVersion=NSHARE::version_t(aFrom.MChild("ver"));
-	return _header;
+	return std::make_pair(_header, aFrom.MIsChild("num"));
 }
 NSHARE::CConfig CExampleProtocolParser::MToConfig(
 		const NUDT::required_header_t& aHeader) const

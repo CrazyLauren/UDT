@@ -20,8 +20,7 @@ namespace NSHARE
 
 class SHARE_EXPORT CConfig;
 class CBuffer;
-typedef CCOWPtr<class CConfig> CConfigPtr;
-typedef std::list<CConfigPtr> ConfigSet;
+typedef std::list<CConfig> ConfigSet;
 
 class SHARE_EXPORT CConfig
 {
@@ -34,42 +33,46 @@ public:
 	}
 
 	CConfig(const CText& key) :
-			FKey(key)
+			FData(data_t(key))
 	{
 	}
 
 	CConfig(const CText& key, const CText& value) :
-			FKey(key), FValue(value)
+		FData(data_t(key,value))
 	{
 	}
 	CConfig(const CText& key,void const* aTo, size_t aMaxLen);
 	CConfig(const CText& key,CBuffer const & aTo);
 
+
+	CConfig(const CText& key, const CConfig& value);//Protection, in case of CConfig(const CText& key, const T& value)
+	//with T=CConfig. As the value is to be serialized by CConfig(const CText& key, const T& value)
+
 	template<class T>
 	CConfig(const CText& key, const T& value) :
-			FKey(key)
+		FData(key)
 	{
 #ifdef		NUM_TO_STRING_EXIST
-		FValue=to_string<T>(value);
+		FData.MWrite().FValue=to_string<T>(value);
 #else
 		std::stringstream out;
 		out << value;
-		FValue=out.str();
+		FData.MWrite().FValue=out.str();
 #endif
 	}
 
 	CConfig(const CConfig& rhs);
-	CConfig(const CText& key,const CConfig& rhs);
 
 
 	CConfig& operator=(const CConfig& rhs);
-
+	~CConfig();
 	bool MFromXML(std::istream&);
 	bool MToXML(std::ostream&,bool aPretty=false) const;
 
 
 	bool MToJSON(std::ostream&,bool aPretty=false) const;
 	bool MToJSON(NSHARE::CText&,bool aPretty=false) const;
+	bool MToJSON(NSHARE::CBuffer&) const;
 
 	bool MFromJSON(NSHARE::CBuffer const&);
 	bool MFromJSON(NSHARE::CText const&);
@@ -81,38 +84,39 @@ public:
 	void MInheritReferrer(const CText& value);
 	const CText& MReferrer() const
 	{
-		return FReferrer;
+		return CText::sMEmpty();
+		//return FData.MRead().FReferrer;
 	}
 
 	bool MIsEmpty() const
 	{
-		return FKey.empty() && FValue.empty() && FChildren.empty();
+		return FData.MRead().FKey.empty() && FData.MRead().FValue.empty() && FData.MRead().FChildren.empty();
 	}
 	bool MIsOnlyKey() const
 	{
-		return FValue.empty() && FChildren.empty();
+		return FData.MRead().FValue.empty() && FData.MRead().FChildren.empty();
 	}
 	bool MIsSimple() const //leaf
 	{
-		return !FKey.empty() && !FValue.empty() && FChildren.empty();
+		return !FData.MRead().FKey.empty() && !FData.MRead().FValue.empty() && FData.MRead().FChildren.empty();
 	}
 
 	CText& MKey()
 	{
-		return FKey;
+		return FData.MWrite().FKey;
 	}
 	const CText& MKey() const
 	{
-		return FKey;
+		return FData.MRead().FKey;
 	}
 
 	const CText& MValue() const
 	{
-		return FValue;
+		return FData.MRead().FValue;
 	}
 	CText& MValue()
 	{
-		return FValue;
+		return FData.MWrite().FValue;
 	}
 	size_t MValueBuf(size_t aMaxLen,void* aTo) const;
 	void MValue(CBuffer & aTo) const;
@@ -144,19 +148,19 @@ public:
 
 	const ConfigSet& MChildren() const
 	{
-		return FChildren;
+		return  FData.MRead().FChildren;
 	}
 	ConfigSet& MChildren()//todo private
 	{
-		return FChildren;
+		return FData.MWrite().FChildren;
 	}
 	const ConfigSet MChildren(const CText& key) const
 	{
 		ConfigSet r;
-		for (ConfigSet::const_iterator i = FChildren.begin();
-				i != FChildren.end(); ++i)
+		for (ConfigSet::const_iterator i = FData.MRead().FChildren.begin();
+				i != FData.MRead().FChildren.end(); ++i)
 		{
-			if ((*i)->MKey() == key)
+			if (i->MKey() == key)
 				r.push_back(*i);
 		}
 		return r;
@@ -164,19 +168,19 @@ public:
 
 	bool MIsChild(const CText& key) const
 	{
-		for (ConfigSet::const_iterator i = FChildren.begin();
-				i != FChildren.end(); ++i)
-			if ((*i)->MKey() == key)
+		for (ConfigSet::const_iterator i = FData.MRead().FChildren.begin();
+				i != FData.MRead().FChildren.end(); ++i)
+			if (i->MKey() == key)
 				return true;
 		return false;
 	}
 
 	void MRemove(const CText& key)
 	{
-		for (ConfigSet::iterator i = FChildren.begin(); i != FChildren.end();)
+		for (ConfigSet::iterator i = FData.MWrite().FChildren.begin(); i != FData.MWrite().FChildren.end();)
 		{
-			if ((*i)->MKey() == key)
-				i = FChildren.erase(i);
+			if (i->MKey() == key)
+				i = FData.MWrite().FChildren.erase(i);
 			else
 				++i;
 		}
@@ -184,14 +188,13 @@ public:
 
 	CConfig const& MChild(const CText& key) const;
 
-	const CConfigPtr MChildPtr(const CText& key) const;
+	const CConfig* MChildPtr(const CText& key) const;
 
 	CConfig* MMutableChild(const CText& key);
 
 	void MMerge(const CConfig& rhs);
 	void MBlendWith(const CConfig& rhs);
 
-	CConfigPtr MFindPtr(const CText& key)const;
 	CConfig* MFind(const CText& key);
 	const CConfig* MFind(const CText& key) const;
 
@@ -209,26 +212,26 @@ public:
 	CConfig& MAdd(const CText& key, const T& value)
 	{
 #ifdef		NUM_TO_STRING_EXIST
-		FChildren.push_back(CConfig(key, to_string<T>(value)));
+		FData.MWrite().FChildren.push_back(CConfig(key, to_string<T>(value)));
 #else
 		std::stringstream out;
 		out << value;
-		FChildren.push_back(CConfig(key, out.str()));
+		FData.MWrite().FChildren.push_back(CConfig(key, out.str()));
 #endif
-		CConfig& _new=FChildren.back().MWrite();
-		_new.MInheritReferrer(FReferrer);
-		return _new;
+//		CConfig& _new=FData.MWrite().FChildren.back();
+//		_new.MInheritReferrer(FData.MWrite().FReferrer);
+		return *this;
 	}
 
 	CConfig&  MAdd(const CText& key,void const* aTo,size_t aMaxLen);
 	CConfig&  MAddTo(const CText& key,CBuffer const & aTo);
 	CConfig& MAdd(const CConfig& conf)
 	{
-		FChildren.push_back(conf);
+		FData.MWrite().FChildren.push_back(conf);
 
-		CConfig& _new=FChildren.back().MWrite();
-		_new.MInheritReferrer(FReferrer);
-		return _new;
+//		CConfig& _new=FData.MWrite().FChildren.back();
+//		_new.MInheritReferrer(FData.MWrite().FReferrer);
+		return *this;
 	}
 
 	CConfig& MAdd(const CText& key, const CConfig& conf)
@@ -326,16 +329,26 @@ public:
 	std::ostream& MPrint(std::ostream & aStream) const;
 
 private:
+	struct SHARE_EXPORT data_t
+	{
+		data_t(){
+			;
+		}
+		data_t(const CText& key);
+		data_t(const CText& key, const CText& value);
+
+		CText FKey;
+		CText FValue;
+		ConfigSet FChildren;
+		//CText FReferrer; //todo it has been change COW object ==> decrease performance
+	};
 	template<class T>
 	inline void MReadFrom(T const&, bool aFirst = true); //ptree - boost
 
 	template<class T>
 	inline void MWriteTo(T&, bool aFirst = true) const; //ptree - boost
 
-	CText FKey;
-	CText FValue;
-	ConfigSet FChildren;
-	CText FReferrer;//todo
+	CCOWPtr<data_t> FData;
 };
 
 #ifdef SMART_FIELD_EXIST
@@ -381,11 +394,11 @@ bool CConfig::MGetIfSet<CConfig>(const CText& key,
 template<> inline
 CConfig& CConfig::MAdd<CText>(const CText& key, const CText& value)
 {
-	FChildren.push_back(CConfig(key, value));
+	FData.MWrite().FChildren.push_back(CConfig(key, value));
 	//_children.back().setReferrer( _referrer );
-	CConfig& _new=FChildren.back().MWrite();
-	_new.MInheritReferrer(FReferrer);
-	return _new;
+	//CConfig& _new=FData.MWrite().FChildren.back();
+	//_new.MInheritReferrer(FData.MWrite().FReferrer);
+	return *this;
 }
 template<> inline
 CText CConfig::MValue<CText>(CText _val) const
