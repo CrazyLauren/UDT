@@ -91,7 +91,7 @@ private:
 	eStatusCode MHandleSniffer(const NSHARE::CConfig& aConf,const NSHARE::CText& aPath,CHttpResponse& _response);
 	void MPutAsJson(const NSHARE::CConfig& _data, CHttpResponse& _response);
 	void MPutSniffedDataFrom(const size_t _number,  NSHARE::CConfig& aTo) const;
-	void MPutToFifo(data_fifo_t::value_type const& _new_data);
+	void MPutToFifo(data_fifo_t::value_type & _new_data);
 
 	CKernelIo * FIo;
 

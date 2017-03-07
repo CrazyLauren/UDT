@@ -317,13 +317,16 @@ private:
 };
 struct fail_sent_args_t
 {
+	NSHARE::uuid_t FFrom;
 	NSHARE::CText FProtocolName;
-	uint32_t FPacketNumber;
+	unsigned FPacketNumber;
+	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
+	NSHARE::version_t FVersion;
+
 	CCustomer::error_t FErrorCode;//see CCustomer
 	uint8_t FUserCode;
 	std::vector<NSHARE::uuid_t> FTo;
 	std::vector<NSHARE::uuid_t> FFails;
-	NSHARE::version_t FVersion;
 };
 inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
 		const msg_parser_t& aHeader, const callback_t& aCB){

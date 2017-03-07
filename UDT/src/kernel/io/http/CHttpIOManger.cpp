@@ -471,18 +471,7 @@ bool CHttpIOManger::MSend(const program_id_t& aVal, descriptor_t const&,
 	return false;
 }
 
-void CHttpIOManger::MPutToFifo(data_fifo_t::value_type const& _new_data)
-{
-	CRAII<CMutex> _block(FSniffedMutex);
-	const size_t _size=_new_data.FSize;
-	for (; (FBufferingBytes < (int)_size) && !FSniffedData.empty();)
-	{
-		FBufferingBytes += FSniffedData.front().FSize;
-		FSniffedData.pop_front();
-	}
-	FBufferingBytes-=_new_data.FSize;
-	FSniffedData.push_back(_new_data);
-}
+
 
 bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 {
@@ -502,10 +491,9 @@ bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 
 
 		data_fifo_t::value_type _conf;
-		_conf.FSinffedNum=++FSinffedNum;
 		_conf.FData=NSHARE::CConfig(SNIFFED_DATA);
 		_conf.FSize=aVal.FData.size();
-		_conf.FData.MAdd(SEQUENCE_NUMBER, _conf.FSinffedNum);
+
 		_conf.FData.MAdd(demand_dg_t::HANDLER, *_it);
 		//_conf.second.MAdd(aVal.FDataId.MSerialize());
 
@@ -521,10 +509,32 @@ bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 	}
 	return true;
 }
+void CHttpIOManger::MPutToFifo(data_fifo_t::value_type & _new_data)
+{
+	CRAII<CMutex> _block(FSniffedMutex);
+	const size_t _size=_new_data.FSize;
+	for (;_size && (FBufferingBytes < (int)_size) && !FSniffedData.empty();)
+	{
+		FBufferingBytes += FSniffedData.front().FSize;
+		FSniffedData.pop_front();
+	}
+	FBufferingBytes-=_new_data.FSize;
+
+	_new_data.FSinffedNum=++FSinffedNum;
+	_new_data.FData.MAdd(SEQUENCE_NUMBER, _new_data.FSinffedNum);
+
+	FSniffedData.push_back(_new_data);
+}
 bool CHttpIOManger::MSend(const fail_send_t& aVal, descriptor_t const&,
 		const routing_t& aRoute, error_info_t const&)
 {
-	return false;
+	data_fifo_t::value_type _conf;
+	_conf.FData=NSHARE::CConfig(SNIFFED_DATA);
+	_conf.FData.MAdd(aVal.MSerialize());
+	_conf.FSize=0;
+	MPutToFifo(_conf);
+
+	return true;
 }
 bool CHttpIOManger::MSend(const kernel_infos_array_t& aVal, descriptor_t const&,
 		const routing_t& aRoute, error_info_t const&)

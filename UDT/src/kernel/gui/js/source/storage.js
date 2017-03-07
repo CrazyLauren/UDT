@@ -51,7 +51,59 @@ var storage =
                     }
                     return null;
                 },
-                set: function (aVal)
+                getFailFor: function (aVal)
+                {
+                    let self = storage.sniffed_data;
+                    if (!aVal)
+                        return self.dataFails;
+
+                    const _from = aVal.udata.usdt.rtg_.id.uuid;
+                    const _packet = aVal.udata.usdt.pn;
+                    let _fails = new Array;
+                    self.dataFails.forEach(function (item)
+                    {
+                        const _fail_from = item.fsend.usdt.rtg_.id.uuid;
+                        const _fail_packet = item.fsend.usdt.pn;
+                        if (_from == _fail_from && _fail_packet == _packet)
+                        {
+                            _fails.push(item);
+                        }
+                    });
+                    if (_fails.length != 0)
+                        return _fails;
+                    return null;
+                },
+                put: function (aVal)
+                {
+                    let self = storage.sniffed_data;
+                    self.last_packet = aVal.seq_num;
+                    if (aVal.hasOwnProperty("fsend"))
+                    {
+                        self.dataFails.push(aVal);
+
+                        const _fail_from = aVal.fsend.usdt.rtg_.id.uuid;
+                        const _fail_packet = aVal.fsend.usdt.pn;
+                        self.data.forEach(function (item)
+                        {
+                            const _from = item.udata.usdt.rtg_.id.uuid;
+                            const _packet = item.udata.usdt.pn;
+                            if (_from == _fail_from && _fail_packet == _packet)
+                            {
+                                self.updated(item);
+                            }
+                        });
+                    } else if (aVal.hasOwnProperty("udata"))
+                    {
+                        self.data.push(aVal);
+                        try
+                        {
+                            self.on_new(aVal);
+                        } catch (e)
+                        {
+                        }
+                    } else
+                        console.assert(false, JSON.stringify(aVal, null, 2));
+                }, set: function (aVal)
                 {
                     let self = storage.sniffed_data;
 
@@ -61,27 +113,13 @@ var storage =
                         {
                             if (aVal.hasOwnProperty(i))
                             {
-                                self.data.push(aVal[i]);
-                                self.last_packet = parseInt(aVal[i].seq_num, 10);
-                                try
-                                {
-                                    self.on_new(aVal[i]);
-                                } catch (e)
-                                {
-                                }
+                                self.put(aVal[i]);
                             }
                         }
 
                     } else if (aVal)
                     {
-                        self.data.push(aVal);
-                        self.last_packet = parseInt(aVal.seq_num, 10);
-                        try
-                        {
-                            self.on_new(aVal);
-                        } catch (e)
-                        {
-                        }
+                        self.put(aVal);
                     }
 
                 }
@@ -90,6 +128,9 @@ var storage =
                 {
                 }
                 ,
+                updated: function (event)
+                {
+                },
                 update: function ()
                 {
                     let self = storage.sniffed_data;
@@ -105,13 +146,16 @@ var storage =
                             contentType: "application/json; charset=utf-8"
                         }).done(function (data)
                     {
-                        storage.dems.set(data.snif_state.dems);
-                        self.set(data.snif_state.sniffed_data);
+                        if (data.snif_state.hasOwnProperty("dems"))
+                            storage.dems.set(data.snif_state.dems);
+                        if (data.snif_state.hasOwnProperty("sniffed_data"))
+                            self.set(data.snif_state.sniffed_data);
                     })
                 }
                 ,
                 last_packet: "1",
-                data: []
+                data: [],
+                dataFails: []
             },
             dems: {
                 get: function (aVal)
@@ -234,7 +278,7 @@ var storage =
                         Object.defineProperty(self.dataOfKernel, "inited", {
                             enumerable: false,
                             value: true,
-                            configurable:false
+                            configurable: false
                         });
                     }).error(function (jqXHR, textStatus)
                     {
@@ -252,7 +296,7 @@ var storage =
                     Object.defineProperty(self.data, "inited", {
                         enumerable: false,
                         value: true,
-                        configurable:false
+                        configurable: false
                     });
                 }, get: function ()
                 {
@@ -335,7 +379,7 @@ var storage =
                                 Object.defineProperty(_new_sub[_i], "is_removed", {
                                     enumerable: false,
                                     value: true,
-                                    configurable:false
+                                    configurable: false
                                 });
                                 self.removed(_i);
                             }
@@ -362,7 +406,7 @@ var storage =
                     Object.defineProperty(self.data, "inited", {
                         enumerable: false,
                         value: true,
-                        configurable:false
+                        configurable: false
                     });
                 },
                 update: function (aSinc = true)
