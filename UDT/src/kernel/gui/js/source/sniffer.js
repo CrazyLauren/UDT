@@ -74,6 +74,7 @@ var sniffer =//static pane
                 //_detail.resizable()
             }
             storage.sniffed_data.on_new = self.update_data;
+            storage.sniffed_data.updated = self.update_data;
 
             storage.dems.created = self.get_or_create_demand;
             storage.dems.removed = self.remove_demand;
@@ -262,26 +263,38 @@ var sniffer =//static pane
             let self = sniffer;
             const _handle_id = self.get_handler_id(aData.hand);
             let _tab = ("." + sniffer.CLASS_TAB_OF_FROM + ":has(#" + get_id_for(_handle_id) + ")", self.FContainer);
-            let _data = $("#" + sniffer.DATA_OF_TAB, _tab);
+            let _table = $("#" + sniffer.DATA_OF_TAB, _tab);
             let _cb = $("label[for='" + get_id_for(_handle_id) + "']", _tab);
 
-            console.assert(_data.length == 1, "No data for " + _handle_id);
+            console.assert(_table.length == 1, "No data for " + _handle_id);
             console.assert(_cb.length == 1, "No handler for " + _handle_id);
 
             let _color_class = _cb.attr("class").match(new RegExp(self.CLASS_RAW_COLOR + "\\d*", "g"));
             console.assert(_color_class.length == 1, "No color class for " + _handle_id);
 
-            let _tr = $("<tr>").prependTo(_data).click(function ()
+            let _tr = $("tr[seq=" + aData.seq_num + "]", _table);
+            if (_tr.length == 0)
+            {
+                _tr = $("<tr>").prependTo(_table);
+                _tr.addClass(_color_class[0]).attr({
+                    for: get_id_for(_handle_id),
+                    seq: aData.seq_num
+                });
+            } else//it's updated
+                _tr.empty();
+
+            _tr.unbind( "click" );
+            _tr.click(function ()
             {
                 self.update_detail(aData);
-            }).addClass(_color_class[0]).attr("for", get_id_for(_handle_id));
+            });
 
             const _is_hide = $("#" + get_id_for(_handle_id), _tab).is(":checked");
             if (!_is_hide)
                 _tr.hide();
 
             let _from = $.to_representation_form(aData.udata.usdt.rtg_.id, data_info);
-            let _f=$("<td>").addClass("uuid-tooltip").text(_from[data_info.uuid.getName()]).appendTo(_tr);
+            let _f = $("<td>").addClass("uuid-tooltip").text(_from[data_info.uuid.getName()]).appendTo(_tr);
 
 
             let _to = $.to_representation_form(aData.udata.usdt.uuids, data_info);

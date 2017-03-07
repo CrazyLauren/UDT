@@ -371,8 +371,10 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	fail_send_t const& _prog =
 			reinterpret_cast<fail_send_id_t*>(aWhat->FPointToData)->FData;
 	fail_sent_args_t _fail;
-	_fail.FPacketNumber = _prog.FPacketNumber;
+	_fail.FFrom=_prog.FRouting.FFrom.FUuid;
 	_fail.FProtocolName = _prog.FProtocol;
+	_fail.FPacketNumber = _prog.FPacketNumber;
+	_fail.FRawProtocolNumber=_prog.FRawProtocolNumber;
 	_fail.FTo = _prog.FDestination;
 	_fail.FFails = _prog.FRouting;
 	_fail.FUserCode=_prog.MGetUserError();
