@@ -3,15 +3,20 @@
  */
 function check_js_version ()
 {
-    this._is_support=false;
-    var d = document;
-    var g = d.createElement('script'),
-        s = d.getElementsByTagName('script')[0];
+    var _is_support=true;
+    try
+    {
+        let _i=0;
+        const _j=0;
+        [].forEach(function ()
+        {
 
-    g.setAttribute("language", "JavaScript1.7");
-    g.text = "this._is_support=true;";
-    s.parentNode.insertBefore(g, s);
-    return this._is_support;
+        })
+    }catch(e)
+    {
+        _is_support=false;
+    }
+    return _is_support;
 }
 if(check_js_version())
 {
@@ -26,7 +31,7 @@ if(check_js_version())
 {
     $(document).ready(function ()
     {
-        alert("Your browser does not support ECMAScript 6");
+        alert("Your browser does not support ECMAScript 6. Please upgrade your browser!");
     })
 }
 
