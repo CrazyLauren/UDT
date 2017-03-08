@@ -26,6 +26,7 @@ enum
 enum eError
 {
 	E_NO_ERROR=0x0,
+	//Resreved=0x1<<0,
 	//Resreved=0x1<<1,
 	E_CANNOT_READ_CONFIGURE=0x1<<2,
 	E_CONFIGURE_IS_INVALID= 0x1<<3,
@@ -659,11 +660,14 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	{
 		aStream << " Name is invalid,";
 	}
+	if (_val.MGetFlag(NUDT::E_NOT_CONNECTED_TO_KERNEL))
+	{
+		aStream << " Not connected to kernel,";
+	}
 	if (_val.MGetFlag(NUDT::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE))
 	{
 		aStream << " Cannot allocate buffer of requrement size,";
 	}
-
 	if (_val.MGetFlag(NUDT::E_HANDLER_IS_NOT_EXIST))
 	{
 		aStream << " Handler is not exist,";

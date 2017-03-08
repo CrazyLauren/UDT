@@ -102,7 +102,7 @@
             }
         }
     }
-    jQuery.object_to_table = function (_array, aTable)
+    jQuery.object_to_table = function (_array, aTable,aOnlyChild)
     {
         const _is_array = $.isArray(_array);
         if ($.isArray(_array) || (typeof _array === 'object'))
@@ -110,26 +110,40 @@
             {
                 if (_array.hasOwnProperty(i))
                 {
-                    let _tr = jQuery("<tr>").appendTo(aTable);
-                    let _td_data;
-                    if (!_is_array)
+                    if(!aOnlyChild)
                     {
-                        _tr.append("<td>" + i + "</td>");
-                        _td_data = $("<td>").appendTo(_tr);
-                    } else
-                        _td_data = $("<td>").attr("colspan", 2).appendTo(_tr);
+                        let _tr = jQuery("<tr>").appendTo(aTable);
+                        let _td_data;
+                        if (!_is_array)
+                        {
+                            _tr.append("<td>" + i + "</td>");
+                            _td_data = $("<td>").appendTo(_tr);
+                        } else
+                            _td_data = $("<td>").attr("colspan", 2).appendTo(_tr);
 
-                    if ($.isArray(_array[i]) || (typeof _array[i] === 'object'))
+                        if ($.isArray(_array[i]) || (typeof _array[i] === 'object'))
+                        {
+                            let _table = jQuery("<table>").appendTo(_td_data);
+                            jQuery.object_to_table(_array[i], _table);
+                            if ($.isArray(_array[i]))
+                                $("tr >td", _table).addClass(get_id_for("class-" + i));
+                            else
+                                _table.addClass(get_id_for("class-" + i));
+                        } else
+                        {
+                            _td_data.text(_array[i]).addClass(get_id_for("class-" + i));
+                        }
+                    }else
                     {
-                        let _table = jQuery("<table>").appendTo(_td_data);
-                        jQuery.object_to_table(_array[i], _table);
-                        if (_is_array)
-                            $("tr >td",_table).addClass(get_id_for("class-" + i));
-                        else
-                            _table.addClass(get_id_for("class-" + i));
-                    } else
-                    {
-                        _td_data.text(_array[i]).addClass(get_id_for("class-" + i));
+                        if ($.isArray(_array[i]) || (typeof _array[i] === 'object'))
+                        {
+                            jQuery.object_to_table(_array[i], aTable);
+                        } else
+                        {
+                            let _tr = jQuery("<tr>").appendTo(aTable);
+                            let  _td_data = $("<td>").attr("colspan", 2).appendTo(_tr);
+                            _td_data.text(_array[i]).addClass(get_id_for("class-" + i));
+                        }
                     }
                 }
             }

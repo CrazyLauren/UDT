@@ -209,8 +209,8 @@ var sniffer =//static pane
                     const _protocol = aHandleDemand.pl;
                     _table.append("<tr><td>Protocol:</td><td>" + _protocol + "</td></tr>");
                     let _head = $.toRepresentationHead(_protocol, aHandleDemand[_protocol]);
-                    for (i in _head)
-                        $.object_to_table(_head[i], _table);
+
+                    $.object_to_table(_head, _table, true);
                     self.add_check_box(_table, $("#request", _tab), _handle_id);
                 } catch (err)
                 {
@@ -220,44 +220,73 @@ var sniffer =//static pane
             }
             return _handle_id;
         },
-        update_detail: function (aData)
+        filling_errors: function (aData, aWhere)
         {
-            let _table = $(".data_detail_table", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
-            _table.empty();
-
-            let _data = $.to_representation_form({
-                usdt: aData.udata.usdt
-            }, data_info);
-            for (i in _data)
+            let self = sniffer;
+            let _error = storage.sniffed_data.getFailFor(aData);
+            if (_error)
             {
-                $.object_to_table(_data[i], _table);
-            }
-            const _id = aData.hand;
-            let _dem = storage.dems.get(_id);
-            let _head = undefined;
-            if (_dem)
-            {
-                const _protocol = _dem.pl;
-                _head = _dem[_protocol];
-                _head.ver = undefined;
+                let _uuids = $(get_uuids_class(), aWhere);
+                _uuids.each(function (i, cell)
+                {
+                    let _jcell = $(cell);
+                    if (_jcell.closest(".class-From").length == 0)
+                        _error.forEach(function (item)
+                        {
+                            let _to = item.fsend.usdt.rtg_.uuids;
+                            for (let uuid in _to)
+                            {
+                                if (_to.hasOwnProperty(uuid) && _jcell.text() == _to[uuid])
+                                {
+                                    _jcell.addClass("ui-state-error").addClass("fail-send");
+                                    let _er=_jcell.attr("error_type");
+                                    if(!_er)
+                                        _jcell.attr("error_type",item.fsend.ecode);
+                                    else
+                                        _jcell.attr("error_type",_er+","+item.fsend.ecode);//todo Bitwise operations
+                                    break;
+                                }
+                            }
 
-                let _parsed_head = $.toRepresentationHead(_protocol, _head);
-                for (i in _parsed_head)
-                    $.object_to_table(_parsed_head[i], _table);
+                        });
+                });
             }
+        }, update_detail: function (aData)
+    {
+        let self = sniffer;
+        let _table = $(".data_detail_table", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
+        _table.empty();
 
-            if (aData.udata.data)
-            {
-                const _protocol = aData.by_parser;
-                let _title = $("#title", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
-                _title.text("Detail (parsed by " + _protocol + ")");
+        let _data = $.to_representation_form({
+            usdt: aData.udata.usdt
+        }, data_info);
+        $.object_to_table(_data, _table, true);
 
-                let _parsed_data = $.toRepresentationData(_protocol, aData.udata.data, _head, _id);
-                for (i in _parsed_data)//remove title
-                    $.object_to_table(_parsed_data[i], _table);
-            }
-            filling_data_style(_table);
-        },
+        const _id = aData.hand;
+        let _dem = storage.dems.get(_id);
+        let _head = undefined;
+        if (_dem)
+        {
+            const _protocol = _dem.pl;
+            _head = _dem[_protocol];
+            _head.ver = undefined;
+
+            let _parsed_head = $.toRepresentationHead(_protocol, _head);
+            $.object_to_table(_parsed_head, _table, true);
+        }
+
+        if (aData.udata.data)
+        {
+            const _protocol = aData.by_parser;
+            let _title = $("#title", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
+            _title.text("Detail (parsed by " + _protocol + ")");
+
+            let _parsed_data = $.toRepresentationData(_protocol, aData.udata.data, _head, _id);
+            $.object_to_table(_parsed_data, _table, true);
+        }
+        self.filling_errors(aData, _table);
+        filling_data_style(_table);
+    },
         update_data: function (aData)
         {
             let self = sniffer;
@@ -283,23 +312,24 @@ var sniffer =//static pane
             } else//it's updated
                 _tr.empty();
 
-            _tr.unbind( "click" );
+            _tr.unbind("click");
             _tr.click(function ()
             {
                 self.update_detail(aData);
             });
-
             const _is_hide = $("#" + get_id_for(_handle_id), _tab).is(":checked");
             if (!_is_hide)
                 _tr.hide();
 
             let _from = $.to_representation_form(aData.udata.usdt.rtg_.id, data_info);
-            let _f = $("<td>").addClass("uuid-tooltip").text(_from[data_info.uuid.getName()]).appendTo(_tr);
+            let _f = $("<td>").addClass(get_id_for("class-" + data_info.uuid.getName())).text(_from[data_info.uuid.getName()]).appendTo(_tr);
 
 
             let _to = $.to_representation_form(aData.udata.usdt.uuids, data_info);
+            let _to_gui = $("<td>").addClass(get_id_for("class-" + data_info.uuid.getName())).appendTo(_tr).append("<table>");
+            $.object_to_table(_to, _to_gui, true);
 
-            $.object_to_table(_to[data_info.uuid.getName()], $("<td>").addClass("uuid-tooltip").appendTo(_tr).append("<table>"));
+            self.filling_errors(aData, _to_gui);
 
             $("<td>").text(aData.udata.usdt.pn).appendTo(_tr);
             $("<td>").text(aData.hand).appendTo(_tr);

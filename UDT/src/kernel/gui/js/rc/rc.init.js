@@ -11,7 +11,7 @@ function check_js_version ()
     g.setAttribute("language", "JavaScript1.7");
     g.text = "this._is_support=true;";
     s.parentNode.insertBefore(g, s);
-    return _is_support;
+    return this._is_support;
 }
 if(check_js_version())
 {
