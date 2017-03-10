@@ -1,6 +1,3 @@
-/**
- * Created by Sergey on 19.02.2017.
- */
 function update_udt_net(aSinc)
 {
     let self = storage.parsers;
@@ -412,7 +409,8 @@ var storage =
                 update: function (aSinc = true)
                 {
                     update_udt_net(aSinc);
-                }, get: function (aVal)
+                },
+                get: function (aVal, noRequest)
                 {
                     let self = storage.susbscriber_net;
                     if (!self.data.hasOwnProperty("inited"))
@@ -423,7 +421,7 @@ var storage =
                     if (!aVal)
                         return self.data;
 
-                    if (!self.data.hasOwnProperty(aVal))
+                    if (!self.data.hasOwnProperty(aVal) && !noRequest)
                         self.update(false);
 
                     return self.data[aVal];
@@ -443,7 +441,52 @@ var storage =
             roads: {
                 set: function (aData)
                 {
-                    return;//todo create graph
+                    let self = storage.roads;
+                    let _data = [];
+                    if (aData.hasOwnProperty("road"))
+                    {
+                        if ($.isArray(aData.road))
+                            _data = aData.road;
+                        else
+                            _data.push(aData.road);
+                    }
+                    let _elements =
+                        {
+                            nodes: [],
+                            edges: []
+                        };
+
+                    _data.forEach(function (item)
+                    {
+                        let _node={};
+                        _node.data =
+                            {
+                                id: item.from,
+                            };
+
+                        _elements.nodes.push(_node);
+
+                        let _way_list = [];
+                        if (item.hasOwnProperty("way"))
+                        {
+                            if ($.isArray(item.way))
+                                _way_list = item.way;
+                            else
+                                _way_list.push(item.way);
+                        }
+                        _way_list.forEach(function (iw)
+                        {
+                            let _way=[];
+                            _way.data = {
+                                id: item.from + "_to_" + iw.to,
+                                source: item.from,
+                                target: iw.to,
+                                weight: iw.lat
+                            }
+                            _elements.edges.push(_way);
+                        })
+                    });
+                    self.updated(_elements);
                 },
                 update: function (aSinc = true)
                 {

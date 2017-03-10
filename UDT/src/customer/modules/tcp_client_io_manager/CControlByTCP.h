@@ -98,8 +98,10 @@ private:
 	int MCloseMain();
 	int MSendIDInfo();
 	void MSendFilters();
+	void MSendFail(fail_send_t const&);
 
 	static int sMUpdateList(CHardWorker* aWho, args_data_t* aWhat, void* aData);
+	static int sMFailSend(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	void MWaitForKernelReceived(unsigned _num);
 	void MKernelReceived(unsigned _num);
 	bool MIsKernelReceived(unsigned _num) const;

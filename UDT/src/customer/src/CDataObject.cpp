@@ -24,6 +24,7 @@ const NSHARE::CText progs_id_from_t::NAME = "ProgsIdFrom";
 const NSHARE::CText recv_data_from_t::NAME = "ReceiveFrom";
 const NSHARE::CText req_recv_t::NAME = "ListOfFilters";
 const NSHARE::CText fail_send_id_t::NAME = "FailSent";
+const NSHARE::CText fail_send_id_from_me_t::NAME = "FailSent2";
 const NSHARE::CText demand_dgs_id_t::NAME = "Demands";
 
 static int number_of_thread()
@@ -76,6 +77,10 @@ void CDataObject::MPush(const demand_dgs_t & aVal)
 	MPushImpl(aVal, true);
 }
 
+void CDataObject::MPush(const fail_send_id_from_me_t & aVal)
+{
+	MPushImpl(aVal, true);
+}
 void CDataObject::MPush(const fail_send_id_t & aVal)
 {
 	MPushImpl(aVal, true);

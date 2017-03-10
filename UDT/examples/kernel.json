@@ -12,13 +12,14 @@
 				"path_hash_to_name":"true",
 				"remove": "true",
 				"as_def_alloc":"true"
-			}
+			},
+			"tcpser":{},
+			"tcp":{}
 		},
 		"tcp_io_manager":{
 			"consumer":{
 				"channel_for":{
 					"default":"sm",
-					"@guex":"udp",
 					"uex@guex":"sm",
 					"uex2@guex":"sm"
 				}

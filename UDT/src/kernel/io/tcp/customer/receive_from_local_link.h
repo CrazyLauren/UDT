@@ -20,6 +20,7 @@
 	RECEIVE(E_CLOSE_MAIN_CHANNEL,close_main_channel_t)/*Закрытие основного канала*/\
 	RECEIVE(E_MAIN_CHANNEL_ERROR,main_channel_error_param_t)/*Ошибки открытия, закрытияб работы основного канала*/\
 	RECEIVE(E_CUSTOMER_FILTERS,custom_filters_dg2_t)/*Фильтр данных*/\
+	RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Данные не доставлены*/\
 	/*END*/
 
 

@@ -39,6 +39,11 @@ struct CUSTOMER_EXPORT fail_send_id_t
 	static const data_events_t::key_t NAME;
 	fail_send_t FData;
 };
+struct CUSTOMER_EXPORT fail_send_id_from_me_t
+{
+	static const data_events_t::key_t NAME;
+	fail_send_t FData;
+};
 struct CUSTOMER_EXPORT demand_dgs_id_t
 {
 	static const data_events_t::key_t NAME;
@@ -59,6 +64,7 @@ public:
 	void MPush(const recv_data_from_t &);
 	void MPush(const req_recv_t &);
 	void MPush(const fail_send_id_t &);
+	void MPush(const fail_send_id_from_me_t &);
 	void MPush(const demand_dgs_t &);
 	template<class T>
 	inline void MPush(const T& aVal,bool isPrior=false);

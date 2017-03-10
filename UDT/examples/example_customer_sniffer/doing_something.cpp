@@ -43,7 +43,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	CCustomer::sMPrintError(std::cerr,_recv_arg->FErrorCode);
 
 	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIT)
-			std::cerr<<" user's code="<<_recv_arg->FUserCode;//user's code from udt_example_protocol.h
+			std::cerr<<" user's code="<<(unsigned)_recv_arg->FUserCode;//user's code from udt_example_protocol.h
 	std::cerr<< std::endl;
 
 

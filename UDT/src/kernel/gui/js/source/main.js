@@ -1,8 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 $(document).ready(function ()
 {
@@ -24,10 +19,10 @@ $(document).ready(function ()
 
     //create_tab("tabs-router","Router");
     //create_tab("tabs-firewall","FireWall");
-    //create_tab("tabs-map","Map");
+    create_tab("tabs-net","Net");
     //create_tab("tabs-send","Send");
     create_tab("tabs-sniffer","Sniffer");
-    create_tab("tabs-info","Info");
+    //create_tab("tabs-info","Info");
     //create_tab("tabs-settings","Settings");
     var handle_activation=function(tab)
     {
@@ -39,6 +34,9 @@ $(document).ready(function ()
                 break;
             case "tabs-sniffer":
                 sniffer.open(tab);
+                break;
+            case "tabs-net":
+                udt_net.open(tab);
                 break;
             default:
                 tab.empty().html("Couldn't load this tab");

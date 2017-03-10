@@ -42,6 +42,27 @@ CTcpClientMainChannel::CTcpClientMainChannel() :
 		IMainChannel(NAME)
 {
 }
+
+bool CTcpClientMainChannel::MOpenIfNeed()
+{
+	//CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
+	if (!FLoopBack.MIsOpen())
+	{
+		bool _rval = FLoopBack.MOpen();
+		CHECK(_rval);
+		if (_rval)
+			FSelectSock.MAddSocket(FLoopBack.MGetSocket());
+		else
+			return false;
+
+		NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this,
+				NSHARE::operation_t::IO);
+		CDataObject::sMGetInstance().MPutOperation(_op);
+		DCHECK(FSelectSock.MIsSetUp());
+	}
+	return FLoopBack.MIsOpen();
+}
+
 void CTcpClientMainChannel::MInit()
 {
 	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
@@ -57,12 +78,6 @@ void CTcpClientMainChannel::MInit()
 		return;
 	}
 	//CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
-	if (MOpenLoopSocket())
-	{
-		NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this, NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
-	}
-	DCHECK(FSelectSock.MIsSetUp());
 }
 CTcpClientMainChannel::~CTcpClientMainChannel()
 {
@@ -81,6 +96,11 @@ bool CTcpClientMainChannel::MOpen(ILink* aHandler, program_id_t const& aId,NSHAR
 {
 	CHECK_NOTNULL(aHandler);
 
+	if(!MOpenIfNeed())
+	{
+		LOG(DFATAL)<< "Tcp client channel is not opened.";
+		return false;
+	}
 	LOG_IF(ERROR,MIsOpen(aHandler->MGetID())) << "Main channel for "
 														<< aHandler->MGetID()
 														<< "has been opened already";
@@ -249,14 +269,6 @@ bool CTcpClientMainChannel::MHandleServiceDG(const main_channel_param_t* aData,
 		}
 	}
 	return false;
-}
-inline bool CTcpClientMainChannel::MOpenLoopSocket()
-{
-	bool _rval = FLoopBack.MOpen();
-	CHECK(_rval);
-	if (_rval)
-		FSelectSock.MAddSocket(FLoopBack.MGetSocket());
-	return _rval;
 }
 void CTcpClientMainChannel::MUnLockSelect()
 {

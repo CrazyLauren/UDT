@@ -119,7 +119,7 @@ private:
 	NSHARE::CBuffer  MGetValidBuffer(NSHARE::CBuffer const& aVal);
 	size_t MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data, NSHARE::shared_identify_t const& _from,ILink*);
 	void MCheckPacketSequence(const unsigned aPacket, unsigned & aLast);
-
+	bool MOpenIfNeed();
 	template<class DG_T> void MFill(data_t*);
 	template<class T>
 	inline void MFill(data_t* _buf, const T& _id);
@@ -129,6 +129,10 @@ private:
 	safe_data_t FData;
 	std::map<NSHARE::CBuffer::offset_pointer_t, user_data_info_t> FRecv;
 	mutable NSHARE::CMutex FMutex;
+	unsigned FReserv;
+	unsigned FSize;
+	bool FIsUsingAsDef;
+	NSHARE::CText FName;
 
 };
 } /* namespace NUDT */

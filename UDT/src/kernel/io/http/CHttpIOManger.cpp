@@ -32,7 +32,7 @@ NSHARE::CText const CHttpIOManger::PORT = "port";
 NSHARE::CText const CHttpIOManger::BUF_MAX_SIZE="maxbuf";
 NSHARE::CText const CHttpIOManger::PARSER_ERROR = "par_fail";
 NSHARE::CText const CHttpIOManger::SNIFFER = "sniffer";
-NSHARE::CText const CHttpIOManger::WWW_PATH = "./gui";
+NSHARE::CText const CHttpIOManger::WWW_PATH = "q:/GIT/UDT/UDT/src/kernel/gui";
 NSHARE::CText const CHttpIOManger::I_WHAT_RECEIVE = "i_what_receive";
 NSHARE::CText const CHttpIOManger::DO_NOT_RECEIVE_MSG = "do_not_receive_msg";
 NSHARE::CText const CHttpIOManger::SNIFFER_STATE = "snif_state";
@@ -50,6 +50,7 @@ CHttpIOManger::CHttpIOManger() :
 		FBufferingBytes(10*1024*1024)//max 10 mb
 
 {
+	FProgId.FId.FName="GUI";
 	FProgId.FId.FUuid = NSHARE::get_uuid(FProgId.FId.FName);
 	FProgId.FType = E_CONSUMER;
 }

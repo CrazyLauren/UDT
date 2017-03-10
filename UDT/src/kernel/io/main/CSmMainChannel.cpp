@@ -48,9 +48,16 @@ const NSHARE::CText CSmMainChannel::USING_AS_DEF="as_def_alloc";
 const NSHARE::CText CSmMainChannel::RESERV="reserv";
 
 CSmMainChannel::CSmMainChannel() :
-		IMainChannel(NAME)
+		IMainChannel(NAME),//
+		FReserv(1024),//
+		FSize(0),//
+		FIsUsingAsDef(false)
 {
+	FName.MMakeRandom(10);
 }
+
+
+
 void CSmMainChannel::MInit()
 {
 	VLOG(2) << "Initialize sm server";
@@ -67,8 +74,7 @@ void CSmMainChannel::MInit()
 		return;
 	}
 
-	CText _name;
-	if (!_settings.MGetIfSet(SERVER_NAME, _name))
+	if (!_settings.MGetIfSet(SERVER_NAME, FName))
 	{
 		LOG(FATAL)<<"Cannot open sm server as the name is not set. Value: "<<SERVER_NAME;
 	}
@@ -77,38 +83,47 @@ void CSmMainChannel::MInit()
 	{
 		std::stringstream _out;
 		_out << get_my_id().FPath.MGetHash();
-		_name+=_out.str();
-		VLOG(2)<<"Name  sm memory with hash "<<_name;
+		FName+=_out.str();
+		VLOG(2)<<"Name  sm memory with hash "<<FName;
 //		LOG(FATAL)<<"Cannot open sm server as the name is not set. Value: "<<SERVER_NAME;
 	}
 
 	bool _is=false;
 	if(_settings.MGetIfSet(SM_REMOVE, _is) && _is)
 	{
-		VLOG(2)<<"Remove memory "<<_name;
-		NSHARE::CSharedMemoryServer::sMRemove(_name);
+		VLOG(2)<<"Remove memory "<<FName;
+		NSHARE::CSharedMemoryServer::sMRemove(FName);
 	}
-	unsigned _size = 0;
-	if (!_settings.MGetIfSet(SERVER_SIZE, _size))
+	if (!_settings.MGetIfSet(SERVER_SIZE, FSize))
 	{
 		LOG(FATAL)<<"Cannot open sm server as the size is not set. Value: "<<SERVER_SIZE;
 	}
-	unsigned _reserv = 1024;
-	if (_settings.MGetIfSet(RESERV, _reserv))
+	if (_settings.MGetIfSet(RESERV, FReserv))
 	{
-		VLOG(2)<<"New reserv == "<<_reserv;
+		VLOG(2)<<"New reserv == "<<FReserv;
 	}
-	if (FSmServer.MOpen(_name, _size,_reserv))
-	{
-		NSHARE::operation_t _op(CSmMainChannel::sMReceiver, this, NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
-	}
-	LOG_IF(FATAL,!FSmServer.MIsOpen()) << "The sm server is not opened";
 
-	if(_settings.MValue(USING_AS_DEF,false))
+	_settings.MGetIfSet(USING_AS_DEF, FIsUsingAsDef);
+
+	MOpenIfNeed();
+}
+bool CSmMainChannel::MOpenIfNeed()
+{
+	if (!FSmServer.MIsOpen())
 	{
-		CDataObject::sMGetInstance().MSetDefAllocater(MAllocater());
+		if (FSmServer.MOpen(FName, FSize, FReserv))
+		{
+			NSHARE::operation_t _op(CSmMainChannel::sMReceiver, this,
+					NSHARE::operation_t::IO);
+			CDataObject::sMGetInstance().MPutOperation(_op);
+			LOG_IF(FATAL,!FSmServer.MIsOpen())<< "The sm server is not opened";
+			if (FIsUsingAsDef)
+			{
+				CDataObject::sMGetInstance().MSetDefAllocater(MAllocater());
+			}
+		}
 	}
+	return FSmServer.MIsOpen();
 }
 CSmMainChannel::~CSmMainChannel()
 {
@@ -186,10 +201,11 @@ bool CSmMainChannel::MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_addre
 {
 	CHECK_NOTNULL(aHandler);
 
-	LOG_IF(DFATAL,!FSmServer.MIsOpen()) << "Sm channel is not opened.";
-
-	if (!FSmServer.MIsOpen())
+	if (!MOpenIfNeed())
+	{
+		LOG(DFATAL) << "Sm channel is not opened.";
 		return false;
+	}
 	split_info _info=aHandler->MLimits();
 	_info.FType.MSetFlag(split_info::CAN_NOT_SPLIT,true);
 

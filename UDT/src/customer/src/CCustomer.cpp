@@ -480,6 +480,7 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 		_raw_args.FRawProtocolNumber = aFrom.FData.FDataId.FRawProtocolNumber;
 		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
 		_raw_args.FVersion=aFrom.FData.FDataId.FVersion;
+		_raw_args.FOccurUserError=0;
 
 
 		aFrom.FData.FData.MMoveTo(_raw_args.FBuffer);
@@ -544,12 +545,32 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom<<" Raw="<<_raw_args.FRawProtocolNumber<<" by CB #"<<(*_it);
 
 					FEvents[*_it].operator ()(&FThis, &_raw_args);
+					if(!_raw_args.FOccurUserError)
+					{
+						VLOG(2) << "The packet #" << _raw_args.FPacketNumber
+						<< " by " << _raw_args.FProtocolName
+						<< " protocol from "
+						<< _raw_args.FFrom << " handled";
+						++_count;
+					}
+					else
+					{
+						LOG(ERROR)<<"The packet #" << _raw_args.FPacketNumber
+								<< " by " << _raw_args.FProtocolName
+								<< " protocol from "
+								<< _raw_args.FFrom << " is not handled as "<<(int)_raw_args.FOccurUserError;
+						fail_send_t _fsent(aFrom.FData.FDataId);
+						_fsent.FRouting.clear();
+						_fsent.FRouting.push_back(get_my_id().FId.FUuid);
+						_fsent.MSetUserError(_raw_args.FOccurUserError);
+						fail_send_id_from_me_t _sent;
+						_sent.FData=_fsent;
+						CDataObject::sMGetInstance().MPush(_sent);
+						LOG_IF(DFATAL,_count!=0)<<"Some handlers were handled packet #"<< _raw_args.FPacketNumber<<", but the error "
+								<<_raw_args.FOccurUserError<<" is occurred in handler "<<*_it;
+						break;
+					}
 
-					VLOG(2) << "The packet #" << _raw_args.FPacketNumber
-					<< " by " << _raw_args.FProtocolName
-					<< " protocol from "
-					<< _raw_args.FFrom << " handled";
-					++_count;
 				}
 				else
 				{

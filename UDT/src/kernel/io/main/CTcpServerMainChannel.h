@@ -96,6 +96,7 @@ private:
 	static int sMConnect(void* aWho, void* aWhat, void* aThis);
 	static int sMDisconnect(void* aWho, void* aWhat, void* aThis);
 	split_info MGetLimits(size_t aSize,ILink* aHandler) const;
+	bool MOpenIfNeed();
 
 	NSHARE::CTCPServer FServer;
 
@@ -106,6 +107,7 @@ private:
 	mutable net_overload_t FOverload;
 	mutable bool FIsOverload;
 	NSHARE::intrusive_ptr<CMainClientConnector> FConnector;
+	NSHARE::net_address FAddr;
 };
 }
 #endif /* CTCPMAINCHANNEL_H_ */

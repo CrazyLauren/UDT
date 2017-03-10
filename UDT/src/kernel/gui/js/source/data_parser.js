@@ -1,8 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 var data_info =
     {
         ver: {
@@ -44,15 +39,22 @@ var data_info =
             },
             toRepresentation: function (aId)
             {
-                let _tmp = {};
-                _tmp["Name"] = aId.n;
-                $.extend(_tmp, jQuery.to_representation_form(
-                    {
-                        uuid: aId.uuid
-                    }, data_info));
-                //$.extend(_tmp,
-                //    data_info.uuid.toRepresentation(aId.uuid));
-                return _tmp;
+                if(!$.isEmptyObject(aId.n))
+                {
+                    let _tmp = {};
+                    _tmp["Name"] = aId.n;
+                    $.extend(_tmp, jQuery.to_representation_form(
+                        {
+                            uuid: aId.uuid
+                        }, data_info));
+                    //$.extend(_tmp,
+                    //    data_info.uuid.toRepresentation(aId.uuid));
+                    return _tmp;
+                }else
+                    return jQuery.to_representation_form(
+                        {
+                            uuid: aId.uuid
+                        }, data_info,true);
             }
         },
         uuid: {
@@ -63,16 +65,16 @@ var data_info =
             toRepresentation: function (uuid)
             {
                 return uuid;
- /*               let _num = parseInt(uuid, 10);
-                let _str = _num.toString(16).toUpperCase();
-                /!*"%02x-%02x-"
+                /*               let _num = parseInt(uuid, 10);
+                 let _str = _num.toString(16).toUpperCase();
+                 /!*"%02x-%02x-"
                  "%02x-%02x-"
                  "%02x-%02x-"
                  "%02x-%02x"*!/
-                return "0x" + _str.substr(0,2) + "-0x" + _str.substr(2,2) +
-                    "-0x" + _str.substr(4,2) + "-0x" + _str.substr(6,2)+
-                    "-0x" + _str.substr(8,2) + "-0x" + _str.substr(10,2)+
-                    "-0x" + _str.substr(12,2) + "-0x" + _str.substr(14,2);*/
+                 return "0x" + _str.substr(0,2) + "-0x" + _str.substr(2,2) +
+                 "-0x" + _str.substr(4,2) + "-0x" + _str.substr(6,2)+
+                 "-0x" + _str.substr(8,2) + "-0x" + _str.substr(10,2)+
+                 "-0x" + _str.substr(12,2) + "-0x" + _str.substr(14,2);*/
             }
         },
         type: {
@@ -301,6 +303,106 @@ var data_info =
                 return _tmp;
             }
         },
+        ecode: {
+            getName: function ()
+            {
+                return "Error";
+            },
+            toRepresentation: function (aVal)
+            {
+                let _num = parseInt(aVal, 10);
+                let _str = _num.toString(2);
+                let _res = "";
+
+                function add_error( aStr)
+                {
+                    if (_res.length == 0)
+                        _res = aStr;
+                    else
+                        _res = _res + "; " + aStr;
+                }
+                var indexes = [], i = -1;
+                while ((i = _str.indexOf("1", i + 1)) != -1)
+                {
+                    indexes.push(_str.length - 1 - i);
+                }
+                indexes.forEach(function (item)
+                {
+                    switch (item)
+                    {
+                        case 0:
+                        case 1:
+                        case 9:
+                        case 22:
+                            add_error("Unknown Type="+item);
+                            break;
+                        case 2:
+                            add_error("Cannot read configure");
+                            break;
+                        case 3:
+                            add_error("Configure is invalid");
+                            break;
+                        case 4:
+                            add_error("Name is not exist");
+                            break;
+                        case 5:
+                            add_error("Not Opened");
+                            break;
+                        case 6:
+                            add_error("Name is invalid");
+                            break;
+                        case 7:
+                            add_error("Not connected to kernel");
+                            break;
+                        case 8:
+                            add_error("Cannot allocate buffer of requrement size");
+                            break;
+                        case 10:
+                            add_error("Handler is not exist");
+                            break;
+                        case 11:
+                            add_error("No route");
+                            break;
+                        case 12:
+                            add_error("Unknown error");
+                            break;
+                        case 13:
+                            add_error("Parser is not exist");
+                            break;
+                        case 14:
+                            add_error("No msg in the buffer or the number of msg is more than one");
+                            break;
+                        case 15:
+                            add_error("Connection closed");
+                            break;
+                        case 16:
+                            add_error("The kernel buffer is full");
+                            break;
+                        case 17:
+                            add_error("The packet is lost");
+                            break;
+                        case 18:
+                            add_error("The packet is lost");
+                            break;
+                        case 19:
+                            add_error("Cannot merge msg");
+                            break;
+                        case 20:
+                            add_error("Protocol version is not compatible");
+                            break;
+                        case 21:
+                            add_error("There are two msg's handler with different type:  registrator and  'real'!!! Please, Refractoring your code or not sent this msg by uuid");
+                            break;
+                        case 23:
+                            let _er=_str.substr(0,_str.length-item-1);
+                            add_error("User code = "+parseInt(_er,2));
+                            break;
+                    }
+
+                });
+                return _res;
+            }
+        }
     };
 function get_id_for(aVal)
 {

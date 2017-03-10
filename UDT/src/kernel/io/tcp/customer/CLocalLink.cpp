@@ -94,6 +94,12 @@ bool CLocalLink::MAccept()
 		CKernelIo::sMGetInstance().MReceivedData(*FpUserDataFor, MGetID());
 		FpUserDataFor.reset();
 	}
+	if (FpFailSent)
+	{
+		CKernelIo::sMGetInstance().MReceivedData(*FpFailSent, MGetID(),
+				routing_t(), error_info_t());
+		FpFailSent.reset();
+	}
 
 	VLOG(2) << "Open " << _info << " :" << this;
 	return true;
@@ -161,6 +167,14 @@ void CLocalLink::MReceivedData(demand_dgs_t const& _demands, const routing_t& aR
 		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(),aRoute,aError);
 	else
 		FpDemands=SHARED_PTR<demand_dgs_t>(new demand_dgs_t(_demands));
+}
+void CLocalLink::MReceivedData(fail_send_t const& aInfo, const routing_t& aRoute,error_info_t const& aError)
+{
+	VLOG(2)<<"Recv "<<aInfo<<" Routing to "<<aRoute;
+	if (E_OPEN == FState)
+		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(),aRoute,aError);
+	else
+		FpFailSent=SHARED_PTR<fail_send_t>(new fail_send_t(aInfo));
 }
 void CLocalLink::MReceivedData(demand_dgs_for_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
 {
@@ -305,7 +319,15 @@ void CLocalLink::MProcess(custom_filters_dg2_t const* aP, parser_t* aThis)
 	MReceivedData(_demands,routing_t(),error_info_t());
 }
 
+template<>
+void CLocalLink::MProcess(user_data_fail_send_t const* aP, parser_t* aThis)
+{
 
+	routing_t _uuid;
+	error_info_t _err;
+	fail_send_t _customer(deserialize<user_data_fail_send_t,fail_send_t>(aP,&_uuid,&_err));
+	MReceivedData(_customer,_uuid,_err);
+}
 bool CLocalLink::MSetting()
 {
 	CHECK(FState == E_NOT_OPEN);
