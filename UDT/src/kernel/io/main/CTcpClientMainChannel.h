@@ -83,10 +83,9 @@ private:
 	void MUnLockSelect();
 
 	void MCloseImpl();
-	bool MOpenLoopSocket();
 	bool MAddNewClient(link_data_t& _this_data,smart_client_t &_link);
 	bool MEraseClient(link_data_t& _this_data,smart_client_t &_link);
-
+	bool MOpenIfNeed();
 
 	NSHARE::CSelectSocket FSelectSock;
 	NSHARE::CLoopBack FLoopBack;

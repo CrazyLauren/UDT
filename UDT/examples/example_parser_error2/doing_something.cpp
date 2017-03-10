@@ -84,10 +84,15 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	{
 		std::cerr<<(*_it)<<", ";
 	}
-	std::cerr << " by UDT kernel as " << (_recv_arg->FErrorCode & (CCustomer::E_USER_ERROR_EXIT)//checking if "user's code"
-			? _recv_arg->FUserCode //user's code from udt_example_protocol.h
-			: _recv_arg->FErrorCode)	//inner code. see fail_send_t::eError
-			<< std::endl;
+	std::cerr << " by UDT kernel as ";
+	
+	//checking if "user's code"
+	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIT)
+		std::cerr<<(unsigned)_recv_arg->FUserCode; //user's code from udt_example_protocol.h
+	else
+		CCustomer::sMPrintError(std::cerr,_recv_arg->FErrorCode); //inner code. 
+	
+	std::cerr<< std::endl;
 	STREAM_MUTEX_UNLOCK
 	return 0;
 }

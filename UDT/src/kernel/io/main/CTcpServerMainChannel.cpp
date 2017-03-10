@@ -42,7 +42,7 @@ static size_t f_calculate_size(user_data_t const& aWhat,void*)
 CTcpServerMainChannel::CTcpServerMainChannel() :
 		IMainChannel(NAME),FConnector(new CMainClientConnector)
 {
-
+	FAddr.port = 0;
 	FIsOverload = false;
 	FBuffers.FSendSMBuffer = 0;
 
@@ -51,6 +51,18 @@ CTcpServerMainChannel::CTcpServerMainChannel() :
 	FServer += CTCPServer::value_t(CTCPServer::EVENT_DISCONNECTED,
 			NSHARE::CB_t(sMDisconnect, this));
 }
+
+bool CTcpServerMainChannel::MOpenIfNeed()
+{
+	if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
+	{
+		NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
+				NSHARE::operation_t::IO);
+		CDataObject::sMGetInstance().MPutOperation(_op);
+	}
+	return FServer.MIsOpen();
+}
+
 void CTcpServerMainChannel::MInit()
 {
 	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
@@ -67,19 +79,9 @@ void CTcpServerMainChannel::MInit()
 	}
 
 
-	NSHARE::net_address _addr;
-	if (_settings.MGetIfSet(PORT, _addr.port))
+	if (_settings.MGetIfSet(PORT, FAddr.port))
 	{
-		VLOG(2) << "Tcp main channel is  using port " << _addr;
-	}
-	else
-		_addr.port = 0;
-
-	if (FServer.MOpen(_addr))
-	{
-		NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
-				NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
+		VLOG(2) << "Tcp main channel is  using port " << FAddr;
 	}
 }
 CTcpServerMainChannel::~CTcpServerMainChannel()
@@ -166,10 +168,13 @@ bool CTcpServerMainChannel::MOpen(ILink* aHandler, program_id_t const& aId,NSHAR
 {
 	CHECK_NOTNULL(aHandler);
 
-	LOG_IF(DFATAL,!FServer.MIsOpen()) << "Tcp server channel is not opened.";
 
-	if (!FServer.MIsOpen())
+
+	if (!MOpenIfNeed())
+	{
+		LOG(DFATAL)<< "Tcp server channel is not opened.";
 		return false;
+	}
 
 	//if(_info.FType)
 	LOG_IF(ERROR,MIsOpen(aHandler->MGetID())) << "Main channel for "

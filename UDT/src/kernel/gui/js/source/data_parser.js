@@ -1,8 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 var data_info =
     {
         ver: {
@@ -44,15 +39,22 @@ var data_info =
             },
             toRepresentation: function (aId)
             {
-                let _tmp = {};
-                _tmp["Name"] = aId.n;
-                $.extend(_tmp, jQuery.to_representation_form(
-                    {
-                        uuid: aId.uuid
-                    }, data_info));
-                //$.extend(_tmp,
-                //    data_info.uuid.toRepresentation(aId.uuid));
-                return _tmp;
+                if(!$.isEmptyObject(aId.n))
+                {
+                    let _tmp = {};
+                    _tmp["Name"] = aId.n;
+                    $.extend(_tmp, jQuery.to_representation_form(
+                        {
+                            uuid: aId.uuid
+                        }, data_info));
+                    //$.extend(_tmp,
+                    //    data_info.uuid.toRepresentation(aId.uuid));
+                    return _tmp;
+                }else
+                    return jQuery.to_representation_form(
+                        {
+                            uuid: aId.uuid
+                        }, data_info,true);
             }
         },
         uuid: {
@@ -329,8 +331,9 @@ var data_info =
                     switch (item)
                     {
                         case 0:
-                        case 9:
                         case 1:
+                        case 9:
+                        case 22:
                             add_error("Unknown Type="+item);
                             break;
                         case 2:
@@ -390,9 +393,9 @@ var data_info =
                         case 21:
                             add_error("There are two msg's handler with different type:  registrator and  'real'!!! Please, Refractoring your code or not sent this msg by uuid");
                             break;
-                        case 22:
-                            let _er=_str.substr(0,_str.length-22-1);
-                            add_error("User error = "+parseInt(_er,2));
+                        case 23:
+                            let _er=_str.substr(0,_str.length-item-1);
+                            add_error("User code = "+parseInt(_er,2));
                             break;
                     }
 

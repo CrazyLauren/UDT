@@ -1,6 +1,3 @@
-/**
- * Created by s.n.cherepanov on 01.03.2017.
- */
 function check_js_version()
 {
     var _is_support = true;
@@ -50,7 +47,11 @@ if (check_js_version())
         dataType: "script",
         async: false
     });
-
+    $.ajax({
+        url: "js/source/net.js",
+        dataType: "script",
+        async: false
+    });
     $.ajax({
         url: "js/source/main.js",
         dataType: "script",

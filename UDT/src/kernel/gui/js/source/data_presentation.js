@@ -1,6 +1,3 @@
-/**
- * Created by s.n.cherepanov on 03.03.2017.
- */
 function get_uuids_class()
 {
     return "." + get_id_for("class-" + data_info.uuid.getName()) + ",." + get_id_for("class-Registered_By")

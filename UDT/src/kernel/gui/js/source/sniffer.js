@@ -1,9 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 var sniffer =//static pane
     {
         MAIN_REGION: "sniffer_region",
@@ -20,7 +14,7 @@ var sniffer =//static pane
             let self = sniffer;
 
             self.get_or_create_pane(aPanel);
-            self.refresh_sniffer();
+            self.refresh();
         },
         create_control_buttons: function (aTo)
         {
@@ -33,7 +27,7 @@ var sniffer =//static pane
 
             let _button_refresh = $("<button>").button();
             _button_refresh.attr("id", "snif_refresh");
-            _button_refresh.on("click", self.refresh_sniffer);
+            _button_refresh.on("click", self.refresh);
             _button_refresh.text("Refresh");
             _button_refresh.appendTo(aTo);
 
@@ -81,7 +75,7 @@ var sniffer =//static pane
 
             return self.FContainer;
         },
-        refresh_sniffer: function ()
+        refresh: function ()
         {
             storage.sniffed_data.update();
         },
@@ -92,7 +86,7 @@ var sniffer =//static pane
             $("<th>").text("From").appendTo(_tr);
             $("<th>").text("To").appendTo(_tr);
             $("<th>").text("Packet Number").appendTo(_tr);
-            $("<th>").text("Type").appendTo(_tr);
+            //$("<th>").text("Type").appendTo(_tr);
             $("<th>").text("Version").appendTo(_tr);
             $("<tbody>").attr("id", sniffer.DATA_OF_TAB).appendTo(_data);
             return _data;
@@ -145,7 +139,7 @@ var sniffer =//static pane
                     contentType: "application/json; charset=utf-8"
                 }).done(function (data)
             {
-                self.refresh_sniffer();
+                self.refresh();
             }).error(function (jqXHR, textStatus)
             {
                 alert("Cannot remove sniffer# " + aHandle + " as " + textStatus);
@@ -239,11 +233,11 @@ var sniffer =//static pane
                                 if (_to.hasOwnProperty(uuid) && _jcell.text() == _to[uuid])
                                 {
                                     _jcell.addClass("ui-state-error").addClass("fail-send");
-                                    let _er=_jcell.attr("error_type");
-                                    if(!_er)
-                                        _jcell.attr("error_type",item.fsend.ecode);
+                                    let _er = _jcell.attr("error_type");
+                                    if (!_er)
+                                        _jcell.attr("error_type", item.fsend.ecode);
                                     else
-                                        _jcell.attr("error_type",_er+","+item.fsend.ecode);//todo Bitwise operations
+                                        _jcell.attr("error_type", _er + "," + item.fsend.ecode);//todo Bitwise operations
                                     break;
                                 }
                             }
@@ -251,42 +245,43 @@ var sniffer =//static pane
                         });
                 });
             }
-        }, update_detail: function (aData)
-    {
-        let self = sniffer;
-        let _table = $(".data_detail_table", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
-        _table.empty();
-
-        let _data = $.to_representation_form({
-            usdt: aData.udata.usdt
-        }, data_info);
-        $.object_to_table(_data, _table, true);
-
-        const _id = aData.hand;
-        let _dem = storage.dems.get(_id);
-        let _head = undefined;
-        if (_dem)
+        },
+        update_detail: function (aData)
         {
-            const _protocol = _dem.pl;
-            _head = _dem[_protocol];
-            _head.ver = undefined;
+            let self = sniffer;
+            let _table = $(".data_detail_table", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
+            _table.empty();
 
-            let _parsed_head = $.toRepresentationHead(_protocol, _head);
-            $.object_to_table(_parsed_head, _table, true);
-        }
+            let _data = $.to_representation_form({
+                usdt: aData.udata.usdt
+            }, data_info);
+            $.object_to_table(_data, _table, true);
 
-        if (aData.udata.data)
-        {
-            const _protocol = aData.by_parser;
-            let _title = $("#title", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
-            _title.text("Detail (parsed by " + _protocol + ")");
+            const _id = aData.hand;
+            let _dem = storage.dems.get(_id);
+            let _head = undefined;
+            if (_dem)
+            {
+                const _protocol = _dem.pl;
+                _head = _dem[_protocol];
+                _head.ver = undefined;
 
-            let _parsed_data = $.toRepresentationData(_protocol, aData.udata.data, _head, _id);
-            $.object_to_table(_parsed_data, _table, true);
-        }
-        self.filling_errors(aData, _table);
-        filling_data_style(_table);
-    },
+                let _parsed_head = $.toRepresentationHead(_protocol, _head);
+                $.object_to_table(_parsed_head, _table, true);
+            }
+
+            if (aData.udata.data)
+            {
+                const _protocol = aData.by_parser;
+                let _title = $("#title", "#" + sniffer.SNIFFED_DATA_DETAIL, self.FContainer);
+                _title.text("Detail (parsed by " + _protocol + ")");
+
+                let _parsed_data = $.toRepresentationData(_protocol, aData.udata.data, _head, _id);
+                $.object_to_table(_parsed_data, _table, true);
+            }
+            self.filling_errors(aData, _table);
+            filling_data_style(_table);
+        },
         update_data: function (aData)
         {
             let self = sniffer;
@@ -326,13 +321,13 @@ var sniffer =//static pane
 
 
             let _to = $.to_representation_form(aData.udata.usdt.uuids, data_info);
-            let _to_gui = $("<td>").addClass(get_id_for("class-" + data_info.uuid.getName())).appendTo(_tr).append("<table>");
+            let _to_gui = $("<td>")./*addClass(get_id_for("class-" + data_info.uuid.getName()))*/appendTo(_tr).append("<table>");
             $.object_to_table(_to, _to_gui, true);
 
             self.filling_errors(aData, _to_gui);
 
             $("<td>").text(aData.udata.usdt.pn).appendTo(_tr);
-            $("<td>").text(aData.hand).appendTo(_tr);
+            //$("<td>").text(aData.hand).appendTo(_tr);
             let _ver =
                 data_info.ver.toRepresentation(aData.udata.usdt.ver);
             $("<td>").text(_ver).appendTo(_tr);
@@ -433,7 +428,7 @@ var sniffer =//static pane
                     self.setup_demand(_from, _protocol, _head, _parser).done(function ()
                     {
                         self.FWDialog.dialog("close");
-                        sniffer.refresh_sniffer();
+                        sniffer.refresh();
                     }).error(function ()
                     {
                         let _error = $("<label>").text("Could not setup sniffer!").addClass("ui-state-error");

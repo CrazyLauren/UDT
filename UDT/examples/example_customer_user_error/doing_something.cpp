@@ -27,7 +27,6 @@ pthread_mutex_t _stream_mutex;
 using namespace NUDT;
 
 
-NSHARE::uuid_t g_sent_to(rand());
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	args_t const* _recv_arg=(args_t const*)aWHAT;
@@ -48,27 +47,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 		
 		//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
 	}
-	
-	STREAM_MUTEX_LOCK
-	std::cout << "Message #"<<_recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion<<" size "<<_recv_arg->FBuffer.size()<<" bytes received from "<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<< std::endl;
-	STREAM_MUTEX_UNLOCK
-	return 0;
-}
-extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
-{
-	args_t const* _recv_arg = (args_t const*)aWHAT;
-	//!<Now You can handle the received data.
-	std::cout<< std::endl << "Message #" << _recv_arg->FPacketNumber<<" by " << _recv_arg->FProtocolName << " size "
-			<< _recv_arg->FBuffer.size() << " bytes sniffed from "
-			<< _recv_arg->FFrom <<" to ";
-			
-	std::vector<NSHARE::uuid_t>::const_iterator _it = _recv_arg->FTo.begin(),
-			_it_end = _recv_arg->FTo.end();
-	for(;_it!=_it_end;++_it)
-	{
-		std::cout << *_it<<", ";
-	}
-	std::cout << std::endl;
+	_recv_arg->FOccurUserError=10;//triggering error. see event_fail_sent_handler
 	return 0;
 }
 extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
@@ -89,7 +68,6 @@ extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 	if(!_recv_arg->FReceivers.empty())
 	{
 		std::cout <<"Now Sent to =====> "<<_recv_arg->FReceivers.back().FWho<< std::endl;
-		//g_sent_to=_recv_arg->FReceivers.back().FWho;
 	}
 	STREAM_MUTEX_UNLOCK
 
@@ -112,7 +90,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	CCustomer::sMPrintError(std::cerr,_recv_arg->FErrorCode);
 
 	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIT)
-			std::cerr<<" user's code="<<(unsigned)_recv_arg->FUserCode;//user's code from udt_example_protocol.h
+			std::cerr<<" user's code="<<(unsigned)_recv_arg->FUserCode;//user's code see _recv_arg->FOccurUserError
 	std::cerr<< std::endl;
 
 	STREAM_MUTEX_UNLOCK
@@ -151,7 +129,7 @@ extern void doing_something()
 		}
 		
 		//!< Send the message number 0 to uuid 
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf,g_sent_to);
+		int _num = CCustomer::sMGetInstance().MSend(0, _buf,NSHARE::version_t(1,2));
 		if (_num > 0)	//Hurrah!!! The data has been sent
 		{
 			//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.

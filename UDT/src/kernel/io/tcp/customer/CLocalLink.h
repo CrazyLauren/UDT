@@ -43,7 +43,7 @@ public:
 	void MReceivedData(program_id_t const&, const routing_t&,error_info_t const&);
 	void MReceivedData(demand_dgs_t const&, const routing_t&,error_info_t const&);
 	void MReceivedData(demand_dgs_for_t const&, const routing_t&,error_info_t const&);
-
+	void MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
 	void MCloseRequest();
 	void MClose();
 
@@ -93,6 +93,7 @@ private:
 	SHARED_PTR<demand_dgs_t> FpDemands;
 	SHARED_PTR<demand_dgs_for_t> FpDemandsDgFor;
 	SHARED_PTR<user_data_t> FpUserDataFor;
+	SHARED_PTR<fail_send_t> FpFailSent;
 
 
 

@@ -75,12 +75,19 @@ void CControlByTCP::MInit(ICustomer *aCustomer)
 	*FTcpSocket += CTCPServer::value_t(CTCP::EVENT_DISCONNECTED,
 			FCBServiceDisconncet);
 
-	callback_data_t _callbak(sMUpdateList, this);
+	{
+		callback_data_t _callbak(sMUpdateList, this);
 
-	CDataObject::value_t _val_channel(req_recv_t::NAME,
-			_callbak);
+		CDataObject::value_t _val_channel(req_recv_t::NAME, _callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
+	{
+		callback_data_t _callbak(sMFailSend, this);
 
-	CDataObject::sMGetInstance() += _val_channel;
+		CDataObject::value_t _val_channel(fail_send_id_from_me_t::NAME, _callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
+
 }
 //
 //----------------------
@@ -363,6 +370,16 @@ int CControlByTCP::sMUpdateList(CHardWorker* aWho, args_data_t* aWhat,
 	_this->MSendFilters();
 	return 0;
 }
+int CControlByTCP::sMFailSend(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
+{
+	CControlByTCP* _this = (CControlByTCP*) aData;
+	CHECK_NOTNULL(_this);
+	fail_send_id_from_me_t const* _p=reinterpret_cast<fail_send_id_from_me_t const*>(aWhat->FPointToData);
+	_this->MSendFail(_p->FData);
+	return 0;
+}
+
 //
 //----------------------
 //
@@ -374,6 +391,19 @@ int CControlByTCP::MSendIDInfo()
 	int _rval = MSend(_data); //fixme
 	LOG_IF(ERROR,_rval<0) << "Cannot send id info";
 	return _rval;
+}
+void CControlByTCP::MSendFail(fail_send_t const&aVal)
+{
+	VLOG(2) << "Send Fails.";
+	data_t _data;
+	routing_t _f_to;
+	_f_to.insert(_f_to.end(),aVal.FRegistrators.begin(),aVal.FRegistrators.end());
+	_f_to.push_back(aVal.FRouting.FFrom.FUuid);
+	_f_to.FFrom = get_my_id().FId;
+	serialize<user_data_fail_send_t,fail_send_t>(&_data,aVal,_f_to,error_info_t());
+	int _rval = MSend(_data); //fixme
+	(void) _rval;
+	LOG_IF(ERROR,_rval<0) << "Cannot send filters";
 }
 void CControlByTCP::MSendFilters()
 {

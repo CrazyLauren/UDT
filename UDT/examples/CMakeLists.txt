@@ -10,6 +10,7 @@ add_subdirectory(example_parser_error)
 add_subdirectory(example_parser_error2)
 add_subdirectory(example_customer_error)
 add_subdirectory(example_customer_version_error)
+add_subdirectory(example_customer_user_error)
 
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/kernel.json 
