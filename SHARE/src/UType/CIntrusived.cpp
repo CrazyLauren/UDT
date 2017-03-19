@@ -10,15 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <deftype>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
 #include <UType/CIntrusived.h>
-
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
 
 namespace NSHARE
 {
@@ -36,26 +28,26 @@ struct CIntrusived::_w_counter_t
 		MRef();
 	}
 
-	int MRef() volatile
+	int MRef() 
 	{
 		//todo first
-		atomic_inc32(&FCount);
-		return atomic_read32(&FCount);
+		++FCount;
+		return FCount;
 	}
-	int MUnref() volatile
+	int MUnref() 
 	{
-		atomic_dec32(&FCount);
+		--FCount;
 		CHECK_LT(FCount, std::numeric_limits<unsigned>::max() / 2);
-		if (atomic_read32(&FCount) == 0)
+		if (FCount == 0)
 		{
 			VLOG(2) << "Remove ";
 			delete this;
 			return 0;
 		}
 		else
-			return atomic_read32(&FCount);
+			return FCount;
 	}
-	volatile mutable unsigned FCount;
+	 mutable atomic_t FCount;
 	CIntrusived* FWPtr;
 protected:
 	~_w_counter_t()
@@ -130,20 +122,20 @@ CIntrusived& CIntrusived::operator =(const CIntrusived& aVal)
 
 int CIntrusived::MRefImpl() const
 {
-	if (atomic_read32(&FIsFirst) == P_NOT_INITED)
+	if (FIsFirst == P_NOT_INITED)
 	{
-		atomic_write32(&FIsFirst, P_INITED);
-		atomic_inc32(&FCount);
-		atomic_inc32(&FReferedCount);
-		return atomic_read32(&FCount);
+		FIsFirst= P_INITED;
+		++FCount;
+		++FReferedCount;
+		return FCount;
 	}
-	else if (atomic_read32(&FCount) && //
-			atomic_read32(&FIsFirst) == P_INITED && //
-			atomic_inc32(&FCount) > 0 //
+	else if (FCount && //
+			FIsFirst == P_INITED && //
+			FCount++ > 0 //
 					)
 	{
-		atomic_inc32(&FReferedCount);
-		return atomic_read32(&FCount);
+		++FReferedCount;
+		return FCount;
 	}
 	else
 	{
@@ -153,30 +145,30 @@ int CIntrusived::MRefImpl() const
 
 int CIntrusived::MUnrefImpl() const
 {
-	if (atomic_read32(&FIsFirst) != P_INITED)
+	if (FIsFirst != P_INITED)
 		return -1;
-	atomic_dec32(&FCount);
-	if (atomic_read32(&FCount) == 0)
+	--FCount;
+	if (FCount == 0)
 	{
-		atomic_write32(&FIsFirst, P_REMOVING);
+		FIsFirst= P_REMOVING;
 		FWn.FWCounter->FWPtr = NULL;
 		return 0;
 	}
-	return atomic_read32(&FCount);
+	return FCount;
 }
 int CIntrusived::MUnrefWithoutDelete() const
 {
 	VLOG(3) << "MUnrefWithoutDelete() " << this;
-	atomic_dec32(&FCount);
-	return atomic_read32(&FCount);
+	--FCount;
+	return FCount;
 }
 int CIntrusived::MCountRef() const
 {
-	return atomic_read32(&FCount);
+	return FCount;
 }
 unsigned CIntrusived::MReferedCount() const
 {
-	return atomic_read32(&FReferedCount);
+	return FReferedCount;
 }
 void CIntrusived::MDelete() const
 {

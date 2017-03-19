@@ -12,9 +12,6 @@
 #include <deftype>
 #include <crc8.h>
 #include <console.h>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
-
 #include <Socket/CSharedMemoryClient.h>
 #include <UType/CSharedAllocator.h>
 #include <Socket/CSharedMemoryImplTypes.h>

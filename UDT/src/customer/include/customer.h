@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <assert.h>
 
 #include <vector>
 #include <list>

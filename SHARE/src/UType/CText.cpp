@@ -1230,7 +1230,7 @@ bool CText::MGrow(size_type new_size)
 
 	if (new_size > FReserve)
 	{
-		const size_type _reserved_new_size=new_size*1.3;
+		const size_type _reserved_new_size=static_cast<size_type>(new_size*1.3);
 		utf32* temp = new utf32[_reserved_new_size];
 
 		if (FReserve > QUICKBUFF_SIZE)

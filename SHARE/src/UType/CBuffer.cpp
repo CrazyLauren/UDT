@@ -11,22 +11,17 @@
  */   
 #include <deftype>
 #include <crc8.h>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
+
 #include <UType/CCommonAllocater.h>
 #include <UType/CBuffer.h>
 #include <UType/mallocallocater.h>
 
-//todo превратить в vector
+
 
 //#ifdef NDEBUG
 //#	define BUFFER_NO_CHECK_CRC
 //#endif
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
+
 namespace NSHARE
 {
 const IAllocater::offset_pointer_t IAllocater::NULL_OFFSET =
@@ -72,7 +67,7 @@ struct raw_begin_offset_t
 	union
 	{
 
-		mutable volatile uint32_t FRawField;
+		mutable  uint32_t FRawField;
 		struct
 		{
 			mutable volatile uint32_t FBeginOffset :16;
@@ -80,23 +75,23 @@ struct raw_begin_offset_t
 			mutable volatile uint32_t FCrc :8;
 		};
 	};
-	uint32_t volatile& MSetOffset(size_t const& aVal) const
+	uint32_t & MSetOffset(size_t const& aVal) const
 	{
 		FBeginOffset = aVal;
 		return FRawField;
 	}
-	uint32_t volatile& MSetCrc(uint8_t const& aVal) const
+	uint32_t & MSetCrc(uint8_t const& aVal) const
 	{
 		FCrc = aVal;
 		return FRawField;
 	}
-	uint32_t volatile& MInvalid() const
+	uint32_t & MInvalid() const
 	{
 		FRawField = 0;
 		FCrc=0x2;
 		return FRawField;
 	}
-	uint32_t volatile& MSetFlag(eBufFlags const& aFlag,bool aVal) const
+	uint32_t & MSetFlag(eBufFlags const& aFlag,bool aVal) const
 	{
 		FFlags = (aVal) ? (FFlags | aFlag) : (FFlags & (~aFlag));
 		return FRawField;
@@ -108,10 +103,10 @@ SHARED_PACKED(struct CBuffer::buf_info
 private:
 	typedef NSHARE::crc8_t<0x97> crc_t;
 
-	mutable volatile uint32_t FRawOffsetField;
-	mutable volatile uint32_t FBufSize;
-	mutable volatile uint32_t FSize;
-	mutable volatile uint32_t FCount;
+	mutable atomic_t FRawOffsetField;
+	mutable atomic_t FBufSize;
+	mutable atomic_t FSize;
+	mutable atomic_t FCount;
 
 	buf_info(buf_info const &);
 	buf_info & operator=(buf_info const &);
@@ -149,36 +144,36 @@ CBuffer::buf_info::buf_info(size_t const& aSize)
 size_t CBuffer::buf_info::MSize() const
 {
 	CHECK_NOTNULL(this);
-	return atomic_read32(&FSize);
+	return FSize;
 }
 void CBuffer::buf_info::MSetSize(size_t const& aVal)
 {
 	CHECK_NOTNULL(this);
 	CHECK_LE(aVal,std::numeric_limits<uint32_t>::max());
-	atomic_write32(&FSize, static_cast<uint32_t>(aVal));
+	FSize.MWrite(aVal);
 	MSetCrc();
 }
 size_t CBuffer::buf_info::MBufSize()
 {
 	CHECK_NOTNULL(this);
-	return atomic_read32(&FBufSize);
+	return FBufSize;
 }
 void CBuffer::buf_info::MSetBufSize(size_t const& aVal)
 {
 	CHECK_NOTNULL(this);
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
-	atomic_write32(&FBufSize, static_cast<uint32_t>(aVal));
+	FBufSize.MWrite(aVal);
 	MSetCrc();
 }
 uint32_t CBuffer::buf_info::use_count() const
 {
 	CHECK_NOTNULL(this);
-	return atomic_read32(&FCount);
+	return FCount;
 }
 void CBuffer::buf_info::add_ref_copy()
 {
 	CHECK_NOTNULL(this);
-	atomic_inc32(&FCount);
+	++FCount;
 	//MSetCrc();
 }
 
@@ -186,23 +181,22 @@ uint32_t CBuffer::buf_info::release()
 {
 	CHECK_NOTNULL(this);
 	CHECK_GT(use_count(), 0);
-	return atomic_dec32(&FCount);
+	return FCount--;
 	//MSetCrc();
 }
 
 inline size_t CBuffer::buf_info::MStartOffset() const
 {
 	//CHECK(MCheckCrc());
-	return raw_begin_offset_t(atomic_read32(&FRawOffsetField)).FBeginOffset ;
+	return raw_begin_offset_t(FRawOffsetField).FBeginOffset ;
 }
 inline void CBuffer::buf_info::MSetStartOffset(size_t const& aVal,bool aIsSetCrc)
 {
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
 #ifdef BUFFER_NO_CHECK_CRC
-	atomic_write32(static_cast<uint32_t volatile *>(&FStartOffset), (static_cast<uint32_t>(aVal) <<8)&OF_MASK);
+	FStartOffset.MWrite((static_cast<uint32_t>(aVal) <<8)&OF_MASK);
 #else
-	//todo replace to atomic_cas32
-	atomic_write32(&FRawOffsetField,raw_begin_offset_t(atomic_read32(&FRawOffsetField)).MSetOffset(aVal));
+	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MSetOffset(aVal));
 #endif
 	//if(aIsSetCrc)MSetCrc();
 }
@@ -216,7 +210,7 @@ inline bool CBuffer::buf_info::MCheckCrc() const
 
 //	uint8_t const _cur = *_begin++;
 	uint8_t const _crc =
-			raw_begin_offset_t(atomic_read32(&FRawOffsetField)).FCrc;
+			raw_begin_offset_t(FRawOffsetField).FCrc;
 
 #ifdef USE_CRC_FOR_CHECK_BUF
 	uint8_t const*  _begin = ((uint8_t*) this) +BUF_CRC_BEGIN;
@@ -239,8 +233,8 @@ inline bool CBuffer::buf_info::MCheckCrc() const
 }
 inline void CBuffer::buf_info::MInvalid()
 {
-	atomic_write32(&FRawOffsetField,
-			raw_begin_offset_t(atomic_read32(&FRawOffsetField)).MInvalid());
+	FRawOffsetField.MWrite(
+			raw_begin_offset_t(FRawOffsetField).MInvalid());
 }
 inline void CBuffer::buf_info::MSetCrc()
 {
@@ -266,18 +260,17 @@ inline void CBuffer::buf_info::MSetCrc()
 //	for (; _begin != _end; ++_begin)
 //		_r ^= *_begin;
 #endif
-	atomic_write32(&FRawOffsetField,
-			raw_begin_offset_t(atomic_read32(&FRawOffsetField)).MSetCrc(_r));
+	FRawOffsetField.MWrite(
+			raw_begin_offset_t(FRawOffsetField).MSetCrc(_r));
 #endif
 }
 bool CBuffer::buf_info::MIs(eBufFlags aFlag ) const
 {
-	return (raw_begin_offset_t(atomic_read32(&FRawOffsetField)).FFlags & aFlag)!=0;
+	return (raw_begin_offset_t(FRawOffsetField).FFlags & aFlag)!=0;
 }
 void CBuffer::buf_info::MSetFlag(eBufFlags const& aFlag,bool aVal) const
 {
-	atomic_write32(&FRawOffsetField,
-				raw_begin_offset_t(atomic_read32(&FRawOffsetField)).MSetFlag(aFlag,aVal));
+	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MSetFlag(aFlag,aVal));
 	//MSetCrc()
 }
 const  CBuffer::size_type CBuffer::_buffer_t::BUF_OFFSET = _impl::get_alligment_size_ref<

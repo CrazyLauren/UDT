@@ -26,7 +26,7 @@ class CCOWPtr
 		{
 		}
 
-		counter_t FCounter;
+		atomic_t FCounter;
 		T FVal;
 	};
 public:

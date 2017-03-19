@@ -44,16 +44,16 @@ private:
 		w_counter_t& operator =(const w_counter_t& aVal);
 		~w_counter_t();
 		CIntrusived* MGet() const;
-		volatile _w_counter_t* FWCounter;
+		_w_counter_t* FWCounter;
 	};
 
 	int MRefImpl() const;
 	int MUnrefImpl() const;
 	void MDelete() const;
 
-	volatile mutable unsigned FCount;
-	mutable unsigned FReferedCount;
-	volatile mutable unsigned FIsFirst;
+	mutable atomic_t FCount;
+	mutable atomic_t FReferedCount;
+	mutable atomic_t FIsFirst;
 	w_counter_t FWn;
 	template<class U> friend class w_ptr;
 	template<class U> friend class intrusive_ptr;

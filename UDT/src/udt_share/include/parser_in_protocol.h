@@ -307,6 +307,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	head_t const* _head = reinterpret_cast<head_t const*>(&(*aPBegin));
 	VLOG(4) << "Version of " << _head->FType << " is " << _head->FVersion;
 	VLOG(1) << (*_head);
+	const NSHARE::version_t _kd_ver(KD_T::MAJOR,KD_T::MINOR);
 	LOG_IF(WARNING,
 			(_head->FVersion.FMajor == KD_T::MAJOR)
 					&& (_head->FVersion.FMinor > KD_T::MINOR))
@@ -314,11 +315,11 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 					" is greater than internal. (" << _head->FVersion.FMinor
 			<< ">" << (unsigned)KD_T::MINOR << ")";
 	bool _need_handled = true;
-	if (_head->FVersion.FMajor != KD_T::MAJOR)
+	if (!_kd_ver.MIsCompatibleWith(_head->FVersion))
 	{
 		_need_handled = false;
 		LOG(DFATAL) << "Internal version of protocol is out-of-date.("
-				<< _head->FVersion.FMajor << "!=" << (unsigned)KD_T::MAJOR << ") for "
+				<< _head->FVersion << "!=" << _kd_ver << ") for "
 				<< _head->FType << " DG which will ignored.";
 	}
 	std::size_t const _size_kd = _head->FHeadSize + _head->FDataSize;

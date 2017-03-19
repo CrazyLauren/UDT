@@ -54,11 +54,15 @@ CTcpServerMainChannel::CTcpServerMainChannel() :
 
 bool CTcpServerMainChannel::MOpenIfNeed()
 {
-	if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
+	if (!FServer.MIsOpen())
 	{
-		NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
-				NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
+		{
+			NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
+					NSHARE::operation_t::IO);
+			CDataObject::sMGetInstance().MPutOperation(_op);
+		}
 	}
 	return FServer.MIsOpen();
 }

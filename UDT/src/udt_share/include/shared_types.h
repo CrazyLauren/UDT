@@ -56,6 +56,8 @@ extern UDT_SHARE_EXPORT  error_type const USER_ERROR_MASK;
 extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME;
 typedef std::vector<NSHARE::CText> customers_names_t;
 
+extern std::pair<required_header_t,bool> UDT_SHARE_EXPORT parse_head(NSHARE::CConfig const& aConf,NSHARE::CText const& aProtocol);
+extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(required_header_t const& aWhat,NSHARE::CText const& _proto);
 struct UDT_SHARE_EXPORT uuids_t: std::vector<NSHARE::uuid_t>
 {
 	static const NSHARE::CText NAME;
@@ -132,7 +134,6 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	bool MIsValid()const;
 	bool MIsEqual(demand_dg_t const& aRht) const;
 	bool operator==(demand_dg_t const& aRht) const;
-	static std::pair<required_header_t,bool> sMParseHead(NSHARE::CConfig const& aConf);
 };
 //
 //-------------------------

@@ -12,8 +12,6 @@
 #include <deftype>
 #include <crc8.h>
 #include <tasks.h>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
 #include <UType/CSharedAllocator.h>
 
 //todo refractor
@@ -39,27 +37,7 @@ static unsigned const& get_pid_optimized()
 	static unsigned _pid =NSHARE::CThread::sMPid();
 	return _pid;
 }
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
 
-inline void atomic_add(volatile boost::uint32_t *mem, int val)
-{
-#ifdef _WIN32
-	boost::uint32_t   _nval;
-	boost::uint32_t   _old;
-	do
-	{
-		_old=atomic_read32(mem);
-		_nval=_old+val;
-		//atomic_write32(mem,_nval);
-	}while(atomic_cas32(mem,_nval,*mem)!=_old);
-#else
-	atomic_add32(mem,val);
-#endif
-}
 typedef CSharedAllocator::block_size_t block_size_t;
 
 bool CSharedAllocator::sMIsNullOffset(const offset_t& aWhat) 
@@ -180,11 +158,11 @@ struct CSharedAllocator::process_node_t
 	pid_type const FPid; //Process id
 	volatile free_index_t FMinFreeIndex;//used to hold the index below which no a free number.
 	//FMinFreeIndex - is the first node of 'free index' linked list
-	volatile uint32_t FCount; //The number of Object being kept hold
+	atomic_t FCount; //The number of Object being kept hold
 	uint32_t const FArraySize; // is used to hold the array size
 	uint32_t  FSizeOfReserv; // is used to hold the reserv size
 	uint32_t FUsedUpReserv; // is used to hold the size of used reserv if -1 when not allocated
-	volatile uint32_t FAlloactionCount; //is used to hold the number of the memory blocks was allocated by process
+	atomic_t FAlloactionCount; //is used to hold the number of the memory blocks was allocated by process
 	pid_offset_t FOffsets[0]; //array of allocated memory addresses
 });
 CSharedAllocator::process_node_t::process_node_t(pid_type aPid,
@@ -250,7 +228,7 @@ bool CSharedAllocator::process_node_t::MIsOffset(offset_t aOffsetInArray,
 {
 	if(FArraySize<=aOffsetInArray)
 		return false;
-	return atomic_read32(&FOffsets[aOffsetInArray].FNextNode)==aOffset;//fixme проверить не в списке свободных
+	return FOffsets[aOffsetInArray].FNextNode==aOffset;//fixme проверить не в списке свободных
 }
 CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t aOffset)
 {
@@ -258,14 +236,14 @@ CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t
 	CHECK_LE(aOffset, (offset_t)(NULL_INDEX << (sizeof(offset_t)/sizeof(index_type)-1)*sizeof(index_type)*8));
 //	free_index_t _min=atomic_read32(&FMinFreeIndex.FVal);
 //	unsigned i = _min.FIndex;
-	free_index_t _min=atomic_read32(&FMinFreeIndex);
+	free_index_t _min=FMinFreeIndex;
 	unsigned i = _min;
 
 	CHECK_NE(i,NULL_INDEX);
 	CHECK_LE(i, FArraySize);
 	for (;
 			i < FArraySize
-					&& !is_null_offset(atomic_read32(&FOffsets[i].FNextNode));
+					&& !is_null_offset(FOffsets[i].FNextNode);
 			++i)
 		;
 	//LOG_IF(DFATAL,i!=_min.FIndex)<<"The free index is founded in "<<i<<" position, but The free pos has to be in "<<_min.FIndex;
@@ -291,7 +269,7 @@ CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t
 //
 //	atomic_write32(&FMinFreeIndex.FVal,_min.FVal);
 
-	CHECK_EQ(atomic_read32(&FMinFreeIndex),_min);//thread safety
+	CHECK_EQ(FMinFreeIndex,_min);//thread safety
 
 	if (FOffsets[_min].FIndexOfOffset == NULL_INDEX) //next free index
 	{
@@ -304,11 +282,11 @@ CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t
 		_min =FOffsets[_min].FIndexOfOffset;
 	}
 	VLOG(5)<<"Min Free index = "<<_min;
-	atomic_write32(&FMinFreeIndex,_min);
+	FMinFreeIndex=_min;
 
 
-	atomic_write32(&FOffsets[i].FNextNode,aOffset);
-	atomic_inc32(&FAlloactionCount);
+	FOffsets[i].FNextNode=aOffset;
+	++FAlloactionCount;
 
 
 	VLOG(5)<<"value "<<FOffsets[i].FNextNode;
@@ -326,17 +304,17 @@ CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t
 //}
 void CSharedAllocator::process_node_t::MPopOffsetById(offset_t aOffset)
 {
-	free_index_t _min=atomic_read32(&FMinFreeIndex);
+	free_index_t _min=FMinFreeIndex;
 	VLOG(5)<<"Prev index = "<<_min<<" new = "<<aOffset;
 	pid_offset_t _offset;
 	_offset.FIndexOfOffset=_min;
 	_min=aOffset;
 
-	atomic_write32(&FOffsets[aOffset].FNextNode,_offset.FNextNode);
-	atomic_write32(&FMinFreeIndex, _min);
+	FOffsets[aOffset].FNextNode=_offset.FNextNode;
+	FMinFreeIndex= _min;
 
-	LOG_IF(FATAL,!is_null_offset(atomic_read32(&FOffsets[_min].FNextNode)))<<_offset.FNextNode;
-	atomic_dec32(&FAlloactionCount);
+	LOG_IF(FATAL,!is_null_offset(FOffsets[_min].FNextNode))<<_offset.FNextNode;
+	--FAlloactionCount;
 
 
 	//_min.FNext
@@ -423,11 +401,11 @@ struct CSharedAllocator::heap_head_t
 	pid_type FTIDOfLockedMutex;//It's used for paranoic checking
 	uint32_t FWacthDogPid;//is used to hold the mutex name (hex value of pid and tid) which is started watch dog clean up function
 	uint32_t FWacthDogTid;
-	uint32_t FNumberOfWaitingFor;//The number of threads wait for free memory will be called
-	uint32_t FPostCount;
+	atomic_t FNumberOfWaitingFor;//The number of threads wait for free memory will be called
+	atomic_t FPostCount;
 	uint32_t const FControlingTypeSize:8;//sizeof(offset_t) + sizeof(block_size_t) + sizeof(pid_type)+sizeof(index_type)+...
 	uint32_t :24;
-	mutable uint32_t FNumUserAllocation;
+	mutable atomic_t FNumUserAllocation;
 	//int8_t FWacthDogMutex[16];
 	uint8_t FSharedMutex[CIPCSem::eReguredBufSize];
 	uint8_t FFreeSem[CIPCSem::eReguredBufSize];
@@ -452,15 +430,15 @@ COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (3*CIPCSem::eReguredBufS
 		IVALID_SIZEOF_HEAD);
 void CSharedAllocator::heap_head_t::MIncUserAllocation()
 {
-	atomic_inc32(&FNumUserAllocation);
+	++FNumUserAllocation;
 }
 void CSharedAllocator::heap_head_t::MDecUserAllocation()
 {
-	atomic_dec32(&FNumUserAllocation);
+	--FNumUserAllocation;
 }
 bool CSharedAllocator::heap_head_t::MIsCanBeMAllocated() const
 {
-	return atomic_read32(&FNumUserAllocation)!=0;
+	return FNumUserAllocation!=0;
 }
 bool CSharedAllocator::heap_head_t::MIsValidTypeSize() const
 {
@@ -914,7 +892,7 @@ CSharedAllocator::process_node_t * const CSharedAllocator::MGetOrCreateProcessNo
 
 	//If the function is called for the first time,
 	//it increase the number of process node holders(smart pointer for node)
-	atomic_inc32(&_prs.first->FCount);
+	++_prs.first->FCount;
 	VLOG(2) << "Increase counter for " << _prs.first->FPid << " counter="
 						<< (unsigned) _prs.first->FCount;
 
@@ -993,8 +971,8 @@ void CSharedAllocator::MInitIfNeedFreeSem(heap_head_t* const _p_head)
 		if (FFreeSem.MGetType() == CIPCSem::E_HAS_TO_BE_NEW)//It has been created
 		{
 			//DCHECK_EQ(atomic_read32(&_p_head->FNumberOfWaitingFor), atomic_read32(&_p_head->FPostCount));
-			atomic_write32(&_p_head->FNumberOfWaitingFor, 0);
-			atomic_write32(&_p_head->FPostCount, 0);
+			_p_head->FNumberOfWaitingFor.MWrite(0);
+			_p_head->FPostCount.MWrite(0);
 		}
 	}
 
@@ -1073,8 +1051,8 @@ bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 	//fixme check for windows
 //			const int _val = FFreeSem.MValue();
 //			if (_val == 0)
-	atomic_inc32(&_p_head->FNumberOfWaitingFor);
-	volatile const uint32_t _old= atomic_read32(&_p_head->FPostCount);
+	++_p_head->FNumberOfWaitingFor;
+	volatile const uint32_t _old= _p_head->FPostCount;
 //			else
 //				LOG(ERROR)<<"Wtf? The semaphore value is not zero.Value="<<_val;
 
@@ -1085,14 +1063,14 @@ bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 		do
 		{
 			_is=FFreeSem.MWait();
-		} while (_is&&_old == atomic_read32(&_p_head->FPostCount));//if is not locked on Sem then FPostCount don't changed
+		} while (_is&&_old == _p_head->FPostCount);//if is not locked on Sem then FPostCount don't changed
 		LOG_IF(FATAL,!_is)<<"Cannot wait sem "<<FFreeSem.MName();
 		//atomic_dec32(&_p_head->FNumberOfWaitingFor);
 		MLock();
 	}
 	else
 	{
-		atomic_dec32(&_p_head->FNumberOfWaitingFor);
+		--_p_head->FNumberOfWaitingFor;
 		LOG(ERROR)<<"Cannot unlock the semaphore.  ignoring blocking mode.";
 		return false;
 	}
@@ -1102,12 +1080,12 @@ bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 void CSharedAllocator::MInformMemFreed(heap_head_t* const _p_head)
 {
 	CHECK_LE(_p_head->FPostCount, _p_head->FNumberOfWaitingFor);
-	unsigned _num = atomic_read32(&_p_head->FNumberOfWaitingFor)
-			- atomic_read32(&_p_head->FPostCount);
+	unsigned _num = _p_head->FNumberOfWaitingFor
+			- _p_head->FPostCount;
 	CHECK_LT((int )_num, CIPCSem::MAX_VALUE);
 	for (; _num; --_num)
 	{
-		atomic_inc32(&_p_head->FPostCount);
+		++_p_head->FPostCount;
 		bool const _is=FFreeSem.MPost();
 		LOG_IF(FATAL,!_is)<<"Cannot post sem "<<FFreeSem.MName();
 		VLOG(5) << "Posted free semaphore. "<<_num<<" Waiters:" << _p_head->FNumberOfWaitingFor;
@@ -1288,7 +1266,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 						<< _p_node->FBlockSize << " prev=" << _prev << " next="
 						<< _next;
 
-	atomic_add(&_p->FUsedUpReserv, 0 - _p_node->FBlockSize);
+	_p->FUsedUpReserv-= _p_node->FBlockSize;
 	//merge
 	if (_prev
 			&& (((uint8_t *) _prev + sizeof(block_node_t) + _prev->FBlockSize)
@@ -1301,7 +1279,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 				_prev->FBlockSize + _p_node->FBlockSize + sizeof(block_node_t));
 		_p_node = _prev;
 		_prev = NULL;
-		atomic_add(&_p->FUsedUpReserv, 0 - sizeof(block_node_t));
+		_p->FUsedUpReserv-=sizeof(block_node_t);
 		//remove from
 	}
 	if (_next
@@ -1314,7 +1292,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 		_p_node->MSetBlockSize(
 				_p_node->FBlockSize + _next->FBlockSize + sizeof(block_node_t));
 		_next = NULL;
-		atomic_add(&_p->FUsedUpReserv, 0 - sizeof(block_node_t));
+		_p->FUsedUpReserv-=sizeof(block_node_t);
 	}
 
 	_p_node->FReserveFree = 1;
@@ -1507,7 +1485,7 @@ void CSharedAllocator::MEraseNodeFromFreeList(const nodes_block_t& _nodes,
 		//the new block will be created.
 		//otherwise NULL_OFFSET is indicated that  no free memory
 		_p_head->MSetFirstNode(_nodes.first->FNextNode);
-	atomic_add(&_p_head->FFreeBytesRemaining, 0 - _nodes.first->FBlockSize);
+	_p_head->FFreeBytesRemaining-=_nodes.first->FBlockSize;
 //	atomic_write32(&_p_head->FFreeBytesRemaining,atomic_read32(&_p_head->FFreeBytesRemaining));
 }
 CSharedAllocator::block_node_t* CSharedAllocator::MSplitInto2Block(
@@ -1617,14 +1595,14 @@ void * CSharedAllocator::MMallocBlockFromReserv(
 	}
 	_free_node->FBlockSize &= (~BLOCK_ALLOCATED_BIT);	//for safety reset flags
 
-	atomic_add(&aProc->FUsedUpReserv, _free_node->FBlockSize);
+	aProc->FUsedUpReserv+= _free_node->FBlockSize;
 
 	block_node_t* _new_block = MSplitInto2Block(_free_node, _alligment_size,
 			false, _p_head);
 	if (_new_block)
 	{
 		VLOG(2) << "The reserved block has been split.";
-		atomic_add(&aProc->FUsedUpReserv, 0 - _new_block->FBlockSize);
+		aProc->FUsedUpReserv-= _new_block->FBlockSize;
 
 		_new_block->FReservedFlag = 1;
 		_new_block->FReserveFree = 1;
@@ -1720,7 +1698,7 @@ void CSharedAllocator::MInsertIntoFreeList(heap_head_t* const aHead,
 	CHECK_NOTNULL(pxBlockToInsert);
 	VLOG(2) << "Insert " << *pxBlockToInsert;
 	//increase of the number of free bytes remaining
-	atomic_add(&aHead->FFreeBytesRemaining, pxBlockToInsert->FBlockSize);
+	aHead->FFreeBytesRemaining+= pxBlockToInsert->FBlockSize;
 	//atomic_write32(&aHead->FFreeBytesRemaining,atomic_read32(&aHead->FFreeBytesRemaining)+pxBlockToInsert->FBlockSize);
 	if (!aHead->MFirstBlockNode(FBase))
 	{
@@ -1770,7 +1748,7 @@ void CSharedAllocator::MInsertIntoFreeList(heap_head_t* const aHead,
 						+ sizeof(block_node_t));
 		pxBlockToInsert = aPrev;
 
-		atomic_add(&aHead->FFreeBytesRemaining, sizeof(block_node_t));
+		aHead->FFreeBytesRemaining+= sizeof(block_node_t);
 		//atomic_write32(&aHead->FFreeBytesRemaining,atomic_read32(&aHead->FFreeBytesRemaining)+sizeof(block_node_t));
 	}
 	else
@@ -1796,7 +1774,7 @@ void CSharedAllocator::MInsertIntoFreeList(heap_head_t* const aHead,
 					pxBlockToInsert->FBlockSize + _next->FBlockSize
 							+ sizeof(block_node_t));
 			pxBlockToInsert->MSetNextNode(_next->FNextNode);
-			atomic_add(&aHead->FFreeBytesRemaining, sizeof(block_node_t));
+			aHead->FFreeBytesRemaining+= sizeof(block_node_t);
 			//atomic_write32(&aHead->FFreeBytesRemaining,atomic_read32(&aHead->FFreeBytesRemaining)+sizeof(block_node_t));
 		}
 		else
@@ -1829,7 +1807,7 @@ block_size_t CSharedAllocator::MFreeHeapSize() const
 //	CRAII<CSharedAllocator> _block(*this);
 
 	heap_head_t* const _p_head = sMGetHead(FBase);
-	return atomic_read32(&_p_head->FFreeBytesRemaining);
+	return _p_head->FFreeBytesRemaining;
 }
 block_size_t CSharedAllocator::MBufSize() const
 {
@@ -2256,7 +2234,7 @@ bool CSharedAllocator::MReleaseHeap()
 
 		if (_p_process)
 		{
-			if ((_p_process->FCount == 0) || (_p_process->FCount == 1))
+			if ((_p_process->FCount == 0) || (_p_process->FCount.MIsOne()))
 			{
 				VLOG(2) << "Release heap  for " << _pid << " counter="
 									<< (unsigned) _p_process->FCount;
@@ -2264,7 +2242,7 @@ bool CSharedAllocator::MReleaseHeap()
 			}
 			else if (FCurentProcess)
 			{
-				atomic_dec32(&_p_process->FCount);//fixme atomic operation has to be early than _p_process->FCount == 1 compare
+				--_p_process->FCount;//fixme atomic operation has to be early than _p_process->FCount == 1 compare
 				VLOG(2) << "Decrease counter for " << _p_process->FPid
 									<< " counter="
 									<< (unsigned) _p_process->FCount;

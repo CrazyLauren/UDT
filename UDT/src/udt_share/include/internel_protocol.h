@@ -81,27 +81,27 @@ struct head_t
 	};
 	//1-st word
 	uint32_t const FHeadSize:8;
-	uint32_t FTimeMs:16; //ms
+	uint32_t FTimeMs:16; //ms (for debug only)
 	uint32_t const FEndianness:8;
 
 	//2-d word
-	NSHARE::version_t const FVersion;
+	NSHARE::version_t const FVersion;//revision isn't used. It's reserv
 
 	//3-d word
 	uint32_t FDataSize;
 
 	//4-d word
-	uint32_t FTime;
+	uint32_t FTime;//for debug only
 
 	//5-d,6-d word
-	uint64_t FFromUUID;//can be problem with size
+	uint64_t FFromUUID;//can be problem with size(for debug only)
 
 	//7-d word
 	uint16_t FDataCrc;
 	uint16_t FType :8;//eMsgType
 	uint16_t FFlags :8;//eHeadFlags
 	//8-d word
-	uint32_t FCounter:24;
+	uint32_t FCounter:24;//for debug only
 	uint32_t FCrcHead:8;
 
 	//fix //fucking msvc error c2503

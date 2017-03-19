@@ -106,7 +106,7 @@ bool CUDP::MOpen()
 {
 	VLOG(2)<<"Open UDP "<<FParam.FPort;
 	LOG_IF(WARNING, FSock.MIsValid())
-			<< "Host socket is valid. Leak socket can occur!";
+			<< "Host socket is valid. Leak socket can occur! "<<FSock;
 	if (FSock.MIsValid())
 		return false;
 	if(!FParam.MIsValid())//auto generate

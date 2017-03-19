@@ -19,9 +19,9 @@ template<class TStr>
 inline bool bool_to_str(bool const& aVal, TStr &aTo)
 {
 	if (aVal)
-		aTo = "True";
+		aTo = "true";
 	else
-		aTo = "False";
+		aTo = "false";
 	return true;
 }
 

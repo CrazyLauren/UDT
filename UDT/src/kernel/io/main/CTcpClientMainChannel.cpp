@@ -48,17 +48,21 @@ bool CTcpClientMainChannel::MOpenIfNeed()
 	//CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
 	if (!FLoopBack.MIsOpen())
 	{
-		bool _rval = FLoopBack.MOpen();
-		CHECK(_rval);
-		if (_rval)
-			FSelectSock.MAddSocket(FLoopBack.MGetSocket());
-		else
-			return false;
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FLoopBack.MIsOpen())
+		{
+			bool _rval = FLoopBack.MOpen();
+			CHECK(_rval);
+			if (_rval)
+				FSelectSock.MAddSocket(FLoopBack.MGetSocket());
+			else
+				return false;
 
-		NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this,
-				NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
-		DCHECK(FSelectSock.MIsSetUp());
+			NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this,
+					NSHARE::operation_t::IO);
+			CDataObject::sMGetInstance().MPutOperation(_op);
+			DCHECK(FSelectSock.MIsSetUp());
+		}
 	}
 	return FLoopBack.MIsOpen();
 }

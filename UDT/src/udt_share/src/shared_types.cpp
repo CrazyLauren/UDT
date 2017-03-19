@@ -157,7 +157,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	}
 	if (!FRegistrators.empty())
 	{
-		_conf.MAdd(KEY_REGISTRATORS,FRegistrators.MSerialize());
+		_conf.MAdd(KEY_REGISTRATORS, FRegistrators.MSerialize());
 	}
 	if (!FEventsList.empty())
 	{
@@ -275,34 +275,60 @@ const NSHARE::CText demand_dg_t::KEY_FLAGS = "dflag";
 
 const uint32_t demand_dg_t::NO_HANDLER = -1;
 
-std::pair<required_header_t, bool> demand_dg_t::sMParseHead(
-		NSHARE::CConfig const& aConf)
+extern std::pair<required_header_t, bool> UDT_SHARE_EXPORT parse_head(
+		NSHARE::CConfig const& aConf, NSHARE::CText const& _proto)
 {
 	if (!aConf.MIsChild("rh"))
 	{
-		NSHARE::CText _proto;
-		aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, _proto);
 		if (IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
 				_proto))
 		{
 			try
 			{
-				VLOG(2)<<aConf.MChild(_proto).MToJSON(true);
+				VLOG(2) << aConf.MChild(_proto).MToJSON(true);
 				return _p->MHeader(aConf.MChild(_proto));
 			} catch (...)
 			{
-				LOG(DFATAL)<<"No demand header.	User fail "<<_proto;
+				LOG(DFATAL)<<"No  header.	User fail "<<_proto;
 				return std::make_pair(required_header_t(),false);
 			}
 		}
 		else
 		{
-			LOG(DFATAL)<<"No demand header. No key 'rh' and no parser for "<<_proto;
+			LOG(DFATAL)<<"No  header. No key 'rh' and no parser for "<<_proto;
 			return std::make_pair(required_header_t(),false);
 		}
 	}
 	else
 	return std::make_pair(required_header_t(aConf.MChild("rh")),true);
+}
+extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
+		required_header_t const& aWhat, NSHARE::CText const& _proto)
+{
+	if (_proto.empty())
+		return aWhat.MSerialize();
+	else
+	{
+		if (IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
+				_proto))
+		{
+			try
+			{
+				NSHARE::CConfig const _is = _p->MToConfig(aWhat);
+				if (!_is.MIsEmpty())
+				{
+					if (_is.MKey() == _proto)
+						return _is;
+					else
+						return NSHARE::CConfig(_proto, _is);
+				}
+			} catch (...)
+			{
+			}
+		}
+		LOG(DFATAL)<<"Cannot serialize head by custom protocol: "<<_proto;
+		return aWhat.MSerialize();
+	}
 }
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)), //
@@ -310,13 +336,18 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FFlags(E_NO_DEMAND_FLAGS)
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
-	std::pair<required_header_t, bool> const _val = sMParseHead(aConf);
+	if (aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol))
+	{
+		if (FProtocol.empty())
+			FProtocol = RAW_PROTOCOL_NAME;
+	}
+	std::pair<required_header_t, bool> const _val = parse_head(aConf,
+			FProtocol);
 	if (!_val.second)
-		(void) 0; //Head is not checking in MIsValid(), Therefore corrupting the other option
+		FProtocol.clear(); //Head is not checking in MIsValid(), Therefore corrupting the other option
 	else
 	{
 		FWhat = _val.first;
-		aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 		aConf.MGetIfSet(HANDLER, FHandler);
 		aConf.MGetIfSet(KEY_FLAGS, FFlags);
 
@@ -327,39 +358,14 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		}
 	}
 }
+
 NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 {
 	CConfig _conf(NAME);
-	if (aIsSerializeHeadAsRaw)
-		_conf.MAdd(FWhat.MSerialize());
-	else
-	{
-		NSHARE::CText _protcol =
-				FProtocol.empty() ? RAW_PROTOCOL_NAME : FProtocol;
-		bool _is_false = true;
-		if (IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
-				_protcol))
-		{
-			try
-			{
-				CConfig const _is = _p->MToConfig(FWhat);
-				if (!_is.MIsEmpty())
-				{
-					_conf.MAdd(_protcol, _is);
-					_is_false = false;
-				}
-			} catch (...)
-			{
-			}
-		}
+	NSHARE::CText _protcol = FProtocol.empty() ? RAW_PROTOCOL_NAME : FProtocol;
 
-		if (_is_false)
-		{
-			LOG(DFATAL)<<"Cannot serialize head by custom protocol: "<<_protcol;
-			_conf.MAdd(FWhat.MSerialize());
-		}
+	_conf.MAdd(serialize_head(FWhat, aIsSerializeHeadAsRaw ? "" : FProtocol));
 
-	}
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 	_conf.MAdd(HANDLER, FHandler);
@@ -552,7 +558,9 @@ error_info_t::error_info_t() :
 	;
 }
 error_info_t::error_info_t(NSHARE::CConfig const& aConf) :
-		FError(static_cast<eError>(aConf.MValue<error_type>(CODE, E_NO_ERROR))), //
+		FError(
+				static_cast<eError>(aConf.MValue < error_type
+						> (CODE, E_NO_ERROR))), //
 		FWhere(FError != E_NO_ERROR ? id_t(aConf.MChild(WHERE)) : id_t()), //
 		FTo(
 				FError != E_NO_ERROR ?
@@ -564,7 +572,7 @@ error_info_t::error_info_t(NSHARE::CConfig const& aConf) :
 NSHARE::CConfig error_info_t::MSerialize() const
 {
 	CConfig _conf(NAME);
-	_conf.MSet<error_type>(CODE, FError);
+	_conf.MSet < error_type > (CODE, FError);
 	if (MIsValid())
 	{
 		_conf.MAdd(WHERE, FWhere.MSerialize());
@@ -661,7 +669,7 @@ fail_send_t::fail_send_t(user_data_info_t const& aRht, const uuids_t& aTo,
 }
 fail_send_t::fail_send_t(NSHARE::CConfig const& aConf) :
 		user_data_info_t(aConf.MChild(user_data_info_t::NAME)), //
-		FError(aConf.MValue<error_type>(CODE, E_NO_ERROR))
+		FError(aConf.MValue < error_type > (CODE, E_NO_ERROR))
 {
 	VLOG(5) << "Result: " << *this;
 }
@@ -714,12 +722,13 @@ const NSHARE::CText user_data_t::PARSER = "by_parser";
 
 NSHARE::CConfig user_data_t::MSerialize(NSHARE::CText const & aName) const
 {
-	return MSerialize(aName.empty()?NULL:CParserFactory::sMGetInstance().MGetFactory(aName));
+	return MSerialize(
+			aName.empty() ?
+					NULL : CParserFactory::sMGetInstance().MGetFactory(aName));
 }
 NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
-		IExtParser* aP) const
+IExtParser* aP) const
 {
-
 
 	const size_t _size = FData.size();
 	const uint8_t* _begin = (const uint8_t*) FData.ptr_const();
@@ -741,19 +750,20 @@ NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 					aP->MToConfig(
 							FDataId.MIsRaw() ? _raw_head : required_header_t(),
 							_begin, _begin + _size));
-			_data.MValue()=DATA;
+			_data.MValue() = DATA;
 			if (_data.MIsOnlyKey())
-				{
+			{
 				LOG(ERROR)<<"Cannot serialize by "<<aP->MGetType();
 				_is_base64 = true;
-				}
+			}
 			else
 			{
 				_conf.MAdd(_data);
 				_conf.MAdd(PARSER,aP->MGetType());
 			}
 
-		} catch (...)
+		}
+		catch (...)
 		{
 			LOG(DFATAL)<<"Exception is occurred";
 			_is_base64 = true;
@@ -766,7 +776,7 @@ NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 	if (_is_base64)
 	{
 		NSHARE::CConfig const _data(DATA, FData);
-		_conf.MAdd(PARSER,"base64");
+		_conf.MAdd(PARSER, "base64");
 		_conf.MAdd(_data);
 	}
 	return _conf;

@@ -167,7 +167,7 @@ void CKernelIo::MReceivedData(user_data_t const& aWhat,
 		const descriptor_t& aFrom)
 {
 	{
-		LOG(INFO)<< "Receive packet #" << aWhat.FDataId.FPacketNumber<<" from "<<aWhat.FDataId.FRouting.FFrom;
+		LOG(INFO)<< "Receive packet #" << aWhat.FDataId.FPacketNumber<<" from "<<aWhat.FDataId.FRouting.FFrom<<"  "<<aWhat.FDataId.FSplit ;
 		VLOG_IF(5,aWhat.FData.size()<100)<<aWhat.FData;
 		routing_user_data_t _data;
 		_data.FDesc=aFrom;
@@ -569,7 +569,10 @@ eError CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
 	VLOG(4) << "Send to " << _by;
 	if (!CDescriptors::sMIsValid(_by))
 		return E_SOCKET_CLOSED;
-	return MPutUserDataToSendFifo(_by, _data);
+	if(_data.empty())
+		return E_NO_ERROR;
+	else
+		return MPutUserDataToSendFifo(_by, _data);
 }
 void CKernelIo::MSendTo(output_user_data_t& aData, fail_send_array_t & aNoSent,
 		user_datas_t& aFailedData)

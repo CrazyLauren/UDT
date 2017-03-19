@@ -858,38 +858,35 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 		for (; _prot_it != _prot_it_end; ++_prot_it)
 
 		{
-			NSHARE::CConfig _prot("demand");
-			_prot.MAdd(/*"from",*/_it->first.MSerialize());
-
-			_prot.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, _prot_it->first);
-
-			IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(
-					_prot_it->first);
-
+			NSHARE::CText const& _protocol=_prot_it->first.empty()?RAW_PROTOCOL_NAME:_prot_it->first;
+			NSHARE::CConfig const _from=_it->first.MSerialize();
 			uuids_of_expecting_dg_t::const_iterator _jt =
 					_prot_it->second.begin(), _jt_end(_prot_it->second.end());
 			for (; _jt != _jt_end; ++_jt)
 			{
-				NSHARE::CConfig _dg("dg");
-				if (_p)
-					_dg.MAdd(_p->MToConfig(_jt->first));
-				else
-				{
-					_dg.MAdd(/*"raw",*/_jt->first.MSerialize());
-				}
+				NSHARE::CConfig _prot("msg");
+				_prot.MAdd(_from);
+				_prot.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, _protocol);
+				_prot.MAdd(serialize_head(_jt->first,_protocol));
 
 				for (uuids_of_receiver_t::const_iterator _kt =
 						_jt->second.begin(); _kt != _jt->second.end(); ++_kt)
 				{
-					_dg.MAdd(/*user_data_info_t::KEY_PACKET_TO,*/
-					_kt->first.MSerialize());
+					NSHARE::CConfig _to(user_data_info_t::KEY_PACKET_TO);
+					_to.MAdd(_kt->first.MSerialize());
+					_to.MAdd(_kt->second.FVersion.MSerialize());
+					_to.MAdd("is_registrator",_kt->second.FNumberOfRealHandlers!=_kt->second.size());
+					_to.MAdd("is_real",_kt->second.FNumberOfRealHandlers!=0);
+
+					_prot.MAdd(_to);
 				}
-				_conf.MAdd(_dg);
+				_conf.MAdd(_prot);
 			}
-			_conf.MAdd(_prot);
+
 		}
 
 	}
+	//_conf.MAdd(FDGs.MSerialize());
 	return _conf;
 }
 } /* namespace NUDT */

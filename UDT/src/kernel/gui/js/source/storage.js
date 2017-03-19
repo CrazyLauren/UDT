@@ -1,6 +1,5 @@
 function update_udt_net(aSinc)
 {
-    let self = storage.parsers;
     $.ajax(
         {
             type: "GET",
@@ -456,6 +455,7 @@ var storage =
                             edges: []
                         };
 
+                    let _exist_edge={};
                     _data.forEach(function (item)
                     {
                         let _node={};
@@ -476,14 +476,27 @@ var storage =
                         }
                         _way_list.forEach(function (iw)
                         {
-                            let _way=[];
-                            _way.data = {
-                                id: item.from + "_to_" + iw.to,
-                                source: item.from,
-                                target: iw.to,
-                                weight: iw.lat
+                            if(!_exist_edge.hasOwnProperty(item.from) || !_exist_edge[item.from].hasOwnProperty(iw.to))
+                            {
+                                if(!_exist_edge.hasOwnProperty(item.from))
+                                    _exist_edge[item.from]={};
+                                if(!_exist_edge[item.from].hasOwnProperty(iw.to))
+                                    _exist_edge[item.from][iw.to]=true;
+
+                                if(!_exist_edge.hasOwnProperty(iw.to))
+                                    _exist_edge[iw.to]={};
+                                if(!_exist_edge[iw.to].hasOwnProperty(item.from))
+                                    _exist_edge[iw.to][item.from]=true;
+
+                                let _way = {};
+                                _way.data = {
+                                    id: item.from + "_to_" + iw.to,
+                                    source: item.from,
+                                    target: iw.to,
+                                    weight: iw.lat
+                                }
+                                _elements.edges.push(_way);
                             }
-                            _elements.edges.push(_way);
                         })
                     });
                     self.updated(_elements);
@@ -517,9 +530,142 @@ var storage =
                 },
                 on_new: function (event)
                 {
+                    //todo
                 },
                 removed: function (event)
                 {
+                    //todo
+                },
+                data: []
+            },
+            route: {
+                set: function (aData)
+                {
+                    let self = storage.route;
+                    let _data = [];
+                    if (aData.hasOwnProperty("msg"))
+                    {
+                        if ($.isArray(aData.msg))
+                            _data = aData.msg;
+                        else
+                            _data.push(aData.msg);
+
+                        _data.forEach(function (item)
+                        {
+                            if(item.hasOwnProperty("to"))
+                            {
+                                if(!$.isArray(item.to))
+                                {
+                                    let _t=[item.to];
+                                    item.to=_t;
+                                }
+                                item.to.forEach(function (val)//parsing bool
+                                {
+                                    if(val.hasOwnProperty("is_real"))
+                                        val.is_real=JSON.parse(val.is_real);
+                                    if(val.hasOwnProperty("is_registrator"))
+                                        val.is_registrator=JSON.parse(val.is_registrator);
+                                })
+                            }else
+                                item.to=[];
+
+                        })
+                    }
+                    self.data=_data;
+                    self.updated(_data);
+                },
+                update: function (aSinc = true)
+                {
+                    let self = storage.route;
+                    $.ajax(
+                        {
+                            type: "GET",
+                            data: {query: "route"},
+                            dataType: "json",
+                            async: aSinc,
+                            cache: true
+                        }).done(function (data)
+                    {
+                        self.set(data.state.route.demands);
+                    }).error(function (jqXHR, textStatus)
+                    {
+                        alert("Could not load demands as " + textStatus);
+                    });
+                }, get: function (aVal)
+                {
+                    let self = storage.route;
+                    if (!self.data.hasOwnProperty("inited"))
+                    {
+                        self.update(false);
+                    }
+
+                    if (!aVal)
+                        return self.data;
+
+                    let _rval=[];
+                    self.data.forEach(function (item)
+                    {
+                        if(item.uuid==aVal)
+                            _rval.push(item);
+                    })
+                    return _rval;
+                }, getTo: function (aVal)
+                {
+                    let self = storage.route;
+                    if (!self.data.hasOwnProperty("inited"))
+                    {
+                        self.update(false);
+                    }
+
+
+                    let _rval = [];
+                    let _hash={};
+                    self.data.forEach(function (item)
+                    {
+                        // if (item.uuid == aVal)
+                        //     _rval.push(item);
+                        item.to.forEach(function (val)
+                        {
+                            if (val.uuid == aVal)
+                            {
+                                let _tmp={};
+                                $.extend(_tmp,item);
+                                _tmp.uuid=undefined;
+                                _tmp.to=undefined;
+
+                                let _id=0;
+                                let _string=JSON.stringify(_tmp);
+
+                                if(_hash.hasOwnProperty(_string))
+                                {
+                                    _id=_hash[_string];
+                                }else
+                                {
+                                    _id=_rval.length;
+                                    _hash[_string]=_id;
+                                    _tmp.uuid=aVal;
+                                    _tmp.to=[];
+                                    _rval.push(_tmp);
+                                }
+                                let _from={};
+                                $.extend(_from,val);
+                                _from.uuid=item.uuid;
+                                _rval[_id].to.push(_from);
+                            }
+                        })
+                    })
+                    return _rval;
+                },
+                updated: function (event)
+                {
+                },
+                on_new: function (event)
+                {
+                    //todo
+                },
+                removed: function (event)
+                {
+                    //todo
                 },
                 data: []
             }

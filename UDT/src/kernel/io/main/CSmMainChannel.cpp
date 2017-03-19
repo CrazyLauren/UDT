@@ -111,7 +111,8 @@ bool CSmMainChannel::MOpenIfNeed()
 {
 	if (!FSmServer.MIsOpen())
 	{
-		if (FSmServer.MOpen(FName, FSize, FReserv))
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FSmServer.MIsOpen() && FSmServer.MOpen(FName, FSize, FReserv))
 		{
 			NSHARE::operation_t _op(CSmMainChannel::sMReceiver, this,
 					NSHARE::operation_t::IO);

@@ -22,8 +22,8 @@
 #include <io/ILink.h>
 #include "ILinkBridge.h"
 #include "CConnectionHandlerFactory.h"
-#include "receive_from.h"
-#include <parser_in_protocol.h>
+//#include "receive_from.h"
+//#include <parser_in_protocol.h>
 
 #include "CKernelIOByTCPClient.h"
 #include "CKernelChannel.h"

@@ -2,6 +2,12 @@
 $(document).ready(function ()
 {
     document.title = "UDT";
+    $.ajax(
+        {
+            type: "GET",
+            data: {query:"info"},
+            dataType: "json"
+        });
     let _main = $("<div>").attr("id", "tabs").appendTo($("body"));
     let _ul = $("<ul>").appendTo(_main);
 
@@ -43,6 +49,7 @@ $(document).ready(function ()
                 break;
         }
     };
+
      _main.tabs(
             {
                 active: 0,

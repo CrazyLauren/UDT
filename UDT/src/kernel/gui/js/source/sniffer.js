@@ -19,7 +19,7 @@ var sniffer =//static pane
         create_control_buttons: function (aTo)
         {
             let self = sniffer;
-            let _button_add = $("<button>").button();
+            let _button_add = $("<button>").addClass("class-sniffer-button").button();
             _button_add.attr("id", "i_what_to_receive");
             _button_add.on("click", self.MIWantToReceive.open);
             _button_add.text("Add");
@@ -201,9 +201,11 @@ var sniffer =//static pane
 
                     }
                     const _protocol = aHandleDemand.pl;
-                    _table.append("<tr><td>Protocol:</td><td>" + _protocol + "</td></tr>");
+                    //_table.append("<tr><td>Protocol:</td><td>" + _protocol + "</td></tr>");
                     let _head = $.toRepresentationHead(_protocol, aHandleDemand[_protocol]);
-
+                    $.extend(_head, $.to_representation_form({
+                        pl: _protocol
+                    }, data_info));
                     $.object_to_table(_head, _table, true);
                     self.add_check_box(_table, $("#request", _tab), _handle_id);
                 } catch (err)
