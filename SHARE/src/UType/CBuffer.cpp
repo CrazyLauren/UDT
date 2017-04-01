@@ -8,7 +8,7 @@
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */   
+ */
 #include <deftype>
 #include <crc8.h>
 
@@ -16,7 +16,10 @@
 #include <UType/CBuffer.h>
 #include <UType/mallocallocater.h>
 
-
+#ifdef NOATOMIC
+#	define SAFETY_BUFFER_OPERATION
+#	define SAFETY_BUFFER_READ_OPERATION
+#endif
 
 //#ifdef NDEBUG
 //#	define BUFFER_NO_CHECK_CRC
@@ -25,27 +28,7 @@
 namespace NSHARE
 {
 const IAllocater::offset_pointer_t IAllocater::NULL_OFFSET =
-		std::numeric_limits<IAllocater::offset_pointer_t>::max();//held here by historical reason
-#ifdef SAFETY_BUFFER_OPERATION
-struct _buffer_safety_operation_t :CRAII<IAllocater>
-{
-	_buffer_safety_operation_t(IAllocater * aMutex, void* aBuf) :
-		CRAII<IAllocater>(aMutex, aBuf)
-	{
-	}
-};
-#else
-struct _buffer_safety_operation_t
-{
-	_buffer_safety_operation_t(IAllocater * aMutex, void* aBuf)
-	{
-		;
-	}
-	void MUnlock()
-	{
-	}
-};
-#endif
+		std::numeric_limits<IAllocater::offset_pointer_t>::max(); //held here by historical reason
 //static CMutex g_mutex;
 #define BUF_FACTOR 1.5//fixme
 const size_t CBuffer::DEF_BUF_RESERVE = 256; //fixme
@@ -55,7 +38,7 @@ const size_t CBuffer::DEF_BUF_RESERVE = 256; //fixme
 
 enum eBufFlags
 {
-	E_BUF_RESORED=0x1<<0
+	E_BUF_RESORED = 0x1 << 0
 };
 struct raw_begin_offset_t
 {
@@ -67,11 +50,11 @@ struct raw_begin_offset_t
 	union
 	{
 
-		mutable  uint32_t FRawField;
+		mutable uint32_t FRawField;
 		struct
 		{
 			mutable volatile uint32_t FBeginOffset :16;
-			mutable volatile uint32_t FFlags :8;//see eBufFlags
+			mutable volatile uint32_t FFlags :8; //see eBufFlags
 			mutable volatile uint32_t FCrc :8;
 		};
 	};
@@ -88,10 +71,10 @@ struct raw_begin_offset_t
 	uint32_t & MInvalid() const
 	{
 		FRawField = 0;
-		FCrc=0x2;
+		FCrc = 0x2;
 		return FRawField;
 	}
-	uint32_t & MSetFlag(eBufFlags const& aFlag,bool aVal) const
+	uint32_t & MSetFlag(eBufFlags const& aFlag, bool aVal) const
 	{
 		FFlags = (aVal) ? (FFlags | aFlag) : (FFlags & (~aFlag));
 		return FRawField;
@@ -113,7 +96,7 @@ private:
 public:
 	buf_info(size_t const& aSize);
 	size_t MStartOffset() const;
-	void MSetStartOffset(size_t const& aVal,bool aIsSetCrc=true);
+	void MSetStartOffset(size_t const& aVal, bool aIsSetCrc = true);
 	size_t MSize() const;
 	void MSetSize(size_t const& aVal);
 	size_t MBufSize();
@@ -126,8 +109,8 @@ public:
 	void MSetCrc();
 	void MInvalid();
 
-	bool MIs(eBufFlags aFlag ) const;
-	void MSetFlag(eBufFlags const& aFlag,bool aVal) const;
+	bool MIs(eBufFlags aFlag) const;
+	void MSetFlag(eBufFlags const& aFlag, bool aVal) const;
 
 });
 
@@ -138,7 +121,7 @@ CBuffer::buf_info::buf_info(size_t const& aSize)
 	FSize = 0;
 	FBufSize = 0;
 	FCount = 1;
-	VLOG(5)<<"Add ref copy old 0. p="<<this;
+	VLOG(5) << "Add ref copy old 0. p=" << this;
 	MSetBufSize(aSize);
 }
 size_t CBuffer::buf_info::MSize() const
@@ -149,7 +132,7 @@ size_t CBuffer::buf_info::MSize() const
 void CBuffer::buf_info::MSetSize(size_t const& aVal)
 {
 	CHECK_NOTNULL(this);
-	CHECK_LE(aVal,std::numeric_limits<uint32_t>::max());
+	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
 	FSize.MWrite(aVal);
 	MSetCrc();
 }
@@ -188,15 +171,17 @@ uint32_t CBuffer::buf_info::release()
 inline size_t CBuffer::buf_info::MStartOffset() const
 {
 	//CHECK(MCheckCrc());
-	return raw_begin_offset_t(FRawOffsetField).FBeginOffset ;
+	return raw_begin_offset_t(FRawOffsetField).FBeginOffset;
 }
-inline void CBuffer::buf_info::MSetStartOffset(size_t const& aVal,bool aIsSetCrc)
+inline void CBuffer::buf_info::MSetStartOffset(size_t const& aVal,
+		bool aIsSetCrc)
 {
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
 #ifdef BUFFER_NO_CHECK_CRC
 	FStartOffset.MWrite((static_cast<uint32_t>(aVal) <<8)&OF_MASK);
 #else
-	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MSetOffset(aVal));
+	FRawOffsetField.MWrite(
+			raw_begin_offset_t(FRawOffsetField).MSetOffset(aVal));
 #endif
 	//if(aIsSetCrc)MSetCrc();
 }
@@ -209,21 +194,20 @@ inline bool CBuffer::buf_info::MCheckCrc() const
 //	uint8_t const*  _begin = (uint8_t*) _crc;
 
 //	uint8_t const _cur = *_begin++;
-	uint8_t const _crc =
-			raw_begin_offset_t(FRawOffsetField).FCrc;
+	uint8_t const _crc = raw_begin_offset_t(FRawOffsetField).FCrc;
 
 #ifdef USE_CRC_FOR_CHECK_BUF
-	uint8_t const*  _begin = ((uint8_t*) this) +BUF_CRC_BEGIN;
-	uint8_t const * const  _end = _begin + BUF_CRC_SIZE;
+	uint8_t const* _begin = ((uint8_t*) this) +BUF_CRC_BEGIN;
+	uint8_t const * const _end = _begin + BUF_CRC_SIZE;
 	uint8_t const _r = crc_t::sMCalcCRCofBuf(_begin, _end);
 	return _crc == _cur;
 #endif
 	typedef uint8_t const _array_t[BUF_CRC_SIZE];
 
 	_array_t const &_array =
-			*reinterpret_cast<_array_t*>(((uint8_t const*) this)
-					+ BUF_CRC_BEGIN);
-	uint8_t const _sum = _array[0]^_array[1]^_array[2]^_array[3]^_array[4]^_array[5]^_array[6]^_array[7];
+			*reinterpret_cast<_array_t*>(((uint8_t const*) this) + BUF_CRC_BEGIN);
+	uint8_t const _sum = _array[0] ^ _array[1] ^ _array[2] ^ _array[3]
+			^ _array[4] ^ _array[5] ^ _array[6] ^ _array[7];
 	COMPILE_ASSERT(8==BUF_CRC_SIZE,
 			TheSizeOfArrayChangedButXorCrcIsNotCorrected);
 	return _sum == _crc;
@@ -233,8 +217,7 @@ inline bool CBuffer::buf_info::MCheckCrc() const
 }
 inline void CBuffer::buf_info::MInvalid()
 {
-	FRawOffsetField.MWrite(
-			raw_begin_offset_t(FRawOffsetField).MInvalid());
+	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MInvalid());
 }
 inline void CBuffer::buf_info::MSetCrc()
 {
@@ -243,7 +226,6 @@ inline void CBuffer::buf_info::MSetCrc()
 //	memcpy(_crc, this, sizeof(_crc));
 //	uint8_t const*  _begin = (uint8_t*) _crc;
 
-
 #ifdef USE_CRC_FOR_CHECK_BUF
 	uint8_t const* _begin = ((uint8_t*) this) +BUF_CRC_BEGIN;
 	uint8_t const * const _end = _begin + BUF_CRC_SIZE;
@@ -251,66 +233,98 @@ inline void CBuffer::buf_info::MSetCrc()
 #else
 	typedef uint8_t const _array_t[BUF_CRC_SIZE];
 	_array_t const &_array =
-			*reinterpret_cast<_array_t*>(((uint8_t const*) this)
-					+ BUF_CRC_BEGIN);
-	uint8_t const _r = _array[0]^_array[1]^_array[2]^_array[3]^_array[4]^_array[5]^_array[6]^_array[7];
+			*reinterpret_cast<_array_t*>(((uint8_t const*) this) + BUF_CRC_BEGIN);
+	uint8_t const _r = _array[0] ^ _array[1] ^ _array[2] ^ _array[3] ^ _array[4]
+			^ _array[5] ^ _array[6] ^ _array[7];
 	COMPILE_ASSERT(8==BUF_CRC_SIZE,
 			TheSizeOfArrayChangedButXorCrcIsNotCorrected);
 //	uint8_t  _r= *_begin++;
 //	for (; _begin != _end; ++_begin)
 //		_r ^= *_begin;
 #endif
-	FRawOffsetField.MWrite(
-			raw_begin_offset_t(FRawOffsetField).MSetCrc(_r));
+	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MSetCrc(_r));
 #endif
 }
-bool CBuffer::buf_info::MIs(eBufFlags aFlag ) const
+bool CBuffer::buf_info::MIs(eBufFlags aFlag) const
 {
-	return (raw_begin_offset_t(FRawOffsetField).FFlags & aFlag)!=0;
+	return (raw_begin_offset_t(FRawOffsetField).FFlags & aFlag) != 0;
 }
-void CBuffer::buf_info::MSetFlag(eBufFlags const& aFlag,bool aVal) const
+void CBuffer::buf_info::MSetFlag(eBufFlags const& aFlag, bool aVal) const
 {
-	FRawOffsetField.MWrite(raw_begin_offset_t(FRawOffsetField).MSetFlag(aFlag,aVal));
+	FRawOffsetField.MWrite(
+			raw_begin_offset_t(FRawOffsetField).MSetFlag(aFlag, aVal));
 	//MSetCrc()
 }
-const  CBuffer::size_type CBuffer::_buffer_t::BUF_OFFSET = _impl::get_alligment_size_ref<
-		CBuffer::buf_info, CBuffer::value_type>();
+#ifdef SAFETY_BUFFER_OPERATION
+template<> class CRAII<CBuffer::buf_info> :public CRAII<IAllocater>
+{
+public:
+	explicit CRAII(IAllocater * aMutex, void* aBuf):CRAII<IAllocater>(aMutex, aBuf)
+	{
 
-CBuffer::_buffer_t::_buffer_t(IAllocater* aAll,eAllocatorType aType) :
-		FAllocator(aAll), FBeginOfStorage(NULL),FAllocatorType(aType)
+	}
+};
+#else
+template<> class CRAII<CBuffer::buf_info> : public CDenyCopying
+{
+public:
+	explicit CRAII(IAllocater * aMutex, void* aBuf)
+	{
+
+	}
+	~CRAII()
+	{
+
+	}
+	inline void MUnlock()
+	{
+	}
+};
+#endif
+typedef CRAII<CBuffer::buf_info> _buffer_safety_operation_t;
+
+const CBuffer::size_type CBuffer::_buffer_t::BUF_OFFSET =
+		_impl::get_alligment_size_ref<CBuffer::buf_info, CBuffer::value_type>();
+
+CBuffer::_buffer_t::_buffer_t(IAllocater* aAll, eAllocatorType aType) :
+		FAllocator(aAll), FBeginOfStorage(NULL), FAllocatorType(aType)
 {
 }
-CBuffer::_buffer_t::_buffer_t(IAllocater* aAlloc, offset_pointer_t aOffset,bool aCheckCrc,eAllocatorType aType) :
+CBuffer::_buffer_t::_buffer_t(IAllocater* aAlloc, offset_pointer_t aOffset,
+		bool aCheckCrc, eAllocatorType aType) :
 		FAllocator(aAlloc), //
 		FAllocatorType(aType)
 {
-	VLOG(2)<<"Allocate by "<<aOffset;
+	VLOG(2) << "Allocate by " << aOffset;
 	void* _p = FAllocator->MPointer(aOffset);
 	LOG_IF(DFATAL,!_p) << "The offset " << aOffset << " is null";
 	if (_p)
 	{
 		FBeginOfStorage = MGetPtr(_p);
-		_buffer_safety_operation_t _block(FAllocator,FBeginOfStorage);
+		_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage);
 		buf_info& _buf = sMGetBuff(FBeginOfStorage);
-		if((aCheckCrc && !_buf.MCheckCrc()) || _buf.use_count()==0)
+		if ((aCheckCrc && !_buf.MCheckCrc()) || _buf.use_count() == 0)
 		{
-			VLOG(2)<<"Invalid CRC Use Count="<<_buf.use_count();
-			FBeginOfStorage=NULL;
-		}else
+			VLOG(2) << "Invalid CRC Use Count=" << _buf.use_count();
+			FBeginOfStorage = NULL;
+		}
+		else
 		{
 			VLOG(2) << "The buffer is exist in " << aOffset
 								<< " use count = " << _buf.use_count() << " p="
 								<< this;
-			_buf.MSetFlag(E_BUF_RESORED,true);
+			_buf.MSetFlag(E_BUF_RESORED, true);
 		}
 	}
 	else
 		FBeginOfStorage = NULL;
 
 }
-CBuffer::_buffer_t::_buffer_t(_buffer_t const & aR):FAllocatorType(aR.FAllocatorType)
+CBuffer::_buffer_t::_buffer_t(_buffer_t const & aR) :
+		FAllocatorType(aR.FAllocatorType)
 {
-	if (aR.FBeginOfStorage != NULL) aR.add_ref_copy(true);
+	if (aR.FBeginOfStorage != NULL)
+		aR.add_ref_copy(true);
 
 	FBeginOfStorage = aR.FBeginOfStorage;
 	FAllocator = aR.FAllocator;
@@ -339,25 +353,29 @@ CBuffer::buf_info& CBuffer::_buffer_t::sMGetBuff(value_type* aVal)
 	CHECK_NOTNULL(aVal);
 	return *(buf_info*) ((uint8_t*) aVal - BUF_OFFSET);
 }
-CBuffer::value_type* CBuffer::_buffer_t::MReAllocate(value_type* aP, size_t aSize)
+CBuffer::value_type* CBuffer::_buffer_t::MReAllocate(value_type* aP,
+		size_t aSize)
 {
 	void* _ptr =
-			aP!=NULL ? FAllocator->MReallocate(aP - BUF_OFFSET, aSize + BUF_OFFSET,4,FAllocatorType) : FAllocator->MReallocate(
-							NULL, aSize + BUF_OFFSET,4,FAllocatorType);
+			aP != NULL ?
+					FAllocator->MReallocate(aP - BUF_OFFSET, aSize + BUF_OFFSET,
+							4, FAllocatorType) :
+					FAllocator->MReallocate(
+					NULL, aSize + BUF_OFFSET, 4, FAllocatorType);
 	LOG_IF(ERROR,!_ptr) << "Cannot allocate " << aSize << " bytes.";
 
 	if (!_ptr)
 		return NULL;
-	buf_info* _p=(buf_info*)_ptr;
+	buf_info* _p = (buf_info*) _ptr;
 	_p->MSetBufSize(aSize);
 	return MGetPtr(_ptr);
 }
 CBuffer::value_type* CBuffer::_buffer_t::MAllocate(size_t aSize)
 {
-	void* _ptr = FAllocator->MAllocate(aSize + BUF_OFFSET,4,FAllocatorType);
-	LOG_IF(ERROR,!_ptr)<<"Cannot allocate "<<aSize<<" bytes.";
+	void* _ptr = FAllocator->MAllocate(aSize + BUF_OFFSET, 4, FAllocatorType);
+	LOG_IF(ERROR,!_ptr) << "Cannot allocate " << aSize << " bytes.";
 
-	if(!_ptr)
+	if (!_ptr)
 		return NULL;
 
 	new (_ptr) buf_info(aSize);
@@ -387,7 +405,9 @@ CBuffer::size_type CBuffer::_buffer_t::size() const
 {
 	if (empty())
 		return 0;
-//	_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage);//it's atomic
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage); //it's atomic
+#endif
 	return sMGetBuff(FBeginOfStorage).MSize();
 }
 
@@ -395,6 +415,9 @@ uint32_t CBuffer::_buffer_t::use_count() const
 {
 	if (empty())
 		return 0;
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage); //it's atomic
+#endif
 	return sMGetBuff(FBeginOfStorage).use_count();
 }
 
@@ -412,12 +435,14 @@ void CBuffer::_buffer_t::release()
 	bool _does_deallocate=false;
 	buf_info& _buf = sMGetBuff(FBeginOfStorage);
 	VLOG(5)<<"Release for "<<FAllocator->MOffset(MStorageBegin())<<" p="<<this;
-	uint32_t const _release=_buf.release();
-	VLOG(2) << "Release = " << _release<<" for "<<FAllocator->MOffset(MStorageBegin());
-	_does_deallocate=_release == 1;
-//	DCHECK(_buf.MCheckCrc());
-
-	//LOG_IF(WARNING,_does_deallocate)<<"Deallocate "<<FAllocator->MOffset(&sMGetBuff(_tmp_begin_of_storage));
+	{
+#ifdef SAFETY_BUFFER_READ_OPERATION
+		_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage); //it's atomic
+#endif
+		uint32_t const _release=_buf.release();
+		VLOG(2) << "Release = " << _release<<" for "<<FAllocator->MOffset(MStorageBegin());
+		_does_deallocate=_release == 1;
+	}
 	if (_does_deallocate)
 	{
 		MDeallocate();
@@ -426,22 +451,13 @@ void CBuffer::_buffer_t::release()
 }
 void CBuffer::_buffer_t::add_ref_copy(bool aIsExist) const
 {
-	if(aIsExist)//Copy operation
-	{
-		VLOG(5)<<"Add ref copy Copy operation "<<FAllocator->MOffset(MStorageBegin())<<" old="<<sMGetBuff(FBeginOfStorage).use_count()<<" p="<<this;
-		sMGetBuff(FBeginOfStorage).add_ref_copy();
-		return;
-	}
 	if (empty())
 	{
 		LOG(ERROR)<< "Empty release.";
 		return;
 	}
-	//_buffer_safety_operation_t _block(FAllocator,FBeginOfStorage);//it's atomic
-//	buf_info& _buf = sMGetBuff(FBeginOfStorage);
-//	DCHECK(_buf.MCheckCrc());
-//	_buf.add_ref_copy();
-//	VLOG(2) << "Ref count = " << _buf.use_count();
+
+	_buffer_safety_operation_t _block(FAllocator, FBeginOfStorage);
 	VLOG(5)<<"Add ref copy "<<FAllocator->MOffset(MStorageBegin())<<" old="<<sMGetBuff(FBeginOfStorage).use_count()<<" p="<<this;
 	sMGetBuff(FBeginOfStorage).add_ref_copy();
 }
@@ -451,14 +467,14 @@ bool CBuffer::_buffer_t::empty() const
 }
 void CBuffer::_buffer_t::MMoveTo(_buffer_t& aTo)
 {
-	VLOG(2)<<"Move data ";
+	VLOG(2) << "Move data ";
 	if (aTo.FBeginOfStorage != FBeginOfStorage)
 	{
 		if (aTo.FBeginOfStorage != 0)
 			aTo.release();
 
-		aTo.FBeginOfStorage=FBeginOfStorage ;
-		aTo.FAllocator=FAllocator;
+		aTo.FBeginOfStorage = FBeginOfStorage;
+		aTo.FAllocator = FAllocator;
 		FBeginOfStorage = NULL;
 	}
 }
@@ -466,12 +482,13 @@ CBuffer::_buffer_t & CBuffer::_buffer_t::operator=(_buffer_t const & r)
 {
 	if (r.FBeginOfStorage != FBeginOfStorage)
 	{
-		CHECK_NE(this,&r);
+		CHECK_NE(this, &r);
 		{
 			if (FBeginOfStorage != NULL)
 				release();
 
-			if (r.FBeginOfStorage != NULL) r.add_ref_copy(true);
+			if (r.FBeginOfStorage != NULL)
+				r.add_ref_copy(true);
 
 			FBeginOfStorage = r.FBeginOfStorage;
 			FAllocator = r.FAllocator;
@@ -484,7 +501,7 @@ CBuffer::_buffer_t &CBuffer::_buffer_t::deep_copy(_buffer_t const & r)
 	CHECK_NOTNULL(FAllocator);
 	if (r.FBeginOfStorage != FBeginOfStorage)
 	{
-		CHECK_NE(this,&r);
+		CHECK_NE(this, &r);
 		size_t _new_offset = 0;
 		size_t _r_offset = 0;
 		size_t _r_size = 0;
@@ -495,11 +512,11 @@ CBuffer::_buffer_t &CBuffer::_buffer_t::deep_copy(_buffer_t const & r)
 			FBeginOfStorage = NULL;
 
 			buf_info const& _r_info = r.MGetBuff();
+			_buffer_safety_operation_t _block(r.FAllocator, r.FBeginOfStorage);
 			CHECK(_r_info.MCheckCrc());
 			value_type* _buf_p = MAllocate(_r_info.MSize());
 			CHECK_NOTNULL(_buf_p);
 
-			_buffer_safety_operation_t _block(r.FAllocator, r.FBeginOfStorage);
 			buf_info& _new_info = sMGetBuff(_buf_p);
 			_new_info.MSetSize(_r_info.MSize());
 			FBeginOfStorage = _buf_p;
@@ -515,25 +532,27 @@ CBuffer::_buffer_t &CBuffer::_buffer_t::deep_copy(_buffer_t const & r)
 }
 bool CBuffer::_buffer_t::MIsRestored() const
 {
-	return FBeginOfStorage&& MGetBuff().MIs(E_BUF_RESORED);
+	return FBeginOfStorage && MGetBuff().MIs(E_BUF_RESORED);
 }
-CBuffer::CBuffer(size_t aSize,int aBeginSize,IAllocater* aAlloc,eAllocatorType aType) :
-		BEGIN_SIZE(aBeginSize<0?DEF_BUF_RESERVE:aBeginSize),//
-		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType), //
+CBuffer::CBuffer(size_t aSize, int aBeginSize, IAllocater* aAlloc,
+		eAllocatorType aType) :
+		BEGIN_SIZE(aBeginSize < 0 ? DEF_BUF_RESERVE : aBeginSize), //
+		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(), aType), //
 		FIsDetached(false) //
 {
-	if(aSize)
+	if (aSize)
 		resize(aSize);
 }
-CBuffer::CBuffer(IAllocater* aAlloc,eAllocatorType aType) :
-		BEGIN_SIZE(DEF_BUF_RESERVE),//
-		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType),//
+CBuffer::CBuffer(IAllocater* aAlloc, eAllocatorType aType) :
+		BEGIN_SIZE(DEF_BUF_RESERVE), //
+		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(), aType), //
 		FIsDetached(false)
 {
 }
-CBuffer::CBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc,eAllocatorType aType) :
-		BEGIN_SIZE(DEF_BUF_RESERVE),//
-		FBuffer(&aAlloc, Offset,aCheckCrc,aType),//
+CBuffer::CBuffer(IAllocater& aAlloc, offset_pointer_t Offset, bool aCheckCrc,
+		eAllocatorType aType) :
+		BEGIN_SIZE(DEF_BUF_RESERVE), //
+		FBuffer(&aAlloc, Offset, aCheckCrc, aType), //
 		FIsDetached(false)
 {
 	;
@@ -569,6 +588,9 @@ CBuffer::size_type CBuffer::size() const
 	if (FBuffer.empty())
 		return 0;
 	buf_info const& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return size_type(_info.MSize());
 }
 CBuffer::size_type CBuffer::max_size() const
@@ -580,6 +602,9 @@ CBuffer::size_type CBuffer::capacity() const
 	if (FBuffer.empty())
 		return 0;
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return _info.MBufSize();
 }
 bool CBuffer::empty() const
@@ -592,6 +617,9 @@ CBuffer::iterator CBuffer::begin()
 		return CBuffer::iterator();
 	MDetach();
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return CBuffer::iterator(FBuffer.FBeginOfStorage + _info.MStartOffset());
 }
 CBuffer::const_iterator CBuffer::begin() const
@@ -600,6 +628,9 @@ CBuffer::const_iterator CBuffer::begin() const
 		return CBuffer::const_iterator();
 
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return CBuffer::const_iterator(
 			FBuffer.FBeginOfStorage + _info.MStartOffset());
 }
@@ -609,6 +640,9 @@ CBuffer::iterator CBuffer::end()
 		return CBuffer::iterator();
 
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return CBuffer::iterator(
 			FBuffer.FBeginOfStorage + _info.MStartOffset() + _info.MSize());
 }
@@ -618,6 +652,9 @@ CBuffer::const_iterator CBuffer::end() const
 		return CBuffer::const_iterator();
 
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return CBuffer::const_iterator(
 			FBuffer.FBeginOfStorage + _info.MStartOffset() + _info.MSize());
 }
@@ -656,7 +693,7 @@ CBuffer::const_reference CBuffer::back() const
 	CHECK(!FBuffer.empty());
 	return *(end() - 1);
 }
-void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
+void CBuffer::resize(size_type aNewSize, bool fromBegin, bool aCanDetach)
 {
 	if (FBuffer.empty() && aNewSize)
 	{
@@ -679,10 +716,11 @@ void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
 			release();
 		else
 		{
-			if(aCanDetach) MDetach();
-
+			if (aCanDetach)
+				MDetach();
 			{
-				_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+				_buffer_safety_operation_t _block(FBuffer.FAllocator,
+						FBuffer.FBeginOfStorage);
 				buf_info& _info = FBuffer.MGetBuff();
 				CHECK(_info.MCheckCrc());
 				if (!fromBegin)
@@ -694,13 +732,13 @@ void CBuffer::resize(size_type aNewSize, bool fromBegin,bool aCanDetach)
 		}
 	}
 	else if (aNewSize != size())
-		MInsertImpl(fromBegin ? begin() : end(), aNewSize - size(),aCanDetach);
+		MInsertImpl(fromBegin ? begin() : end(), aNewSize - size(), aCanDetach);
 }
 void CBuffer::insert(iterator __position, size_type __n, value_type const& __x)
 {
-	pointer _p=MInsertImpl(__position, __n);
-	if(_p)
-		MFill(_p,__x,__n);
+	pointer _p = MInsertImpl(__position, __n);
+	if (_p)
+		MFill(_p, __x, __n);
 }
 void CBuffer::insert(iterator __position, value_type const& __x)
 {
@@ -708,31 +746,32 @@ void CBuffer::insert(iterator __position, value_type const& __x)
 }
 void CBuffer::insert(iterator __position, iterator aBegin, iterator aEnd)
 {
-	pointer _p=MInsertImpl(__position, aEnd - aBegin);
-	if(_p)
-		MFill(_p,aBegin.base(),aEnd.base());
+	pointer _p = MInsertImpl(__position, aEnd - aBegin);
+	if (_p)
+		MFill(_p, aBegin.base(), aEnd.base());
 }
 void CBuffer::insert(iterator __position, const_iterator aBegin,
 		const_iterator aEnd)
 {
 	CHECK(aEnd > aBegin);
-	pointer _p=MInsertImpl(__position, aEnd - aBegin);
-	if(_p)
-		MFill(_p,aBegin.base(),aEnd.base());
+	pointer _p = MInsertImpl(__position, aEnd - aBegin);
+	if (_p)
+		MFill(_p, aBegin.base(), aEnd.base());
 }
 
-void CBuffer::MFill(pointer aPosition, value_type const& aVal,
-		size_type aSize)
+void CBuffer::MFill(pointer aPosition, value_type const& aVal, size_type aSize)
 {
 	memset(aPosition, aVal, aSize);
 }
-void CBuffer::MFill(pointer  aPosition,const_pointer const& aBegin,const_pointer const& aEnd)
+void CBuffer::MFill(pointer aPosition, const_pointer const& aBegin,
+		const_pointer const& aEnd)
 {
-	CHECK_LE(aBegin,aEnd);
-	memcpy(aPosition, aBegin, aEnd-aBegin);
+	CHECK_LE(aBegin, aEnd);
+	memcpy(aPosition, aBegin, aEnd - aBegin);
 
 }
-CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool aCanDetach)
+CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,
+		bool aCanDetach)
 {
 	VLOG_IF(1,aSize == 0) << " aSize is zero.";
 	if (aSize == 0)
@@ -740,12 +779,13 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 	pointer _position = NULL;
 	if (FBuffer.FBeginOfStorage)
 	{
-		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator,
+				FBuffer.FBeginOfStorage);
 		//guarantee valid of varibales
 		buf_info& _info = FBuffer.MGetBuff();
 		CHECK(_info.MCheckCrc());
 		size_type const _free_begin_mem = _info.MStartOffset();
-		size_type const _cur_size=_info.MSize();
+		size_type const _cur_size = _info.MSize();
 
 		pointer const _begin = FBuffer.FBeginOfStorage + _free_begin_mem;
 		pointer const _end = _begin + _cur_size;
@@ -754,7 +794,8 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 		size_type const _elems_after = _end - _position;
 		size_type const _free_end_mem = _info.MBufSize() - _cur_size
 				- _free_begin_mem;
-		_block.MUnlock();//guarantee valid of
+		uint32_t const _use_count=_info.use_count();
+		_block.MUnlock(); //<---- force inlock guarantee valid of
 
 		const bool _insert_to_begin = (_elems_befor == 0
 				&& _free_begin_mem >= aSize);
@@ -767,7 +808,8 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 
 		if (_insert_to_begin)
 		{ //+
-			if(aCanDetach) MDetach();
+			if (aCanDetach)
+				MDetach();
 
 			_new_start_offset = _free_begin_mem - aSize;
 			_new_size = _cur_size + aSize;
@@ -781,7 +823,8 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 
 			VLOG_IF(1,_begin_use_up) << "The begin buffer is use up.";
 
-			if(aCanDetach) MDetach();
+			if (aCanDetach)
+				MDetach();
 
 			if (_elems_after == 0)
 			{
@@ -802,7 +845,7 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 				memmove(_begin + _move_on, _begin, _elems_befor);
 
 				_position += _move_on;
-				_new_start_offset=_free_begin_mem + _move_on;
+				_new_start_offset = _free_begin_mem + _move_on;
 			}
 			else if (_elems_after > aSize) // new stuff can all be assigned
 			{ //+
@@ -817,11 +860,12 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 				// new stuff spills off end
 				memcpy(_position + aSize, _position, _elems_after);
 
-			_new_size=_cur_size + aSize;
+			_new_size = _cur_size + aSize;
 		}
 		else if ((_free_end_mem + _free_begin_mem) >= aSize) //there is  memory in begin
 		{ //+
-			if(aCanDetach) MDetach();
+			if (aCanDetach)
+				MDetach();
 
 			const ssize_t _move_on = 0 - _free_begin_mem;
 			// move prefix
@@ -838,10 +882,12 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 		}
 		else //alocate new buffer
 		{
-			LOG_IF(ERROR,_info.use_count()>1)<<"The buffer is held by "<<_info.use_count()<<" holders."
-					" The current operation  can be applied to only one holder.";
-			//if(_info.use_count()>1)
-			if(true)//fixme i don't know why reallocate thread is not working
+			LOG_IF(ERROR,_use_count>1) << "The buffer is held by "
+														<< _use_count
+														<< " holders."
+																" The current operation  can be applied to only one holder.";
+
+			if (_use_count>1)
 			{
 				value_type* _buf_p = MAllocate(_cur_size + aSize);
 				if (_buf_p != NULL)
@@ -861,20 +907,25 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 
 					_data_ptr += aSize;
 
-					if (_elems_after>0)
+					if (_elems_after > 0)
 					{
 						memcpy(_data_ptr, _position, _elems_after);
 						_data_ptr += _elems_after;
 					}
 					CHECK_EQ(
-							(size_t )(_data_ptr - _buf_p- _new_info.MStartOffset()), _cur_size + aSize)
-					;
-					FBuffer.release();
-
+							(size_t )(_data_ptr - _buf_p
+									- _new_info.MStartOffset()),
+							_cur_size + aSize);
+					{
+						_buffer_safety_operation_t _block(FBuffer.FAllocator,
+								FBuffer.FBeginOfStorage);
+						FBuffer.release();
+					}
 					FBuffer.FBeginOfStorage = _buf_p;
 
 					_position = _p_coping;
-				}else
+				}
+				else
 				{
 					LOG(DFATAL)<<"Cannot allocate buffer";
 				}
@@ -914,13 +965,15 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,bool a
 			}
 
 		}
-		if(_new_start_offset.MIs()||_new_size.MIs())
+		if (_new_start_offset.MIs() || _new_size.MIs())
 		{
-			_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+			_buffer_safety_operation_t _block(FBuffer.FAllocator,
+					FBuffer.FBeginOfStorage);
 			CHECK_EQ(_free_begin_mem, _info.MStartOffset());
-			if(_new_start_offset.MIs())
-				_info.MSetStartOffset(_new_start_offset.MGetConst(),!_new_size.MIs());
-			if(_new_size.MIs())
+			if (_new_start_offset.MIs())
+				_info.MSetStartOffset(_new_start_offset.MGetConst(),
+						!_new_size.MIs());
+			if (_new_size.MIs())
 				_info.MSetSize(_new_size.MGetConst());
 		}
 
@@ -943,7 +996,8 @@ void CBuffer::clear()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator,
+				FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetSize(0);
 	}
@@ -955,7 +1009,8 @@ void CBuffer::pop_back()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator,
+				FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetSize(_info.MSize() - 1);
 	}
@@ -971,7 +1026,8 @@ void CBuffer::pop_front()
 	MDetach();
 	CHECK(!FBuffer.empty());
 	{
-		_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+		_buffer_safety_operation_t _block(FBuffer.FAllocator,
+				FBuffer.FBeginOfStorage);
 		buf_info& _info = FBuffer.MGetBuff();
 		_info.MSetStartOffset(_info.MStartOffset() + 1);
 	}
@@ -990,25 +1046,25 @@ CBuffer::size_type CBuffer::requred_buf_len(size_type aSize) const
 		return 0;
 	}
 
-
 	const size_type _req_len = aSize;
-	size_type _size=aSize;
-	if(aSize<=(DEF_BUF_RESERVE*0.75))//128
-		_size=DEF_BUF_RESERVE;
-	else  if(aSize<=(0x800))//1024
-		_size=static_cast<size_type>((double)_req_len*BUF_FACTOR);
+	size_type _size = aSize;
+	if (aSize <= (DEF_BUF_RESERVE * 0.75)) //128
+		_size = DEF_BUF_RESERVE;
+	else if (aSize <= (0x800)) //1024
+		_size = static_cast<size_type>((double) _req_len * BUF_FACTOR);
 	else if (aSize <= (0x1000)) //1024-4096
 	{
-		_size=_req_len+512;
+		_size = _req_len + 512;
 	}
-	else if(aSize<=0x3000)//12288
-		_size=_req_len+1024;
-	else if(aSize<=0xFFFF)//
+	else if (aSize <= 0x3000) //12288
+		_size = _req_len + 1024;
+	else if (aSize <= 0xFFFF) //
 	{
-		_size=_req_len+512;
-	}else
+		_size = _req_len + 512;
+	}
+	else
 	{
-		_size=_req_len+DEF_BUF_RESERVE;
+		_size = _req_len + DEF_BUF_RESERVE;
 	}
 	const size_type _len = _size + BEGIN_SIZE;
 	return (_len < size() || _len > _max_size) ? _max_size : _len;
@@ -1061,21 +1117,9 @@ void CBuffer::MDetach()
 {
 	if (MIsNeedDetach())
 	{
-		VLOG(2)<<"Detaching...";
-		_buffer_t _tmp_buf(FBuffer.FAllocator,FBuffer.FAllocatorType);
+		VLOG(2) << "Detaching...";
+		_buffer_t _tmp_buf(FBuffer.FAllocator, FBuffer.FAllocatorType);
 		_tmp_buf.deep_copy(FBuffer);
-
-//		buf_info& _info = FBuffer.MGetBuff();//fixme to deap copy
-//		CHECK(_info.MCheckCrc());
-//
-//		_buffer_t _tmp_buf(FBuffer.FAllocator);
-//
-//		CBuffer::value_type* _new_pnt = MAllocate(_info.MSize());
-//		_tmp_buf.FBeginOfStorage = _new_pnt;
-//		buf_info& _new_info = _buffer_t::sMGetBuff(_new_pnt);
-//		_new_info.MSetSize(_info.MSize());
-//		memcpy(_new_pnt + _new_info.MStartOffset(),
-//				FBuffer.FBeginOfStorage + _info.MStartOffset(), _info.MSize());
 		FBuffer = _tmp_buf;
 		FIsDetached = true;
 	}
@@ -1097,6 +1141,9 @@ unsigned CBuffer::use_count() const
 	if (FBuffer.empty())
 		return 0;
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return _info.use_count();
 }
 CBuffer::offset_pointer_t CBuffer::offset() const
@@ -1104,6 +1151,9 @@ CBuffer::offset_pointer_t CBuffer::offset() const
 	if (!FBuffer.FAllocator || !FBuffer.FBeginOfStorage)
 		return IAllocater::NULL_OFFSET;
 	VLOG(2) << "Begin of storage " << FBuffer.MStorageBegin();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return FBuffer.FAllocator->MOffset(FBuffer.MStorageBegin());
 }
 CBuffer::const_pointer CBuffer::ptr_const() const
@@ -1124,20 +1174,34 @@ CBuffer::size_type CBuffer::begin_capacity() const
 	if (FBuffer.empty())
 		return 0;
 	buf_info& _info = FBuffer.MGetBuff();
+#ifdef SAFETY_BUFFER_READ_OPERATION
+	_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+#endif
 	return _info.MStartOffset();
 }
 void CBuffer::reserve(size_t aSize)
 {
 	if (aSize <= capacity())
 		return;
-	if (FBuffer.FBeginOfStorage!=NULL)
+	if (FBuffer.FBeginOfStorage != NULL)
 	{
 		buf_info& _info = FBuffer.MGetBuff();
-		LOG_IF(ERROR,_info.use_count()>1)<<"The buffer is held by "<<_info.use_count()<<" holders."
-				" The operation 'reserve' can be applied to only one holder. ";
-		if(_info.use_count()>1)
+#ifdef SAFETY_BUFFER_READ_OPERATION
+		uint32_t  _use_count;
 		{
-			VLOG(1)<<"With detach";
+			_buffer_safety_operation_t _block(FBuffer.FAllocator, FBuffer.FBeginOfStorage);
+			_use_count =_info.use_count();
+		}
+#else
+		uint32_t const _use_count = _info.use_count();
+#endif
+
+		LOG_IF(WARNING,_use_count>1) << "The buffer is held by " << _use_count
+												<< " holders."
+														" The operation 'reserve' can be applied to only one holder. ";
+		if (_use_count > 1)
+		{
+			VLOG(1) << "With detach";
 			value_type* _buf_p = MAllocate(aSize);
 
 			if (_buf_p != NULL)
@@ -1180,11 +1244,13 @@ CBuffer::iterator CBuffer::erase(iterator aBegin, iterator aEnd)
 		if (aEnd != end())
 
 		{
-			LOG_IF(FATAL,aEnd<begin())<<" Sigsegv";
-			LOG_IF(FATAL,aEnd>end())<<" Sigsegv";
+			LOG_IF(FATAL,aEnd<begin()) << " Sigsegv";
+			LOG_IF(FATAL,aEnd>end()) << " Sigsegv";
 			memmove(aBegin.base(), aEnd.base(), end() - aEnd);
 		}
 		buf_info& _info = FBuffer.MGetBuff();
+		_buffer_safety_operation_t _block(FBuffer.FAllocator,
+				FBuffer.FBeginOfStorage);
 		_info.MSetSize(_info.MSize() - (aEnd - aBegin));
 	}
 	return aBegin;

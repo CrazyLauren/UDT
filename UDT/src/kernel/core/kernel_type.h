@@ -12,7 +12,7 @@
 #ifndef KERNEL_TYPE_H_
 #define KERNEL_TYPE_H_
 
-#include <Socket.h>
+#include <share_socket.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
 #include <udt_types.h>

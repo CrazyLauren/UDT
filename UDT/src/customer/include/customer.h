@@ -35,13 +35,14 @@
 #include <functional>
 #include <ctime>
 #include <macro_attributes.h>
+#include <endian_type.h>
 #include <UType/CText.h>
 #include <logging/share_trace.h>
 #include <UType/CSingleton.h>
 
 
 #include <UType/CDenyCopying.h>
-#include <UType/counter_t.h>
+#include <UType/atomic_t.h>
 #include <UType/CCOWPtr.h>
 #include <UType/CRAII.h>
 #include <UType/IAllocater.h>

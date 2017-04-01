@@ -15,14 +15,6 @@
 #include "CDataObject.h"
 #include "CConfigure.h"
 
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
-
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
 
 using namespace NSHARE;
 template<>

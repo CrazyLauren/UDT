@@ -188,7 +188,7 @@ bool CHttpResponse::MWriteFile(NSHARE::CText const& _path)
 				LOG(FATAL)<<"It's not implemented";
 			}else
 			{
-				std::cout << "Mime=" << _mime << std::endl;
+				//std::cout << "Mime=" << _mime << std::endl;
 				MAppendHeader("Content-Type",_mime);
 				MSetBody(_buf);
 			}

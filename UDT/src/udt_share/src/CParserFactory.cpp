@@ -37,7 +37,7 @@ public:
 	}
 
 	result_t MParserData(const uint8_t* aItBegin,
-			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=ORDER_LE)
+			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=NSHARE::E_SHARE_ENDIAN)
 	{
 		//Parsing buffer aItBegin:aItEnd
 		static result_t _result(1);

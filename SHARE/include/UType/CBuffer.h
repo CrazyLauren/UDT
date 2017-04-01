@@ -230,10 +230,11 @@ public:
 	static const size_t DEF_BUF_RESERVE;
 
 	static allocator_type * sMDefAllaocter();
+	struct buf_info;
 private:
 
 
-	struct buf_info;
+
 	struct SHARE_EXPORT _buffer_t
 	{
 		static const size_type BUF_OFFSET;

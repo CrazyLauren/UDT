@@ -425,6 +425,17 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 				goto error;
 			}
 			_header = _msgs.front().FType;
+			if (_data_info.FEndian != NSHARE::E_SHARE_ENDIAN &&	//
+					!_p->MSwapEndian(_header,
+							(uint8_t*) aFrom.front().FData.ptr(),
+							(uint8_t*) aFrom.front().FData.ptr() + _size))
+			{
+				LOG(ERROR)<< "Cannot swap endian by  "<<_protocol<<" for "<<_header;
+				_error=E_CANNOT_SWAP_ENDIAN;
+				goto error;
+			}
+
+			_data_info.FEndian = NSHARE::E_SHARE_ENDIAN;
 		}
 
 		_header_it = _prot_it->second.find(_header);

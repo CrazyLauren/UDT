@@ -13,8 +13,15 @@
 #ifndef ATOMIC_T_H_
 #define ATOMIC_T_H_
 
+
 #if __cplusplus >= 201103L
 #	include <atomic>
+#elif defined(NOATOMIC)
+// do not do anything
+#elif defined(__QNX__)
+#if	defined(__arm__) ||defined(__mips__)
+#		define USING_QNX_ATOMIC
+#	endif
 #endif
 namespace NSHARE
 {

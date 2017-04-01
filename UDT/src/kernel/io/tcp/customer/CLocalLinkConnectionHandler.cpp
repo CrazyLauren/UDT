@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 
 #include <udt_share.h>
 #include <core/kernel_type.h>
@@ -28,7 +28,7 @@
 #define RECEIVES /*получаемые пакеты*/ \
 	RECEIVE(E_PROTOCOL_MSG,protocol_type_dg_t)/*Протокол КД*/\
 	RECEIVE(E_INFO,dg_info2_t)/*Ответ на КД Запрос информации*/\
-	RECEIVE(E_CUSTOMER_FILTERS,custom_filters_dg_t)/*demands*/\
+	RECEIVE(E_CUSTOMER_FILTERS,custom_filters_dg2_t)/*demands*/\
 	/*END*/
 #include <parser_in_protocol.h>
 
@@ -192,8 +192,8 @@ void IMPL::MProcess(protocol_type_dg_t const* aP, parser_t* aThis)
 	LOG_IF(DFATAL,FConnectionState != E_CONNECTED) << "Error state: " << FState;
 	if (FConnectionState == E_CONNECTED)
 	{
-		VLOG_IF(2,aP->FProtocol != FPType)<< "Invalid protocol type.";
-		if (aP->FProtocol == FPType)
+		VLOG_IF(2,aP->MGetProtocol() != FPType)<< "Invalid protocol type.";
+		if (aP->MGetProtocol() == FPType)
 		{
 			VLOG(2) << "Change state from Not Opened to Request info";
 			FConnectionState = E_REQUEST_ID;
@@ -206,16 +206,15 @@ void IMPL::MProcess(protocol_type_dg_t const* aP, parser_t* aThis)
 	}
 }
 template<>
-void IMPL::MProcess(custom_filters_dg_t const* aP, parser_t* aThis)
+void IMPL::MProcess(custom_filters_dg2_t const* aP, parser_t* aThis)
 {
 
 }
-
 template<>
 void IMPL::MProcess(dg_info2_t const* aP, parser_t* aThis)
 {
-	CHECK_EQ(sizeof(dg_info2_t) + aP->FStrSize,
-			aP->FDataSize + aP->FHeadSize);
+	CHECK_EQ(sizeof(dg_info2_t) + aP->MGetStrSize(),
+			aP->MGetDataSize() + aP->FHeadSize);
 	CHECK(FConnectionState != E_CONNECTED);
 
 	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,NULL,NULL));

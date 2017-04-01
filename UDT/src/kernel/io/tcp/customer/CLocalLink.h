@@ -36,14 +36,14 @@ public:
 	bool MSend(const demand_dgs_for_t& aVal, const routing_t& aRoute,error_info_t const&);
 
 
-	void MReceivedData(data_t::const_iterator aBegin,
+	bool MReceivedData(data_t::const_iterator aBegin,
 			data_t::const_iterator aEnd);
 
-	void MReceivedData(user_data_t const&);
-	void MReceivedData(program_id_t const&, const routing_t&,error_info_t const&);
-	void MReceivedData(demand_dgs_t const&, const routing_t&,error_info_t const&);
-	void MReceivedData(demand_dgs_for_t const&, const routing_t&,error_info_t const&);
-	void MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
+	bool MReceivedData(user_data_t const&);
+	bool MReceivedData(program_id_t const&, const routing_t&,error_info_t const&);
+	bool MReceivedData(demand_dgs_t const&, const routing_t&,error_info_t const&);
+	bool MReceivedData(demand_dgs_for_t const&, const routing_t&,error_info_t const&);
+	bool MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
 	void MCloseRequest();
 	void MClose();
 

@@ -34,43 +34,43 @@ public:
 
 	}
 	virtual bool MSend(const data_t& aVal )=0;
-	virtual void MReceivedData(NSHARE::CBuffer::const_iterator aBegin,
+	virtual bool MReceivedData(NSHARE::CBuffer::const_iterator aBegin,
 			NSHARE::CBuffer::const_iterator aEnd)
 	{
-		;
+		return false;
 	}
 
 	virtual bool MSend(const program_id_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
-	virtual void MReceivedData(program_id_t const&, const routing_t& aFrom,error_info_t const&)
+	virtual bool MReceivedData(program_id_t const&, const routing_t& aFrom,error_info_t const&)
 	{
-		;
+		return false;
 	}
 
 	virtual bool MSend(const user_data_t& aVal)=0;
-	virtual void MReceivedData(user_data_t const&)
+	virtual bool MReceivedData(user_data_t const&)
 	{
-		;
+		return false;
 	}
 
 
 	virtual bool MSend(const kernel_infos_array_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
-	virtual void MReceivedData(kernel_infos_array_t const&, const routing_t& aFrom,error_info_t const&)
+	virtual bool MReceivedData(kernel_infos_array_t const&, const routing_t& aFrom,error_info_t const&)
 	{
-		;
+		return false;
 	}
-	virtual void MReceivedData(demand_dgs_t const&, const routing_t& aRoute,error_info_t const&)
+	virtual bool MReceivedData(demand_dgs_t const&, const routing_t& aRoute,error_info_t const&)
 	{
-		;
+		return false;
 	}
 	virtual bool MSend(const fail_send_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
-	virtual void MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const&)
+	virtual bool MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const&)
 	{
-		;
+		return false;
 	}
 	virtual bool MSend(const demand_dgs_for_t& aVal, const routing_t& aRoute,error_info_t const&)=0;
-	virtual void MReceivedData(demand_dgs_for_t const&, const routing_t& aFrom,error_info_t const&)
+	virtual bool MReceivedData(demand_dgs_for_t const&, const routing_t& aFrom,error_info_t const&)
 	{
-		;
+		return false;
 	}
 	virtual NSHARE::CConfig const& MBufSettingFor(NSHARE::CConfig const& aFrom) const=0;
 

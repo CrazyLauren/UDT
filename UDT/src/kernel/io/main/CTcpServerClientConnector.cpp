@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -54,8 +54,7 @@ NSHARE::smart_field_t<IMPL::new_link_t> const& IMPL::MGetLastNewLink() const
 void IMPL::MProcess(
 		main_channel_param_t const* aP, parser_t* aThis)
 {
-	VLOG(2) << "Handle main channel param";
-	CHECK_EQ(strcmp((const char*) aP->FType, E_MAIN_CHANNEL_TCPSERVER), 0);
+	VLOG(2) << "Handle main channel param";	
 	NSHARE::CRAII < NSHARE::CMutex > _block(FMutexNewLinks);
 
 	new_links_t::iterator _it = FNewLinks.begin(), _it_end(
@@ -64,7 +63,7 @@ void IMPL::MProcess(
 	for (; _it != _it_end; ++_it)
 	{
 		VLOG(2) << "Link " << _it->first;
-		if (_it->second.FId.FId.FUuid == aP->FFromUUID)
+		if (_it->second.FId.FId.FUuid == aP->MGetFromUUID())
 		{
 			VLOG(2) << "The client is founded.";
 			CHECK(!FLastLink.MIs());

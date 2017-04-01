@@ -36,7 +36,7 @@ enum eError
 	E_NOT_CONNECTED_TO_KERNEL=0x1<<7,
 	E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= 0x1<<8,
 
-	//reserved=0x1<<9,
+	E_CANNOT_SWAP_ENDIAN=0x1<<9,
 	E_HANDLER_IS_NOT_EXIST=0x1<<10,
 	E_NO_ROUTE=0x1<<11,
 	E_UNKNOWN_ERROR=0x1<<12,
@@ -95,7 +95,7 @@ struct UDT_SHARE_EXPORT split_packet_t
 	size_t MGetAlignmentSize(size_t const&)const;
 
 	bool FIsLast;
-	uint32_t FCounter;
+	uint16_t FCounter;
 	uint16_t FCoefficient;
 };
 //
@@ -171,9 +171,11 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	static const NSHARE::CText KEY_REGISTRATORS;
 	static const NSHARE::CText KEY_PACKET_PROTOCOL;
 	static const NSHARE::CText KEY_RAW_PROTOCOL_NUM;
+	static const NSHARE::CText KEY_DATA_ENDIAN;
 	user_data_info_t() :
 			FPacketNumber(0),//
-			FRawProtocolNumber(0)//
+			FRawProtocolNumber(0),//
+			FEndian(NSHARE::E_SHARE_ENDIAN)
 	{
 
 	}
@@ -195,6 +197,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	routing_t FRouting;
 
 	split_packet_t FSplit;
+	NSHARE::eEndian FEndian;
 };
 class IExtParser;
 struct UDT_SHARE_EXPORT user_data_t
@@ -356,8 +359,10 @@ struct CKernelInfoLessCompare
 typedef std::set<kernel_infos_t,CKernelInfoLessCompare> kernel_list_t;
 struct UDT_SHARE_EXPORT kernel_infos_array_t:kernel_list_t
 {
+	typedef uint32_t number_of_change_t;
 	static const NSHARE::CText NAME;
-	kernel_infos_array_t()
+	static const NSHARE::CText NUMBER_OF_CHANGE;
+	kernel_infos_array_t():FNumberOfChange(1)
 	{
 	}
 
@@ -365,7 +370,12 @@ struct UDT_SHARE_EXPORT kernel_infos_array_t:kernel_list_t
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
 	kernel_list_t& MVec();
+	void MWasChanged();
+	number_of_change_t FNumberOfChange;
 };
+inline void kernel_infos_array_t::MWasChanged(){
+	++FNumberOfChange;
+}
 //
 //-------------------------
 //
@@ -428,6 +438,23 @@ struct UDT_SHARE_EXPORT error_info_t
 	error_info_t(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
+};
+struct UDT_SHARE_EXPORT main_ch_param_t
+{
+	static const NSHARE::CText NAME;
+	static const NSHARE::CText CHANNEL;
+
+	NSHARE::CText FType;
+	NSHARE::CConfig FValue;
+
+	main_ch_param_t()
+	{
+		;
+	}
+	main_ch_param_t(NSHARE::CConfig const& aConf);
+	NSHARE::CConfig MSerialize() const;
+	bool MIsValid()const;
+
 };
 //---------------
 
@@ -669,6 +696,10 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	{
 		aStream << " Cannot allocate buffer of requrement size,";
 	}
+	if (_val.MGetFlag(NUDT::E_CANNOT_SWAP_ENDIAN))
+	{
+		aStream << " Cannot swap endian,";
+	}
 	if (_val.MGetFlag(NUDT::E_HANDLER_IS_NOT_EXIST))
 	{
 		aStream << " Handler is not exist,";
@@ -726,6 +757,11 @@ inline std::ostream& operator<<(std::ostream & aStream,
 
 	return aStream;
 }
-
+inline std::ostream& operator<<(std::ostream & aStream, NUDT::main_ch_param_t const& aVal)
+{
+	using namespace NUDT;
+	return aStream <<"Type:" <<aVal.FType << std::endl
+		<< aVal.FValue.MToJSON(true);
+}
 }
 #endif /* SHARED_TYPES_OF_SHARE_H_ */

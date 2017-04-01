@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
@@ -18,10 +18,7 @@
 #include <core/CConfigure.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
-
-#include "receive_from.h"
 #include <parser_in_protocol.h>
-
 #include "ILinkBridge.h"
 #include <io/CKernelIo.h>
 
@@ -216,7 +213,7 @@ void CKernelIOByTCP::MReceivedServiceDataImpl(
 			else
 			{
 				VLOG(2) << _it->FClient << " is our client";
-				MReceiveImpl(_link, _data_it, _data_it + _it->FSize);
+				MReceiveImpl(_link, _data_it, _data_it + _it->FSize,_it->FClient.FAddr);
 			}
 		}
 	}
@@ -226,12 +223,15 @@ void CKernelIOByTCP::MReceivedServiceDataImpl(
 
 void CKernelIOByTCP::MReceiveImpl(const smart_link_t& _link,
 		const data_t::const_iterator& aBegin,
-		const data_t::const_iterator& aEnd)
+		const data_t::const_iterator& aEnd, const NSHARE::net_address&aAddr)
 {
 	LOG_IF(ERROR, !_link->MIsOpened()) << "The Channel " << _link->MGetID()
 												<< "is not inited";
 	if (_link->MIsOpened())
-		_link->MReceivedData(aBegin, aEnd);
+		if (!_link->MReceivedData(aBegin, aEnd))
+		{
+			MRefuseClient(aAddr);
+		}
 }
 
 void CKernelIOByTCP::MReceivedData(data_t::const_iterator aBegin,
@@ -240,15 +240,19 @@ void CKernelIOByTCP::MReceivedData(data_t::const_iterator aBegin,
 	CHECK_GE(aFrom, 0);
 
 	smart_link_t _link;
+	NSHARE::net_address _addr;
 	{
 		CRAII<CMutex> _blocked(FMutex);
 		channels_t::const_iterator _it = FServiceChannels.find(aFrom);
 		if (_it != FServiceChannels.end())
+		{
 			_link = _it->second.FLink;
+			_addr = _it->second.FBridge->FAddr;
+		}
 		LOG_IF(DFATAL, !_link) << "No service channel for " << aFrom;
 	}
 	if (_link)
-		MReceiveImpl(_link, aBegin, aEnd);
+		MReceiveImpl(_link, aBegin, aEnd, _addr);
 }
 
 bool CKernelIOByTCP::MSend(const data_t& aVal, descriptor_t const& aTo)

@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 
 #include <udt_share.h>
 #include <core/kernel_type.h>
@@ -35,22 +35,23 @@ using namespace NSHARE;
 namespace NUDT
 {
 
-NSHARE::CText const CKernelServerLink::MAIN_CHANNEL_TYPE="channel_for";
-NSHARE::CText const CKernelServerLink::DEFAULT="default";
+NSHARE::CText const CKernelServerLink::MAIN_CHANNEL_TYPE = "channel_for";
+NSHARE::CText const CKernelServerLink::DEFAULT = "default";
 NSHARE::CText const CKernelServerLink::DEFAULT_MAIN = "tcpser";
-NSHARE::CText const CKernelServerLink::NAME="udt_server";
+NSHARE::CText const CKernelServerLink::NAME = "udt_server";
 static const NSHARE::CText NEW_NAME = CKernelServerLink::NAME;
 
 CKernelServerLink::CKernelServerLink(descriptor_t aFD, uint64_t aTime,
 		ILinkBridge* aKer, program_id_t const & aKernel) :
-		ILink(NAME,aTime),//
-		FServiceParser(this),//
-		FBridge(aKer),//
-		Fd(aFD),//
+		ILink(NAME, aTime), //
+		FServiceParser(this), //
+		FBridge(aKer), //
+		Fd(aFD), //
 		FKernel(aKernel)
 {
 	FMainChannel = NULL;
-	FState = E_NOT_OPEN;
+	MChangeState(E_OPEN);
+	FIsAccepted=false;
 	VLOG(2) << "FD:" << Fd;
 
 	CHECK_NOTNULL(aKer);
@@ -80,45 +81,7 @@ bool CKernelServerLink::MIsOpened() const
 bool CKernelServerLink::MAccept()
 {
 	VLOG(2) << "Accept " << FKernel.FId;
-	descriptor_info_t _info;
-	_info.FProgramm = FKernel;
-	_info.FTypeLink = NAME;
-	_info.FConnectTime = FTime;
-	FBridge->MInfo(_info.FInfo);
-
-	//todo не нравиться мне это
-	CDescriptors::sMGetInstance().MOpen(Fd, _info);
-	if (FpFailSent)
-	{
-		CKernelIo::sMGetInstance().MReceivedData(*FpFailSent, MGetID(),
-				routing_t(), error_info_t());
-		FpFailSent.reset();
-	}
-	if (FpKernelInfo)
-	{
-		CKernelIo::sMGetInstance().MReceivedData(*FpKernelInfo, MGetID(),
-				routing_t(), error_info_t());
-		FpKernelInfo.reset();
-	}
-	if (FpDemandsDgFor)
-	{
-		CKernelIo::sMGetInstance().MReceivedData(*FpDemandsDgFor, MGetID(),
-				routing_t(), error_info_t());
-		FpDemandsDgFor.reset();
-	}
-	if (FpDemands)
-	{
-		CKernelIo::sMGetInstance().MReceivedData(*FpDemands, MGetID(),
-				routing_t(), error_info_t());
-		FpDemands.reset();
-	}
-	if (FpUserDataFor)
-	{
-		CKernelIo::sMGetInstance().MReceivedData(*FpUserDataFor, MGetID());
-		FpUserDataFor.reset();
-	}
-	VLOG(2) << "Open " << _info << " :" << this;
-	return true;
+	return MSetting();
 }
 void CKernelServerLink::MCloseRequest()
 {
@@ -133,7 +96,8 @@ void CKernelServerLink::MCloseRequest()
 void CKernelServerLink::MClose()
 {
 	VLOG(2) << "Closing clink";
-	if(FMainChannel) MCloseMain();
+	if (FMainChannel)
+		MCloseMain();
 	MChangeState(E_NOT_OPEN);
 	Fd = CDescriptors::INVALID;
 	FServiceParser.MCleanBuffer();
@@ -147,89 +111,146 @@ int CKernelServerLink::MCloseMain()
 		return main_channel_error_param_t::E_NOT_OPENED;
 
 	FMainChannel->MClose(MGetID());
-	FMainChannel=NULL;
+	FMainChannel = NULL;
 	return 0;
 }
-void CKernelServerLink::MReceivedData(data_t::const_iterator aBegin,
+bool CKernelServerLink::MReceivedData(data_t::const_iterator aBegin,
 		data_t::const_iterator aEnd)
 {
 	VLOG(2) << "Receive data from service channel.";
 	FServiceParser.MReceivedData(aBegin, aEnd);
+	if (FState == E_ERROR)
+	{
+		LOG(ERROR)<<"Cannot handle data";
+		//MClose();
+		return false;
+	}
+	return true;
 }
-void CKernelServerLink::MReceivedData(user_data_t const& _user)
+void CKernelServerLink::MSendOpenedIfNeed()
 {
-	LOG_IF(DFATAL,E_OPEN != FState)<<"Receiving data by closed link.";
-	if (E_OPEN == FState)
+	if (!FIsAccepted && FMainChannel && FMainChannel->MIsOpen(Fd))
+	{
+		data_t _buf;
+		serialize<accept_info_t>(&_buf, FKernel, routing_t(), error_info_t());
+		FIsAccepted= MSend(_buf);
+	}
+}
+bool CKernelServerLink::MReceivedData(user_data_t const& _user)
+{
+	LOG_IF(DFATAL,!MIsOpened()) << "Receiving data by closed link.";
+	if (MIsOpened())
+	{
 		CKernelIo::sMGetInstance().MReceivedData(_user, MGetID());
-	else
-		FpUserDataFor=SHARED_PTR<user_data_t>(new user_data_t(_user));
+		return true;
+	}
+	return false;
 }
-void CKernelServerLink::MReceivedData(program_id_t const& _customer,
-		const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MReceivedData(program_id_t const& _customer,
+		const routing_t& aRoute, error_info_t const& aError)
 {
-	if(FKernel!=_customer)
-	//todo update
-	CHECK(false);
+	if (FKernel != _customer)
+		//todo update
+		CHECK(false);
+	return false;
 }
-void CKernelServerLink::MReceivedData(fail_send_t const& aInfo, const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MReceivedData(fail_send_t const& aInfo,
+		const routing_t& aRoute, error_info_t const& aError)
 {
-	LOG_IF(ERROR,E_OPEN != FState)<<"Cannot receive fail send";
-	if (E_OPEN == FState)
-		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(),aRoute,aError);
-	else
-		FpFailSent=SHARED_PTR<fail_send_t>(new fail_send_t(aInfo));
+	LOG_IF(ERROR,!MIsOpened()) << "Cannot receive fail send";
+	if (MIsOpened())
+	{
+		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(), aRoute,
+				aError);
+		return true;
+	}
+	return false;
 }
-void CKernelServerLink::MReceivedData(kernel_infos_array_t const& aInfo,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MReceivedData(kernel_infos_array_t const& aInfo,
+		const routing_t& aRoute, error_info_t const& aError)
 {
-	LOG_IF(INFO,E_OPEN != FState)<<"Cannot receive info array";
-	if (E_OPEN == FState)
-		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(),aRoute,aError);
-	else
-		FpKernelInfo=SHARED_PTR<kernel_infos_array_t>(new kernel_infos_array_t(aInfo));
+	LOG_IF(INFO,!MIsOpened()) << "Cannot receive info array";
+	if (MIsOpened())
+	{
+		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(), aRoute,
+				aError);
+		return true;
+	}
+	return false;
 }
 
-void CKernelServerLink::MReceivedData(demand_dgs_for_t const& _demands,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MReceivedData(demand_dgs_for_t const& _demands,
+		const routing_t& aRoute, error_info_t const& aError)
 {
-	VLOG(2)<<"Receive "<<_demands;
-	LOG_IF(ERROR,E_OPEN != FState)<<"Cannot receive demands info";
-	if (E_OPEN == FState)
-		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(),aRoute,aError);
-	else
-		FpDemandsDgFor=SHARED_PTR<demand_dgs_for_t>(new demand_dgs_for_t(_demands));
+	VLOG(2) << "Receive " << _demands;
+	LOG_IF(ERROR,!MIsOpened()) << "Cannot receive demands info";
+	if (MIsOpened())
+	{
+		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(), aRoute,
+				aError);
+		return true;
+	}
+	return false;
 }
-void CKernelServerLink::MReceivedData(demand_dgs_t const& _demands,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MReceivedData(demand_dgs_t const& _demands,
+		const routing_t& aRoute, error_info_t const& aError)
 {
-	LOG_IF(ERROR,E_OPEN != FState)<<"Cannot receive demands";
-	if (E_OPEN == FState)
-		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(),aRoute,aError);
-	else
-		FpDemands=SHARED_PTR<demand_dgs_t>(new demand_dgs_t(_demands));
+	LOG_IF(ERROR,!MIsOpened()) << "Cannot receive demands";
+	if (MIsOpened())
+	{
+		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(), aRoute,
+				aError);
+		return true;
+	}
+	return false;
 }
 
 template<>
 inline unsigned CKernelServerLink::MFill<fail_send_t>(data_t* _buf,
-		const fail_send_t& _id,const routing_t& aRoute,error_info_t const& aError)
+		const fail_send_t& _id, const routing_t& aRoute,
+		error_info_t const& aError)
 {
-	return serialize<user_data_fail_send_t>(_buf,_id,aRoute,aError);
+	return serialize<user_data_fail_send_t>(_buf, _id, aRoute, aError);
 }
 
 template<>
 inline unsigned CKernelServerLink::MFill<program_id_t>(data_t* _buf,
-		const program_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
+		const program_id_t& _id, const routing_t& aRoute,
+		error_info_t const& aError)
 {
-	return serialize<requiest_info2_t>(_buf,_id,aRoute,aError);
+	return serialize<requiest_info2_t>(_buf, _id, aRoute, aError);
 }
 template<>
 inline unsigned CKernelServerLink::MFill<kernel_infos_array_t>(data_t* _buf,
-		const kernel_infos_array_t& _id,const routing_t& aRoute,error_info_t const& aError)
+		const kernel_infos_array_t& _id, const routing_t& aRoute,
+		error_info_t const& aError)
 {
-	return serialize<kernels_info_t>(_buf,_id,aRoute,aError);
+	return serialize<kernels_info_t>(_buf, _id, aRoute, aError);
 }
 template<>
 inline unsigned CKernelServerLink::MFill<demand_dgs_for_t>(data_t* _buf,
-		const demand_dgs_for_t& _id,const routing_t& aRoute,error_info_t const& aError)
+		const demand_dgs_for_t& _id, const routing_t& aRoute,
+		error_info_t const& aError)
 {
-	return serialize<customers_demands_t>(_buf,_id,aRoute,aError);
+	return serialize<customers_demands_t>(_buf, _id, aRoute, aError);
+}
+template<>
+void CKernelServerLink::MProcess(accept_info_t const* aP, parser_t* aThis)
+{
+	program_id_t const _pr(
+			deserialize<accept_info_t, program_id_t>(aP, NULL,
+					NULL));
+	CHECK_EQ(_pr.FId,get_my_id().FId);
+	VLOG(2)<<"Receive "<<_pr;
+
+	descriptor_info_t _info;
+	_info.FProgramm = FKernel;
+	_info.FTypeLink = NAME;
+	_info.FConnectTime = FTime;
+	FBridge->MInfo(_info.FInfo);
+	CDescriptors::sMGetInstance().MOpen(Fd, _info);
+
+	//MReceivedData(_customer, _uuid, _err);
 }
 template<>
 void CKernelServerLink::MProcess(kernels_info_t const* aP, parser_t* aThis)
@@ -237,34 +258,42 @@ void CKernelServerLink::MProcess(kernels_info_t const* aP, parser_t* aThis)
 	routing_t _uuid;
 	error_info_t _err;
 	kernel_infos_array_t _customer(
-			deserialize<kernels_info_t, kernel_infos_array_t>(aP,&_uuid,&_err));
-	MReceivedData(_customer,_uuid,_err);
+			deserialize<kernels_info_t, kernel_infos_array_t>(aP, &_uuid,
+					&_err));
+	MReceivedData(_customer, _uuid, _err);
 }
 
 template<>
 void CKernelServerLink::MProcess(protocol_type_dg_t const* aP, parser_t* aThis)
 {
-	LOG(DFATAL) << "Wtf? receive protocol dg ";
+	LOG(DFATAL)<< "Wtf? receive protocol dg ";
 }
 
 template<>
-void CKernelServerLink::MProcess(main_channel_param_t const* aP, parser_t* aThis)
+void CKernelServerLink::MProcess(main_channel_param_t const* aP,
+		parser_t* aThis)
 {
 
 	DCHECK_NOTNULL(FMainChannel);
 	if (FMainChannel)
 	{
-		VLOG(2)<<"Handle main channel param";
+		VLOG(2) << "Handle main channel param";
 		if (!FMainChannel->MHandleServiceDG(aP, MGetID()))
 		{
-			FState=E_ERROR;
+			FState = E_ERROR;
 			MCloseMain();
-		}else
-			VLOG(2)<<"the main channel param handled successfully.";
-	}else
+		}
+		else
+			VLOG(2) << "the main channel param handled successfully.";
+		MSendOpenedIfNeed();
+	}
+	else
 	{
-		FState=E_ERROR;
-		MSendMainChannelError(NSHARE::CText((utf8*) aP->FType),
+		FState = E_ERROR;
+		main_ch_param_t _sparam(
+				deserialize<main_channel_param_t, main_ch_param_t>(aP,
+						(routing_t*) NULL, (error_info_t*) NULL));
+		MSendMainChannelError(_sparam.FType,
 				main_channel_error_param_t::E_NO_CHANNEL);
 	}
 }
@@ -278,12 +307,14 @@ void CKernelServerLink::MProcess(request_main_channel_param_t const* aP,
 
 		if (!FMainChannel->MHandleServiceDG(aP, MGetID()))
 		{
-			FState=E_ERROR;
+			FState = E_ERROR;
 			MCloseMain();
 			MSendMainChannelError(NSHARE::CText((utf8*) aP->FType),
 					main_channel_error_param_t::E_UNKNOWN);
-		}else
-			VLOG(2)<<"the main channel param handled successfully.";
+		}
+		else
+			VLOG(2) << "the main channel param handled successfully.";
+		MSendOpenedIfNeed();
 	}
 	else
 	{
@@ -292,7 +323,8 @@ void CKernelServerLink::MProcess(request_main_channel_param_t const* aP,
 	}
 }
 template<>
-void CKernelServerLink::MProcess(close_main_channel_t const* aP, parser_t* aThis)
+void CKernelServerLink::MProcess(close_main_channel_t const* aP,
+		parser_t* aThis)
 {
 	DCHECK_NOTNULL(FMainChannel);
 	if (FMainChannel)
@@ -307,16 +339,19 @@ void CKernelServerLink::MProcess(close_main_channel_t const* aP, parser_t* aThis
 	}
 }
 template<>
-void CKernelServerLink::MProcess(main_channel_error_param_t const* aP, parser_t* aThis)
+void CKernelServerLink::MProcess(main_channel_error_param_t const* aP,
+		parser_t* aThis)
 {
 	DCHECK_NOTNULL(FMainChannel);
 	int _channel_error = aP->FError;
 	if (FMainChannel)
 	{
-		VLOG(2)<<"Handle main channel error";
+		VLOG(2) << "Handle main channel error";
 		if (!FMainChannel->MHandleServiceDG(aP, MGetID()))
 			_channel_error = main_channel_error_param_t::E_UNKNOWN;
-	}else
+		MSendOpenedIfNeed();
+	}
+	else
 	{
 		MSendMainChannelError(NSHARE::CText((utf8*) aP->FType),
 				main_channel_error_param_t::E_NO_CHANNEL);
@@ -333,28 +368,34 @@ void CKernelServerLink::MProcess(dg_info2_t const* aP, parser_t* aThis)
 {
 	routing_t _uuid;
 	error_info_t _err;
-	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,&_uuid,&_err));
-	MReceivedData(_customer,_uuid,_err);
+	program_id_t _customer(
+			deserialize<dg_info2_t, program_id_t>(aP, &_uuid, &_err));
+	MReceivedData(_customer, _uuid, _err);
 }
 template<>
 void CKernelServerLink::MProcess(customers_demands_t const* aP, parser_t* aThis)
 {
 	routing_t _uuid;
 	error_info_t _err;
-	demand_dgs_for_t _customer(deserialize<customers_demands_t,demand_dgs_for_t>(aP,&_uuid,&_err));
-	MReceivedData(_customer,_uuid,_err);
+	demand_dgs_for_t _customer(
+			deserialize<customers_demands_t, demand_dgs_for_t>(aP, &_uuid,
+					&_err));
+	MReceivedData(_customer, _uuid, _err);
 }
 template<>
-void CKernelServerLink::MProcess(user_data_fail_send_t const* aP, parser_t* aThis)
+void CKernelServerLink::MProcess(user_data_fail_send_t const* aP,
+		parser_t* aThis)
 {
 
 	routing_t _uuid;
 	error_info_t _err;
-	fail_send_t _customer(deserialize<user_data_fail_send_t,fail_send_t>(aP,&_uuid,&_err));
-	MReceivedData(_customer,_uuid,_err);
+	fail_send_t _customer(
+			deserialize<user_data_fail_send_t, fail_send_t>(aP, &_uuid, &_err));
+	MReceivedData(_customer, _uuid, _err);
 }
 template<>
-void CKernelServerLink::MProcess(custom_filters_dg2_t const* aP, parser_t* aThis)
+void CKernelServerLink::MProcess(custom_filters_dg2_t const* aP,
+		parser_t* aThis)
 {
 	VLOG(2) << "Handle custom filter " << *aP;
 	routing_t _uuid;
@@ -362,12 +403,11 @@ void CKernelServerLink::MProcess(custom_filters_dg2_t const* aP, parser_t* aThis
 			deserialize<custom_filters_dg2_t, demand_dgs_t>(aP, &_uuid, NULL));
 
 	VLOG(3) << _demands;
-	MReceivedData(_demands,routing_t(),error_info_t());
+	MReceivedData(_demands, routing_t(), error_info_t());
 }
 
 bool CKernelServerLink::MSetting()
 {
-	CHECK(FState == E_NOT_OPEN);
 //add new abonent
 	LOG(INFO)<< "Setting new client ";
 //check for local host
@@ -385,7 +425,7 @@ bool CKernelServerLink::MSetting()
 bool CKernelServerLink::MSendIDInfo()
 {
 	data_t _buf;
-	MFill(&_buf, get_my_id(),routing_t(),error_info_t());
+	MFill(&_buf, get_my_id(), routing_t(), error_info_t());
 	CHECK(FBridge);
 	bool _is = MSendService(_buf);
 	LOG_IF(ERROR,!_is) << "Cannot send id info";
@@ -396,59 +436,38 @@ bool CKernelServerLink::MIsMainChannel() const
 {
 	return FMainChannel;
 }
-bool CKernelServerLink::MOpen()
-{
-	VLOG(2)<<"Open link for "<<Fd;
-	CHECK_EQ(FState,E_NOT_OPEN);
-	return MSetting();
-}
-bool CKernelServerLink::MOpening(NSHARE::CBuffer::const_iterator aBegin,
-		NSHARE::CBuffer::const_iterator aEnd)
-{
-	VLOG(2) << "Handle new connection buffer. State=" << FState;
-	DCHECK_EQ(FState, E_NOT_OPEN);
-	MReceivedData(aBegin, aEnd);
-	if (FState == E_ERROR)
-	{
-		LOG(ERROR)<<"Error state";
-		return false;
-	}
-	else if(FMainChannel && FMainChannel->MIsOpen(Fd))
-	{
-		VLOG(2) << "The main channel is opened for " << FKernel;
-		MChangeState(E_OPEN);
-		return false;
-	}
-	return true;
-}
 void CKernelServerLink::MChangeState(eState aNew)
 {
-	VLOG(2)<<"New state "<<aNew<<" Previous "<<FState;
-	FState=aNew;
+	VLOG(2) << "New state " << aNew << " Previous " << FState;
+	FState = aNew;
 }
-bool CKernelServerLink::MSend(const program_id_t& _id,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MSend(const program_id_t& _id, const routing_t& aRoute,
+		error_info_t const& aError)
 {
 	data_t _buf;
-	MFill(&_buf, _id,aRoute,aError);
+	MFill(&_buf, _id, aRoute, aError);
 	return MSend(_buf);
 }
 
-bool CKernelServerLink::MSend(const kernel_infos_array_t& aVal,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MSend(const kernel_infos_array_t& aVal,
+		const routing_t& aRoute, error_info_t const& aError)
 {
 	data_t _buf;
-	MFill(&_buf, aVal,aRoute,aError);
+	MFill(&_buf, aVal, aRoute, aError);
 	return MSend(_buf);
 }
-bool CKernelServerLink::MSend(const demand_dgs_for_t& aVal, const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MSend(const demand_dgs_for_t& aVal,
+		const routing_t& aRoute, error_info_t const& aError)
 {
 	data_t _buf;
-	MFill(&_buf, aVal,aRoute,aError);
+	MFill(&_buf, aVal, aRoute, aError);
 	return MSend(_buf);
 }
-bool CKernelServerLink::MSend(const fail_send_t& aVal,const routing_t& aRoute,error_info_t const& aError)
+bool CKernelServerLink::MSend(const fail_send_t& aVal, const routing_t& aRoute,
+		error_info_t const& aError)
 {
 	data_t _buf;
-	MFill(&_buf, aVal,aRoute,aError);
+	MFill(&_buf, aVal, aRoute, aError);
 	return MSend(_buf);
 }
 
@@ -459,8 +478,8 @@ bool CKernelServerLink::MSend(const user_data_t& _id)
 	if (!MIsOpened())
 		return false;
 
-	LOG_IF(ERROR,FState!=E_OPEN) << "Invalid state" << (unsigned) FState;
-	if (FState != E_OPEN)
+	LOG_IF(ERROR,!MIsOpened()) << "Invalid state" << (unsigned) FState;
+	if (!MIsOpened())
 		return false;
 	VLOG(2) << "Create user data DG";
 	CHECK_NOTNULL(FMainChannel);
@@ -482,14 +501,15 @@ NSHARE::CText CKernelServerLink::MGetMainChannelType(bool aDefOnly)
 	NSHARE::CText _val(DEFAULT_MAIN);
 	NSHARE::CConfig _configure;
 	FBridge->MConfig(_configure);
-	if(!_configure.MIsEmpty())
+	if (!_configure.MIsEmpty())
 	{
-		NSHARE::CConfig const& _conf=_configure.MChild(NAME).MChild(MAIN_CHANNEL_TYPE);
-		if(!_conf.MIsEmpty())
+		NSHARE::CConfig const& _conf = _configure.MChild(NAME).MChild(
+				MAIN_CHANNEL_TYPE);
+		if (!_conf.MIsEmpty())
 		{
-			_conf.MGetIfSet(DEFAULT,_val);
-			if(!aDefOnly)
-				_conf.MGetIfSet(FKernel.FId.FName,_val);
+			_conf.MGetIfSet(DEFAULT, _val);
+			if (!aDefOnly)
+				_conf.MGetIfSet(FKernel.FId.FName, _val);
 		}
 	}
 	CHECK(!_val.empty());
@@ -498,18 +518,21 @@ NSHARE::CText CKernelServerLink::MGetMainChannelType(bool aDefOnly)
 bool CKernelServerLink::MCreateMainChannel()
 {
 	NSHARE::CText _can = MGetMainChannelType();
-	IMainChannel* _main = CMainChannelFactory::sMGetInstance().MGetFactory(_can);
-	LOG_IF(DFATAL,!_main)<<"Cannot create channel "<<_can<<" for "<<FKernel;
-	if(!_main)
+	IMainChannel* _main = CMainChannelFactory::sMGetInstance().MGetFactory(
+			_can);
+	LOG_IF(DFATAL,!_main) << "Cannot create channel " << _can << " for "
+									<< FKernel;
+	if (!_main)
 	{
 		NSHARE::CText _def_can = MGetMainChannelType(true);
-		if(_def_can!=_can)
+		if (_def_can != _can)
 		{
 			_main = CMainChannelFactory::sMGetInstance().MGetFactory(_def_can);
-			LOG_IF(DFATAL,!_main)<<"Cannot create def channel "<<_def_can<<" for "<<FKernel;
+			LOG_IF(DFATAL,!_main) << "Cannot create def channel " << _def_can
+											<< " for " << FKernel;
 		}
 	}
-	if (_main && _main->MOpen(this,FKernel,FBridge->MGetAddr()))
+	if (_main && _main->MOpen(this, FKernel, FBridge->MGetAddr()))
 	{
 		FMainChannel = _main;
 		return true;
@@ -528,14 +551,14 @@ int CKernelServerLink::MSendMainChannelError(NSHARE::CText const& _channel_type,
 
 	_p->FError = static_cast<main_channel_error_param_t::eError>(aError);
 
-	fill_dg_head(_channel.ptr(), _channel.size(),get_my_id());
+	fill_dg_head(_channel.ptr(), _channel.size(), get_my_id());
 	return MSendService(_channel);
 }
 NSHARE::CConfig CKernelServerLink::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	FServiceParser.MGetState().MSerialize(_conf);
-	_conf.MAdd(CDescriptors::DESCRIPTOR_NAME,Fd);
+	_conf.MAdd(CDescriptors::DESCRIPTOR_NAME, Fd);
 	_conf.MAdd(FKernel.MSerialize());
 	_conf.MAdd(MLimits().MSerialize());
 	FDiagnostic.MSerialize(_conf);
@@ -572,7 +595,7 @@ public:
 	{
 		return new CKernelServerLink::CConnectionHandler(aFD, aTime, aKer);
 	}
-	virtual  unsigned MGetProtocolNumber() const
+	virtual unsigned MGetProtocolNumber() const
 	{
 		return E_KERNEL;
 	}

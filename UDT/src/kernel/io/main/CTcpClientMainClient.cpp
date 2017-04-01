@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <internel_protocol.h>
 #include <udt_share.h>
 #include <core/kernel_type.h>
@@ -125,13 +125,10 @@ template<>
 void IMPL::MFill<main_channel_param_t>(data_t* aTo) const
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
-	main_channel_param_t * _p = new (aTo->ptr()) main_channel_param_t();
-	_p->FLimit=MGetLimits(0).FMaxSize;
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_TCPSERVER);
-	fill_dg_head(_p, sizeof(main_channel_param_t),get_my_id());
-	VLOG(2) << (*_p);
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_TCPSERVER;
+	_param.FValue.MSet("limit", MGetLimits(0).FMaxSize);
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
 }
 
 void IMPL::MProcess(user_data_dg_t const* aP,

@@ -11,7 +11,7 @@
  */
 #include <deftype>
 #include <revision.h>
-#include <Socket.h>
+#include <share_socket.h>
 #ifdef _WIN32
 #include <winsock2.h>                     // sockaddr_in
 #else
@@ -131,7 +131,7 @@ void CControlByTCP::MFill<protocol_type_dg_t>(data_t* aTo)
 
 	//fill dg
 	protocol_type_dg_t * _request = new (_begin) protocol_type_dg_t();
-	_request->FProtocol = E_CONSUMER;
+	_request->MSetProtocol(E_CONSUMER);
 
 	//calc CRC and fill it
 	fill_dg_head(_begin, full_size,CCustomer::sMGetInstance().MGetID());
@@ -139,7 +139,7 @@ void CControlByTCP::MFill<protocol_type_dg_t>(data_t* aTo)
 	//paranoid check
 	CHECK_EQ(full_size,
 			(size_t )(reinterpret_cast<protocol_type_dg_t*>(_begin)->FHeadSize
-					+ reinterpret_cast<protocol_type_dg_t*>(_begin)->FDataSize));
+					+ reinterpret_cast<protocol_type_dg_t*>(_begin)->MGetDataSize()));
 
 	VLOG(2) << "DG Protocol Info "
 						<< *reinterpret_cast<protocol_type_dg_t*>(_begin);
@@ -159,17 +159,17 @@ template<>
 void CControlByTCP::MProcess(main_channel_param_t const* aP, void*)
 {
 	VLOG(2) << "Main channel parametrs:" << *aP;
-
+	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));
 	LOG_IF(ERROR, FState!=E_SETTING ) << "Invalid state" << (unsigned) FState;
 
 	CRAII<CMutex> _block(FMainLock);
 
 	if (!FMain)
 	{
-		int _rval = MOpenMainChannel((utf8 const*) (aP->FType));
+		int _rval = MOpenMainChannel(_sparam.FType);
 		if (_rval > 0)
 		{
-			NSHARE::CText _channel_type((utf8*) aP->FType);
+			NSHARE::CText _channel_type(_sparam.FType);
 			MSendMainChannelError(_channel_type, _rval);
 		}
 	}

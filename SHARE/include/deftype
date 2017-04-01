@@ -164,6 +164,7 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <limits.h>
 #include <functional>
 
+#include <endian_type.h>
 #include <type_manip.h>
 //#include <type_utf8.h>
 #include <UType/CDenyCopying.h>

@@ -117,6 +117,7 @@ const NSHARE::CText user_data_info_t::KEY_REGISTRATORS = "reg";
 
 const NSHARE::CText user_data_info_t::KEY_PACKET_PROTOCOL = "pl";
 const NSHARE::CText user_data_info_t::KEY_RAW_PROTOCOL_NUM = "nr";
+const NSHARE::CText user_data_info_t::KEY_DATA_ENDIAN = "endian";
 
 user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		//FFrom(aConf.MChild(KEY_PACKET_FROM)),//
@@ -125,12 +126,16 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		FDestination(aConf.MChild(uuids_t::NAME)), //
 		FRegistrators(aConf.MChild(KEY_REGISTRATORS)), //
 		FRouting(aConf.MChild(routing_t::NAME)), //
-		FVersion(aConf.MChild(NSHARE::version_t::NAME)) //
+		FVersion(aConf.MChild(NSHARE::version_t::NAME)), //
+		FEndian(NSHARE::E_SHARE_ENDIAN)
 {
 	VLOG(2) << "Create user_data_info_t from " << aConf;
 	aConf.MGetIfSet(KEY_PACKET_NUMBER, FPacketNumber);
 	aConf.MGetIfSet(KEY_PACKET_PROTOCOL, FProtocol);
 	aConf.MGetIfSet(KEY_RAW_PROTOCOL_NUM, FRawProtocolNumber);
+	unsigned _val=0;
+	if(aConf.MGetIfSet<unsigned>(KEY_DATA_ENDIAN, _val))
+		FEndian=(NSHARE::eEndian)_val;
 
 	ConfigSet _set = aConf.MChildren(demand_dg_t::HANDLER);
 	ConfigSet::const_iterator _it = _set.begin();
@@ -171,6 +176,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	_conf.MAdd(routing_t::NAME, FRouting.MSerialize());
 
 	_conf.MSet(KEY_RAW_PROTOCOL_NUM, FRawProtocolNumber);
+	_conf.MSet<unsigned>(KEY_DATA_ENDIAN, FEndian);
 
 	return _conf;
 }
@@ -430,9 +436,12 @@ bool demand_dgs_t::MIsValid() const
 }
 //---------------------------
 const NSHARE::CText kernel_infos_array_t::NAME = "kinfs";
-kernel_infos_array_t::kernel_infos_array_t(NSHARE::CConfig const& aConf)
+const NSHARE::CText kernel_infos_array_t::NUMBER_OF_CHANGE = "numc";
+
+kernel_infos_array_t::kernel_infos_array_t(NSHARE::CConfig const& aConf):FNumberOfChange(0)
 {
 	VLOG(2) << "Create kernel info from " << aConf;
+	aConf.MGetIfSet(NUMBER_OF_CHANGE, FNumberOfChange);
 	ConfigSet _set = aConf.MChildren(kernel_infos_t::NAME);
 	ConfigSet::const_iterator _it = _set.begin();
 	for (; _it != _set.end(); ++_it)
@@ -444,6 +453,7 @@ kernel_infos_array_t::kernel_infos_array_t(NSHARE::CConfig const& aConf)
 NSHARE::CConfig kernel_infos_array_t::MSerialize() const
 {
 	CConfig _conf(NAME);
+	_conf.MSet (NUMBER_OF_CHANGE, FNumberOfChange);
 	const_iterator _it(begin()), _end(end());
 	for (; _it != _end; ++_it)
 	{
@@ -458,6 +468,8 @@ kernel_list_t& kernel_infos_array_t::MVec()
 }
 bool kernel_infos_array_t::MIsValid() const
 {
+	if(FNumberOfChange==0)
+		return false;
 	const_iterator _it(begin()), _end(end());
 	for (; _it != _end; ++_it)
 	{
@@ -785,4 +797,25 @@ bool user_data_t::MIsValid() const
 {
 	return FDataId.MIsValid() && !FData.empty();
 }
+const NSHARE::CText main_ch_param_t::NAME = "main";
+const NSHARE::CText main_ch_param_t::CHANNEL = "channel";
+main_ch_param_t::main_ch_param_t(NSHARE::CConfig const& aConf)
+{
+	VLOG(5) << " " << aConf.MToJSON(true);
+	aConf.MGetIfSet(CHANNEL, FType);
+	FValue=aConf.MChild("val");
+	VLOG(5) << " " << FValue;
+}
+NSHARE::CConfig main_ch_param_t::MSerialize() const
+{
+	NSHARE::CConfig _main(NAME);
+	_main.MSet(CHANNEL, FType);
+	_main.MAdd("val",FValue);
+	VLOG(5) << " " << _main.MToJSON(true);
+	return _main;
+}
+bool main_ch_param_t::MIsValid()const{
+	return !FType.empty();
+}
+
 }

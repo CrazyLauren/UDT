@@ -30,16 +30,6 @@ public:
 	template<class DG_T>
 	void MProcess(DG_T const* aP, parser_t*);
 private:
-	enum eConnectionState //don't use pattern
-	//as it's  difficult for the class
-	{
-		E_NO_STATE,
-		E_CONNECTED, //
-		E_REQUEST_ID,
-		E_HAS_ID
-	};
-
-
 	bool MHandling(NSHARE::CBuffer::const_iterator aBegin,
 			NSHARE::CBuffer::const_iterator aEnd);
 	bool MSendIDInfo();
@@ -50,7 +40,6 @@ private:
 
 	NSHARE::intrusive_ptr<CKernelServerLink> FLink;
 	bool FProtocolIsValid;
-	eConnectionState FConnectionState;
 	parser_t FParser;
 	smart_bridge_t FBridge;
 	descriptor_t  Fd;

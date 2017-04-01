@@ -146,7 +146,18 @@ public:
 	//----------------------------------------
 
 private:
-	inline it_t MAnalizeBuffer(it_t aItBegin, it_t aItEnd)
+	template<unsigned E>
+	struct surroinding_endian_t
+	{
+		enum { type = E };
+	};
+	template<class E>
+	struct surroinding_t
+	{
+		typedef E type;
+	};
+
+	inline it_t MAnalizeBuffer(it_t aItBegin, it_t aItEnd) 
 	{
 		VLOG(2) << "Analyze buffer distance " << (aItEnd - aItBegin) << ":"
 				<< this;
@@ -236,18 +247,15 @@ private:
 		*aLast = aItBegin;
 		return _is_found?Eok:ENoDG;
 	}
-	template<class E>
-	struct surroinding_t
-	{
 
-	};
+
 
 #define RECEIVE(Number,Type) \
 			case Number: \
 					VLOG(2) <<"Looked for DG Type:"<<Number;\
 				return MCheckKD(aItBegin,aItEnd,aLast,surroinding_t<Type>());
-
-	inline e_error_t MLookingForDG(it_t aItBegin, it_t aItEnd, it_t* aLast)
+	
+	inline e_error_t MLookingForDG(it_t aItBegin, it_t aItEnd, it_t* aLast) 
 	{
 		LOG_IF(FATAL, (aItEnd - aItBegin) < (int) sizeof(head_t))
 				<< "Invalid DG size.";
@@ -305,7 +313,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 {
 	VLOG(4) << "Check DG. Distance:" << (aPEND - aPBegin) << ". :" << this;
 	head_t const* _head = reinterpret_cast<head_t const*>(&(*aPBegin));
-	VLOG(4) << "Version of " << _head->FType << " is " << _head->FVersion;
+	VLOG(4) << "Version of " << _head->MEndianCorrectValue(_head->FType) << " is " << _head->FVersion;
 	VLOG(1) << (*_head);
 	const NSHARE::version_t _kd_ver(KD_T::MAJOR,KD_T::MINOR);
 	LOG_IF(WARNING,
@@ -322,7 +330,8 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 				<< _head->FVersion << "!=" << _kd_ver << ") for "
 				<< _head->FType << " DG which will ignored.";
 	}
-	std::size_t const _size_kd = _head->FHeadSize + _head->FDataSize;
+	std::size_t const _data_size = _head->MGetDataSize();
+	std::size_t const _size_kd = _head->FHeadSize + _data_size;
 	if ((aPEND - aPBegin) < (int) _size_kd)
 	{
 		*aLast = aPBegin;
@@ -330,14 +339,14 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	}
 	unsigned const _min_crc_size = sizeof(head_t::crc_data_t::type_t);
 
-	if (_head->FDataSize >= _min_crc_size)
+	if (_data_size >= _min_crc_size)
 	{
 		VLOG_IF(1, !_head->FDataCrc) << " Null data crc, Ignoring...";
 		if (_head->FDataCrc) //optmization by protocol
 		{
 			head_t::crc_data_t::type_t _crc16 =
 					head_t::crc_data_t::sMCalcCRCofBuf(_head->MDataBegin(),
-							_head->MDataBegin() + _head->FDataSize);
+							_head->MDataBegin() + _data_size);
 
 			if (_crc16 != _head->FDataCrc)
 			{
@@ -351,7 +360,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	else
 		LOG(WARNING) << "Incorrect data size. It is to have more than "
 				<< _min_crc_size << " bytes";
-	FState.FNumberOfData += _head->FDataSize;
+	FState.FNumberOfData += _data_size;
 	VLOG_IF(1, _need_handled) << "DG " << (unsigned)_head->FType << " is fully valid.";
 	if (_need_handled)
 		MProcess(reinterpret_cast<KD_T const*>(&(*aPBegin)));
@@ -367,7 +376,8 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	head_t const* _head = reinterpret_cast<head_t const*>(&(*aPBegin));
 	VLOG(2) << "Version of " << _head->FType << " is " << _head->FVersion;
 	VLOG(1) << (*_head);
-	std::size_t const _size_kd = _head->FHeadSize + _head->FDataSize;
+	std::size_t const _data_size = _head->MGetDataSize();
+	std::size_t const _size_kd = _head->FHeadSize + _data_size;
 
 	if ((aPEND - aPBegin) < (int) _size_kd)
 	{
@@ -377,23 +387,23 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	}
 
 	if ((!_head->FVersion.FMajor && !_head->FVersion.FMinor)
-			|| !_head->FFromUUID || !_head->FTime)
+			|| !_head->MGetFromUUID() || !_head->MGetTime())
 	{
 		LOG(ERROR) << "There are not version " << _head->FVersion << " or UUID "
-				<< _head->FFromUUID << " or time " << _head->FTime;
+				<< _head->MGetFromUUID() << " or time " << _head->MGetTime();
 		return Eok; //error as "aLast" is not changed
 	}
 
 	unsigned const _min_crc_size = sizeof(head_t::crc_data_t::type_t);
 
-	if (_head->FDataSize >= _min_crc_size)
+	if (_data_size >= _min_crc_size)
 	{
 		LOG_IF(WARNING, !_head->FDataCrc) << " Null data crc, Ignoring...";
 		if (_head->FDataCrc) //optmization by protocol
 		{
 			head_t::crc_data_t::type_t _crc16 =
 					head_t::crc_data_t::sMCalcCRCofBuf(_head->MDataBegin(),
-							_head->MDataBegin() + _head->FDataSize);
+							_head->MDataBegin() + _data_size);
 
 			if (_crc16 != _head->FDataCrc)
 			{
@@ -402,7 +412,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 			}
 		}
 	}
-	FState.FNumberOfData += _head->FDataSize;
+	FState.FNumberOfData += _data_size;
 	VLOG(1) << "DG " << _head->FType << " is fully valid.";
 	*aLast = aPBegin + _size_kd;
 	return Eok;

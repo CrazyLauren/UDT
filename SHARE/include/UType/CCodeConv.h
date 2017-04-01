@@ -44,20 +44,17 @@ public:
 	}
 
 	//return next encoded to utf32 char, aBegin will been changed
-	virtual uint32_t MNext(it_char_t& aBegin, it_char_t aEnd) const
-			throw (CEInvalidChar) =0;
+	virtual uint32_t MNext(it_char_t& aBegin, it_char_t aEnd) const =0;
 
 	//return ==aBegin - if buffer is small
 	//		 ==next buffer element
-	virtual size_t MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const
-			throw (CEInvalidChar) =0;
+	virtual size_t MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const =0;
 
 	virtual bool MIsCodeValid(uint32_t aCode) const =0;
 	virtual bool MIsBufValid(it_char_t aBegin, it_char_t aEnd) const =0;
 
 	//return the size of buffer required to encode the given utf32 code point
 	virtual size_t MSizeOf(uint32_t const* aBegin, uint32_t const* aEnd) const
-			throw (CEInvalidChar)
 	{
 		size_t _size = MCharLen(*aBegin);
 		for (; ++aBegin != aEnd; _size += MCharLen(*aBegin))
@@ -65,8 +62,7 @@ public:
 		return _size;
 	}
 	//return number of utf32 code  required to re-encode buffer
-	virtual size_t MLengthOf(it_char_t aBegin, size_t aMax=std::numeric_limits<size_t>::max()) const
-			throw (CEInvalidChar) =0;
+	virtual size_t MLengthOf(it_char_t aBegin, size_t aMax=std::numeric_limits<size_t>::max()) const =0;
 
 	//return the size of buffer required to encode the given utf32 code point
 	virtual size_t MCharLen(uint32_t aCode) const =0;
@@ -97,7 +93,6 @@ public:
 	}
 	//return number of utf32 code  required to re-encode buffer
 	virtual size_t MLengthOf(it_char_t aBegin,size_t aMax=std::numeric_limits<size_t>::max()) const
-			throw (CEInvalidChar)
 	{
 		size_t _length = 0;
 		for (; *aBegin && aMax!=0;--aMax)
@@ -130,7 +125,6 @@ public:
 		return MCharLenInline(aCode);
 	}
 	virtual uint32_t MNext(it_char_t& aBegin, it_char_t aEnd) const
-			throw (CEInvalidChar)
 	{
 		it_utf8_t _putf8=reinterpret_cast<it_utf8_t>(aBegin);
 		uint32_t _code = 0;
@@ -169,7 +163,6 @@ public:
 		return _code;
 	}
 	virtual size_t MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const
-			throw (CEInvalidChar)
 	{
 		if (MCharLenInline(aCode) > static_cast<size_t>(aEnd-aBegin))
 			return 0;
@@ -262,7 +255,6 @@ class SHARE_EXPORT CCodeANSII: public ICodeConv
 public:
 	//return number of utf32 code  required to re-encode buffer
 	virtual size_t MLengthOf(it_char_t aBegin,size_t aMax=std::numeric_limits<size_t>::max()) const
-			throw (CEInvalidChar)
 	{
 		//return strnlen(aBegin,aMax);
 		return strlen(aBegin);
@@ -272,7 +264,6 @@ public:
 		return 1;
 	}
 	virtual uint32_t MNext(it_char_t& aBegin, it_char_t aEnd) const
-			throw (CEInvalidChar)
 	{
 		if (!::iscntrl(*aBegin)||!::isprint(*aBegin))
 			throw CEInvalidChar(*aBegin);
@@ -280,7 +271,6 @@ public:
 		return *aBegin++;
 	}
 	virtual size_t MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const
-			throw (CEInvalidChar)
 	{
 		if (aCode>=0x80)
 			throw CEInvalidChar(aCode);

@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 
 #include <udt_share.h>
 #include <core/kernel_type.h>
@@ -48,7 +48,7 @@ CKernelServerLink::CConnectionHandler::CConnectionHandler(descriptor_t aFD,
 	//FLink = new CKernelServerLink(aFD, aTime, aKer);
 	FProtocolIsValid = false;
 	FState = E_CONTINUE;
-	FConnectionState = E_NO_STATE;
+
 	FIsSent=false;
 }
 
@@ -59,7 +59,7 @@ bool IMPL::MConnect()
 {
 	FIsSent=false;
 	FProtocolIsValid=false;
-	FConnectionState = E_CONNECTED;
+
 	return FIsSent;
 }
 bool IMPL::MReceivedData(data_t::const_iterator aBegin,
@@ -86,73 +86,16 @@ ILink* IMPL::MCreateLink()
 bool IMPL::MHandling(NSHARE::CBuffer::const_iterator aBegin,
 		NSHARE::CBuffer::const_iterator aEnd)
 {
-	VLOG(2) << "Handle new connection buffer. State=" << FConnectionState;
-	switch (FConnectionState)
+	VLOG(2) << "Handle new connection buffer.";
+	FParser.MReceivedData(aBegin, aEnd);
+	if(FKernel.MIs())
 	{
-		case E_CONNECTED:
-		{
-			VLOG(2) << "Receive protocol type";
-			FParser.MReceivedData(aBegin, aEnd);
-			if (FConnectionState == E_REQUEST_ID)
-			return MSendIDInfo();
-			else
-			return false;
-			break;
-		}
-		case E_REQUEST_ID:
-		{
-			VLOG(2) << "request id";
-			FParser.MReceivedData(aBegin, aEnd);
-			if (FConnectionState == E_HAS_ID)
-			{
-				bool _is = MOpenLink();
-				if (_is)
-				{
-					VLOG(2)<<"Continue";
-					FState= E_CONTINUE;
-					_is=FLink->MOpening(aBegin, aEnd);
-				}
-				if (_is)
-				{
-					VLOG(2)<<"Continue";
-					FState= E_CONTINUE;
-				}
-				else if (FLink->MIsOpened())
-				{
-					VLOG(2)<<"Adding new Kernel";
-					FState= E_OK;
-				}
-				else
-				FState= E_ERROR;
-			}
-			else
-			{
-				LOG(ERROR)<<"There is not id info.";
-				FState= E_ERROR;
-			}
-			break;
-		}
-		case E_HAS_ID:
-		{
-			VLOG(2) << "has id";
-			bool _is = FLink->MOpening(aBegin, aEnd);
-			if (_is)
-			{
-				VLOG(2)<<"Continue";
-				FState= E_CONTINUE;
-			}
-			else if (FLink->MIsOpened())
-			{
-				VLOG(2)<<"Adding new Kernel";
-				FState= E_OK;
-			}
-			else
-				FState= E_ERROR;
-			break;
-		}
-		default:
-		LOG(FATAL)<<"Invalid state.";
-		break;
+		MOpenLink();
+		FState= E_OK;
+	}else
+	{
+		FState= E_CONTINUE;
+		return MSendIDInfo();
 	}
 	return false;
 }
@@ -177,13 +120,13 @@ bool IMPL::MSendIDInfo()
 }
 bool IMPL::MOpenLink()
 {
-	CHECK(FConnectionState == E_HAS_ID);
+
 //add new abonent
 	LOG(INFO)<< "Setting create link";
 //check for local host
 	CHECK(FKernel.MIs());
 	FLink=new CKernelServerLink(Fd,FTime,FBridge.MGet(),FKernel.MGetConst());
-	return FLink->MOpen();
+	return true;
 }
 NSHARE::CText IMPL::MGetMainChannelType()
 {
@@ -206,28 +149,17 @@ NSHARE::CText IMPL::MGetMainChannelType()
 template<>
 void IMPL::MProcess(protocol_type_dg_t const* aP, parser_t* aThis)
 {
-	LOG_IF(DFATAL,FConnectionState != E_CONNECTED) << "Error state: " << FState;
-	if (FConnectionState == E_CONNECTED)
+	if (aP->MGetProtocol() != E_KERNEL)
 	{
-		VLOG_IF(2,aP->FProtocol != E_KERNEL)<< "Invalid protocol type.";
-		if (aP->FProtocol == E_KERNEL)
-		{
-			VLOG(2) << "Change state from Not Opened to Request info";
-			FConnectionState = E_REQUEST_ID;
-		}
-		else
-		{
-			VLOG(2)<<"The protocol is invalid.";
-			FState=E_ERROR;
-		}
+		VLOG(2)<<"The protocol is invalid.";
+		FState=E_ERROR;
 	}
 }
 template<>
 void IMPL::MProcess(dg_info2_t const* aP, parser_t* aThis)
 {
-	CHECK_EQ(sizeof(dg_info2_t) + aP->FStrSize,
-			aP->FDataSize + aP->FHeadSize);
-	CHECK(FConnectionState != E_CONNECTED);
+	CHECK_EQ(sizeof(dg_info2_t) + aP->MGetStrSize(),
+			aP->MGetDataSize() + aP->FHeadSize);
 
 	program_id_t _customer(deserialize<dg_info2_t,program_id_t>(aP,NULL,NULL));
 
@@ -240,6 +172,5 @@ void IMPL::MProcess(dg_info2_t const* aP, parser_t* aThis)
 	}
 	CHECK(CDescriptors::sMIsValid(Fd));
 	FKernel = _customer;
-	FConnectionState = E_HAS_ID;
 }
 } /* namespace NUDT */

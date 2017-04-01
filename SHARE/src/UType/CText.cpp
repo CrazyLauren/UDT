@@ -2657,7 +2657,7 @@ void CText::sMUnitTest()
 		s1 += "1024245";
 		CHECK(s1.isalnum());
 		(void) s1;
-		s1 = "1245452";
+		s1 = CText("1245452");
 		CHECK(s1.isdigit());
 	}
 }

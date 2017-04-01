@@ -12,7 +12,7 @@
 
 #include <deftype>
 #include <revision.h>
-#include <Socket.h>
+#include <share_socket.h>
 #include <programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -162,28 +162,17 @@ template<>
 void CSmMainChannel::MFill<main_channel_param_t>(data_t* aTo)
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
-	main_channel_param_t * _p = new (aTo->ptr()) main_channel_param_t();
-
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_SM);
 
 	NSHARE::shared_identify_t _ident = FSm.MIdentifier();
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_SM;
 	if (_ident.MIsValid())
 	{
-		NSHARE::CConfig _conf = _ident.MSerialize();
-		std::stringstream _str_buf;
-		_conf.MToJSON(_str_buf);
-		std::string const _str = _str_buf.str();
-		CHECK_LT(_str.size(), sizeof(_p->FTReserved));
-		memcpy(_p->FTReserved, _str.c_str(), _str.size());
-		_p->FTReserved[_str.size()] = '\0';
-		fill_dg_head(_p, sizeof(main_channel_param_t),
-				CCustomer::sMGetInstance().MGetID());
-		VLOG(2) << (*_p);
+		_param.FValue = _ident.MSerialize();
 	}
-	else
-		aTo->resize(_befor);
+
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
+
 }
 
 //
@@ -192,13 +181,15 @@ void CSmMainChannel::MFill<main_channel_param_t>(data_t* aTo)
 void CSmMainChannel::MHandleServiceDG(main_channel_param_t const* aP)
 {
 	VLOG(2) << "SM Main channel handling \"Main channel parametrs\":";
-	CText _name((utf8 const*) aP->FType);
-	CHECK_EQ(_name, NAME);
+	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));
+	VLOG(5) << _sparam.FValue.MToJSON(true);
 
-	NSHARE::CText const _sm_name((NSHARE::utf8*) aP->FTReserved);
-	LOG_IF(DFATAL,_sm_name.empty()) << "The Sm name is not exist.";
-	if (!_sm_name.empty())
+	CHECK_EQ(_sparam.FType, NAME);
+
+	NSHARE::CText _sm_name;	
+	if (_sparam.FValue.MGetIfSet("path", _sm_name))
 	{
+		LOG_IF(DFATAL, _sm_name.empty()) << "The Sm name is not exist.";
 		CHECK(!FSm.MIsOpen());
 		bool _is = FSm.MOpen(_sm_name);
 		LOG_IF(DFATAL,!_is)<<"Cannot open sm "<<_sm_name;
@@ -217,6 +208,8 @@ void CSmMainChannel::MHandleServiceDG(main_channel_param_t const* aP)
 			}
 		}
 	}
+	else
+		LOG(FATAL) << "path is not exist";
 }
 int CSmMainChannel::MSendMainChannelError(unsigned aError)
 {

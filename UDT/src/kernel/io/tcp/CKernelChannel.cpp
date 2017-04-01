@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
@@ -199,7 +199,10 @@ void IMPL::MReceivedData(data_t::const_iterator aBegin,
 			VLOG(2) << "It is our client";
 			LOG_IF(ERROR, !FLink->MIsOpened()) << "The Channel " << FLink->MGetID() << "is not initialized";
 			if (FLink->MIsOpened())
-				FLink->MReceivedData(aBegin, aEnd);
+			if(!FLink->MReceivedData(aBegin, aEnd))
+			{
+				FTcp.MReOpen();
+			}
 		}
 		else
 		{

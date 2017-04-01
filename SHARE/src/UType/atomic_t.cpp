@@ -13,7 +13,7 @@
 
 COMPILE_ASSERT(sizeof(NSHARE::atomic_t) == sizeof(uint32_t),
 		InvalidSizeofAtomic);
-//#elif defined(__QNX__)
+
 #if __cplusplus >= 201103L
 namespace NSHARE
 {
@@ -44,6 +44,45 @@ namespace NSHARE
 	}
 	atomic_t::value_type atomic_t::MValue() const
 	{
+		return FCount;
+	}
+}
+#elif defined(NOATOMIC)
+namespace NSHARE
+{
+	static NSHARE::CMutex g_lock;
+	atomic_t::atomic_t(value_type const& aVal) :
+		FCount(0)
+	{
+		MWrite(aVal);
+	}
+	void atomic_t::MWrite(value_type const& aVal)
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
+		FCount = aVal;
+	}
+	atomic_t::value_type atomic_t::MIncrement()
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
+		return FCount++;
+	}
+	atomic_t::value_type atomic_t::MDecrement()
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
+		return FCount--;
+	}
+	void atomic_t::MAdd(int const& aVal)
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
+		FCount += aVal;
+	}
+	bool atomic_t::MIsOne() const
+	{
+		return MValue() == value_type(1);
+	}
+	atomic_t::value_type atomic_t::MValue() const
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
 		return FCount;
 	}
 }
@@ -114,16 +153,18 @@ namespace NSHARE
 #else
 #	include <boost/version.hpp>
 #	include <boost/interprocess/detail/atomic.hpp>
+
 #	if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
 using namespace boost::interprocess::detail;
 #	else
 using namespace boost::interprocess::ipcdetail;
-#endif
+#	endif
+
 namespace NSHARE
 {
 inline void atomic_add(volatile boost::uint32_t *mem, int val)
 {
-#ifdef _WIN32
+#	ifdef _WIN32
 	boost::uint32_t _nval;
 	boost::uint32_t _old;
 	do
@@ -132,9 +173,9 @@ inline void atomic_add(volatile boost::uint32_t *mem, int val)
 		_nval = _old + val;
 		//atomic_write32(mem,_nval);
 	} while (atomic_cas32(mem, _nval, *mem) != _old);
-#else
+#	else
 	atomic_add32(mem,val);
-#endif
+#	endif
 }
 atomic_t::atomic_t(value_type const& aVal) :
 		FCount(0)
