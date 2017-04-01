@@ -165,6 +165,9 @@ public:
 
 	template<class ItT>
 	CBuffer(IAllocater* aAlloc,ItT aBegin, ItT aEnd,eAllocatorType=ALLOCATE_FROM_COMMON);
+	template<class TPointer>
+	CBuffer(IAllocater* aAlloc, TPointer* aBegin, TPointer* aEnd, eAllocatorType = ALLOCATE_FROM_COMMON);
+
 	CBuffer(IAllocater* aAlloc, void const* aBegin, void const* aEnd,eAllocatorType=ALLOCATE_FROM_COMMON);
 	CBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc=true,eAllocatorType=ALLOCATE_FROM_COMMON);
 
@@ -227,10 +230,11 @@ public:
 	static const size_t DEF_BUF_RESERVE;
 
 	static allocator_type * sMDefAllaocter();
+	struct buf_info;
 private:
 
 
-	struct buf_info;
+
 	struct SHARE_EXPORT _buffer_t
 	{
 		static const size_type BUF_OFFSET;
@@ -365,17 +369,31 @@ inline CBuffer::CBuffer(IAllocater* aAlloc, void const* aBegin, void const* aEnd
 	resize(_size);
 	memcpy(begin().base(), aBegin, _size);
 }
+template<class TPointer>
+inline CBuffer::CBuffer(IAllocater* aAlloc, TPointer* aBegin, TPointer* aEnd, eAllocatorType aType) :
+	BEGIN_SIZE(DEF_BUF_RESERVE),//
+	FBuffer(aAlloc ? aAlloc : sMDefAllaocter(), aType),//
+	FIsDetached(false)
+{
+	const size_t _sizeof = sizeof(*aBegin) / sizeof(value_type);
+	resize((aEnd - aBegin)*_sizeof);
+	memcpy(ptr(), aBegin, (aEnd - aBegin)*_sizeof);
+}
 template<class ItT>
 inline CBuffer::CBuffer(IAllocater* aAlloc,ItT aBegin, ItT aEnd,eAllocatorType aType) :
 		BEGIN_SIZE(DEF_BUF_RESERVE),//
 		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(),aType),//
 		FIsDetached(false)
 {
-	resize(aEnd - aBegin);
+	const size_t _sizeof = sizeof(*aBegin) / sizeof(value_type);
+	resize((aEnd - aBegin)*_sizeof);
 	iterator _begin = begin();
 	iterator _end = end();
-	for (; _begin != _end; ++_begin, ++aBegin)
-		*_begin = *aBegin;
+	for (; aBegin != aEnd; ++aBegin)
+	{
+		for(unsigned i=0;i<_sizeof;++i, ++_begin)
+		*_begin = reinterpret_cast<value_type const*>(&(*aBegin))[i];
+	}
 }
 inline bool operator==(const CBuffer& __lhs, const CBuffer& __rhs)
 {

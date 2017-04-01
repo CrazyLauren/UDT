@@ -40,7 +40,7 @@
 
 //<windef.h>
 #if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED) || defined(__BORLANDC__) || defined(__LCC__)
-#	define SHARED_PACKED( ... ) __pragma(pack(push,1) ) __VA_ARGS__ __pragma( pack(pop) )
+#	define SHARED_PACKED( ... ) __pragma(pack(push,1) ) __VA_ARGS__; __pragma( pack(pop) )
 #elif defined( __GNUC__ ) ||defined(__QNX__)
 #	define SHARED_PACKED(...)  __VA_ARGS__  __attribute__((packed))
 #else

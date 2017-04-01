@@ -36,15 +36,15 @@ public:
 	bool MSend(const demand_dgs_for_t& aVal,const routing_t&,error_info_t const& aError);
 
 
-	void MReceivedData(data_t::const_iterator aBegin,
+	bool MReceivedData(data_t::const_iterator aBegin,
 			data_t::const_iterator aEnd);
 
-	void MReceivedData(user_data_t const&);
-	void MReceivedData(program_id_t const&,const routing_t&,error_info_t const& aError);
-	void MReceivedData(demand_dgs_t const&,const routing_t&,error_info_t const& aError);
-	void MReceivedData(demand_dgs_for_t const&,const routing_t&,error_info_t const& aError);
-	void MReceivedData(kernel_infos_array_t const& aInfo,const routing_t&,error_info_t const& aError);
-	void MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
+	bool MReceivedData(user_data_t const&);
+	bool MReceivedData(program_id_t const&,const routing_t&,error_info_t const& aError);
+	bool MReceivedData(demand_dgs_t const&,const routing_t&,error_info_t const& aError);
+	bool MReceivedData(demand_dgs_for_t const&,const routing_t&,error_info_t const& aError);
+	bool MReceivedData(kernel_infos_array_t const& aInfo,const routing_t&,error_info_t const& aError);
+	bool MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
 	void MCloseRequest();
 	void MClose();
 
@@ -82,21 +82,13 @@ private:
 	bool MSendService(const data_t& aVal);
 	bool MSendIDInfo();
 	bool MIsMainChannel() const;
-	bool MOpen() ;
-	bool MOpening(NSHARE::CBuffer::const_iterator aBegin,
-			NSHARE::CBuffer::const_iterator aEnd);
+	void MSendOpenedIfNeed();
 
 	CKernelServerLink& operator=(CKernelServerLink const & aRht)
 	{
 		return *this;
 	}
 	void MChangeState(eState aNew);
-
-	SHARED_PTR<user_data_t> FpUserDataFor;
-	SHARED_PTR<fail_send_t> FpFailSent;
-	SHARED_PTR<kernel_infos_array_t> FpKernelInfo;
-	SHARED_PTR<demand_dgs_for_t> FpDemandsDgFor;
-	SHARED_PTR<demand_dgs_t> FpDemands;
 
 	parser_t FServiceParser;
 
@@ -107,6 +99,7 @@ private:
 	IMainChannel* FMainChannel;
 	program_id_t const FKernel;
 	CLinkDiagnostic FDiagnostic;
+	bool FIsAccepted;
 
 
 	friend class CInParser<CKernelServerLink> ;

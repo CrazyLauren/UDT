@@ -39,7 +39,7 @@ CUnixDGRAM::CUnixDGRAM(NSHARE::CConfig const& aConf) :
 		 Impl(new CUnixDGRAM_impl)
 {
 	param_t _param(aConf);
-	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for dex is not valid "<<aConf;
+	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for unix dgram is not valid "<<aConf;
 	MOpen(aConf);
 }
 CUnixDGRAM::CUnixDGRAM(param_t const& aParam) :

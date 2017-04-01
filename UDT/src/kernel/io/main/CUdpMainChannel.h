@@ -82,8 +82,8 @@ private:
 	void MReceiver();
 	bool MSendSetting(ILink* aHandler, descriptor_t aFor);
 	bool MIsNew(const descriptor_t& aFor) const;
-	bool MChangeSettingChannel(descriptor_t aFor, udp_param_t);
-	bool MAddNewImpl(descriptor_t aFor, udp_param_t const&);
+	bool MChangeSettingChannel(descriptor_t aFor, NSHARE::net_address);
+	bool MAddNewImpl(descriptor_t aFor, NSHARE::net_address const&);
 	int MSendMainChannelError(descriptor_t aFor,
 			unsigned aError);
 

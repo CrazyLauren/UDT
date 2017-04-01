@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -75,9 +75,13 @@ void IMPL::MProcess(
 		main_channel_param_t const* aP, parser_t* aThis)
 {
 	VLOG(2) << "Handle main channel param";
-	CHECK_EQ(strcmp((const char*) aP->FType, E_MAIN_CHANNEL_TCPSERVER), 0);
+	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));
+	CHECK_EQ(_sparam.FType, E_MAIN_CHANNEL_TCPSERVER);
+
+	size_t _limit = 0;
+	_sparam.FValue.MGetIfSet("limit", _limit);
 	VLOG(2) << "The client is founded.";
-	FHandler->MSetLimits(FThis.MGetLimits(aP->FLimit,FHandler));
+	FHandler->MSetLimits(FThis.MGetLimits(_limit,FHandler));
 	FState = E_OPENED;
 }
 bool IMPL::MSendService(const data_t& aVal) const

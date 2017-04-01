@@ -355,21 +355,21 @@ private:
 	//	src_len is in code units, or 0 for null terminated string.
 	//	dest_len is in code units.
 	//	returns number of code units put into dest buffer.
-	inline size_type MFromUCS4(const utf32* src, char* dest, size_type dest_len,
+	/*inline*/ size_type MFromUCS4(const utf32* src, char* dest, size_type dest_len,
 			size_type src_len, ICodeConv const& aType) const;
 
-	inline size_type MToUCS4(utf8 const* src, utf32* dest, size_type dest_len,
+	/*inline*/ size_type MToUCS4(utf8 const* src, utf32* dest, size_type dest_len,
 			ICodeConv const& aType, size_type src_len = 0) const;
 
 	// return number of code units in a null terminated string
-	inline size_type MUCS4Length(const utf32* utf32_str) const;
+	/*inline*/ size_type MUCS4Length(const utf32* utf32_str) const;
 
 	// build an internal buffer with the string encoded as utf8 (remains valid until string is modified).
 	utf8* MBuildUtf8Buff(ICodeConv const& aType = CCodeUTF8()) const;
 
 
 
-	inline size_type MFindCodepoint(utf8 const* chars, size_type chars_len,
+	/*inline*/ size_type MFindCodepoint(utf8 const* chars, size_type chars_len,
 			utf32 code_point, ICodeConv const& aType) const;
 
 	static bool sMIsMatch(const_iterator _pat_it, const_iterator _pat_end,

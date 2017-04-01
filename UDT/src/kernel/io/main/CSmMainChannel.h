@@ -133,6 +133,7 @@ private:
 	unsigned FSize;
 	bool FIsUsingAsDef;
 	NSHARE::CText FName;
+	NSHARE::CMutex FOpenMutex;
 
 };
 } /* namespace NUDT */

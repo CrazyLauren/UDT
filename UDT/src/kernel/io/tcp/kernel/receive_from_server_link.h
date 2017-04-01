@@ -23,6 +23,7 @@
 	RECEIVE(E_CUSTOMER_FILTERS,custom_filters_dg2_t)/*Требуемые данные*/\
 	RECEIVE(E_CUSTOMERS_DEMANDS,customers_demands_t)/*Требуемые данные*/\
 	RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Данные не доставлены*/\
+	RECEIVE(E_ACCEPTED,accept_info_t)/*Подключение установлено*/\
 	/*END*/
 //RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Ошибка при отправке данных*/
 #endif /* RECEIVE_FROM_SERVER_LINK_H_ */

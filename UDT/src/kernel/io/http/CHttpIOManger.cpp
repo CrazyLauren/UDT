@@ -80,6 +80,8 @@ bool CHttpIOManger::MOpen(const void*)
 	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 
 	unsigned _port = 18012;
+	split_info _split;
+	_split.FType.MSetFlag(split_info::CAN_NOT_SPLIT,true);
 	if (_p)
 	{
 		VLOG(2)<<"From Config "<<_p->MToJSON(true);
@@ -90,9 +92,16 @@ bool CHttpIOManger::MOpen(const void*)
 										<< CConfigure::sMGetInstance().MGetPath()
 										<< ".Using standard port " << _port;
 		_p->MGetIfSet(BUF_MAX_SIZE, FBufferingBytes);
+		NSHARE::CConfig const& _conf = _p->MChild(split_info::NAME);
+		if (!_conf.MIsEmpty())
+		{
+			_split = split_info(_conf);
+		}
 	}
 	VLOG(2) << "Construct IOContol Port=" << _port << ":" << this;
-	FTcpServiceSocket.MOpen(net_address(_port));
+	bool const _is=FTcpServiceSocket.MOpen(net_address(_port));
+	if(!_is)
+		return false;
 
 	NSHARE::operation_t _op(CHttpIOManger::sMReceiver, this,
 			NSHARE::operation_t::IO);
@@ -110,7 +119,11 @@ bool CHttpIOManger::MOpen(const void*)
 	CDescriptors::sMGetInstance().MOpen(Fd, _info);
 	VLOG(2) << "Connected " << NSHARE::get_unix_time();
 
-	FIo->MAddChannelFor(Fd, this, split_info());
+
+
+
+
+	FIo->MAddChannelFor(Fd, this, _split);
 	return true;
 }
 int CHttpIOManger::sMReceiver(NSHARE::CThread const* WHO,
@@ -352,7 +365,7 @@ bool CHttpIOManger::MHandleFrom(CHttpRequest const* aRequest,
 	_has_to_close = _has_to_close || _code != E_STARUS_OK;
 
 	_response.MSetStatus(_code);
-	_response.MAppendHeader(KERNEL_UUID, FProgId.FId.FUuid.MToString());
+	_response.MAppendHeader(KERNEL_UUID, get_my_id().FId.FUuid.MSerialize().MValue());
 	if (!_has_to_close)
 		_response.MAppendHeader("Connection", "keep-alive");
 

@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -139,13 +139,14 @@ int CLocalLink::MCloseMain()
 	FMainChannel=NULL;
 	return 0;
 }
-void CLocalLink::MReceivedData(data_t::const_iterator aBegin,
+bool CLocalLink::MReceivedData(data_t::const_iterator aBegin,
 		data_t::const_iterator aEnd)
 {
 	VLOG(2) << "Receive data from service channel.";
 	FServiceParser.MReceivedData(aBegin, aEnd);
+	return true;
 }
-void CLocalLink::MReceivedData(user_data_t const& _user)
+bool CLocalLink::MReceivedData(user_data_t const& _user)
 {
 	FDisgnostic.MInput(_user);
 	if (E_OPEN == FState)
@@ -155,33 +156,38 @@ void CLocalLink::MReceivedData(user_data_t const& _user)
 		CHECK(FpUserDataFor.get()==NULL);
 		FpUserDataFor=SHARED_PTR<user_data_t>(new user_data_t(_user));
 	}
+	return true;
 }
-void CLocalLink::MReceivedData(program_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
+bool CLocalLink::MReceivedData(program_id_t const& _customer, const routing_t& aRoute,error_info_t const& aError)
 {
 	//todo
 	CHECK(false);
+	return false;
 }
-void CLocalLink::MReceivedData(demand_dgs_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
+bool CLocalLink::MReceivedData(demand_dgs_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
 {
 	if (E_OPEN == FState)
 		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(),aRoute,aError);
 	else
 		FpDemands=SHARED_PTR<demand_dgs_t>(new demand_dgs_t(_demands));
+	return true;
 }
-void CLocalLink::MReceivedData(fail_send_t const& aInfo, const routing_t& aRoute,error_info_t const& aError)
+bool CLocalLink::MReceivedData(fail_send_t const& aInfo, const routing_t& aRoute,error_info_t const& aError)
 {
 	VLOG(2)<<"Recv "<<aInfo<<" Routing to "<<aRoute;
 	if (E_OPEN == FState)
 		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(),aRoute,aError);
 	else
 		FpFailSent=SHARED_PTR<fail_send_t>(new fail_send_t(aInfo));
+	return true;
 }
-void CLocalLink::MReceivedData(demand_dgs_for_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
+bool CLocalLink::MReceivedData(demand_dgs_for_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
 {
 	if (E_OPEN == FState)
 		CKernelIo::sMGetInstance().MReceivedData(_demands, MGetID(),aRoute,aError);
 	else
 		FpDemandsDgFor=SHARED_PTR<demand_dgs_for_t>(new demand_dgs_for_t(_demands));
+	return true;
 }
 template<>
 inline unsigned CLocalLink::MFill<progs_id_t>(data_t* _buf,
@@ -231,7 +237,8 @@ void CLocalLink::MProcess(main_channel_param_t const* aP, parser_t* aThis)
 	}else
 	{
 		FState=E_ERROR;
-		MSendMainChannelError(NSHARE::CText((utf8*) aP->FType),
+		main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));
+		MSendMainChannelError(_sparam.FType,
 				main_channel_error_param_t::E_NO_CHANNEL);
 	}
 }
@@ -297,8 +304,8 @@ void CLocalLink::MProcess(main_channel_error_param_t const* aP, parser_t* aThis)
 template<>
 void CLocalLink::MProcess(dg_info2_t const* aP, parser_t* aThis)
 {
-	CHECK_EQ(sizeof(dg_info2_t) + aP->FStrSize,
-			aP->FDataSize + aP->FHeadSize);
+	CHECK_EQ(sizeof(dg_info2_t) + aP->MGetStrSize(),
+			aP->MGetDataSize() + aP->FHeadSize);
 	if(FState==E_NOT_OPEN)
 		return;
 

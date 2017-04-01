@@ -481,6 +481,7 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
 		_raw_args.FVersion=aFrom.FData.FDataId.FVersion;
 		_raw_args.FOccurUserError=0;
+		_raw_args.FEndian=aFrom.FData.FDataId.FEndian;
 
 
 		aFrom.FData.FData.MMoveTo(_raw_args.FBuffer);

@@ -17,20 +17,16 @@ namespace NUDT
 struct required_header_t
 {
 	required_header_t(); //cleanuping to avoid parser error
-	NSHARE::version_t FVersion; //Required dg version
+	NSHARE::version_t FVersion; //Required msg version
 
-	union //using for  header dg specification
+	union //using for  header msg specification
 	//
 	//The fixed size (8 byte) "union"  is be used to avoid
 	//frequently "required_header_t" structure changing.
-	//For example, when running "documentation playing",
-	//it is necessary to set the second dg type (playing dg type)
-	//in additional to setting the main dg type (dg "wrapper").
 	{
 		struct //header style of
 		{
 			uint32_t FNumber;
-			//uint32_t FSize; //removing to avoid error
 		};
 		uint8_t FReserved[8];
 	};

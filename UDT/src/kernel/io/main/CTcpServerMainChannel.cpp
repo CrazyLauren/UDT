@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -54,11 +54,15 @@ CTcpServerMainChannel::CTcpServerMainChannel() :
 
 bool CTcpServerMainChannel::MOpenIfNeed()
 {
-	if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
+	if (!FServer.MIsOpen())
 	{
-		NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
-				NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
+		{
+			NSHARE::operation_t _op(CTcpServerMainChannel::sMReceiver, this,
+					NSHARE::operation_t::IO);
+			CDataObject::sMGetInstance().MPutOperation(_op);
+		}
 	}
 	return FServer.MIsOpen();
 }
@@ -92,21 +96,15 @@ template<>
 void CTcpServerMainChannel::MFill<main_channel_param_t>(data_t* aTo,ILink* aHandler)
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
-	main_channel_param_t * _p =
-			new ((data_t::value_type*) aTo->ptr() + _befor) main_channel_param_t();
-	CHECK_NOTNULL(_p);
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_TCP);
-
-	_p->FUdp.FAddr = INADDR_LOOPBACK;
 	NSHARE::net_address _addr;
 	FServer.MGetInitParam(&_addr);
-	_p->FUdp.FPort = _addr.port;
-	_p->FLimit=MGetLimits(0,aHandler).FMaxSize;
+	_addr.MSetIP(INADDR_LOOPBACK);
 
-	fill_dg_head(_p, sizeof(main_channel_param_t), get_my_id());
-	VLOG(2) << (*_p);
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_TCP;
+	_param.FValue = _addr.MSerialize();
+	_param.FValue.MSet("limit", MGetLimits(0, aHandler).FMaxSize);
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
 }
 template<>
 void CTcpServerMainChannel::MFill<request_main_channel_param_t>(data_t* aTo)

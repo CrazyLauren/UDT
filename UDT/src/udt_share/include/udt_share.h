@@ -74,7 +74,7 @@ inline unsigned serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t&
 	if(aError.MIsValid())
 		_kd->MSet(aKdTypeY::E_ERROR_OF_MSG,true);
 
-	_kd->FStrSize=static_cast<uint16_t>(_str_size+1);
+	_kd->MSetStrSize (static_cast<uint16_t>(_str_size+1));
 	_p+=sizeof(aKdTypeY);
 	memcpy(_p,_text.c_str(),_str_size);
 	_p+=_str_size;
@@ -83,7 +83,7 @@ inline unsigned serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t&
 	fill_dg_head(_p_begin, full_size,get_my_id());
 	CHECK_EQ(full_size,
 			reinterpret_cast<aKdTypeY*>(_p_begin)->FHeadSize
-					+ reinterpret_cast<aKdTypeY*>(_p_begin)->FDataSize);
+					+ reinterpret_cast<aKdTypeY*>(_p_begin)->MGetDataSize());
 	VLOG(2) << "Serialized DG  "
 						<< *reinterpret_cast<aKdTypeY*>(_p_begin);
 	return full_size;
@@ -131,9 +131,10 @@ inline Tto deserialize(aKdTypeY const* aP,routing_t* aRoute,error_info_t *aError
 	VLOG(2) << "Deserializing DG  "<<aKdTypeY::MSG_TYPE;
 
 	NSHARE::utf8 const* _begin = (NSHARE::utf8 const*) aP->MStrBegin();
-	NSHARE::CText _text(_begin,aP->FStrSize-1);//-1 - '\0'
+	size_t const _str_size=aP->MGetStrSize();
+	NSHARE::CText _text(_begin,_str_size-1);//-1 - '\0'
 	CHECK(!_text.empty());
-	CHECK_EQ(_text.length_code(),aP->FStrSize-1);
+	CHECK_EQ(_text.length_code(),_str_size-1);
 	NSHARE::CConfig _conf;
 	_conf.MFromJSON(_text);
 	CHECK(!aP->MIs(aKdTypeY::E_ROUTE_OF_MSG) || (aRoute != NULL));

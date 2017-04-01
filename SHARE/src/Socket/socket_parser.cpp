@@ -70,7 +70,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 			ConfigSet::const_iterator _it_end = _child.end();
 			for (; _it != _it_end; ++_it)
 			{
-				CDex*_dex = new CDex(_it->MRead());
+				CDex*_dex = new CDex(*_it);
 				if (!_dex->MIsOpen())
 				{
 					std::cerr << "Cannot open dex channel." << std::endl;
@@ -172,7 +172,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 		else if (_name == KEY_UNIX)
 		{
 #	ifdef UNIX_SOCKET_EXIST
-			CUnixDGRAM* _unix = new CUnixDGRAM(_it_up->MRead());
+			CUnixDGRAM* _unix = new CUnixDGRAM(*_it_up);
 			if(_unix->MIsOpen())
 			_rval.push_back( _unix);
 			else

@@ -11,15 +11,10 @@
  */   
 #include <deftype>
 #include <UType/CCheckNoMultiThread.h>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
+
 namespace NSHARE
 {
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
+
 static NSHARE::CMutex _lock;
 CCheckNoMultiThread::CCheckNoMultiThread(unsigned& aThread, char const* aFile,
 		const unsigned & aLine) :

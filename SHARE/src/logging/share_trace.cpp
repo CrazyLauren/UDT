@@ -19,6 +19,7 @@
 #	include <unistd.h>
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <list>
@@ -60,7 +61,7 @@
 #include <UType/deftype.h>
 #include <UType/CEvent.h>
 #include <UType/CDenyCopying.h>
-#include <UType/counter_t.h>
+#include <UType/atomic_t.h>
 #include <UType/CCOWPtr.h>
 #include <UType/CConfig.h>
 #include <UType/CThread.h>

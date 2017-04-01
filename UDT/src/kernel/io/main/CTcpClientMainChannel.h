@@ -94,6 +94,7 @@ private:
 	new_links_t FNewLinks;
 
 	NSHARE::CMutex FMutexNewLinks;
+	NSHARE::CMutex FOpenMutex;
 
 };
 

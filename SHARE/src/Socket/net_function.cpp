@@ -402,11 +402,14 @@ CConfig net_address::MSerialize() const
 	}
 	return _conf;
 }
-net_address::net_address(uint32_t aIp, uint32_t aPort)
-{
+void net_address::MSetIP(uint32_t aIp) {
 	struct in_addr _addr; //fixme inet_net_ntop()
 	_addr.s_addr = htonl(aIp);
 	ip = inet_ntoa(_addr);
+}
+net_address::net_address(uint32_t aIp, uint32_t aPort)
+{
+	MSetIP(aIp);
 	port = aPort;
 }
 }

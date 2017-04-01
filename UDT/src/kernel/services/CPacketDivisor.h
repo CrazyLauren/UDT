@@ -47,7 +47,20 @@ public:
 	NSHARE::CConfig MSerialize() const;
 private:
 	//todo handle close
+	struct merge_key
+	{
+		//merge_key():FUUID(0),FFor(-1){}
+		merge_key(NSHARE::uuid_t const& aUUID,descriptor_t const& aFor):FUUID(aUUID),FFor(aFor)
+		{
 
+		}
+		inline bool operator<(const merge_key& aRht) const
+		{
+			return FUUID==aRht.FUUID?FFor<aRht.FFor:FUUID<aRht.FUUID;
+		}
+		NSHARE::uuid_t FUUID;
+		descriptor_t FFor;
+	};
 	struct merge_operation_t
 	{
 		merge_operation_t(CPacketDivisor& aThis,user_data_info_t const& aFor,descriptor_t aDesc);
@@ -58,15 +71,17 @@ private:
 				NSHARE::operation_t* WHAT);
 		bool MMergePacket(const user_data_t& aWhat);
 		bool MCreatePacket(user_datas_t& aTo);
-
+		bool MHasToBeRemoved() const;
 		NSHARE::CBuffer FBufForMerge;
-		user_datas_t FSplitedPackets;
+		user_datas_t FMergedPackets;
+		user_datas_t FNewPackets;
 		CPacketDivisor& FThis;
 		bool FIsWorking;
 		user_data_info_t const  FFor;
 		descriptor_t const FDescriptor;
 		std::map<unsigned, split_packet_t> FSplitLevel;
 		eError FError;
+		bool FIsMerged;
 	private:
 		bool MMerging(
 				user_datas_t& aTo);
@@ -79,6 +94,7 @@ private:
 
 
 	typedef std::pair<size_t, user_datas_t> limit_for_value_t;
+	typedef std::map<merge_key,merge_operation_t> merge_operations_map_t;
 
 	size_t MSplit(user_datas_t& aWhat, user_datas_t& aTo, size_t aPartSize);
 
@@ -88,9 +104,10 @@ private:
 	void MMerge(descriptor_t aFor, user_datas_t& _cannot_split,user_datas_t& aTo,user_datas_t& _fails, fail_send_array_t& _non_sent);
 
 	d_info_t FLimitsInfo;
-	std::map<NSHARE::uuid_t,merge_operation_t> FMergeOp;
+	merge_operations_map_t FMergeOp;
 	mutable NSHARE::CMutex FLimitsMutex;
 	mutable NSHARE::CMutex FMergeMutex;
+	mutable NSHARE::CMutex FMergedPacketsMutex;
 };
 
 } /* namespace UDT */

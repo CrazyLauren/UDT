@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <revision.h>
 
 #include <internel_protocol.h>

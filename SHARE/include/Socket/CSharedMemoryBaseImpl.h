@@ -15,7 +15,7 @@
 #include <UType/CSharedMemory.h>
 #include <UType/CIPCSignalEvent.h>
 #include <Socket/diagnostic_io_t.h>
-#include <boost/circular_buffer.hpp>
+//#include <boost/circular_buffer.hpp>
 namespace NSHARE
 {
 struct server_info_t;

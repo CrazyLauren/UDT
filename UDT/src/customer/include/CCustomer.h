@@ -51,6 +51,7 @@ struct args_t
 	NSHARE::version_t FVersion;
 	mutable uint8_t FOccurUserError;//if the field will changed , when
 	//the error with code  FOccurUserError is sent to FFrom
+	unsigned FEndian;// see eEndian(endian_type.h)
 };
 
 struct customers_updated_args_t

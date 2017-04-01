@@ -10,9 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -30,11 +28,6 @@
 
 #include "CSmMainChannel.h"
 
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
 using namespace NSHARE;
 namespace NUDT
 {
@@ -111,7 +104,8 @@ bool CSmMainChannel::MOpenIfNeed()
 {
 	if (!FSmServer.MIsOpen())
 	{
-		if (FSmServer.MOpen(FName, FSize, FReserv))
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FSmServer.MIsOpen() && FSmServer.MOpen(FName, FSize, FReserv))
 		{
 			NSHARE::operation_t _op(CSmMainChannel::sMReceiver, this,
 					NSHARE::operation_t::IO);
@@ -133,18 +127,11 @@ template<>
 void CSmMainChannel::MFill<main_channel_param_t>(data_t* aTo)
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_SM;
+	_param.FValue.MSet("path", FSmServer.MSharedName());	
 
-	main_channel_param_t * _p =
-			new ((data_t::value_type*) aTo->ptr() + _befor) main_channel_param_t();
-	CHECK_NOTNULL(_p);
-
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_SM);
-	strcpy((char*) _p->FTReserved, FSmServer.MSharedName().c_str());
-
-	fill_dg_head(_p, sizeof(main_channel_param_t), get_my_id());
-	VLOG(2) << (*_p);
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
 }
 template<>
 void CSmMainChannel::MFill<request_main_channel_param_t>(data_t* aTo)
@@ -709,13 +696,10 @@ bool CSmMainChannel::MHandleServiceDG(main_channel_param_t const* aData,
 	{
 		VLOG(2) << "MHandleServiceDG for " << aVal;
 
-		std::stringstream _str_buf; //fixme optimize, remove string stream
-		_str_buf << (utf8*) aData->FTReserved;
+		main_ch_param_t _param(deserialize<main_channel_param_t, main_ch_param_t>(aData,(routing_t*)NULL, (error_info_t*)NULL));
 
-		CConfig _ser;
-		_ser.MFromJSON(_str_buf);
-		VLOG(5) << _ser;
-		NSHARE::shared_identify_t _id(deserialize_impl<shared_identify_t>(_ser,NULL,NULL));
+		VLOG(5) << _param;
+		NSHARE::shared_identify_t _id(_param.FValue);
 		bool _val = _id.MIsValid() && MAddNewImpl(aVal, _id);
 		VLOG(2) << "Is added  " << _val;
 		if (!_val)

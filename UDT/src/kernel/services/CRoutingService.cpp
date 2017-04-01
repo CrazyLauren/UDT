@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <internel_protocol.h>
 
 #include <core/kernel_type.h>
@@ -577,16 +577,7 @@ inline void CRoutingService::MInit()
 		CDataObject::value_t _val(demand_dgs_for_by_id_t::NAME, _cb);
 		CDataObject::sMGetInstance() += _val;
 	}
-//	{
-//		callback_data_t _cb(sMHandleOpenId, this);
-//		CDataObject::value_t _val(open_descriptor::NAME, _cb);
-//		CDataObject::sMGetInstance() += _val;
-//	}
-//	{
-//		callback_data_t _cb(sMHandleCloseId, this);
-//		CDataObject::value_t _val(close_descriptor::NAME, _cb);
-//		CDataObject::sMGetInstance() += _val;
-//	}
+
 	{
 		callback_data_t _cb(sMHandleDiff, this);
 		CDataObject::value_t _val(kernel_infos_diff_t::NAME, _cb);

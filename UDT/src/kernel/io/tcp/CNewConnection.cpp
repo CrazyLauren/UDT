@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 
 #include <core/kernel_type.h>
@@ -62,7 +62,7 @@ void CKernelIOByTCP::CConnectionHandler::MProcess(protocol_type_dg_t const* aP,
 	{
 		IConnectionHandlerFactory* _factory=CConnectionHandlerFactory::sMGetInstance().MGetFactory(*_it);
 		DCHECK_NOTNULL(_factory);
-		if (_factory && aP->FProtocol == _factory->MGetProtocolNumber())
+		if (_factory && aP->MGetProtocol() == _factory->MGetProtocolNumber())
 		{
 			IConnectionHandler* _p = _factory->MCreateHandler(Fd,
 					FTime, FBridge.MGet());

@@ -8,9 +8,8 @@ using namespace NUDT;
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int group_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_new_receiver(CCustomer* WHO, void* WHAT, void* YOU_DATA);
-extern int event_connect_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_fail_sent_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
-extern int event_customers_update_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
 
 extern void doing_something();
 int main(int argc, char *argv[])
@@ -30,11 +29,11 @@ int main(int argc, char *argv[])
 				INDITIFICATION_NAME, 0, _handler);
 	}
 	{	
-		//!< I want to receive msg number 0
+		//!< I want to receive msg number 1
 		// from any customer of "guex" group  and it will be  handled  by function group_handler
 		callback_t _handler(group_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-			"@guex", 0, _handler);
+			"@guex", 1, _handler);
 	}
 	{
 		//!< When some consumers will start receiving data from me. The function

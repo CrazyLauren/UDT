@@ -15,7 +15,7 @@
 #define RECEIVES /*получаемые пакеты*/ \
 	RECEIVE(E_PROTOCOL_MSG,protocol_type_dg_t)/*Протокол КД*/\
 	RECEIVE(E_REQUEST_INFO,requiest_info2_t)/*Запрос информации*/\
-	RECEIVE(E_INFO,dg_info_t)/*Ответ на КД Запрос информации*/\
+	RECEIVE(E_INFO,dg_info2_t)/*Ответ на КД Запрос информации*/\
 	RECEIVE(E_KERNEL_INFO,kernels_info_t)/*Информация о клиентах*/\
 	RECEIVE(E_MAIN_CHANNEL_PARAM,main_channel_param_t)/*Настройки основного канала*/\
 	RECEIVE(E_REQUEST_MAIN_CHANNEL_PARAM,request_main_channel_param_t)/*Запрос текуших настроек основного канала*/\
@@ -23,6 +23,7 @@
 	RECEIVE(E_MAIN_CHANNEL_ERROR,main_channel_error_param_t)/*Ошибки открытия, закрытияб работы основного канала*/\
 	RECEIVE(E_CUSTOMERS_DEMANDS,customers_demands_t)/*Требуемые данные*/\
 	RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Данные не доставлены*/\
+	RECEIVE(E_ACCEPTED,accept_info_t)/*Подключение установлено*/\
 	/*END*/
 	//RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Ошибка при отправке данных*/
 

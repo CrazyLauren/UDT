@@ -1230,7 +1230,7 @@ bool CText::MGrow(size_type new_size)
 
 	if (new_size > FReserve)
 	{
-		const size_type _reserved_new_size=new_size*1.3;
+		const size_type _reserved_new_size=static_cast<size_type>(new_size*1.3);
 		utf32* temp = new utf32[_reserved_new_size];
 
 		if (FReserve > QUICKBUFF_SIZE)
@@ -2657,7 +2657,7 @@ void CText::sMUnitTest()
 		s1 += "1024245";
 		CHECK(s1.isalnum());
 		(void) s1;
-		s1 = "1245452";
+		s1 = CText("1245452");
 		CHECK(s1.isdigit());
 	}
 }

@@ -13,8 +13,7 @@
 #include <crc8.h>
 #include <console.h>
 #include <tasks.h>
-#include <boost/version.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
+
 
 #include <Socket/CSharedMemoryClient.h>
 #include <UType/CSharedAllocator.h>
@@ -23,12 +22,6 @@
 #define IMPL_CLASS CSharedMemoryClient::CImpl
 namespace NSHARE
 {
-#if (BOOST_VERSION / 100000 >=1) &&(BOOST_VERSION / 100 % 1000<=47)
-using namespace boost::interprocess::detail;
-#else
-using namespace boost::interprocess::ipcdetail;
-#endif
-
 version_t CSharedMemoryClient::sMGetVersion()
 {
 	return version_t(0, 1);

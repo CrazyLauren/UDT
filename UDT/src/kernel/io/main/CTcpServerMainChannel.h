@@ -108,6 +108,7 @@ private:
 	mutable bool FIsOverload;
 	NSHARE::intrusive_ptr<CMainClientConnector> FConnector;
 	NSHARE::net_address FAddr;
+	NSHARE::CMutex FOpenMutex;
 };
 }
 #endif /* CTCPMAINCHANNEL_H_ */

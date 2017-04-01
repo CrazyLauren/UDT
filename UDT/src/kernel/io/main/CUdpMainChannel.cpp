@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -68,16 +68,10 @@ template<>
 void CUdpMainChannel::MFill<main_channel_param_t>(data_t* aTo)
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
-	main_channel_param_t * _p =
-			new ((data_t::value_type*) aTo->ptr() + _befor) main_channel_param_t();
-	CHECK_NOTNULL(_p);
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_UDP);
-	_p->FUdp.FAddr = INADDR_LOOPBACK;
-	_p->FUdp.FPort = FUdp.MGetPort();
-	fill_dg_head(_p, sizeof(main_channel_param_t),get_my_id());
-	VLOG(2) << (*_p);
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_UDP;
+	_param.FValue = NSHARE::net_address(INADDR_LOOPBACK,FUdp.MGetPort()).MSerialize();
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
 }
 template<>
 void CUdpMainChannel::MFill<request_main_channel_param_t>(data_t* aTo)
@@ -339,7 +333,7 @@ bool CUdpMainChannel::MIsOveload(descriptor_t aFor) const
 {
 	return FIsOverload;
 }
-bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, udp_param_t const& aParam)
+bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, NSHARE::net_address const& aParam)
 {
 	smart_param_t _param;
 	{
@@ -355,7 +349,7 @@ bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, udp_param_t const& aParam)
 			{
 				VLOG(2)<<" handle "<<aFor;
 				LOG_IF(DFATAL,_it->second->FState!=param_t::E_REQUEST_PARAM)
-																				<< aParam.FAddr
+																				<< aParam.ip
 																				<< " Invalid state :"
 																				<< _it->second->FState
 																				<< " Required "
@@ -365,7 +359,6 @@ bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, udp_param_t const& aParam)
 														<< " has been opened already for "
 														<< aParam;
 
-				CHECK_EQ(aParam.FAddr, INADDR_LOOPBACK);
 				_param = _it->second;
 				_access->FNew.erase(_it);
 				break;
@@ -376,7 +369,7 @@ bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, udp_param_t const& aParam)
 		{
 			VLOG(2) << "Add new main channel ";
 			_param->FState = param_t::E_CONNECTED;
-			_param->FAddr=NSHARE::net_address(aParam.FAddr, aParam.FPort);
+			_param->FAddr= aParam;
 			{
 				_access->FIpToId[_param->FAddr] = _param;
 				_access->FIdToIP[aFor] = _param;
@@ -406,7 +399,13 @@ bool CUdpMainChannel::MHandleServiceDG(main_channel_param_t const* aData,
 	if (MIsNew(aVal))
 	{
 		VLOG(2)<<"MHandleServiceDG for "<<aVal;
-		bool _val = MAddNewImpl(aVal, aData->FUdp);
+		main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aData, (routing_t*)NULL, (error_info_t*)NULL));
+		CHECK_EQ(_sparam.FType, E_MAIN_CHANNEL_UDP);
+
+		NSHARE::net_address _addr(_sparam.FValue);
+		CHECK(_addr.MIsValid());
+
+		bool _val = MAddNewImpl(aVal, _addr);
 		VLOG(2)<<"Is added  "<<_val;
 		if (!_val)
 			MSendMainChannelError(aVal,
@@ -481,7 +480,7 @@ bool CUdpMainChannel::MHandleServiceDG(close_main_channel_t const* aP,
 	LOG(ERROR)<<"The customer "<<aFor<<" demand of closing channel";
 	return MClose(aFor);
 }
-bool CUdpMainChannel::MChangeSettingChannel(descriptor_t aFor, udp_param_t)
+bool CUdpMainChannel::MChangeSettingChannel(descriptor_t aFor, NSHARE::net_address)
 {
 	return false; //TODO
 }

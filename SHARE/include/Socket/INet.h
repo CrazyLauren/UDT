@@ -65,7 +65,12 @@ struct SHARE_EXPORT net_address
 	{
 		return port < aRht;
 	}
-
+	void MSetIP(uint32_t aIp);
+	void MSetIP(CText const& aIp) {
+		if (aIp.empty())ip.MUnSet();
+		else
+			ip.MSet(aIp);
+	}
 	bool MIsValid() const
 	{
 		return port >= 0;

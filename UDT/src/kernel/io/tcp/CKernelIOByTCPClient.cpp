@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <string.h>
 #include <programm_id.h>
 #include <internel_protocol.h>
@@ -22,8 +22,8 @@
 #include <io/ILink.h>
 #include "ILinkBridge.h"
 #include "CConnectionHandlerFactory.h"
-#include "receive_from.h"
-#include <parser_in_protocol.h>
+//#include "receive_from.h"
+//#include <parser_in_protocol.h>
 
 #include "CKernelIOByTCPClient.h"
 #include "CKernelChannel.h"

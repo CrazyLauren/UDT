@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket.h>
+#include <share_socket.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
 #include <core/kernel_type.h>
@@ -48,17 +48,21 @@ bool CTcpClientMainChannel::MOpenIfNeed()
 	//CConfig const& _conf = CConfigure::sMGetInstance().MGet().MChild(NAME);
 	if (!FLoopBack.MIsOpen())
 	{
-		bool _rval = FLoopBack.MOpen();
-		CHECK(_rval);
-		if (_rval)
-			FSelectSock.MAddSocket(FLoopBack.MGetSocket());
-		else
-			return false;
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
+		if (!FLoopBack.MIsOpen())
+		{
+			bool _rval = FLoopBack.MOpen();
+			CHECK(_rval);
+			if (_rval)
+				FSelectSock.MAddSocket(FLoopBack.MGetSocket());
+			else
+				return false;
 
-		NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this,
-				NSHARE::operation_t::IO);
-		CDataObject::sMGetInstance().MPutOperation(_op);
-		DCHECK(FSelectSock.MIsSetUp());
+			NSHARE::operation_t _op(CTcpClientMainChannel::sMReceiver, this,
+					NSHARE::operation_t::IO);
+			CDataObject::sMGetInstance().MPutOperation(_op);
+			DCHECK(FSelectSock.MIsSetUp());
+		}
 	}
 	return FLoopBack.MIsOpen();
 }
@@ -229,9 +233,12 @@ bool CTcpClientMainChannel::MHandleServiceDG(const main_channel_param_t* aData,
 		descriptor_t aFor)
 {
 	VLOG(2) << "Main channel handling \"Main channel parametrs\":";
-	CText _name((utf8 const*) aData->FType);
-	CHECK_EQ(_name, E_MAIN_CHANNEL_TCP);
-	NSHARE::net_address _addr(aData->FUdp.FAddr, aData->FUdp.FPort);
+	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aData, (routing_t*)NULL, (error_info_t*)NULL));
+	CHECK_EQ(_sparam.FType, E_MAIN_CHANNEL_TCP);
+	NSHARE::net_address _addr(_sparam.FValue);
+	CHECK(_addr.MIsValid());
+	size_t _limit = 0;
+	_sparam.FValue.MGetIfSet("limit", _limit);
 	VLOG(2)<<"Connect to "<<_addr;
 	NSHARE::smart_field_t<new_link_t> _new_link;
 	{
@@ -254,7 +261,7 @@ bool CTcpClientMainChannel::MHandleServiceDG(const main_channel_param_t* aData,
 		smart_client_t _link(
 				new CMainClient(*this, _addr, _new_link.MGetConst().FLink,
 						CDataObject::sMGetInstance().MDefAllocater(),
-						aData->FLimit));
+					_limit));
 		LOG_IF(DFATAL,!_link->MIsOpened()) << "Cannot open client for "
 													<< _addr;
 		CHECK_EQ(aFor, _link->MId());

@@ -12,7 +12,7 @@
 
 #include <deftype>
 #include <revision.h>
-#include <Socket.h>
+#include <share_socket.h>
 #include <programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
@@ -94,13 +94,14 @@ template<>
 void CTCPMainChannel::MFill<main_channel_param_t>(data_t* aTo)
 {
 	VLOG(2) << "Create main channel param DG";
-	size_t const _befor = aTo->size();
-	aTo->resize(_befor + sizeof(main_channel_param_t));
-	main_channel_param_t * _p = new (aTo->ptr()) main_channel_param_t();
-
-	strcpy((char*) _p->FType, E_MAIN_CHANNEL_TCPSERVER);
-	fill_dg_head(_p, sizeof(main_channel_param_t),CCustomer::sMGetInstance().MGetID());
-	VLOG(2) << (*_p);
+	std::pair<size_t, size_t> const _pair = FTcpClient.MBufSize();
+	size_t const _tcp_size =
+		_pair.first > 0 && _pair.first < _pair.second ?
+		_pair.first : _pair.second;
+	main_ch_param_t _param;
+	_param.FType = E_MAIN_CHANNEL_TCPSERVER;
+	_param.FValue.MSet("limit", _tcp_size);
+	serialize<main_channel_param_t, main_ch_param_t>(aTo, _param, routing_t(), error_info_t());
 }
 
 template<>
@@ -123,7 +124,7 @@ void CTCPMainChannel::MProcess(user_data_dg_t const* aP, void* aParser)
 	VLOG(2) << "USER DATA: " << *aP;
 	user_data_t _data;
 	deserialize(_data,aP,NULL);
-	LOG(INFO)<< "Receive packet #" << aP->FUserHeader.FNumber<<" from "<<aP->FFromUUID;
+	LOG(INFO)<< "Receive packet #" << aP->MGetUserDataHeader().FNumber<<" from "<<aP->MGetFromUUID();
 	FCustomer->MReceivedData(_data);
 }
 //
@@ -132,9 +133,11 @@ void CTCPMainChannel::MProcess(user_data_dg_t const* aP, void* aParser)
 void CTCPMainChannel::MHandleServiceDG(main_channel_param_t const* aP)
 {
 	VLOG(2) << "Main channel handling \"Main channel parametrs\":";
-	CText _name((utf8 const*) aP->FType);
-	CHECK_EQ(_name, E_MAIN_CHANNEL_TCP);
-	NSHARE::net_address _addr(aP->FUdp.FAddr,aP->FUdp.FPort);
+	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));
+	CHECK_EQ(_sparam.FType, E_MAIN_CHANNEL_TCP);
+
+	NSHARE::net_address _addr(_sparam.FValue);
+	CHECK(_addr.MIsValid());
 
 	FTcpClient.MClose();
 	FTcpClient.MOpen(_addr);

@@ -284,7 +284,7 @@ var data_info =
                 // if(_tmp["Protocol"]=="raw")
                 //     _tmp["#"]=aVal.nr;
                 _tmp["Packet Number"] = aVal.pn;
-                _tmp["Protocol"] = _protocol;
+                _tmp[data_info.pl.getName()] = data_info.pl.toRepresentation(_protocol);
 
                 let _ver = jQuery.to_representation_form(
                     {
@@ -401,6 +401,16 @@ var data_info =
 
                 });
                 return _res;
+            }
+        },
+        pl: {
+            getName: function ()
+            {
+                return "Protocol";
+            },
+            toRepresentation: function (aVal)
+            {
+                return aVal;
             }
         }
     };

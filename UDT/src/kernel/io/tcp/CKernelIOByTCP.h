@@ -98,7 +98,7 @@ private:
 	bool MAcceptLink(const smart_new_client_t& aNewLink);
 	void MReceiveImpl(const smart_link_t& _link,
 			const data_t::const_iterator& aBegin,
-			const data_t::const_iterator& aEnd);
+			const data_t::const_iterator& aEnd, const NSHARE::net_address&);
 	template<class _T> inline void MFill(data_t*, const _T&);
 	template<class T> inline bool MSendImpl(const T& _id,
 			descriptor_t const& aTo, const routing_t& aRoute,error_info_t const& aError);

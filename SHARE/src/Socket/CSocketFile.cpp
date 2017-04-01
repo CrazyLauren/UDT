@@ -90,8 +90,7 @@ bool CSocketFile::MOpen()
 bool CSocketFile::MReOpen()
 {
 	if (MIsOpen())
-	{
-		//LOG(ERROR)<< "***ERROR***:The dex channel has been opened formerly.";
+	{		
 		return false;
 	}
 	MOpen();
@@ -293,7 +292,8 @@ std::ostream & CSocketFileDuplex::MPrint(std::ostream & aStream) const
 }
 size_t CSocketFileDuplex::MAvailable() const
 {
-	LOG(FATAL)<<"MAvailable is not implemented for dex.";
+	if(FIn)
+		return FIn->MAvailable();	
 	return 0;
 }
 

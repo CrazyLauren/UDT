@@ -13,7 +13,7 @@
 #include <iostream>
 #include <UType/CCommonAllocater.h>
 #include <UType/CSharedMemory.h>
-#include <Socket.h>
+#include <share_socket.h>
 
 using namespace NSHARE;
 

@@ -152,7 +152,7 @@ extern void doing_something()
 			//!<Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
 			STREAM_MUTEX_LOCK
 			std::cout << "Send Packet#" << _num << " size of " << PACKET_SIZE
-					<< " bytes." << std::endl;
+					<< " bytes to "<<g_sent_to << std::endl;
 			STREAM_MUTEX_UNLOCK
 
 		}

@@ -21,7 +21,7 @@
 #define NO_MERGE_THREAD
 template<>
 NUDT::CPacketDivisor::singleton_pnt_t NUDT::CPacketDivisor::singleton_t::sFSingleton =
-		NULL;
+NULL;
 
 namespace NUDT
 {
@@ -116,22 +116,15 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 		const NSHARE::CThread* WHO, NSHARE::operation_t* WHAT)
 {
 	VLOG(2) << "Operation merge ";
-	user_datas_t _handle;
-	NSHARE::smart_field_t<NSHARE::uuid_t> _remove;
 	{
-#ifndef		NO_MERGE_THREAD
+
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FMergeMutex);
-#endif
-		CHECK(!FSplitedPackets.empty());
-		_handle.swap(FSplitedPackets);
-		CHECK(FSplitedPackets.empty());
 		FIsWorking = true;
 	}
 	{
 		user_datas_t _data;
 		if (MMerging(_data))
 		{
-			_remove.MSet(FFor.FRouting.FFrom.FUuid);
 			int error;
 			if ((error = CKernelIo::sMGetInstance().MSendUserData(FDescriptor,
 					_data)) != E_NO_ERROR)
@@ -141,7 +134,8 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 				CRoutingService::sMGetInstance().MNoteFailSend(_fail);
 			}
 		}
-		else
+
+		if (FError != E_NO_ERROR)
 		{
 			fail_send_t _fail(FFor);
 			_fail.MSetError(FError);
@@ -149,20 +143,21 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 		}
 	}
 	{
-#ifndef		NO_MERGE_THREAD
+
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FMergeMutex);
-#endif
-		if (!FSplitedPackets.empty())
+
+		if (MHasToBeRemoved())
+		{
+			FThis.FMergeOp.erase(
+					merge_key(FFor.FRouting.FFrom.FUuid, FDescriptor));//warning erase all
+		}else	if (!FNewPackets.empty())
 		{
 			WHAT->MKeep(true);
 		}
 		else
 		{
 			FIsWorking = false;
-			if (_remove.MIs())
-			{
-				FThis.FMergeOp.erase(_remove.MGetConst());	//warning erase all
-			}
+
 		}
 	}
 	VLOG(2) << "Finish handle";
@@ -171,19 +166,21 @@ CPacketDivisor::merge_operation_t::merge_operation_t(CPacketDivisor& aThis,
 		user_data_info_t const& aFor, descriptor_t aDesc) :
 		FThis(aThis),	//
 		FIsWorking(false),	//
-		FFor(aFor), FDescriptor(aDesc),	//
-		FError(E_NO_ERROR)
+		FFor(aFor),//
+		FDescriptor(aDesc),	//
+		FError(E_NO_ERROR),//
+		FIsMerged(false)
 {
 	if (aFor.FSplit.FCounter != 1)
 	{
-		LOG(ERROR)<<"Receive not the first packet";
+		LOG(ERROR)<<"Receive not the first packet  #"<<aFor.FPacketNumber<<" from "<<aFor.FRouting.FFrom.FUuid<<" to "<<aDesc;
 		FError=E_PACKET_LOST;
 	}
 	else
 	{
-		VLOG(2) << "Starting receiving split packet from "<< aFor;
+		VLOG(1) << "Starting receiving split packet  #"<<aFor.FPacketNumber<<" from "<<aFor.FRouting.FFrom.FUuid<<" to "<<aDesc;
 
-		FSplitLevel[aFor.FSplit.FCoefficient] =aFor.FSplit;
+		//FSplitLevel[aFor.FSplit.FCoefficient] =aFor.FSplit;
 		CHECK(!aFor.FSplit.FIsLast);
 	}
 }
@@ -193,12 +190,13 @@ bool CPacketDivisor::merge_operation_t::MCheckingSequence(
 	std::map<unsigned, split_packet_t>::iterator _it = FSplitLevel.find(
 			_data.FDataId.FSplit.FCoefficient);
 	bool const _is_new_level = _it == FSplitLevel.end();
-	if (_is_new_level)
-	{
-		LOG(FATAL)<< "I don't remember why this check exist. If you receive this error please "
-		"writing the issue request.";
-	}
-	else if ((_it->second.FCounter + 1) != _data.FDataId.FSplit.FCounter)
+	/*if (_is_new_level)
+	 {
+	 LOG(FATAL)<< "I don't remember why this check exist. If you receive this error please "
+	 "writing the issue request.";
+	 }
+	 else */if (!_is_new_level
+			&& ((_it->second.FCounter + 1) != _data.FDataId.FSplit.FCounter))
 	{
 		LOG(ERROR)<<"Several part of packet #"<<_data.FDataId.FPacketNumber<<" has been lost. Cur="
 		<<_data.FDataId.FSplit.FCounter<<" last="<<_it->second.FCounter;
@@ -214,44 +212,61 @@ bool CPacketDivisor::merge_operation_t::MCheckingSequence(
 bool CPacketDivisor::merge_operation_t::MMerging(user_datas_t& aTo)
 {
 	bool _is_last = false;
-	CHECK(!FSplitedPackets.empty());
-	for (; !FSplitedPackets.empty() || _is_last; FSplitedPackets.pop_front())
+
+	FThis.FMergedPacketsMutex.MLock();//<------
+	CHECK(!FNewPackets.empty());
+
+	for (; !FNewPackets.empty() && !_is_last;//
+			FMergedPackets.splice(FMergedPackets.end(), FNewPackets,FNewPackets.begin()))
 	{
-		if(!MCheckingSequence(FSplitedPackets.front()))
+		VLOG(3) << "Next " << FNewPackets.front().FDataId;
+		if (!MCheckingSequence(FNewPackets.front()))
 			return false;
-		_is_last = MMergePacket(FSplitedPackets.front());
+		FThis.FMergedPacketsMutex.MUnlock();//<------
+		_is_last = MMergePacket(FNewPackets.front());
+		FThis.FMergedPacketsMutex.MLock();//<------
 	}
+	FThis.FMergedPacketsMutex.MUnlock();//<------
+
 	VLOG(2) << "EOK:";
 	if (_is_last)
 	{
 		VLOG(2) << "The packet was merged";
-		CHECK(FSplitedPackets.empty());
-		if(!MCreatePacket(aTo))
-			FError=E_MERGE_ERROR;
+		CHECK(FNewPackets.empty());
+		if (!MCreatePacket(aTo))
+			FError = E_MERGE_ERROR;
+		else
+			FIsMerged=true;
 	}
-	return FError==E_NO_ERROR;
+	return FError == E_NO_ERROR && FIsMerged;
 }
 
+bool CPacketDivisor::merge_operation_t::MHasToBeRemoved() const
+{
+	return FIsMerged || FError != E_NO_ERROR;
+}
 void CPacketDivisor::merge_operation_t::MMerge(user_datas_t & aVal,
 		user_datas_t& aTo)
 {
 	bool _need_call = false;
 	{
-		_need_call = !FIsWorking && FSplitedPackets.empty();
+		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FMergedPacketsMutex);
+		_need_call = !FIsWorking && FNewPackets.empty();
 		VLOG_IF(4,_need_call) << "Need call handling data";
 
-		if (FFor.FPacketNumber
-				!= aVal.front().FDataId.FPacketNumber)
+		if (FFor.FPacketNumber != aVal.front().FDataId.FPacketNumber)
 		{
 			LOG(ERROR)<<"The packet #"<<FFor.FPacketNumber<<" has been lost. Ignoring ...";
-			if(FError==E_NO_ERROR)//maybe the error is occurred in constructor
-				FError=E_PACKET_LOST;
+			if(FError==E_NO_ERROR)	//maybe the error is occurred in constructor
+			FError=E_PACKET_LOST;
 		}
 		else
-				FSplitedPackets.splice(FSplitedPackets.end(), aVal);
+		{
+			FNewPackets.splice(FNewPackets.end(), aVal);
+		}
 	}
-	if(FError!=E_NO_ERROR)
-		return;
+	if (FError != E_NO_ERROR)
+		return ;
 
 #ifndef		NO_MERGE_THREAD
 	if (_need_call)
@@ -265,6 +280,7 @@ void CPacketDivisor::merge_operation_t::MMerge(user_datas_t & aVal,
 	user_datas_t _data;
 	if (MMerging(_data))
 	{
+		VLOG(2) << "!Ura copy merged data";
 		aTo.splice(aTo.end(), _data);
 	}
 #endif
@@ -274,10 +290,12 @@ void CPacketDivisor::MMerge(descriptor_t aFor, user_datas_t& aWhat,
 {
 	//
 	CHECK(!aWhat.empty());
+	CHECK(CDescriptors::sMIsValid(aFor));
 
 	unsigned const _packet_number = aWhat.front().FDataId.FPacketNumber;
 	NSHARE::uuid_t const _uuid = aWhat.front().FDataId.FRouting.FFrom.FUuid;
-	VLOG(2) << "Merge  " << _packet_number << " from " << _uuid;
+	const merge_key _key(_uuid, aFor);
+	VLOG(2) << "Merge  #" << _packet_number << " from " << _uuid<<" To "<<aFor<<aWhat.front().FDataId.FSplit;
 
 	user_datas_t _merging;
 	{
@@ -290,35 +308,43 @@ void CPacketDivisor::MMerge(descriptor_t aFor, user_datas_t& aWhat,
 				;)
 		{
 			CHECK(aWhat.front().FDataId.FSplit.MIsSplited());
+			VLOG(1) << "Put  " << aWhat.front().FDataId.FPacketNumber
+								<< " from "
+								<< aWhat.front().FDataId.FRouting.FFrom.FUuid;
 			_merging.splice(_merging.end(), aWhat, aWhat.begin());
 		}
 	}
-	for(;!_merging.empty();)
+	for (; !_merging.empty();)
 	{
-#ifndef		NO_MERGE_THREAD
-		NSHARE::CRAII<NSHARE::CMutex> _blocked(FMergeMutex);
-#endif
-		std::map<NSHARE::uuid_t, merge_operation_t>::iterator _it =
-				FMergeOp.find(_uuid);
-		if (_it == FMergeOp.end())
-		{
-#ifdef	NO_MERGE_THREAD
-			NSHARE::CRAII<NSHARE::CMutex> _blocked(FMergeMutex);
-#endif
 
-			std::map<NSHARE::uuid_t, merge_operation_t>::value_type const _val(
-					_uuid,
-					merge_operation_t(*this, _merging.front().FDataId, aFor));
-			_it = FMergeOp.insert(_val).first;
+		merge_operations_map_t::iterator _it;
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _blocked(FMergeMutex);
+			_it = FMergeOp.find(_key);
+			if (_it == FMergeOp.end())
+			{
+
+				merge_operations_map_t::value_type const _val(_key,
+						merge_operation_t(*this, _merging.front().FDataId,
+								aFor));
+				_it = FMergeOp.insert(_val).first;
+			}
 		}
 		_it->second.MMerge(_merging, aTo);
 		if (_it->second.FError != E_NO_ERROR)
 		{
+			LOG(ERROR)<<"Merge error "<<_it->second.FError;
 			fail_send_t _fail(_it->second.FFor);
 			_fail.MSetError(_it->second.FError);
 			_non_sent.push_back(_fail);
-
-			aFails.splice(aFails.end(), _it->second.FSplitedPackets);
+			NSHARE::CRAII<NSHARE::CMutex> _blocked(FMergedPacketsMutex);
+			aFails.splice(aFails.end(), _it->second.FMergedPackets);
+			aFails.splice(aFails.end(), _it->second.FNewPackets);
+		}
+		if (_it->second.MHasToBeRemoved())
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _blocked(FMergeMutex);
+			VLOG(2)<<"Remove packet "<<_it->second.FFor.FPacketNumber<<" from "<<_it->second.FFor.FRouting.FFrom.FUuid<<" to "<<_it->second.FDescriptor;
 			FMergeOp.erase(_it);
 		}
 	}
@@ -383,8 +409,6 @@ void CPacketDivisor::MSplitOrMergeIfNeed(descriptor_t aFor,
 		}
 		//todo
 		//1)checking received packets sequence for secondary level of splitting
-		//2) fix bug. the same packets can be sent to different descriptor but FMergeOp
-		//is working valid only for one descriptor
 	}
 	aWhat.swap(_fails);
 }
