@@ -182,6 +182,7 @@ bool CKernelClientLink::MReceivedData(kernel_infos_array_t const& aInfo,
 
 	if (MIsOpened())
 	{
+		CHECK(FIsAccepted);
 		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(), aRoute,
 				aError);
 		return true;

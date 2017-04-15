@@ -145,7 +145,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 	return 0;
 }
 
-#define PACKET_SIZE 200000
+
 extern void doing_something()
 {
 #ifdef _WIN32

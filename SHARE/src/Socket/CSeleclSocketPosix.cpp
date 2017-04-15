@@ -48,7 +48,11 @@ int CSelectSocket::CImpl::MWaitData(socks_t& aTo, float const aTime,
 	CFlags<eSocketType, unsigned> _flags(aType);
 
 	bool _is = false;
-	std::vector<CSocket> _sockets = FThis.FFds;
+	std::vector<CSocket> _sockets;
+	{
+		CRAII<CMutex> _lock(FThis.FMutex);
+		_sockets = FThis.FFds;
+	}
 	for (socks_t::iterator _it = _sockets.begin(); _it != _sockets.end(); ++_it)
 	{
 		VLOG(2) << "Add socket " << *_it;

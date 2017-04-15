@@ -46,11 +46,21 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 		else
 		{
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
-			if(_rem<_phead->FSize)
+			if (_phead->FType != E_MSG_TEST)
+			{
+				aItBegin = aItEnd;
+				_founded_dg.FErrorCode = E_INVALID_MSG_TYPE;
+			}
+			else if(_phead->FSize!=PACKET_SIZE/*test msg size*/)
 			{
 				aItBegin=aItEnd;
-				_founded_dg.FErrorCode=E_INVALID_MSG_SIZE;
-			}else
+				_founded_dg.FErrorCode =E_INVALID_MSG_SIZE;
+			}
+			else if(_rem<_phead->FSize)
+			{
+				break;//buffer is small
+			}
+			else
 			{
 				aItBegin += _phead->FSize;
 				_founded_dg.FType.FNumber = _phead->FType;

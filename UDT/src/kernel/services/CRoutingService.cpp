@@ -267,7 +267,7 @@ int CRoutingService::sMHandleDemandId(CHardWorker* WHO, args_data_t* WHAT,
 }
 void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 {
-	VLOG(2) << "New demands  " << aP << " From: " << aFrom;
+	VLOG(2) << "New demands  " << *aP << " From: " << aFrom;
 	std::pair<descriptor_info_t, bool> _info =
 			CDescriptors::sMGetInstance().MGet(aFrom);
 	demand_dgs_for_t _new_receiver;
@@ -372,7 +372,7 @@ void CRoutingService::MNoteFailSend(const fail_send_array_t& aFail)
 				}
 				_new.FRouting.swap(_new_uuids);
 
-				_repeates.erase(_jt);
+				_repeates.erase(_jt++);
 				_repeates.insert(_jt, _new);
 			}
 		}
@@ -528,7 +528,7 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 }
 
 void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
-		output_decriptors_for_t& _descr, uuids_t& _non_sent) const
+		output_decriptors_for_t& _descr, uuids_t& aFail) const
 {
 	{
 		for (uuids_t::const_iterator _it = aSendTo.begin();
@@ -549,7 +549,10 @@ void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
 				_jt->second.push_back(*_it);
 			}
 			else
-				_non_sent.push_back(*_it);
+			{
+				LOG(ERROR)<<"No route to "<<(*_it);
+				aFail.push_back(*_it);
+			}
 		}
 	}
 }

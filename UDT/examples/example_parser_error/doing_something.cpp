@@ -97,7 +97,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	STREAM_MUTEX_UNLOCK
 	return 0;
 }
-#define PACKET_SIZE 200000
+
 extern void doing_something()
 {
 #ifdef _WIN32

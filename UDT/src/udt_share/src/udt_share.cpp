@@ -54,13 +54,13 @@ extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat, size_t aFullSize,
 		//CHECK_LT(_data_size, std::numeric_limits<uint16_t>::max());
 		_head->MSetDataSize( static_cast<uint32_t>(_data_size));
 		if (!aIsNeedCrc)
-			_head->FDataCrc = 0;
+			_head->MSetDataCRC(0);
 		else
 		{
-			_head->FDataCrc = head_t::crc_data_t::sMCalcCRCofBuf(
+			_head->MSetDataCRC (head_t::crc_data_t::sMCalcCRCofBuf(
 					_head->MDataBegin(),
-					_head->MDataBegin() + _head->MGetDataSize());
-			DCHECK_EQ(_head->FDataCrc,
+					_head->MDataBegin() + _head->MGetDataSize()));
+			DCHECK_EQ(_head->MGetDataCRC(),
 					head_t::crc_data_t::sMCalcCRCofBuf(_head->MDataBegin(),
 							_head->MDataBegin() + _head->MGetDataSize()));
 		}
@@ -68,7 +68,7 @@ extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat, size_t aFullSize,
 	else
 	{
 		VLOG(2) << "There is not data";
-		_head->FDataCrc = 0;
+		_head->MSetDataCRC( 0);
 		_head->MSetDataSize( 0);
 	}
 	uint8_t* _head_end = (uint8_t*) _head + _head->FHeadSize - 1; //-1 without crc

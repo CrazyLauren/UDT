@@ -14,19 +14,21 @@
 #include <fcntl.h>
 
 #if !defined(_WIN32)
-#include <sys/socket.h>
-#include <netinet/in.h>                     // sockaddr_in
-#include <arpa/inet.h>                      // htons, htonl
-#include <sys/sysctl.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-#	ifdef __QNX__
-#include <netinet/tcp_var.h>//only BSD
-#	endif
+#	include <sys/socket.h>
+#	include <netinet/in.h>                     // sockaddr_in
+#	include <arpa/inet.h>                      // htons, htonl
+#	include <sys/sysctl.h>
+#	include <sys/ioctl.h>
+#	include <fcntl.h>
+#		ifdef __QNX__
+#			include <netinet/tcp_var.h>//only BSD
+#		endif
+#if 	defined( __linux__)
+#			include <netinet/tcp.h>
+#		endif
 #else
-#include <ws2tcpip.h>
-
-#	ifndef SIO_KEEPALIVE_VALS
+#	include <ws2tcpip.h>
+#		ifndef SIO_KEEPALIVE_VALS
 //FIXME
 struct tcp_keepalive
 {
@@ -35,8 +37,9 @@ struct tcp_keepalive
 	ULONG keepaliveinterval;
 };
 #		define SIO_KEEPALIVE_VALS _WSAIOW(IOC_VENDOR,4)
-#endif
+#	endif
 #endif //#ifndef WIN32
+
 #include <Socket/print_socket_error.h>
 namespace NSHARE
 {
@@ -189,13 +192,27 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 			sizeof(on));
 	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPALIVE, (void*) &tval,
 			sizeof(tval));
-#elif defined( __linux__)
+#elif defined(__linux__)
 	int on = 1;
 	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (void*) &on, sizeof(on));
-	//TODO sysctl keepalive time
-#warning  "Setting Time of Keep alive is not implemented"
+
+#	ifdef TCP_KEEPCNT
+	int keepcnt = 3;
+	int keepidle = 1;
+	int keepintvl = _sec;
+
+	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPCNT, &keepcnt,
+			sizeof(keepcnt));
+	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPIDLE, &keepidle,
+			sizeof(keepidle));
+	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl,
+			sizeof(keepintvl));
+#	else
+#		warning  "Setting Time of Keep alive is not implemented"
+#	endif //#	ifdef TCP_KEEPCNT
+
 #else
-#error Target not supported
+#	error Target not supported
 #endif
 }
 void CNetBase::MSettingBufSize(CSocket& aSocket)

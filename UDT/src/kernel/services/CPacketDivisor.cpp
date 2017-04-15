@@ -386,8 +386,16 @@ void CPacketDivisor::MSplitOrMergeIfNeed(descriptor_t aFor,
 								<< " cannot be split for " << aFor;
 			if (aWhat.front().FDataId.FSplit.MIsSplited())
 				MMerge(aFor, aWhat, aTo, _fails, _non_sent);
-			else
+			else if(_max_size == 0 || _max_size >= _align_data_size)
 				aTo.splice(aTo.end(), aWhat, aWhat.begin());
+			else
+			{
+				LOG(ERROR)<<"The data size is more than "<<_max_size;
+				fail_send_t _fail(aWhat.front().FDataId);
+				_fail.MSetError(E_DATA_TOO_LARGE);
+				_non_sent.push_back(_fail);
+				_fails.splice(_fails.end(), aWhat, aWhat.begin());
+			}
 		}
 		//no limit
 		else if (!_info.FType.MGetFlag(split_info::LIMITED))

@@ -73,7 +73,7 @@ private:
 			template<class, class > class IEvents, class mutex_type>
 	friend class CEvents;
 };
-template class SHARE_EXPORT CEvent<>;
+//template class SHARE_EXPORT CEvent<>;
 } //namespace USHARE
 #include <UType/CEvent.hpp>
 

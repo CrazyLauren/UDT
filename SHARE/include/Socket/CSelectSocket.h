@@ -40,6 +40,7 @@ private:
 	CImpl *FImpl;
 	std::vector<CSocket> FFds;
 	bool FIsSetUp;
+	NSHARE::CMutex FMutex;
 };
 
 } /* namespace NSHARE */

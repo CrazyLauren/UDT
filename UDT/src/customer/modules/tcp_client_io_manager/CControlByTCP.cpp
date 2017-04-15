@@ -44,8 +44,7 @@ CControlByTCP::CControlByTCP() :
 {
 	FCBServiceConnect = NSHARE::CB_t(sMConnect, this);
 	FCBServiceDisconncet = NSHARE::CB_t(sMDisconnect, this);
-	FState = E_CLOSED;
-	FMainPacketNumber = 0;
+	FState = E_CLOSED;	
 }
 
 CControlByTCP::~CControlByTCP()
@@ -459,15 +458,14 @@ int CControlByTCP::MSend(user_data_t & aData)
 	}
 	LOG_IF(ERROR,FState!=E_CONNECTED) << "Invalid state" << (unsigned) FState;
 
-	unsigned const _number=MNextUserPacketNumber();
-	aData.FDataId.FPacketNumber= _number;
+	//aData.FDataId.FPacketNumber= _number;
 	VLOG(2) << "Create user data DG";
 	{
 		CRAII<CMutex> _block(FMainLock);
 		if (!FMain || !FMain->MSend(aData))
 		return CCustomer::E_UNKNOWN_ERROR;
 	}
-	return _number;
+	return E_NO_ERROR;
 }
 //
 //----------------------
@@ -512,8 +510,7 @@ int CControlByTCP::MCloseMain()
 		return main_channel_error_param_t::E_NOT_OPENED;
 
 	FMain->MClose();
-	FMain = NULL;
-	FMainPacketNumber = 0;
+	FMain = NULL;	
 	return 0;
 }
 
@@ -778,10 +775,6 @@ bool CControlByTCPRegister::MIsAlreadyRegistered() const
 				CControlByTCP::NAME);
 	return false;
 
-}
-unsigned CControlByTCP::MNextUserPacketNumber()
-{
-	return ++FMainPacketNumber;
 }
 }
 #if !defined(TCP_CLIENT_IO_MANAGER_STATIC)

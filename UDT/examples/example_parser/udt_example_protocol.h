@@ -10,6 +10,7 @@
 
 #define PROTOCOL_NAME "pudt" //!<Unique protocol name.Recommended using a short name
 #define CONFIG_PATH "./example_customer2.xml" //!< Configuration file path. The file format are xml or json.
+#define PACKET_SIZE 200000
 
 enum  eMsgType
 {
@@ -20,6 +21,7 @@ enum eParserError //!< uint8_t with error returned by fail_sent_args_t .FUserCod
 {
 	E_INVALID_HEADER_SIZE=1,
 	E_INVALID_MSG_SIZE=2,
+	E_INVALID_MSG_TYPE=3,
 };
 
 struct msg_head_t

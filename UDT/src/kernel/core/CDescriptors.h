@@ -38,7 +38,6 @@ public:
 	void  MGetAll(d_list_t& aTo) const;
 	d_list_t MGetAll(eType) const;
 
-	kernel_infos_t MGetInfos(d_list_t * aTo=NULL) const;
 	descriptor_t MGet(const descriptor_info_t&) const;
 	descriptor_t MGet(const NSHARE::uuid_t&) const;
 	std::pair<descriptor_info_t,bool> MGet(descriptor_t const&) const;

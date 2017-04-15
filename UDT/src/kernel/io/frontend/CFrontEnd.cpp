@@ -30,14 +30,17 @@ using namespace NSHARE;
 const NSHARE::CText CExternalChannel::CFrontEnd::NAME = "frontend";
 const NSHARE::CText CExternalChannel::CFrontEnd::FRONTEND_NAME = "name";
 const NSHARE::CText CExternalChannel::CFrontEnd::DEMAND = "demand";
-const NSHARE::CText CExternalChannel::CFrontEnd::EXIT_PROTOCOL = "expl";
+const NSHARE::CText CExternalChannel::CFrontEnd::RECV_PROTOCOL = "rpl";
+const NSHARE::CText CExternalChannel::CFrontEnd::REPEAT_TIME = "repeat_time";
+
 #define IMPL CExternalChannel::CFrontEnd
 
 CExternalChannel::CFrontEnd::CFrontEnd(NSHARE::CConfig const& aConf,
 		CExternalChannel& aThis) :
 		FThis(aThis), //
 		FConfig(aConf), //
-		FProgId(get_my_id()) //
+		FProgId(get_my_id()), //
+		FRepeatTime(10000)
 {
 	FProgId.FId.FUuid = NSHARE::get_uuid(FProgId.FId.FName);
 	FProgId.FType = E_CONSUMER;
@@ -76,19 +79,19 @@ void CExternalChannel::CFrontEnd::MParseDemands(const NSHARE::CConfig& aConf)
 			if (_dem.MIsValid())
 			{
 
-				if (_it->MIsChild(EXIT_PROTOCOL))
-				{
-
-					VLOG(2) << "There is exit protocol";
-					LOG_IF(FATAL,_it->MChild(EXIT_PROTOCOL).MValue()!=RAW_PROTOCOL_NAME)
-																									<< "The Method is not implemented."; //todo
-					//NSHARE::CText _exit_protocol(RAW_PROTOCOL_NAME);
-				}
 				LOG(INFO)<<"Demand "<<_dem;
 				FDemands.push_back(_dem);
 				FSendProtocol.insert(_dem.FProtocol);
 			}
 		}
+	}
+	if (aConf.MIsChild(RECV_PROTOCOL))
+	{
+
+		VLOG(2) << "There is exit protocol";
+		FReceiveProtocol=aConf.MChild(RECV_PROTOCOL).MValue();
+		LOG_IF(FATAL,!FReceiveProtocol.empty() && !CParserFactory::sMGetInstance().MIsFactoryPresent(FReceiveProtocol))
+																						<< "The protocol handler is not exist."<<FReceiveProtocol;
 	}
 }
 
@@ -118,6 +121,7 @@ void CExternalChannel::CFrontEnd::MInit(const NSHARE::CConfig& aConf)
 		}
 		CText _name;
 		aConf.MGetIfSet(FRONTEND_NAME, _name);
+		aConf.MGetIfSet(REPEAT_TIME, FRepeatTime);
 		LOG_IF(ERROR,_name.empty()) << "No front end name "
 											<< aConf.MToJSON(true);
 		if (!_name.empty())
@@ -147,17 +151,16 @@ int IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, voi
 void IMPL::MReceiverLoop()
 {
 	VLOG(2)<<"Receive data staring";
-	ISocket::data_t _data;					//todo allocate to def memory
 	for (;FSocket&&FSocket->MIsOpen(); )
 	{
-		_data.clear();
+		ISocket::data_t _data;
 		//ISocket::recvs_from_t _from;
 		if (FSocket->MReceiveData( &_data, -1.0/*,&_from*/) > 0)
 		{
 			LOG_IF(WARNING,_data.empty())<<"Receive empty data";
 			if(!_data.empty())
 			{
-				MReceivedData(_data.cbegin(),_data.cend());	//todo optimize remove copy operation
+				MReceivedData(_data);
 			}
 		}
 	}
@@ -177,8 +180,10 @@ void IMPL::MConnected()
 
 	CDescriptors::sMGetInstance().MOpen(Fd,_info);
 	VLOG(2) << "Connected " << NSHARE::get_unix_time();
-
-	FThis.MAddChannel(this,Fd,FSplit);
+	split_info _split;
+	_split.FType.MSetFlag(split_info::CAN_NOT_SPLIT,true);
+	_split.FMaxSize=FSocket->MMaxPacketSize();
+	FThis.MAddChannel(this,Fd,_split);
 
 	if(!FDemands.empty())
 	{
@@ -193,186 +198,50 @@ void IMPL::MDisconnected()
 	FThis.MRemoveChannel(this,Fd);
 	CDescriptors::sMGetInstance().MClose(Fd);
 	Fd=-1;
-	FBuf.clear();
-	FDataSequence.clear();
 }
 void IMPL::MReceiver()
 {
 	VLOG(2) << "Async receive";
 
-	for(;FSocket;NSHARE::sleep(1)/*todo to config*/) //todo still work
+	for(;FSocket;NSHARE::usleep(FRepeatTime))
 	{
 		if(FSocket->MIsOpen())
 		{
 			MConnected();
 			MReceiverLoop();
 			MDisconnected();
+			LOG(INFO) << "Port is closed";
 		}
-		LOG(INFO) << "Port is closed";
 
 	}
 	VLOG(1) << "Socket closed";
 }
-void IMPL::MRawReceivedData(data_t::const_iterator aBegin,
-		data_t::const_iterator aEnd)
+
+
+void IMPL::MReceivedData(NSHARE::CBuffer& aData)
 {
-	VLOG(2)<<"Receive data by raw protocol.";
+	VLOG(2) << "Receive :" << aData.size();
+	LOG_IF(INFO, aData.empty()) << "Empty Data.";
+	if(aData.empty())return;
+
+	LOG_IF(INFO,FReceiveProtocol.empty())<<"No protocol. Using raw protocol ...";
+
 	user_data_t _user;
-	_user.FDataId.FProtocol=RAW_PROTOCOL_NAME;
+	_user.FDataId.FProtocol=FReceiveProtocol;
 	_user.FDataId.FPacketNumber=++FPacketNumber;
 	_user.FDataId.FRouting.FFrom =FProgId.FId;
-	NSHARE::CBuffer _data(CDataObject::sMGetInstance().MDefAllocater(),aBegin,aEnd);
-	_data.MMoveTo(_user.FData);
+	aData.MMoveTo(_user.FData);
+	bool const _is_raw=FReceiveProtocol.empty() || (FReceiveProtocol==RAW_PROTOCOL_NAME);
+	if(_is_raw)
+		_user.FDataId.FRawProtocolNumber=1;
 
 	CKernelIo::sMGetInstance().MReceivedData(_user,Fd);
-}
 
-bool IMPL::MReceiveByProtocol(
-		data_t::const_iterator aBegin, data_t::const_iterator aEnd)
-{
-	IExtParser* _p = CParserFactory::sMGetInstance().MGetFactory(FProtocol);
-	if(!_p)
-	{
-		LOG(ERROR)<<"No protocol for "<<FProtocol;
-		return false;
-	}
-
-	IExtParser::result_t _result = _p->MParserData(
-			(const uint8_t*) (aBegin.base()), (const uint8_t*) (aEnd.base()));
-	VLOG(1) << "Founded " << _result.size() << " dg.";
-	{
-		IExtParser::result_t::const_iterator _jt = _result.begin();
-		for (; _jt != _result.end(); ++_jt)
-		{
-			user_data_t _user;
-			_user.FDataId.FProtocol = FProtocol;
-			_user.FDataId.FPacketNumber = ++FPacketNumber;
-			_user.FDataId.FRouting.FFrom = FProgId.FId;
-			NSHARE::CBuffer _data(CDataObject::sMGetInstance().MDefAllocater(),
-					_jt->FBegin, _jt->FEnd);
-			_data.MMoveTo(_user.FData);
-			CKernelIo::sMGetInstance().MReceivedData(_user, Fd);
-		}
-		if (*aEnd.base() != *_result.back().FEnd)
-		{
-			VLOG(2) << "Buffer Size:" << FBuf.size();
-			NSHARE::CBuffer::const_iterator _end(
-					(NSHARE::CBuffer::const_pointer) _result.back().FEnd);
-			if (FBuf.empty())
-			FBuf.insert(FBuf.end(), _end, aEnd);
-			else
-			FBuf.erase(FBuf.begin(), FBuf.begin() + (_end - FBuf.cbegin()));
-		}
-		else if (!FBuf.empty())
-		FBuf.clear();
-	}
-	return true;
-}
-
-void IMPL::MReceivedData(data_t::const_iterator aBegin,
-		data_t::const_iterator aEnd)
-{
-	VLOG(2) << "Receive :" << aEnd-aBegin;
-	LOG_IF(INFO, aEnd==aBegin) << "Empty Data.";
-	if(aEnd==aBegin)return;
-
-	if (!FBuf.empty())
-	{
-		FBuf.insert(FBuf.end(), aBegin, aEnd);
-		aBegin = FBuf.cbegin();
-		aEnd = FBuf.cend();
-	}
-	LOG_IF(INFO,FProtocol.empty())<<"No protocol. Using raw protocol ...";
-
-	if(FProtocol.empty()|| (FProtocol==RAW_PROTOCOL_NAME) || !MReceiveByProtocol(aBegin, aEnd))
-	{
-		MRawReceivedData(aBegin,aEnd);
-	}
 
 }
 bool IMPL::MSend(const data_t& aVal)
 {
-	return FSocket!=NULL && FSocket->MSend(aVal).FError==ISocket::E_SENDED; //todo handle EAGAIN
-}
-bool IMPL::MSendPacketsFromAnotherCustomer()
-{
-	VLOG(2)<<"Send previous packets.";
-	//todo
-	for(;!FDataSequence.empty();)
-	{
-		LOG(FATAL)<<"The Method is not implemented.";
-//		VLOG(2)<<"Send previous packet.";
-//		user_data_t const _d=FDataSequence.front();
-//		FDataSequence.pop_front();
-//		if(!MSend(_d))
-//		{
-//			FDataSequence.clear();//todo return error as fail_sent_packet
-//			return false;
-//		}
-	}
-	return true;
-}
-
-bool CExternalChannel::CFrontEnd::MSendSplitedPacket(const user_data_t& aVal)
-{
-	if (FLastSplitedPacket.MGetConst().FRouting.FFrom
-			== aVal.FDataId.FRouting.FFrom)
-	{
-		if (FLastSplitedPacket.MGetConst().FPacketNumber
-				!= aVal.FDataId.FPacketNumber)
-		{
-			LOG(ERROR)<<" Packet lost for "<<FLastSplitedPacket.MGetConst();
-			FLastSplitedPacket.MUnSet();
-
-			MSendPacketsFromAnotherCustomer();
-
-			if(aVal.FDataId.FSplit.MIsSplited()) //fixme call MSend again
-			return MSendFirstSplitedPacket(aVal);
-		}
-		else if(aVal.FDataId.FSplit.FIsLast)
-		{
-			VLOG(2)<<"Send all packet ";
-			FLastSplitedPacket.MUnSet();
-			bool _is=MSend(aVal.FData);
-			MSendPacketsFromAnotherCustomer();
-			return _is;
-		}
-		else
-		FLastSplitedPacket=aVal.FDataId;
-	}
-	else
-	{
-		if(!CInfoService::sMGetInstance().MIsVertex(FLastSplitedPacket.MGetConst().FRouting.FFrom.FUuid))
-		{
-			LOG(ERROR)<<"Not all data sent last packet "<<FLastSplitedPacket.MGetConst();
-			FLastSplitedPacket.MUnSet();
-			MSendPacketsFromAnotherCustomer();
-
-			if(aVal.FDataId.FSplit.MIsSplited()) return MSendFirstSplitedPacket(aVal); //fixme call MSend again
-		}
-		else
-		{
-			VLOG(2)<<"Put to sequence buffer.";
-			FDataSequence.push_back(aVal);
-			return true;
-		}
-	}
-
-	return MSend(aVal.FData);
-}
-
-bool IMPL::MSendFirstSplitedPacket(
-		const user_data_t& aVal)
-{
-	if (aVal.FDataId.FSplit.FCounter != 1)
-	{
-		LOG(ERROR)<<"Invalid packet counter. "<<aVal.FDataId;
-		return false;
-
-	}
-	VLOG(2) << "Now receive split packet.";
-	FLastSplitedPacket = aVal.FDataId;
-	return MSend(aVal.FData);
+	return FSocket!=NULL && FSocket->MSend(aVal).FError==ISocket::E_SENDED;
 }
 
 bool IMPL::MSend(const user_data_t& aVal)
@@ -382,30 +251,44 @@ bool IMPL::MSend(const user_data_t& aVal)
 
 	if(!FSocket || !FSocket->MIsOpen())
 	{
-		FLastSplitedPacket.MUnSet();
 		return false;
 	}
+	CHECK(!aVal.FDataId.FSplit.MIsSplited());
+	const size_t _max_size=FSplit.FMaxSize;
+	const size_t _size=aVal.FData.size();
+	NSHARE::ISocket::eSendState _error=ISocket::E_SENDED;
 
-	if(FSplit.FType.MGetFlag(split_info::CAN_NOT_SPLIT))
+	if(FSplit.FType.MGetFlag(split_info::LIMITED) && _max_size<_size)
 	{
-		DCHECK(!aVal.FDataId.FSplit.MIsSplited());
-		if(aVal.FDataId.FSplit.MIsSplited())
-		return false;
-	}
-	else if(FSplit.FType.MGetFlag(split_info::LIMITED))
-	{
-		if(FLastSplitedPacket.MIs()) return MSendSplitedPacket(aVal);
-		else if( aVal.FDataId.FSplit.MIsSplited()) return MSendFirstSplitedPacket(aVal);
-		else if(!FDataSequence.empty())
+		const uint8_t*_begin=(const uint8_t*)aVal.FData.ptr_const();
+		const uint8_t*_end=_begin + _size;
+
+		size_t  _send_size=0;
+		for(;_begin!=_end && //
+				_error==ISocket::E_SENDED;_begin+=_send_size)
 		{
-			if(!MSendPacketsFromAnotherCustomer())
-			return false;
+			_send_size=std::min(_max_size,(size_t)(_end-_begin));
+			do
+			{
+				_error=FSocket->MSend(_begin,_send_size).FError;
+			}while(_error==ISocket::E_AGAIN && NSHARE::usleep(FRepeatTime));
 		}
-		else
-		VLOG(2)<<"Can send directly";
 	}
+	else
+	{
+		do
+		{
+			_error=FSocket->MSend(aVal.FData).FError;
+		}while(_error==ISocket::E_AGAIN && NSHARE::usleep(FRepeatTime));
+	}
+	if(_error!=ISocket::E_SENDED)
+	{
+		LOG(ERROR)<<"Cannot Send data From "<<aVal.FDataId<<" as "<<_error;
+		return false;
+	}
+	else
+		return true;
 
-	return MSend(aVal.FData);			//todo converting protocol
 }
 void IMPL::MClose()
 {
@@ -422,8 +305,9 @@ NSHARE::CConfig IMPL::MSerialize() const
 	}
 	_conf.MAdd("conf",FConfig);
 	_conf.MAdd("desc",Fd);
+	_conf.MAdd("Again",FRepeatTime);
 	_conf.MAdd(/*DEMAND,*/FDemands.MSerialize());
-	_conf.MAdd(EXIT_PROTOCOL,FProtocol);
+	_conf.MAdd(RECV_PROTOCOL,FReceiveProtocol);
 	_conf.MAdd(/*"info",*/FProgId.MSerialize());
 
 	return _conf;

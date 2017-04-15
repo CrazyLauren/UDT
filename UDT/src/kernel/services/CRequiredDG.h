@@ -40,7 +40,12 @@ public:
 	typedef std::set<NSHARE::uuid_t> unique_uuids_t;
 	//typedef std::map<NSHARE::CText,unique_uuids_t> uuids_of_t;
 	typedef std::map<required_header_t, uuids_of_receiver_t, CReqHeaderFastLessCompare> uuids_of_expecting_dg_t;
-	typedef std::map<NSHARE::CText, uuids_of_expecting_dg_t,
+	struct buffered_data_t
+	{
+		mutable NSHARE::CBuffer FBufferedData;
+		uuids_of_expecting_dg_t FExpected;
+	};
+	typedef std::map<NSHARE::CText, buffered_data_t,
 			NSHARE::CStringFastLessCompare> protocols_t;
 
 	typedef std::map<NSHARE::uuid_t, protocols_t> protocol_of_uuid_t;
@@ -91,9 +96,12 @@ private:
 
 	bool MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew, demand_dgs_t& aRem,demand_dgs_t& aAdd);
 	bool MDoesIdConformTo(id_t const& aFor,NSHARE::CRegistration const&) const;
+	uint32_t MNextMsgMask() const;
+
 	protocol_of_uuid_t FWhatIsSendingBy;
 	demand_dgs_for_t FDGs;
 	std::set<id_t> FIds;
+	mutable uint16_t FMsgID;
 };
 
 } /* namespace NUDT */

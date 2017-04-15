@@ -199,7 +199,7 @@ extern void add(struct timespec* aTo, double const& aFrom) //s
 }
 #endif //#if defined(__QNX__)|| defined(unix)
 
-extern  void usleep(long unsigned aVal)
+extern  bool usleep(long unsigned aVal)
 {
 	using namespace std;
 #if (defined(_WIN32) && !defined(__MINGW32__)) || (defined(__MINGW32__) && !defined(_POSIX_THREADS) )
@@ -219,8 +219,9 @@ extern  void usleep(long unsigned aVal)
 #else
 	::usleep(aVal);
 #endif
+	return true;
 }
-extern  unsigned sleep(unsigned aVal)
+extern  bool sleep(unsigned aVal)
 {
 #if (defined(_WIN32) && !defined(__MINGW32__)) || (defined(__MINGW32__) && !defined(_POSIX_THREADS) )
 	::Sleep(aVal * 1000);
@@ -237,7 +238,7 @@ extern  unsigned sleep(unsigned aVal)
 #else
 	::sleep(aVal);
 #endif
-	return 0;
+	return true;
 }
 
 #if defined(__QNX__)||defined(unix)||defined(__linux__)

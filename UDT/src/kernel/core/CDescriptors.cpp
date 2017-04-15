@@ -28,7 +28,6 @@ const NSHARE::CText CDescriptors::DESCRIPTOR_NAME="kerd";
 
 //const descriptor_t CDescriptors::MAX = 255;
 const descriptor_t CDescriptors::INVALID = -1;
-static uint32_t g_change_info=0;
 CDescriptors::CDescriptors() :
 		IState(NAME),FLast(1) //1 - minimal  value of descriptor
 {
@@ -59,8 +58,7 @@ int CDescriptors::MCreate()
 
 void CDescriptors::MOpenInfo(d_list_t::iterator _it,
 		const descriptor_info_t& aInfo, descriptor_t aVal)
-{
-	++g_change_info;
+{	
 	_it->second = aInfo;
 	FByUUIDs[aInfo.FProgramm.FId.FUuid] = _it;
 	open_descriptor const _val(aVal, aInfo);
@@ -93,8 +91,6 @@ int CDescriptors::MGetFree()
 
 void CDescriptors::MCloseInfo(const descriptor_info_t& _info, descriptor_t aVal)
 {
-	++g_change_info;
-
 	FByUUIDs.erase(_info.FProgramm.FId.FUuid);
 	close_descriptor _val(aVal, _info);
 	CDataObject::sMGetInstance().MPush(_val);
@@ -199,21 +195,7 @@ CDescriptors::d_list_t CDescriptors::MGetAll(eType aType) const
 			_list.insert(*_it);
 	return _list;
 }
-kernel_infos_t CDescriptors::MGetInfos(d_list_t * aTo) const
-{
-	kernel_infos_t _n(get_my_id());
-	CRAII<CMutex> _block(FBLock);
-	_n.FIndexNumber=g_change_info;
 
-	d_list_t::const_iterator _it = FDescriptors.begin();
-	for (; _it != FDescriptors.end(); ++_it)
-		if (_it->second.MIs())
-			_n.FCustomerInfo.insert(_it->second.MGetConst());
-	if(aTo)
-		*aTo=FDescriptors;
-
-	return _n;
-}
 bool CDescriptors::sMIsValid(descriptor_t aVal)
 {
 	return aVal >= 0;

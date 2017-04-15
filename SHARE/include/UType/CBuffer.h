@@ -224,6 +224,7 @@ public:
 	static void sMUnitTest(size_t aSize, IAllocater*);
 	bool MIsDetached() const;
 	bool MIsAllocatorEqual(IAllocater* aAlloc) const;
+	bool MIsAllocatorEqual(CBuffer const&) const;
 	IAllocater* MAllocator() const;
 	bool MIsRestored() const;
 	const size_t BEGIN_SIZE;

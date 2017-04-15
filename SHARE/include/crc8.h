@@ -164,7 +164,7 @@ struct crc8_t<FPolynom, TOffset, FTLSb>::make_t
 
 		_crctab[0] = 0;
 
-		for (int i = (SizeTable >> 1); i; i >>= 1)
+		for (size_t i = (SizeTable >> 1); i; i >>= 1)
 		{
 			_remaind = (_remaind >> 1) ^ (_remaind & 1 ? Polynom : 0);
 			for (int j = 0; j < SizeTable; j += 2 * i)
@@ -185,7 +185,7 @@ struct crc8_t<FPolynom, TOffset, FTLSb>::make_t<TPolyType,false>
 
 		_crctab[0] = 0;
 
-		for (int i = 1; i < base_t::SizeTable; i *= 2)
+		for (size_t i = 1; i < base_t::SizeTable; i *= 2)
 		{
 			_remaind = (_remaind << 1) ^ (_remaind & msbit ? base_t::Polynom : 0);
 			for (int j = 0; j < i; j++)
@@ -215,7 +215,7 @@ inline void crc8_t<FPolynom, TOffset, FTLSb>::sMPrintTable(std::ostream & aStrea
 	sMPrintHex(aStream, FPolynom);
 	aStream << std::endl;
 
-	for (int i = 0; i < SizeTable; i++)
+	for (size_t i = 0; i < SizeTable; i++)
 	{
 		sMPrintHex(aStream, sMCRCTable()[i]);
 		if (!((i + 1) % 4))

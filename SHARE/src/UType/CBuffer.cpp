@@ -1656,9 +1656,13 @@ CBuffer::allocator_type * CBuffer::sMDefAllaocter()
 	static CCommonAllocater<> g_common_allocater;
 	return &g_common_allocater;
 }
+bool CBuffer::MIsAllocatorEqual(CBuffer const& aRht) const
+{
+	return MIsAllocatorEqual(aRht.MAllocator());
+}
 bool CBuffer::MIsAllocatorEqual(IAllocater* aAlloc) const
 {
-	if (!FBuffer.FAllocator || !aAlloc)
+	if (!MAllocator() || !aAlloc)
 		return true;
 	return FBuffer.FAllocator == aAlloc;
 }

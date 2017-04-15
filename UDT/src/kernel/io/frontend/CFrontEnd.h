@@ -21,7 +21,8 @@ public:
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText FRONTEND_NAME;
 	static const NSHARE::CText DEMAND;
-	static const NSHARE::CText EXIT_PROTOCOL;
+	static const NSHARE::CText RECV_PROTOCOL;
+	static const NSHARE::CText REPEAT_TIME;
 
 	CFrontEnd(NSHARE::CConfig const&,CExternalChannel&);
 	~CFrontEnd();
@@ -32,8 +33,7 @@ public:
 
 //	void MReceivedData(const data_t& aVal);
 
-	void MReceivedData(data_t::const_iterator aBegin,
-			data_t::const_iterator aEnd);
+	void MReceivedData(NSHARE::CBuffer& aData);
 	bool MSend(const data_t& aVal);
 	bool MSend(const user_data_t& aVal);//todo cannot sent if protocol is not valid
 	NSHARE::CConfig MSerialize() const;
@@ -45,30 +45,20 @@ private:
 	void MInit(const NSHARE::CConfig& aConf);
 	void MConnected();
 	void MDisconnected();
-	void MRawReceivedData(data_t::const_iterator aBegin,
-			data_t::const_iterator aEnd);
-	void MParseDemands(const NSHARE::CConfig& aConf);
-	bool MSendPacketsFromAnotherCustomer();
-	bool MReceiveByProtocol(data_t::const_iterator aBegin,
-			data_t::const_iterator aEnd);
-	bool MSendSplitedPacket(const user_data_t& aVal);
-	bool MSendFirstSplitedPacket(const user_data_t& aVal);
 
-	NSHARE::CText FProtocol;
+	void MParseDemands(const NSHARE::CConfig& aConf);
+
+	NSHARE::CText FReceiveProtocol;
 	std::set<NSHARE::CText> FSendProtocol;
 	NSHARE::ISocket* FSocket;
 	CExternalChannel& FThis;
 	NSHARE::CConfig FConfig;
 	descriptor_t Fd;
 	split_info FSplit;
-	unsigned FPacketNumber;
+	uint16_t FPacketNumber;
 	program_id_t FProgId;
-	NSHARE::CBuffer FBuf;
 	demand_dgs_t FDemands;
-	std::list<user_data_t> FDataSequence;
-	NSHARE::smart_field_t<user_data_info_t> FLastSplitedPacket;
-
-	//bool FIsWorking;
+	unsigned FRepeatTime;
 };
 
 } /* namespace NUDT */

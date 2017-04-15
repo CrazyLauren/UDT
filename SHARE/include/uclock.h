@@ -32,8 +32,8 @@ extern SHARE_EXPORT void get_time(struct timeval *ts);
 #elif defined(__QNX__)|| defined(unix)
 extern SHARE_EXPORT void get_time(struct timespec *ts);
 #endif
-extern SHARE_EXPORT void usleep(long unsigned aVal);
-extern SHARE_EXPORT unsigned sleep(unsigned aVal);
+extern SHARE_EXPORT bool usleep(long unsigned aVal);
+extern SHARE_EXPORT bool sleep(unsigned aVal);
 extern SHARE_EXPORT uint64_t get_unix_time(); //ms
 extern SHARE_EXPORT void add(struct timespec* aTo, double const& aFrom); //s
 }

@@ -341,17 +341,17 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 
 	if (_data_size >= _min_crc_size)
 	{
-		VLOG_IF(1, !_head->FDataCrc) << " Null data crc, Ignoring...";
-		if (_head->FDataCrc) //optmization by protocol
+		VLOG_IF(1, !_head->MGetDataCRC()) << " Null data crc, Ignoring...";
+		if (_head->MGetDataCRC()) //optmization by protocol
 		{
 			head_t::crc_data_t::type_t _crc16 =
 					head_t::crc_data_t::sMCalcCRCofBuf(_head->MDataBegin(),
 							_head->MDataBegin() + _data_size);
 
-			if (_crc16 != _head->FDataCrc)
+			if (_crc16 != _head->MGetDataCRC())
 			{
 				LOG(ERROR) << "Invalid DATA CRC:" << _crc16 << ", in DG "
-						<< _head->FType << " DataCrc:" << _head->FDataCrc
+						<< _head->FType << " DataCrc:" << _head->MGetDataCRC()
 						<< ".It which will ignored.";
 				_need_handled = false;
 			}
@@ -398,14 +398,14 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 
 	if (_data_size >= _min_crc_size)
 	{
-		LOG_IF(WARNING, !_head->FDataCrc) << " Null data crc, Ignoring...";
-		if (_head->FDataCrc) //optmization by protocol
+		LOG_IF(WARNING, !_head->MGetDataCRC()) << " Null data crc, Ignoring...";
+		if (_head->MGetDataCRC()) //optmization by protocol
 		{
 			head_t::crc_data_t::type_t _crc16 =
 					head_t::crc_data_t::sMCalcCRCofBuf(_head->MDataBegin(),
 							_head->MDataBegin() + _data_size);
 
-			if (_crc16 != _head->FDataCrc)
+			if (_crc16 != _head->MGetDataCRC())
 			{
 				VLOG(2) << "Invalid DATA CRC Real:" << _crc16;
 				return Eok; //error

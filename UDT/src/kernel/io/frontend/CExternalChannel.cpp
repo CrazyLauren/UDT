@@ -104,7 +104,10 @@ void CExternalChannel::MReceivedData(data_t::const_iterator aBegin,
 		}
 	}
 	if (_channel.MIs())
-		_channel->MReceivedData(aBegin, aEnd);
+	{
+		NSHARE::CBuffer _buf(NULL, aBegin, aEnd);
+		_channel->MReceivedData(_buf);
+	}
 }
 bool CExternalChannel::MSend(const data_t& aVal, descriptor_t const& aTo)
 {

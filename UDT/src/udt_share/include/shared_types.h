@@ -45,6 +45,7 @@ enum eError
 	E_SOCKET_CLOSED=0x1<<15,
 	E_BUFFER_IS_FULL=0x1<<16,
 	E_PACKET_LOST=0x1<<17,
+	E_DATA_TOO_LARGE=0x1<<18,
 	E_MERGE_ERROR=0x1<<19,
 	E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=0x1<<20,
 	E_INCORRECT_USING_OF_UDT_1 = 0x1<<21,
@@ -303,7 +304,7 @@ struct UDT_SHARE_EXPORT kernel_infos_t
 	static const NSHARE::CText NUMBER;
 
 	program_id_t FKernelInfo;
-	mutable kern_links_t FCustomerInfo;
+	kern_links_t FCustomerInfo;
 	uint32_t FIndexNumber;//The greate the number the later the object is created (using then there is loop)
 
 	kernel_infos_t():FIndexNumber(0)
@@ -736,6 +737,10 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	if (_val.MGetFlag(NUDT::E_MERGE_ERROR))
 	{
 		aStream << " Cannot merge msg,";
+	}
+	if (_val.MGetFlag(NUDT::E_DATA_TOO_LARGE))
+	{
+		aStream << " The data too large";
 	}
 	if (_val.MGetFlag(NUDT::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE))
 	{

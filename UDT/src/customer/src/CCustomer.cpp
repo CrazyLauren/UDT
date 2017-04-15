@@ -71,6 +71,7 @@ const CCustomer::error_t CCustomer::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=(E_HANDLER
 const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=(E_SOCKET_CLOSED);
 const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=(E_BUFFER_IS_FULL);
 const CCustomer::error_t CCustomer::E_PACKET_LOST=(E_PACKET_LOST);
+const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=(E_DATA_TOO_LARGE);
 const CCustomer::error_t CCustomer::E_MERGE_ERROR=(E_MERGE_ERROR);
 const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
 
@@ -89,7 +90,7 @@ const unsigned CCustomer::FIRST_USER_ERROR_BIT=eUserErrorStartBits;
 
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
-				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0)
+				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0),FMainPacketNumber(0)
 {
 
 }
@@ -373,7 +374,7 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	fail_sent_args_t _fail;
 	_fail.FFrom=_prog.FRouting.FFrom.FUuid;
 	_fail.FProtocolName = _prog.FProtocol;
-	_fail.FPacketNumber = _prog.FPacketNumber;
+	_fail.FPacketNumber = _prog.FPacketNumber&std::numeric_limits<uint16_t>::max();
 	_fail.FRawProtocolNumber=_prog.FRawProtocolNumber;
 	_fail.FTo = _prog.FDestination;
 	_fail.FFails = _prog.FRouting;
@@ -472,7 +473,9 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 							<< " ; size:" << aFrom.FData.FData.size()
 							<< " Packet # "
 							<< aFrom.FData.FDataId.FPacketNumber;
-		_raw_args.FPacketNumber = aFrom.FData.FDataId.FPacketNumber;
+
+		_raw_args.FPacketNumber = aFrom.FData.FDataId.FPacketNumber&std::numeric_limits<uint16_t>::max();
+
 		_raw_args.FFrom = aFrom.FData.FDataId.FRouting.FFrom.FUuid; //may be remove?
 		_raw_args.FProtocolName =
 				aFrom.FData.FDataId.FProtocol.empty() ?
@@ -711,33 +714,13 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData=aBuf;
-	aBuf.release(); //optimization
-
 	_data.FDataId.FProtocol=aProtocolName;
-	_data.FDataId.FRouting.FFrom=FMyId.FId;
-	//_data.FDataId.FDestName.push_back(aTo);
-	int _number= FWorker->MSend(_data);
-	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
-	if(_number<0)
-	{
-		//some error, repair buffer
-		aBuf=_data.FData;
-	}
-	return _number;
+
+	return MSendImpl(aBuf,_data);
 }
 int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		NSHARE::CBuffer& aBuf, const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
-/*	if (aTo == FMyId.FId.FUuid)
-	{
-		VLOG(1) << "Loopback send";
-		recv_data_from_t _data;
-		_data.FData.FData = aBuf;
-		aBuf.release();
-		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
-		CDataObject::sMGetInstance().MPush(_data);
-		return 0;
-	}*/
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
@@ -748,32 +731,15 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData = aBuf;
-	aBuf.release(); //optimization
 	_data.FDataId.FProtocol = aProtocolName;
-	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FDestination.push_back(aTo);
-	int _number = FWorker->MSend(_data);
-	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
-	if (_number < 0)
-	{
-		//some error, repair buffer
-		aBuf = _data.FData;
-	}
-	return _number;
+
+	return MSendImpl(aBuf,_data);
 }
 int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 		const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags)
 {
-/*	if (aTo == FMyId.FId.FUuid)
-	{
-		VLOG(1) << "Loopback send";
-		recv_data_from_t _data;
-		_data.FData.FData = aBuf;
-		aBuf.release();
-		_data.FData.FDataId.FRouting.FFrom = FMyId.FId;
-		CDataObject::sMGetInstance().MPush(_data);
-		return 0;
-	}*/
+
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
@@ -783,19 +749,11 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData = aBuf;
-	aBuf.release(); //optimization
-	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber = aNumber;
 	_data.FDataId.FVersion=aVer;
 	_data.FDataId.FDestination.push_back(aTo);
-	int _number = FWorker->MSend(_data);
-	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
-	if (_number < 0)
-	{
-		//some error, repair buffer
-		aBuf = _data.FData;
-	}
-	return _number;
+
+	return MSendImpl(aBuf,_data);
 }
 int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer,
 		eSendToFlags)
@@ -809,21 +767,27 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData=aBuf;
-	aBuf.release(); //optimization
-	_data.FDataId.FRouting.FFrom=FMyId.FId;
 	_data.FDataId.FRawProtocolNumber=aNumber;
 	_data.FDataId.FVersion=aVer;
-	//_data.FDataId.FDestName.push_back(aTo);
-	int _number= FWorker->MSend(_data);
-	LOG_IF(INFO,_number>0) << FMyId.FId.FUuid << " sent packet #" << _number;
+
+	return MSendImpl(aBuf,_data);
+}
+int CCustomer::_pimpl::MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data)
+{
+	aBuf.release(); //optimization
+	_data.FDataId.FRouting.FFrom=FMyId.FId;
+	_data.FDataId.FPacketNumber=MNextUserPacketNumber();
+
+	int _number = FWorker->MSend(_data);
+	LOG_IF(INFO,_number>=0) << FMyId.FId.FUuid << " sent packet #" << _number;
 	if(_number<0)
 	{
 		//some error, repair buffer
 		aBuf=_data.FData;
+		return _number;
 	}
-	return _number;
+	return _data.FDataId.FPacketNumber;
 }
-
 NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(unsigned aSize) const
 {
 	if (FWorker)
@@ -849,6 +813,11 @@ void CCustomer::_pimpl::MWaitForReady(double aSec)
 	FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec);
 
 }
+uint16_t CCustomer::_pimpl::MNextUserPacketNumber()
+{
+	return ++FMainPacketNumber;
+}
+
 /*
  *
  *

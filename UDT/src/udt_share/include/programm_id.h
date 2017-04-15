@@ -83,12 +83,14 @@ struct UDT_SHARE_EXPORT program_id_t
 	uint64_t FPid;
 	NSHARE::CText FPath;
 	eType FType;
+	NSHARE::eEndian FEndian;
 
-	program_id_t()
+	program_id_t():
+		FTime(0),
+		FPid(0),
+		FType (E_KERNEL),
+		FEndian(NSHARE::E_SHARE_ENDIAN)
 	{
-		FTime=0;
-		FPid=0;
-		FType = E_KERNEL;
 	}
 #ifdef SHARE_CONFIG_DEFINED
 	static const NSHARE::CText NAME;
@@ -96,6 +98,7 @@ struct UDT_SHARE_EXPORT program_id_t
 	static const NSHARE::CText KEY_PID;
 	static const NSHARE::CText KEY_PATH;
 	static const NSHARE::CText KEY_TYPE;
+	static const NSHARE::CText KEY_ENDIAN;
 	
 	program_id_t(NSHARE::CConfig const& aConf):
 		FId(aConf.MChild(id_t::NAME)),//
@@ -107,6 +110,7 @@ struct UDT_SHARE_EXPORT program_id_t
 		aConf.MGetIfSet(KEY_PID, FPid);
 		aConf.MGetIfSet(KEY_PATH, FPath);
 		FType=static_cast<eType>(aConf.MValue(KEY_TYPE, 0));
+		FEndian=static_cast<NSHARE::eEndian>(aConf.MValue<unsigned>(KEY_ENDIAN, NSHARE::E_SHARE_ENDIAN));
 	}
 	NSHARE::CConfig MSerialize() const
 	{
@@ -115,6 +119,7 @@ struct UDT_SHARE_EXPORT program_id_t
 		_conf.MSet(KEY_PID, FPid);
 		_conf.MAdd(KEY_PATH, FPath);
 		_conf.MAdd<unsigned>(KEY_TYPE, FType);
+		_conf.MAdd<unsigned>(KEY_ENDIAN, FEndian);
 		_conf.MAdd(FId.MSerialize());
 		_conf.MAdd(FKernelVersion.MSerialize());
 		return _conf;

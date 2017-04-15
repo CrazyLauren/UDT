@@ -30,6 +30,7 @@ const NSHARE::CText program_id_t::KEY_TIME = "tm";
 const NSHARE::CText program_id_t::KEY_PID = "pid";
 const NSHARE::CText program_id_t::KEY_PATH = "path";
 const NSHARE::CText program_id_t::KEY_TYPE = "type";
+const NSHARE::CText program_id_t::KEY_ENDIAN = "edn";
 
 //---------------------------
 const NSHARE::CText uuids_t::NAME = "uuids";

@@ -109,7 +109,15 @@ var data_info =
                 _tmp["Path"] = aInfo.path;
                 let _date = new Date(1000 * aInfo.tm);
                 _tmp["Start time"] = _date.toUTCString();
-
+                switch (aInfo.edn)
+                {
+                    case "1":
+						_tmp["Endian"] = "Big";
+                        break;
+                    case "0":
+                        _tmp["Endian"] = "Little";
+                        break;
+                }				
                 $.extend(_tmp, jQuery.to_representation_form(
                     {
                         type: aInfo.type,

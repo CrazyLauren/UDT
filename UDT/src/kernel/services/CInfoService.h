@@ -28,40 +28,14 @@ public:
 	uuids_t MGetOtherKernelds() const;
 
 private:
-	struct k_info_t
-	{
-		k_info_t()
-		{
-			FPriority = 0;
-		}
+	typedef std::map<NSHARE::uuid_t, std::set<descriptor_t> > uuid_from_t;
 
-		k_info_t(const kernel_infos_array_t& aInfo, unsigned aPrior) :
-				FInfo(aInfo), //
-				FPriority(aPrior) //
-		{
-		}
-
-		kernel_infos_array_t FInfo;
-		unsigned FPriority;
-	};
-	struct k_counter
-	{
-		explicit k_counter() :
-				FCount(1)
-		{
-		}
-
-		unsigned FCount;
-	};
-	typedef std::map<descriptor_t, kernel_infos_array_t> last_net_from_descriptor_t;
-	typedef std::map<id_t, k_counter> kernels_counter_t; //the identical kernel can be available by several kernels
 	typedef std::map<CRouteGraph::node_t, std::vector<descriptor_t> > next_destination_t;
 
 	struct _data_info_t
 	{
 		kernel_infos_array_t FNet;
-		last_net_from_descriptor_t FLastNetFrom;
-		kernels_counter_t FWayCounter;
+		uuid_from_t FUUIDFrom;
 		CRouteGraph FGraph;
 		next_destination_t FDestianationCache;
 		descriptors_t FAllDescriptors;
@@ -85,38 +59,37 @@ private:
 			const kernel_link& aCustomer);
 	//bool MDeprecatedRemoveCustomer(const kernel_link& _what, _data_info_t& _d_info);
 	bool MIsCustomer(const kernel_link& _what, _data_info_t& _d_info) const;
-	bool MRebuild(_data_info_t& _d_info, kernel_infos_diff_t& _diff);
 
 
-	void MAddingNewKernelTo(kernel_infos_t& _new, _data_info_t& _new_array,
-			const kernel_infos_array_t& _looking_for_in);
-	bool MSetDiff(const kernel_infos_array_t& _old,
-			const kernel_infos_array_t& _new_array, k_diff_t& aRemoved,
-			k_diff_t& aAdded);
 	void MDebugPrintState() const;
 	void MSendNet(const descriptors_t& _sent_to);
 	void MChangeInform(const kernel_infos_diff_t& _removed_info);
-	//	void MRemoveCustomerOptimizing(const kernel_link& _what, kernel_infos_diff_t& _diff,
-	//			_data_info_t& _d_info);
-	//bool MUpdateMyInfo(_data_info_t& _d_info);
-	bool MRemoveCustomer(const kernel_link& _what, _data_info_t& _d_info,
-			kernel_infos_diff_t& _diff);
 	bool MRemoveKernel(const kernel_link& _what, const descriptor_t& aFrom,
 			_data_info_t& _d_info, kernel_infos_diff_t& _diff);
+	bool MAddKernel(const kernel_link& _what, const descriptor_t& aFrom,
+			_data_info_t& _d_info, kernel_infos_diff_t& _diff);
 
-	void MAddNewKernelTo(const kernel_link& _info, _data_info_t& _new_array,
-			const kernel_infos_array_t& aKernelList);
 	void MRebuildGraph(_data_info_t& _new_array);
-	void MRebuldKernels(const kern_links_t& _kinfo,
-			const kernel_infos_array_t& _actual_array,
-			_data_info_t& _new_array);
-	void MGetActualInfo(_data_info_t& _new_array,
-			kernel_infos_array_t& _actual_array);
-	bool MAddNewKernel(const kernel_link& _new, _data_info_t& _d_info,
-			kernel_infos_diff_t& _diff);
-	void MAddNewCustomer(const kernel_link& aInfo,_data_info_t& _d_info, kernel_infos_diff_t& _diff);
 	void MSynchronize(const descriptors_t& _sent_to,
 			const kernel_infos_diff_t& _diff);
+	bool MSynchronizeNetInfo(_data_info_t& _d_info,
+			const kernel_infos_array_t& _diff, descriptor_t const& aFrom,
+			kernel_infos_diff_t& diff);
+	void MGetCustomerDiff(kernel_infos_t const&,
+			kernel_infos_t const&, k_diff_t& aRemoved,
+		k_diff_t& aAdded);
+	void MPutKernel(kernel_infos_t const& _it_new,
+			const descriptor_t& aFrom,
+			k_diff_t& aAdded, uuid_from_t& _from,
+			kernel_infos_array_t& aTo);
+	void MPopKernel(
+			kernel_infos_t const& _it_old, const descriptor_t& aFrom,
+			k_diff_t& aRemoved, uuid_from_t& _from,
+			kernel_infos_array_t& aTo);
+	void MPutConsumerToMyInfo(const descriptor_t& aFrom,
+			const kernel_link& _new, _data_info_t& _d_info, k_diff_t& aAdded);
+	void MPopConsumerFromMyInfo(const descriptor_t& aFrom,const kernel_link& _new, _data_info_t& _d_info,
+			k_diff_t& aRemoved);
 
 	mutable info_data_t FData;
 	NSHARE::CMutex FUpdateMutex;

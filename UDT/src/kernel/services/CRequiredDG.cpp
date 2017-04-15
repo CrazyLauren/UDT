@@ -19,7 +19,7 @@ const NSHARE::CText CRequiredDG::NAME = "demands";
 //todo using hash algorithm
 CRequiredDG::CRequiredDG()
 {
-
+	FMsgID=0;
 }
 
 CRequiredDG::~CRequiredDG()
@@ -78,12 +78,12 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 
 	if (_prot_it == _proto.end())
 		_prot_it = _proto.insert(_prot_it,
-				std::make_pair(aWhat.FProtocol, uuids_of_expecting_dg_t()));
+				std::make_pair(aWhat.FProtocol, buffered_data_t()));
 
 	CHECK(_prot_it != _proto.end());
 
 	//looking for header
-	uuids_of_expecting_dg_t& _uuids = _prot_it->second;
+	uuids_of_expecting_dg_t& _uuids = _prot_it->second.FExpected;
 	uuids_of_expecting_dg_t::iterator _exp_it = _uuids.find(aWhat.FWhat);
 
 	VLOG_IF(2,_exp_it==_uuids.end())
@@ -163,7 +163,7 @@ void CRequiredDG::MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 
 	VLOG(2) << "The protocol is exit";
 	//looking for header
-	uuids_of_expecting_dg_t& _uuids = _prot_it->second;
+	uuids_of_expecting_dg_t& _uuids = _prot_it->second.FExpected;
 	uuids_of_expecting_dg_t::iterator _exp_it = _uuids.find(aWhat.FWhat);
 
 	if (_exp_it == _uuids.end())
@@ -438,9 +438,9 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			_data_info.FEndian = NSHARE::E_SHARE_ENDIAN;
 		}
 
-		_header_it = _prot_it->second.find(_header);
+		_header_it = _prot_it->second.FExpected.find(_header);
 
-		if (_header_it == _prot_it->second.end() )
+		if (_header_it == _prot_it->second.FExpected.end() )
 		{
 			LOG(ERROR)<< "No handler for " << _header
 			<< " is not exist";
@@ -652,14 +652,20 @@ int CRequiredDG::MGetCustomersFor(uuids_of_receiver_t& aTo,
 	required_header_t _header;
 	_header.FNumber = aNumber;
 
-	uuids_of_expecting_dg_t::const_iterator _jt = _prot_it->second.find(
+	uuids_of_expecting_dg_t::const_iterator _jt = _prot_it->second.FExpected.find(
 			_header);
-	if (_jt != _prot_it->second.end())
+	if (_jt != _prot_it->second.FExpected.end())
 	{
 		aTo = _jt->second;
 	}
 	return 0;
 }
+
+uint32_t CRequiredDG::MNextMsgMask() const
+{
+	return (++FMsgID) << (sizeof(FMsgID) * 8);
+}
+
 void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 		user_datas_t& aFailed, fail_send_array_t& aFail) const
 {
@@ -698,73 +704,116 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t& aFrom,
 		aFail.push_back(_sent);
 		return;
 	}
-	const size_t _size = _data.FData.size();
 
-	const uint8_t*_begin=(const uint8_t*)_data.FData.ptr_const();
-	VLOG(4) << "Parsing " << _size << " bytes  by "<<_data.FDataId.FProtocol;
-	IExtParser::result_t const _msgs = _p->MParserData(_begin,_begin + _size, _from);
+	NSHARE::CBuffer& _buffered_data = _prot_it->second.FBufferedData;
 
-	VLOG(1) << "Founded " << _msgs.size() << " dg.";
-	IExtParser::result_t::const_iterator _mt = _msgs.begin(), _mt_end(
-			_msgs.end());
+	VLOG(2)<<"Buffer size= "<<_buffered_data.size();
+	bool const _was_buffered=!_buffered_data.empty();
 
-	bool const _is_only_one = _msgs.size() == 1;
-	bool _has_to_be_pop = false;
-
-	for (; _mt != _mt_end; ++_mt)
+	if (_was_buffered)
 	{
-		IExtParser::obtained_dg_t const& _msg = *_mt;
-
-		if (!_is_only_one)	//Spiting buffer if need
-		{
-
-			user_data_t _new_packet;
-			_new_packet.FDataId = _data.FDataId;
-
-			CHECK(_msg.FBegin != _msg.FEnd);
-
-			_new_packet.FData = NSHARE::CBuffer(NULL, _msg.FBegin, _msg.FEnd);
-			aFrom.push_back(_new_packet);
-			VLOG(2)<<"Split big packet "<<(_msg.FEnd-_msg.FBegin)<<" bytes";
-			_has_to_be_pop = true;
-		}
-		user_data_t& _handling_data = aFrom.back();
-
-		if (_msg.FErrorCode != 0)
-		{
-			fail_send_t _sent(_handling_data.FDataId);
-			_sent.MSetUserError(_msg.FErrorCode);
-			_sent.FRouting.insert(_sent.FRouting.end(),
-					_sent.FDestination.begin(), _sent.FDestination.end());
-
-			aFail.push_back(_sent);
-			VLOG(2)<<"Fail "<<_sent;
-			aFailed.splice(aFailed.end(), aFrom, --aFrom.end());//not begin as the data can be added above
-		}
-		else
-		{
-			uuids_of_expecting_dg_t::const_iterator _jt = _prot_it->second.find(
-					_msg.FType);
-			LOG_IF(INFO, _jt==_prot_it->second.end()) << "Packet "
-																<< _p->MToConfig(
-																		_msg.FType).MToJSON(
-																		true)
-																<< " from "
-																<< _from
-																<< " does not required. Ignoring ...";
-
-			if (_jt != _prot_it->second.end())
-			{
-				VLOG(4) << " OK " << " filling info";
-				_handling_data.FDataId.FVersion=_msg.FType.FVersion;
-				MFillRouteAndDestanationInfo(_jt->second,
-						_handling_data.FDataId, aFail);
-			}
-		}
+		VLOG(2)<<"Copy buffered data ";
+		NSHARE::CBuffer const& _const_buf = _data.FData;
+		_buffered_data.insert(_buffered_data.end(), _const_buf.begin(), _const_buf.end());
+		_data.FData=_buffered_data;
+		_buffered_data.release();
 	}
 
-	if (_has_to_be_pop)	//as we split input buffer
+	NSHARE::CBuffer const& _buf = _data.FData;
+
+	const size_t _size = _buf.size();
+	const uint8_t*_begin=(const uint8_t*)_buf.ptr_const();
+	const uint8_t*_end=_begin + _size;
+	VLOG(4) << "Parsing " << _size << " bytes  by "<<_data.FDataId.FProtocol;
+	IExtParser::result_t const _msgs = _p->MParserData(_begin,_end, _from);
+
+	VLOG(1) << "Founded " << _msgs.size() << " dg.";
+	if (!_msgs.empty())
+	{
+		CHECK_LE(_msgs.back().FEnd, _end);
+		bool const _is_tail = _end != _msgs.back().FEnd;
+		bool const _is_only_one = _msgs.size() == 1 && !_is_tail;
+
+		IExtParser::result_t::const_iterator _mt = _msgs.begin(), _mt_end(
+				_msgs.end());
+
+		for (; _mt != _mt_end; ++_mt)
+		{
+			IExtParser::obtained_dg_t const& _msg = *_mt;
+
+			if (!_is_only_one)	//Spiting buffer if need
+			{
+
+				user_data_t _new_packet;
+				_new_packet.FDataId = _data.FDataId;
+				_new_packet.FDataId.FPacketNumber |= MNextMsgMask();
+
+				CHECK(_msg.FBegin != _msg.FEnd);
+
+				_new_packet.FData = NSHARE::CBuffer(NULL, _msg.FBegin,
+						_msg.FEnd);
+				aFrom.push_back(_new_packet);
+				VLOG(2) << "Split big packet " << (_msg.FEnd - _msg.FBegin)
+									<< " bytes";
+			}
+			user_data_t& _handling_data = aFrom.back();
+
+			if (_msg.FErrorCode != 0)
+			{
+				fail_send_t _sent(_handling_data.FDataId);
+				_sent.MSetUserError(_msg.FErrorCode);
+				_sent.FRouting.insert(_sent.FRouting.end(),
+						_sent.FDestination.begin(), _sent.FDestination.end());
+
+				aFail.push_back(_sent);
+				VLOG(2) << "Fail " << _sent;
+				aFailed.splice(aFailed.end(), aFrom, --aFrom.end());//not begin as the data can be added above
+			}
+			else
+			{
+				uuids_of_expecting_dg_t::const_iterator _jt =
+						_prot_it->second.FExpected.find(_msg.FType);
+				LOG_IF(INFO, _jt==_prot_it->second.FExpected.end()) << "Packet "
+																	<< _p->MToConfig(
+																			_msg.FType).MToJSON(
+																			true)
+																	<< " from "
+																	<< _from
+																	<< " does not required. Ignoring ...";
+
+				if (_jt != _prot_it->second.FExpected.end())
+				{
+					VLOG(4) << " OK " << " filling info";
+					_handling_data.FDataId.FVersion = _msg.FType.FVersion;
+					MFillRouteAndDestanationInfo(_jt->second,
+							_handling_data.FDataId, aFail);
+				}
+			}
+		}
+		if (_is_tail)
+		{
+			VLOG(2) << "Copy data to buffer " << _buffered_data.size();
+			LOG_IF(FATAL,_msgs.back().FEnd>=_end)
+															<< "Invalid address of FEnd. "
+															<< _msgs.back().FEnd
+															<< " > " << _end;
+			_buffered_data = NSHARE::CBuffer(NULL, _msgs.back().FEnd, _end);//copy tail
+
+		}
+		if (!_is_only_one)	//as It has been  splited or buffered
+			aFrom.pop_front();
+	}
+	else
+	{
+		VLOG(2) << "No msg";
+
+		if(_was_buffered || _buffered_data.MIsAllocatorEqual(_buf)/*optimization*/)
+			_buffered_data=_buf;
+		else
+			_buffered_data.deep_copy(_buf);
+
 		aFrom.pop_front();
+	}
 }
 
 bool CRequiredDG::MRemoveReceiversFor(NSHARE::uuid_t const& aUUID,
@@ -872,7 +921,7 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 			NSHARE::CText const& _protocol=_prot_it->first.empty()?RAW_PROTOCOL_NAME:_prot_it->first;
 			NSHARE::CConfig const _from=_it->first.MSerialize();
 			uuids_of_expecting_dg_t::const_iterator _jt =
-					_prot_it->second.begin(), _jt_end(_prot_it->second.end());
+					_prot_it->second.FExpected.begin(), _jt_end(_prot_it->second.FExpected.end());
 			for (; _jt != _jt_end; ++_jt)
 			{
 				NSHARE::CConfig _prot("msg");

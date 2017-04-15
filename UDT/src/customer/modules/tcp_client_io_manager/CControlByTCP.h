@@ -121,7 +121,6 @@ private:
 	std::set<unsigned> FSendUserFIFO;
 
 	unsigned FPort; //FIXME it's unnecessary
-	unsigned FMainPacketNumber;
 
 	ICustomer* FCustomer;
 	ILocalChannel* FMain;

@@ -16,7 +16,9 @@
 #include <IExtParser.h>
 namespace NSHARE
 {
-template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser> ;
+//#if  defined( _WIN32 )
+//template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser> ;
+//#endif
 }
 namespace NUDT
 {

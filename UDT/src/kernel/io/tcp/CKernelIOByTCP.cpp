@@ -73,7 +73,9 @@ void CKernelIOByTCP::MInitTcp()
 		_p->MGetIfSet(TIMEOUT, FTimeout);
 	}
 	VLOG(2) << "Construct IOContol Port=" << _port << ":" << this;
-	FTcpServiceSocket.MOpen(net_address(_port));
+	bool const _is=FTcpServiceSocket.MOpen(net_address(_port));
+	(void)_is;
+	CHECK(_is);
 }
 
 CKernelIOByTCP::~CKernelIOByTCP()
@@ -166,7 +168,8 @@ void CKernelIOByTCP::MServiceReceiver()
 {
 	VLOG(2) << "Async receive";
 	ISocket::data_t _data;
-	LOG_IF(FATAL, !FTcpServiceSocket.MIsOpen()) << "Port is closed";
+	for(;!FTcpServiceSocket.MIsOpen();NSHARE::usleep(10000))
+		LOG(ERROR) << "Port is closed";
 	for (; FTcpServiceSocket.MIsOpen(); )
 	{
 		_data.clear();

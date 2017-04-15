@@ -484,7 +484,7 @@ var udt_net =//static pane
             })
             _elemts.nodes.forEach(function (item)
             {
-                item.info = storage.susbscriber_net.get(item.data.id, false);
+                item.info = storage.susbscriber_net.get(item.data.id, true);
                 if (item.info)
                 {
                     item.data.type = item.info.type;

@@ -175,6 +175,7 @@ public:
 	static const error_t E_SOCKET_CLOSED;
 	static const error_t E_BUFFER_IS_FULL;
 	static const error_t E_PACKET_LOST;
+	static const error_t E_DATA_TOO_LARGE;
 	static const error_t E_MERGE_ERROR;
 	static const error_t E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;
 	static std::ostream& sMPrintError(std::ostream&,error_t const&);

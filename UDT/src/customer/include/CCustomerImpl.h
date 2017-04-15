@@ -70,7 +70,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	void MEventDisconnected();
 	void MWaitForReady(double aSec);
 	void MJoin();
-
+	uint16_t MNextUserPacketNumber();
 private:
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
@@ -83,6 +83,7 @@ private:
 	int MInitCallBacks();
 	int MLoadLibraries();
 	int MInitFactorys();
+	int MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data);
 
 	//-----------------
 	CCustomer& FThis;
@@ -106,6 +107,7 @@ private:
 	mutable NSHARE::CMutex FCommonMutex;
 	mutable NSHARE::CMutex FParserMutex;
 	uint32_t FUniqueNumber;
+	uint16_t FMainPacketNumber;
 
 	friend class CCustomer;
 };

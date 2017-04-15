@@ -43,7 +43,7 @@ void CSelectSocket::MAddSocket(CSocket const& aSocket)
 	VLOG(1) << "Add new socket " << aSocket;
 
 	LOG_IF(INFO,!aSocket.MIsValid()) << "Adding  Invalid socket.";
-
+	CRAII<CMutex> _lock(FMutex);
 	FFds.push_back(aSocket);
 	FIsSetUp = true;
 }
@@ -55,7 +55,7 @@ void CSelectSocket::MRemoveAll()
 void CSelectSocket::MRemoveSocket(CSocket const& aSocket)
 {
 	VLOG(1) << "Remove socket " << aSocket;
-
+	CRAII<CMutex> _lock(FMutex);
 	LOG_IF(WARNING,FFds.empty()) << "Removing socket from empty select";
 
 	if (FFds.empty())
@@ -64,12 +64,15 @@ void CSelectSocket::MRemoveSocket(CSocket const& aSocket)
 	typedef std::vector<std::vector<CSocket>::iterator> _its_t;
 	_its_t _its;
 
+	
+
 	for (std::vector<CSocket>::iterator _it = FFds.begin(); _it != FFds.end();
 			++_it)
 	{
 		if (*_it == aSocket)
 			_its.push_back(_it);
 	}
+	
 	LOG_IF(WARNING,_its.empty()) << "Socket" << aSocket << " is not founded";
 	VLOG_IF(0,_its.size()>1) << "There are equal id of socket.";
 

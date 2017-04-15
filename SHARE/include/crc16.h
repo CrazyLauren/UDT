@@ -74,7 +74,7 @@ struct crc16_t
 				/*/ sizeof(uint8_t)*/;
 
 		uint8_t const* __restrict _begin = (uint8_t const*) (pBegin);
-		for (unsigned i = 0; i < _size; ++i)
+		for (size_t i = 0; i < _size; ++i)
 		{
 			aOffset = (aOffset << 8)
 					^ _table.FCrc[((aOffset >> 8) ^ _begin[i]) & 0xff]; //sMCalcNextCRC is not used for for optimization
@@ -169,7 +169,7 @@ inline void crc16_t<FPolynom, TOffset, FTLSb>::sMPrintTable(
 	sMPrintHex(aStream, FPolynom);
 	aStream << std::endl;
 
-	for (int i = 0; i < SizeTable; i++)
+	for (sie_t i = 0; i < SizeTable; i++)
 	{
 		sMPrintHex(aStream, sMCRCTable()[i]);
 		if (!((i + 1) % 4))

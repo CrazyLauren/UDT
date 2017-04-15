@@ -11,7 +11,7 @@
  */  
 #ifndef CEVENTS_H_
 #define CEVENTS_H_
-#include <UType/CEvent.h>
+//#include <UType/CEvent.h>
 
 namespace NSHARE
 {
@@ -120,7 +120,7 @@ private:
 	sender_t FSender;
 	mutable mutex_t	 FMutex;
 };
-template class SHARE_EXPORT CEvents<>;
+//template class SHARE_EXPORT CEvents<>;
 
 } //namespace USHARE
 #include <UType/CEvents.hpp>

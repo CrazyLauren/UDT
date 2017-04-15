@@ -98,10 +98,10 @@ protected:
 
 	//5-d,6-d word
 	uint64_t FFromUUID;//can be problem with size(for debug only)
-public:
+
 	//7-d word
 	uint16_t FDataCrc;
-
+public:
 	uint8_t FType;//eMsgType
 	uint8_t FFlags;//eHeadFlags
 	//8-d word
@@ -126,12 +126,14 @@ public:
 	inline uint64_t MGetFromUUID() const;
 	inline uint16_t MGetCounter() const;
 	inline uint16_t MGetTimeMs() const;
+	inline uint16_t MGetDataCRC() const;
 
 	inline void  MSetDataSize(uint32_t);
 	inline void  MSetTime(uint32_t);
 	inline void  MSetFromUUID(uint64_t);
 	inline void  MSetCounter(uint16_t);
 	inline void  MSetTimeMs(uint16_t);
+	inline void  MSetDataCRC(uint16_t);
 
 	template<class T> T MEndianCorrectValue(T aVal) const;
 	head_t(uint8_t aMajor,uint8_t aMinor,eMsgType aType);
@@ -201,6 +203,10 @@ inline uint16_t head_t::MGetTimeMs() const
 {
 	return MEndianCorrectValue(FTimeMs);
 }
+inline uint16_t head_t::MGetDataCRC() const
+{
+	return MEndianCorrectValue(FDataCrc);
+}
 inline void  head_t::MSetDataSize(uint32_t aVal){
 	FDataSize=aVal;
 }
@@ -215,6 +221,9 @@ inline void  head_t::MSetCounter(uint16_t aVal){
 }
 inline void  head_t::MSetTimeMs(uint16_t aVal){
 	FTimeMs=aVal;
+}
+inline void  head_t::MSetDataCRC(uint16_t aVal) {
+	FDataCrc = aVal;
 }
 COMPILE_ASSERT(sizeof(NSHARE::version_t) == 4, InvalidSizeOfVersion);
 COMPILE_ASSERT(sizeof(head_t) == head_t::E_HEAD_SIZE, InvalidSizeOfHead);
@@ -576,7 +585,7 @@ inline std::ostream& operator<<(std::ostream & aStream,NUDT:: head_t const& aVal
 	aStream << "Data Size:" << (unsigned) aVal.MGetDataSize() << std::endl;
 	aStream << "Flags:" << (unsigned) aVal.FFlags << std::endl;
 	aStream << "Endian:" << (unsigned)aVal.FEndianness << std::endl;
-	aStream << "Data CRC:" << (unsigned) aVal.FDataCrc;
+	aStream << "Data CRC:" << (unsigned) aVal.MGetDataCRC();
 
 	return aStream;
 }

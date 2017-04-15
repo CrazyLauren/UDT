@@ -172,6 +172,7 @@ bool CKernelServerLink::MReceivedData(kernel_infos_array_t const& aInfo,
 	LOG_IF(INFO,!MIsOpened()) << "Cannot receive info array";
 	if (MIsOpened())
 	{
+		CHECK(FIsAccepted);
 		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(), aRoute,
 				aError);
 		return true;

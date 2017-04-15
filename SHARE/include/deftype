@@ -204,8 +204,8 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 
 
 //#include <interface/IEvent.h> //TODO ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
-#include <UType/CEvents.h>
 #include <UType/CEvent.h>
+#include <UType/CEvents.h>
 #include <UType/CThread.h>
 #include <UType/CThreadPool.h>
 #include <UType/CSafeData.h>

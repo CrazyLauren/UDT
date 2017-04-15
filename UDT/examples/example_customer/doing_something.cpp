@@ -33,34 +33,45 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	args_t const* _recv_arg=(args_t const*)aWHAT;
 
 	//!<Now You can handle the received data.
+	const uint8_t* _it = _recv_arg->FBegin;
+	for (int i = 0; _it != _recv_arg->FEnd; ++i, ++_it)
 	{
-		const uint8_t* _it=_recv_arg->FBegin;
-		for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
+		if (i % 255 != *_it)
 		{
-			if (i%255 != *_it)
-			{
-				STREAM_MUTEX_LOCK
-				std::cerr << "Fail data:"<<i<<"!="<<(unsigned)(*_it) << std::endl;
-				STREAM_MUTEX_UNLOCK
-				std::abort();
-			}
+			STREAM_MUTEX_LOCK
+			std::cerr << "Fail data:" << i << "!=" << (unsigned) (*_it)
+					<< std::endl;
+			STREAM_MUTEX_UNLOCK
+			std::abort();
 		}
-		
-		//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
 	}
-	
+
+	//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
+
 	STREAM_MUTEX_LOCK
-	std::cout << "Message #"<<_recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion<<" size "<<_recv_arg->FBuffer.size()<<" bytes received from "<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<< std::endl;
+	std::cout << "Message #" << _recv_arg->FPacketNumber << " ver "
+			<< _recv_arg->FVersion << " size " << _recv_arg->FBuffer.size()
+			<< " bytes received from " << _recv_arg->FFrom << " by "
+			<< _recv_arg->FProtocolName << std::endl;
 	STREAM_MUTEX_UNLOCK
+	
 	return 0;
 }
 extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	args_t const* _recv_arg = (args_t const*)aWHAT;
 	//!<Now You can handle the received data.
-	
+
 	STREAM_MUTEX_LOCK
-		std::cout << "Message #" << _recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
+		if(NSHARE::E_SHARE_ENDIAN ==_recv_arg->FEndian)
+			std::cout << "Message #" << _recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
+		else
+		std::cerr << "The byte endian of Message #" << _recv_arg->FPacketNumber
+				<< " ver " << _recv_arg->FVersion << " size "
+				<< _recv_arg->FBuffer.size() << " bytes received from "
+				<< _recv_arg->FFrom << " by " << _recv_arg->FProtocolName
+				<< " is not match" << std::endl;
+
 	STREAM_MUTEX_UNLOCK
 		return 0;
 }
