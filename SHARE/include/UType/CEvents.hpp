@@ -1,10 +1,10 @@
 /*
  * CEvents.hpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 27.11.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -64,11 +64,15 @@ inline bool CEvents<key_type, event_type, TIEvents, mutex_type>::MAdd(
 	CRAII<mutex_t> _blocked(FMutex);
 	iterator _it = FCBs.find(aVal.FKey);
 	if (_it == FCBs.end())
+	{
 		_it =
 				FCBs.insert(
 						typename Sequence_t::value_type(aVal.FKey,
 								event_t(FSender))).first;
-	return _it->second.MAdd(aVal.FCb, aPrior);
+		++FNumberOfArrayChange;
+	}
+	bool const _is=_it->second.MAdd(aVal.FCb, aPrior);
+	return _is;
 }
 template<class key_type, class event_type,
 		template<class, class > class TIEvents, class mutex_type>
@@ -82,7 +86,10 @@ inline bool CEvents<key_type, event_type, TIEvents, mutex_type>::MErase(
 	if (!_it->second.MErase(aVal.FCb))
 		return false;
 	if (_it->second.MSize() == 0)
+	{
 		FCBs.erase(_it);
+		++FNumberOfArrayChange;
+	}
 	return true;
 }
 
@@ -113,6 +120,7 @@ template<class key_type, class event_type,
 inline bool CEvents<key_type, event_type, TIEvents, mutex_type>::MIsKey(
 		key_t const& aVal) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	const_iterator _it = FCBs.find(aVal);
 	if (_it == FCBs.end())
 		return false;
@@ -123,20 +131,38 @@ template<class key_type, class event_type,
 inline int CEvents<key_type, event_type, TIEvents, mutex_type>::MCall(
 		key_t const& aKey, value_arg_t const& aCallbackArgs)
 {
-	event_t _event;
-	{
-		CRAII<mutex_t> _blocked(FMutex);
-		iterator _it = FCBs.find(aKey);
-		if (_it == FCBs.end())
+	CRAII<mutex_t> _blocked(FMutex);
+	iterator _it = FCBs.find(aKey);
+	if (_it == FCBs.end())
 			return 0;
-		_event = _it->second;
-	}
+
+	const atomic_t::value_type _number=MGetNumberOfChange();
+	event_t _event (_it->second);
+	event_t _event_copy (_event);
+	_blocked.MUnlock();// \note Для того чтобы не блокировать вызов других событий
+
 	int _rval = _event.MCall(aCallbackArgs);
-	if (!_event.MSize())
+
+	if(_event.MWasChanged(_event_copy.MGetNumberOfChange()))// список был изменён
 	{
 		CRAII<mutex_t> _blocked(FMutex);
-		FCBs.erase(aKey);
+
+		if(MWasChanged(_number))
+			_it=FCBs.find(aKey);
+
+		if (_it != FCBs.end())
+		{
+			_it->second.MSynchronizeChange(_event_copy,_event);
+
+
+			if (_it->second.MSize() == 0)
+			{
+				FCBs.erase(_it);
+				++FNumberOfArrayChange;
+			}
+		}
 	}
+
 	return _rval;
 }
 template<class key_type, class event_type,
@@ -158,6 +184,20 @@ template<class key_type, class event_type,
 inline bool CEvents<key_type, event_type, TIEvents, mutex_type>::MEmpty() const
 {
 	return FCBs.empty();
+}
+template<class key_type, class event_type,
+		template<class, class > class TIEvents, class mutex_type>
+inline atomic_t::value_type CEvents<key_type, event_type, TIEvents, mutex_type>::MGetNumberOfChange() const
+{
+	return FNumberOfArrayChange;
+}
+
+template<class key_type, class event_type,
+		template<class, class > class TIEvents, class mutex_type>
+inline bool CEvents<key_type, event_type, TIEvents, mutex_type>::MWasChanged(
+		atomic_t::value_type const& aVal) const
+{
+	return MGetNumberOfChange()!=aVal;
 }
 } //namespace USHARE
 

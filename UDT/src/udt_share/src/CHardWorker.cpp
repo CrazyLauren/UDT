@@ -2,9 +2,9 @@
  * CHardWorker.cpp
  *
  *  Created on: 03.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -37,7 +37,7 @@ void CHardWorker::MCreate(int aNum )
 void CHardWorker::MCreate(NSHARE::CThread::eThreadPriority _priority, int aNum )
 {
 	NSHARE::CThread::param_t _param;
-	_param.FPrior = _priority;
+	_param.priority = _priority;
 	FPool.MCreate(aNum, &_param);
 }
 
@@ -61,15 +61,15 @@ void CHardWorker::MCleanUP()
 	}
 }
 
-int CHardWorker::sMOperation(const NSHARE::CThread* WHO,
+NSHARE::eCBRval CHardWorker::sMOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, void* YOU_DATA)
 {
 	VLOG(2) << "Operation ";
 	data_for* _p = reinterpret_cast<data_for*>(YOU_DATA);
 	CHECK_NOTNULL(_p);
-	_p->FThis->MOperation(WHO, WHAT, _p->FWhat);
+	eCBRval const _rval=_p->FThis->MOperation(WHO, WHAT, _p->FWhat);
 	delete _p;
-	return 0;
+	return _rval;
 }
 bool CHardWorker::MPutOperation(NSHARE::operation_t const& aOp)
 {
@@ -92,7 +92,7 @@ CHardWorker::fifo_data_t& CHardWorker::MGetOrCreateFifoImpl(
 	DCHECK(FData.find(aWhat)==_it);
 	return _it->second;
 }
-void CHardWorker::MExecuteOperationFor(const NSHARE::CText& aWhat,
+NSHARE::eCBRval CHardWorker::MExecuteOperationFor(const NSHARE::CText& aWhat,
 		object_data_t& _user_data)
 {
 	args_data_t _args;
@@ -103,9 +103,10 @@ void CHardWorker::MExecuteOperationFor(const NSHARE::CText& aWhat,
 	int _count = MCall(aWhat, &_args);
 	VLOG(1) << "EOK:" << _count;
 	MFree(_user_data);
+	return E_CB_REMOVE;
 }
 
-void CHardWorker::MOperation(const NSHARE::CThread* WHO,
+NSHARE::eCBRval CHardWorker::MOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, const NSHARE::CText& aWhat)
 {
 	VLOG(2) << "Operation for " << aWhat;
@@ -116,21 +117,21 @@ void CHardWorker::MOperation(const NSHARE::CThread* WHO,
 		if (_it == FData.end())
 		{
 			LOG(ERROR) << "The " << aWhat << " is not exist.";
-			return;
+			return E_CB_REMOVE;
 		}
 		else
 		{
 			object_fifo_t& _ob_fifo=_it->second.FFifo;
 			DCHECK(!_ob_fifo.empty());
 			if (_ob_fifo.empty())
-				return;
+				return E_CB_REMOVE;
 
 			//moving the memory of  type T
 			_user_data = _ob_fifo.front();
 			_ob_fifo.pop_front();
 		}
 	}
-	MExecuteOperationFor(aWhat, _user_data);
+	return MExecuteOperationFor(aWhat, _user_data);
 }
 void CHardWorker::MNewDataFor(const NSHARE::CText& aWhat,
 		NSHARE::op_signal_t const& aCb, bool isPrior)

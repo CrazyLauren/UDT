@@ -1,10 +1,10 @@
 /*
  * net_function.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 07.03.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -60,7 +60,7 @@ namespace NSHARE
 {
 	namespace NNet
 	{
-		int ping(NSHARE::String aTarget, double aTime, unsigned aNumber)
+		int ping(NSHARE::CText aTarget, double aTime, unsigned aNumber)
 		{
 			int const _socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 			if (_socket <= 0)
@@ -96,7 +96,7 @@ namespace NSHARE
 			return _count;
 		}
 
-		NSHARE::String broadcast(NSHARE::String const& aIP, NSHARE::String const& aMask)
+		NSHARE::CText broadcast(NSHARE::CText const& aIP, NSHARE::CText const& aMask)
 		{
 			char _str[INET_ADDRSTRLEN];
 			struct in_addr _ip;
@@ -145,7 +145,7 @@ namespace NSHARE
 			}
 			return _bits;
 		}
-		int addresses(NSHARE::String const& aIP, NSHARE::String const& aMask,
+		int addresses(NSHARE::CText const& aIP, NSHARE::CText const& aMask,
 				NSHARE::Strings* aTo)
 		{
 			struct in_addr _ip;
@@ -157,7 +157,7 @@ namespace NSHARE
 
 			return addresses(_ip.s_addr, _mask.s_addr, aTo);
 		}
-		unsigned looking_for(NSHARE::String const& aIP, NSHARE::String const& aMask,
+		unsigned looking_for(NSHARE::CText const& aIP, NSHARE::CText const& aMask,
 				NSHARE::Strings* aTo, double aTime, unsigned aNumber)
 		{
 			//FIXME обяединить с поиском ip и ping. разбить на два потока- отправки и чтения
@@ -265,8 +265,8 @@ namespace NSHARE
 			}
 			return aTo->size();
 		}
-		bool is_in(NSHARE::String const& aIP, NSHARE::String const& aSubNet,
-				NSHARE::String const& aMask)
+		bool is_in(NSHARE::CText const& aIP, NSHARE::CText const& aSubNet,
+				NSHARE::CText const& aMask)
 		{
 			struct in_addr _ip_subnet;
 			if (inet_pton(AF_INET, aSubNet.c_str(), &_ip_subnet) <= 0)
@@ -384,6 +384,7 @@ uint16_t in_cksum(uint16_t *addr, size_t len)
 #endif //#ifndef _WIN32
 namespace NSHARE
 {
+const CText net_address::NAME="addr";
 const CText net_address::PORT="port";
 const CText net_address::IP="ip";
 
@@ -394,7 +395,7 @@ net_address::net_address(NSHARE::CConfig const& aConf):port(-1)
 }
 CConfig net_address::MSerialize() const
 {
-	CConfig _conf("addr");
+	CConfig _conf(NAME);
 	if (MIsValid())
 	{
 		_conf.MUpdateIfSet(IP, ip);

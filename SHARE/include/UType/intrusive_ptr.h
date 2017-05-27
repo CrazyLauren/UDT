@@ -1,10 +1,10 @@
 /*
  * intrusive_ptr.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,6 +14,10 @@
 
 namespace NSHARE
 {
+/** \brief intrusive pointer
+ *
+ * Stores a pointer to an object with an embedded counter.
+ */
 template<class T>
 class  intrusive_ptr
 {
@@ -33,24 +37,25 @@ public:
 		VLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << ptr << " :"
 				<< this;
-		if (MPtr() && (CIntrusived::sMRef(MPPtr()) == 0))
+		if (MPtr() && (CIntrusived::sMRef(MPtr()) == 0))
 		{
 			MSet(NULL);
 			LOG(WARNING) << "Pointer is empty after Ref.";
 		}
 	}
 	template<class U>
-	explicit intrusive_ptr(U* ptr) //FIXME remove dynamic_cast, using is_parent
+	explicit intrusive_ptr(U* ptr)
 	{
 		LOG_IF(WARNING,!ptr) << "Empty pointer in Constructor.";
 		MSet(ptr);
 
-		if (MPtr() && CIntrusived::sMRef(MPPtr()) == 0)
+		if (MPtr() && CIntrusived::sMRef(MPtr()) == 0)
 		{
 			MSet(NULL);
 			LOG(WARNING) << "Pointer is empty after Ref.";
 		}
 	}
+
 	intrusive_ptr(const intrusive_ptr& aRht)
 	{
 		MSet(aRht.MPtr());
@@ -58,14 +63,17 @@ public:
 				<< NSHARE::get_type_info<T>().MName() << ":" << aRht.MPtr()
 				<< " out of intrusive_ptr. :" << this;
 		if (MPtr()) //MRef cann't return 0;
-			CIntrusived::sMRef (MPPtr());
+			CIntrusived::sMRef(MPtr());
 		else
 			VLOG(1) << "Empty pointer in Constructor.";
 	}
-	//наследники
-	template<class U> intrusive_ptr(const intrusive_ptr<U>& aCopy)
+	/** \brief initialization by convertible object
+	 *
+	 */
+	template<class U>
+	explicit intrusive_ptr(const intrusive_ptr<U>& aCopy )
 	{
-		MSet(aCopy.MPtr()); //FIXME remove dynamic_cast, using is_parent
+		MSet(aCopy.MPtr());
 		VLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << aCopy.MPtr()
 				<< ", out of intrusive_ptr type "
@@ -76,10 +84,11 @@ public:
 				<< NSHARE::get_type_info<U>().MName();
 
 		if (MPtr())
-			CIntrusived::sMRef (MPPtr()); //MRef cann't return 0;
+			CIntrusived::sMRef (MPtr()); //MRef cann't return 0;
 		else
 			VLOG(1) << "Empty pointer in Constructor.";
 	}
+
 	~intrusive_ptr()
 	{
 		VLOG(5) << "Destruct intrusive_ptr for "
@@ -184,7 +193,7 @@ public:
 
 	T* MRelease()
 	{
-		VLOG(5) << "Release pointer :" << MPPtr() << ". :" << this;
+		VLOG(5) << "Release pointer :" << MPtr() << ". :" << this;
 		if (!MPtr())
 			return NULL;
 		T* _tmp = MPtr();
@@ -206,9 +215,6 @@ private:
 
 	template<class U> void MAssign(const intrusive_ptr<U>& aRht)
 	{
-//		T *_ptr = dynamic_cast<T*>(aRht.FPtr); ////FIXME remove dynamic_cast, using is_parent
-
-//		CHECK_EQ(_ptr, aRht.FPtr);
 		T* _ptr = static_cast<T*>(aRht.FPtrBase);
 		if (FPtrBase == _ptr)
 		{
@@ -216,23 +222,19 @@ private:
 				LOG(WARNING) << "Self assignment:" << this;
 			return;
 		}
-		//Был Баг когда FPtr удалялся(ref==0) раньше aP
+		//\note Был Баг когда FPtr удалялся(ref==0) раньше aP
 		T* _kostil = FPtrBase;
 		FPtrBase = _ptr;
-		if (FPtrBase && CIntrusived::sMRef(MPPtr()) == 0)
+		if (FPtrBase && CIntrusived::sMRef(MPtr()) == 0)
 			MSet( NULL);
-		if (_kostil && CIntrusived::sMUnref(&_kostil) == 0)
+		if (_kostil && CIntrusived::sMUnref(_kostil) == 0)
 			_kostil = NULL;
 	}
 
 	template<class U> friend class intrusive_ptr;
 	template<class U> friend class w_ptr;
 
-	inline T** MPPtr() const//fixme
-	{
-		return &FPtrBase;
-	}
-	inline T* MPtr() const//fixme
+	inline T* MPtr() const
 	{
 		return FPtrBase;
 	}
@@ -247,11 +249,14 @@ private:
 	}
 	void MUnref()
 	{
-		if (MPtr() && CIntrusived::sMUnref(MPPtr()) == 0)
+		if (MPtr() && CIntrusived::sMUnref(MPtr()) == 0)
 			MSet(NULL);
 	}
 	mutable T* FPtrBase;
 };
+/** \brief wake pointer for intrusive pointer
+ *
+ */
 template<class T>
 class w_ptr
 {

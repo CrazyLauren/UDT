@@ -1,10 +1,10 @@
 /*
  * CTcpClientMainImpl.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 02.08.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -89,15 +89,15 @@ split_info IMPL::MGetLimits(size_t aSize) const
 	VLOG(2)<<"new limits "<<_info;
 	return _info;
 }
-int IMPL::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval IMPL::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
 	IMPL* _p=reinterpret_cast<IMPL*>(aThis);
 	_p->MAddToSelect();
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -106,7 +106,7 @@ int IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 	_p->MRemoveFromSelect();
 	_p->MCloseRequest();
 	VLOG(2)<<"Disconnected";
-	return 0;
+	return E_CB_SAFE_IT;
 }
 template<>
 void IMPL::MFill<close_main_channel_t>(data_t* aTo) const

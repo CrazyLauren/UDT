@@ -1,10 +1,10 @@
 /*
  * CTcpServerMainChannel.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 13.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -409,10 +409,10 @@ const NSHARE::ISocket* CTcpServerMainChannel::MGetSocket() const
 {
 	return &FServer;
 }
-int CTcpServerMainChannel::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*aData)
+NSHARE::eCBRval CTcpServerMainChannel::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*aData)
 {
 	reinterpret_cast<CTcpServerMainChannel*>(aData)->MReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 
 bool CTcpServerMainChannel::MCheckingForOverload(NSHARE::CTCPServer::recvs_t const& _from) const
@@ -596,7 +596,7 @@ NSHARE::CConfig CTcpServerMainChannel::MSerialize() const
 	_state.MAdd(FServer.MSerialize());
 	return _state;
 }
-int CTcpServerMainChannel::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CTcpServerMainChannel::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -606,9 +606,9 @@ int CTcpServerMainChannel::sMConnect(void* aWho, void* aWhat, void* aThis)
 	VLOG(2) << "Connecting  " << *_client;
 	(void) _p;
 
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int CTcpServerMainChannel::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CTcpServerMainChannel::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -630,6 +630,6 @@ int CTcpServerMainChannel::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 	if (CDescriptors::sMIsValid(_des))
 		_p->MCloseRequest(_des);
 
-	return 0;
+	return E_CB_SAFE_IT;
 }
 }

@@ -1,10 +1,10 @@
 /*
  * version.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 22.03.2013
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -19,19 +19,27 @@ namespace NSHARE
 #else
 #define	SHARED_CONFIG_MSVC_FIX int
 #endif
+/** \brief Класс для хранения версии в формате
+ * (Страшая версия.Младшая версия.Номер ревизии или хэш репозит.)
+ *
+ */
 SHARED_PACKED(struct SHARE_EXPORT version_t
 {
 	static const NSHARE::CText NAME;
 
-	uint8_t FMajor;
-	uint8_t FMinor;
-	mutable uint16_t FRelease;
+	uint8_t FMajor;//<! - Major version
+	uint8_t FMinor;//<! - Minor version
+	mutable uint16_t FRelease;//<! - Revision(SVN)  or repository Hash(Git)
 
 
 	version_t(uint8_t aMajor=0,uint8_t aMinor=0,uint16_t aRelease=0);
 
 	inline bool MIsExist() const;
-	inline bool MIsCompatibleWith(version_t const&) const;
+	/** \brief Проверяет совместимость версии aVer с текущей
+	 *
+	 *	\param aVer - проверяемая версия
+	 */
+	inline bool MIsCompatibleWith(version_t const& aVer) const;
 	inline bool operator==(version_t const& aRht) const;
 	inline bool operator!=(version_t const& aRht) const;
 	version_t( SHARED_CONFIG_MSVC_FIX const& aConf);
@@ -83,105 +91,6 @@ inline NSHARE::CConfig version_t::MSerialize() const
 	return _conf;
 }
 #endif
-template<class T, unsigned Major, unsigned Minor>
-struct  impl_version_t
-{
-	typedef T class_t;
-
-	template<class U>
-	struct check
-	{
-		typedef char False[1];
-		typedef char True[2];
-
-		static True& f(U*);
-		static False& f(...);
-
-		static T* MakeT();
-		enum
-		{
-			result = sizeof(f(MakeT())) == sizeof(True),
-		};
-	};
-	enum
-	{
-		minor = Minor, major = Major
-	};
-};
-
-template<class T>
-struct  ver_impl_t
-{
-	typedef T class_t;
-	struct IsThereVersion
-	{
-		struct FallBack
-		{
-			struct version //Attention!!! должен совпадать с именем типа "версия" в CBaseObject
-			{
-				;
-			};
-		};
-		struct Derived: class_t, FallBack
-		{
-		};
-
-		typedef char False[1];
-		typedef char True[2];
-
-		template<typename U>
-		static False& f(typename U::version *);
-
-		template<typename U>
-		static True& f(U*);
-		enum
-		{
-			result = sizeof(f<Derived>(0)) == sizeof(True),
-		};
-	};
-
-	template<class U, bool val = IsThereVersion::result>
-	struct IsVersion
-	{
-		template<class X>
-		struct _ver
-		{
-			static NSHARE::version_t& sV()
-			{
-				static NSHARE::version_t _version =
-				{ 0, 0, 0 };
-				return _version;
-
-			}
-		};
-	};
-	template<class U>
-	struct IsVersion<U, true>
-	{
-		template<class X, bool val = X::version::template check<X>::result>
-		struct _ver
-		{
-			static NSHARE::version_t& sV()
-			{
-				static NSHARE::version_t _version =
-				{ 0, 0, 0 };
-				return _version;
-
-			}
-		};
-		template<class X>
-		struct _ver<X, true>
-		{
-			static NSHARE::version_t& sV()
-			{
-				static NSHARE::version_t _version (
-				 X::version::major, X::version::minor, 0 );
-				return _version;
-			}
-		};
-	};
-	typedef typename ver_impl_t<T>::template IsVersion<T>::template _ver<T> _v;
-};
 } //namespace USHARE
 namespace std
 {

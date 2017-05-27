@@ -2,9 +2,9 @@
  * CDataObject.h
  *
  *  Created on: 03.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -74,7 +74,7 @@ public:
 
 private:
 
-	static int sMUserDataOperation(NSHARE::CThread const* WHO,
+	static NSHARE::eCBRval sMUserDataOperation(NSHARE::CThread const* WHO,
 			NSHARE::operation_t* WHAT, void* YOU_DATA);
 	void MUserOperation(NSHARE::CThread const* WHO, NSHARE::operation_t* WHAT,
 			NSHARE::CText const &aWhat);

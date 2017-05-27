@@ -1,10 +1,10 @@
 /*
  * CText.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.02.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -20,14 +20,11 @@
 // Start of NSHARE namespace section
 namespace NSHARE
 {
-//TODO allocator in buffer
 //TODO to wstring
-//TODO copy on write
 //todo match
 //todo cmp no case
-//todo изначально буфер однобайтный, как только добавляется многобайтный символ
-//т.е. два режима - однобайтный или многобайтный?
-//может сделать таблицу?
+
+
 // definition of 'no position' value
 const CText::size_type CText::npos = static_cast<CText::size_type>(-1);
 const CText::size_type CText::S_MAX_SIZE = static_cast<size_type>(-1)
@@ -55,14 +52,16 @@ std::locale utf8_locale()
 	}
 	return loc;
 }
-CText::CText()
+CText::CText(allocator_type*aAllocator):
+		FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 }
-CText::CText(const CText& str)
+CText::CText(const CText& str):
+		FImpl(str.FImpl),//
+		FCodePointLength(str.FCodePointLength)//
 {
-	MInit();
-	assign(str);
+	//assign(str);
 }
 CText& CText::operator=(const CText& str)
 {
@@ -71,14 +70,18 @@ CText& CText::operator=(const CText& str)
 		LOG(WARNING)<<"Self assignment "<<str;
 		return *this;
 	}
-	return assign(str);
+	FImpl=str.FImpl;
+	FCodePointLength=str.FCodePointLength;
+	return *this;
 }
-CText::CText(const CText& str, size_type str_idx, size_type str_num)
+CText::CText(const CText& str, size_type str_idx, size_type str_num):
+				FImpl(str.FImpl),//
+				FCodePointLength(str.FCodePointLength)//
 {
-	MInit();
 	assign(str, str_idx, str_num);
 }
-CText::CText(const std::string& std_str)
+CText::CText(const std::string& std_str,allocator_type*aAllocator):
+				FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	assign(std_str);
@@ -87,22 +90,30 @@ CText& CText::operator=(const std::string& std_str)
 {
 	return assign(std_str);
 }
-CText::CText(const std::string& std_str, size_type str_idx, size_type str_num)
+CText::CText(const std::string& std_str, size_type str_idx, size_type str_num,
+		allocator_type*aAllocator) :
+		FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	assign(std_str, str_idx, str_num);
 }
-CText::CText(size_type num, utf32 code_point)
+CText::CText(size_type num, utf32 code_point,
+		allocator_type*aAllocator) :
+		FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	assign(num, code_point);
 }
-CText::CText(const_iterator const& iter_beg, const_iterator const& iter_end)
+CText::CText(const_iterator const& iter_beg, const_iterator const& iter_end,
+		allocator_type*aAllocator) :
+		FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	append(iter_beg, iter_end);
 }
-CText::CText(utf8 const* cstr, ICodeConv const& aType)
+CText::CText(utf8 const* cstr, ICodeConv const& aType,
+		allocator_type*aAllocator):
+				FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	assign(cstr, aType);
@@ -111,7 +122,9 @@ CText& CText::operator=(utf8 const* cstr)
 {
 	return assign(cstr);
 }
-CText::CText(utf8 const* chars, size_type chars_len, ICodeConv const& aType)
+CText::CText(utf8 const* chars, size_type chars_len, ICodeConv const& aType,
+		allocator_type*aAllocator):
+				FImpl(impl_t(aAllocator),aAllocator)
 {
 	MInit();
 	assign(chars, chars_len, aType);
@@ -122,62 +135,85 @@ CText& CText::operator=(utf32 code_point)
 }
 inline void CText::MInit()
 {
-	FReserve = QUICKBUFF_SIZE;
-	FEncodedBuff = 0;
-	FEncodedBuffLen = 0;
-	FEncodedDatlen = 0;
-	FUCS4Buf = 0;
-	FQuickUCS4[0]='\0';
-	MSetLen(0);
+	FCodePointLength=0;
 }
-//////////////////////////////////////////////////////////////////////////
-// Destructor
-//////////////////////////////////////////////////////////////////////////
+CText::impl_t::impl_t(allocator_type* aAllocator):
+		FSingleByteBuffer(NULL),//
+		FSingleByteBufferLen(0),//
+		FSingleByteDatalen(0),//
+		FMultiByteBuf(NULL),//
+		FMultiByteBufferLen(0),//
+		FAllocator(aAllocator)
+{
+	;
+}
+CText::impl_t::impl_t(const impl_t& aRht) :
+		FSingleByteBuffer(NULL), //
+		FSingleByteBufferLen(0), //
+		FSingleByteDatalen(0), //
+		FMultiByteBuf(NULL),//
+		FMultiByteBufferLen(0),//
+		FAllocator(aRht.FAllocator)
+{
+	if (aRht.FMultiByteBuf)
+	{
+		CHECK(aRht.FMultiByteBufferLen);
+		FMultiByteBufferLen=aRht.FMultiByteBufferLen;
+		FMultiByteBuf=(utf32*)FAllocator->MAllocate(FMultiByteBufferLen * sizeof(FMultiByteBuf[0]));
+		memcpy(FMultiByteBuf, aRht.FMultiByteBuf,
+				FMultiByteBufferLen * sizeof(FMultiByteBuf[0]));//fixme don't coping all buffer!!
+	}
+}
+CText::impl_t::~impl_t()
+{
+	if (FSingleByteBuffer)
+	{
+		FAllocator->MDeallocate(FSingleByteBuffer, FSingleByteBufferLen);
+	}
+	if(FMultiByteBuf)
+	{
+		FAllocator->MDeallocate(FMultiByteBuf, FMultiByteBufferLen* sizeof(FMultiByteBuf[0]));
+	}
+
+	FSingleByteBuffer=NULL;
+	FMultiByteBuf=NULL;
+}
 CText::~CText()
 {
-	if (FReserve > QUICKBUFF_SIZE)
-	{
-		delete[] FUCS4Buf;
-	}
-	if (FEncodedBuffLen > 0)
-	{
-		delete[] FEncodedBuff;
-	}
 }
 CText::reference CText::at(size_type idx)
 {
-	CHECK_LE(idx, FUCS4Length) << "Index is out of range for CEGUI::String";
-	MWillBeenChanged();
+	CHECK_LE(idx, size()) << "Index is out of range for CEGUI::String";
 	return operator[](idx);
 }
 CText::const_reference CText::at(size_type idx) const
 {
-	CHECK_LE(idx, FUCS4Length) << "Index is out of range for CEGUI::String";
+	CHECK_LE(idx, size()) << "Index is out of range for CEGUI::String";
 
 	return operator[](idx);
 }
 int CText::compare(size_type aFirst, size_type aLen, const CText& aStr,
 		size_type aStrFirst, size_type aStrLen) const
 {
-	if (aStr.FUCS4Length == 0) // empty
+	if (aStr.empty()) // empty
 	{
-		VLOG_IF(1,FUCS4Length)
+		VLOG_IF(1,empty())
 										<< "The empty string is comparing with empty string.";
-		LOG_IF(WARNING,aLen>FUCS4Length) << "Invalid length of string";
-		aLen = std::min(aLen, FUCS4Length);
+		LOG_IF(WARNING,aLen>size()) << "Invalid length of string";
+		aLen = std::min(aLen, size());
 		return aLen ? 1 : 0;
 	}
-	else if (!FUCS4Length)
+	else if (empty())
 		return -1;
 
-	CHECK_GT(FUCS4Length , aFirst) << "Index was out of range for CText object";
+	CHECK_GT(size() , aFirst) << "Index was out of range for CText object";
 
-	CHECK_GT(aStr.FUCS4Length , aStrFirst)
+	CHECK_GT(aStr.size() , aStrFirst)
 			<< "Index was out of range for CText object. StrLen=" << aFirst
-			<< ", Code point length=" << FUCS4Length;
+			<< ", Code point length=" << size();
 
-	if ((aStrLen == npos) || (aStrFirst + aStrLen > aStr.FUCS4Length))
-		aStrLen = aStr.FUCS4Length - aStrFirst;
+	if ((aStrLen == npos) || (aStrFirst + aStrLen > aStr.size()))
+		aStrLen = aStr.size() - aStrFirst;
 
 	if (aLen)
 	{
@@ -199,19 +235,19 @@ int CText::compare(size_type aFirst, size_type aLen, const CText& aStr,
 int CText::compare(size_type aFirst, size_type aLen, const std::string& std_str,
 		size_type str_idx, size_type str_len, ICodeConv const& aType) const
 {
-	if (std_str.length() == 0) // empty
+	if (std_str.empty()) // empty
 	{
 //		LOG_IF(WARNING,FUCS4Length)
 //											<< "The Index was out of range for the empty object";
 
-		LOG_IF(WARNING,aLen>FUCS4Length) << "Invalid length of string";
-		aLen = std::min(aLen, FUCS4Length);
+		LOG_IF(WARNING,aLen>size()) << "Invalid length of string";
+		aLen = std::min(aLen, size());
 		return aLen ? 1 : 0;
 	}
-	else if (!FUCS4Length)
+	else if (empty())
 		return -1;
 
-	CHECK_GT(FUCS4Length , aFirst) << "Index was out of range for CText object";
+	CHECK_GT(size() , aFirst) << "Index was out of range for CText object";
 
 	CHECK_GT(std_str.size() , str_idx)
 			<< "Index was out of range for std::string object";
@@ -229,19 +265,19 @@ int CText::compare(size_type aFirst, size_type aLen, utf8 const* aRhtStr,
 //		LOG_IF(WARNING,FUCS4Length)
 //											<< "The Index was out of range for the empty object";
 
-		LOG_IF(WARNING,aLen>FUCS4Length) << "Invalid length of string";
-		aLen = std::min(aLen, FUCS4Length);
+		LOG_IF(WARNING,aLen>size()) << "Invalid length of string";
+		aLen = std::min(aLen, size());
 		return aLen ? 1 : 0;
 	}
-	else if (!FUCS4Length)
+	else if (empty())
 		return -1;
 
-	CHECK_GT(FUCS4Length , aFirst) << "Index was out of range for CText object";
+	CHECK_GT(size() , aFirst) << "Index was out of range for CText object";
 	CHECK_NE(aStrLen , npos)
 			<< "Length for utf8 const encoded string can not be 'npos'";
 
-	if ((aLen == npos) || (aFirst + aLen > FUCS4Length))
-		aLen = FUCS4Length - aFirst;
+	if ((aLen == npos) || (aFirst + aLen > size()))
+		aLen = size() - aFirst;
 
 	if (aLen != 0)
 	{
@@ -268,22 +304,22 @@ int CText::compare(size_type aFirst, size_type aLen, utf8 const* aRhtStr,
 }
 int CText::compare(const CText& str) const
 {
-	return compare(0, FUCS4Length, str);
+	return compare(0, size(), str);
 }
 int CText::compare(const std::string& std_str) const
 {
-	return compare(0, FUCS4Length, std_str);
+	return compare(0, size(), std_str);
 }
 CText::size_type CText::length_code(ICodeConv const& aType) const
 {
-	if (!FUCS4Length)
+	if (empty())
 		return 0;
-	return aType.MSizeOf(ptr(), ptr() + FUCS4Length);
+	return aType.MSizeOf(ptr(), ptr() + size());
 }
 
 int CText::compare(utf8 const* cstr, ICodeConv const& aType) const
 {
-	return compare(0, FUCS4Length, cstr, aType.MLengthOf(cstr), aType);
+	return compare(0, size(), cstr, aType.MLengthOf(cstr), aType);
 }
 int CText::compare(size_type idx, size_type len, utf8 const* cstr,
 		ICodeConv const& aType) const
@@ -293,10 +329,10 @@ int CText::compare(size_type idx, size_type len, utf8 const* cstr,
 CText::size_type CText::copy(char* buf, size_type len, size_type idx,
 		ICodeConv const& aType) const
 {
-	CHECK_GT(FUCS4Length , idx) << "Index was out of range for CText object";
+	CHECK_GT(size() , idx) << "Index was out of range for CText object";
 
 	if (len == npos)
-		len = FUCS4Length;
+		len = size();
 
 	return MFromUCS4(&ptr()[idx], buf, npos, len, aType);
 }
@@ -307,18 +343,18 @@ CText::size_type CText::copy(char* buf, size_type len, size_type idx,
 CText& CText::assign(const CText& str, size_type str_idx, size_type str_num)
 {
 	MWillBeenChanged();
-	VLOG_IF(5,!str.FUCS4Length) << "String is NULL";
-	if (!str.FUCS4Length)
+	VLOG_IF(5,str.empty()) << "String is NULL";
+	if (str.empty())
 	{
 		MGrow(0);
 		MSetLen(0);
 		return *this;
 	}
-	CHECK_GT(str.FUCS4Length , str_idx)
+	CHECK_GT(str.size() , str_idx)
 			<< "Index was out of range for std::string object";
 
-	if ((str_num == npos) || (str_num > str.FUCS4Length - str_idx))
-		str_num = str.FUCS4Length - str_idx;
+	if ((str_num == npos) || (str_num > str.size() - str_idx))
+		str_num = str.size() - str_idx;
 
 	MGrow(str_num);
 	MSetLen(str_num);
@@ -370,7 +406,7 @@ CText& CText::assign(utf8 const* utf8_str, size_type str_num,
 	VLOG(2) << utf8_str;
 	MGrow(str_num);
 
-	MToUCS4(utf8_str, ptr(), FReserve, aType);
+	MToUCS4(utf8_str, ptr(), MGetBufferLength(), aType);
 	MSetLen(str_num);
 	return *this;
 }
@@ -406,14 +442,14 @@ CText& CText::append(const CText& str, size_type str_idx, size_type str_num)
 	if (str.empty())
 		return *this;
 	MWillBeenChanged();
-	CHECK_GT (str.FUCS4Length , str_idx) << "Index is out of range for CText";
+	CHECK_GT (str.size() , str_idx) << "Index is out of range for CText";
 
-	if ((str_num == npos) || (str_num > str.FUCS4Length - str_idx))
-		str_num = str.FUCS4Length - str_idx;
+	if ((str_num == npos) || (str_num > str.size() - str_idx))
+		str_num = str.size() - str_idx;
 
-	MGrow(FUCS4Length + str_num);
-	memcpy(&ptr()[FUCS4Length], &str.ptr()[str_idx], str_num * sizeof(utf32));
-	MSetLen(FUCS4Length + str_num);
+	MGrow(size() + str_num);
+	memcpy(&ptr()[size()], &str.ptr()[str_idx], str_num * sizeof(utf32));
+	MSetLen(size() + str_num);
 	return *this;
 }
 CText& CText::append(const std::string& std_str, size_type str_idx,
@@ -448,10 +484,10 @@ CText& CText::append(utf8 const* utf8_str, size_type len,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	MGrow(FUCS4Length + len);
-	MToUCS4(utf8_str, ptr() + FUCS4Length, len, aType);
+	MGrow(size() + len);
+	MToUCS4(utf8_str, ptr() + size(), len, aType);
 
-	MSetLen(FUCS4Length + len);
+	MSetLen(size() + len);
 
 	return *this;
 }
@@ -459,10 +495,10 @@ CText& CText::append(size_type num, utf32 code_point)
 {
 	CHECK_NE (num , npos) << "Code point count can not be 'npos'";
 	MWillBeenChanged();
-	size_type newsz = FUCS4Length + num;
+	size_type newsz = size() + num;
 	MGrow(newsz);
 
-	utf32* p = &ptr()[FUCS4Length];
+	utf32* p = &ptr()[size()];
 
 	while (num--)
 		*p++ = code_point;
@@ -482,17 +518,17 @@ CText& CText::insert(size_type idx, const CText& str, size_type str_idx,
 	if (str.empty())
 		return *this;
 	MWillBeenChanged();
-	if (FUCS4Length)
-		CHECK_GT(FUCS4Length , idx) << "Index is out of range for CText";
-	CHECK_GT(str.FUCS4Length , str_idx) << "Index is out of range for CText";
+	if (!empty())
+		CHECK_GT(size() , idx) << "Index is out of range for CText";
+	CHECK_GT(str.size() , str_idx) << "Index is out of range for CText";
 
-	if ((str_num == npos) || (str_num > str.FUCS4Length - str_idx))
-		str_num = str.FUCS4Length - str_idx;
+	if ((str_num == npos) || (str_num > str.size() - str_idx))
+		str_num = str.size() - str_idx;
 
-	size_type newsz = FUCS4Length + str_num;
+	size_type newsz = size() + str_num;
 	MGrow(newsz);
 	memmove(&ptr()[idx + str_num], &ptr()[idx],
-			(FUCS4Length - idx) * sizeof(utf32));
+			(size() - idx) * sizeof(utf32));
 	memcpy(&ptr()[idx], &str.ptr()[str_idx], str_num * sizeof(utf32));
 	MSetLen(newsz);
 
@@ -516,19 +552,19 @@ CText& CText::insert(size_type idx, utf8 const* utf8_str, size_type len,
 		ICodeConv const& aType)
 {
 	MWillBeenChanged();
-	if (FUCS4Length)
-		CHECK_GT(FUCS4Length , idx) << "Index is out of range for CText";
+	if (!empty())
+		CHECK_GT(size() , idx) << "Index is out of range for CText";
 	CHECK_NE (len ,npos) << "Length of char array can not be 'npos'";
 
 	CHECK_LE(len, aType.MLengthOf(utf8_str,len))
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	size_type newsz = FUCS4Length + len;
+	size_type newsz = size() + len;
 
 	MGrow(newsz);
 	memmove(ptr() + idx + len, ptr() + idx,
-			(FUCS4Length - idx) * sizeof(utf32));
+			(size() - idx) * sizeof(utf32));
 
 	MToUCS4(utf8_str, ptr() + idx, len, aType);
 
@@ -537,25 +573,31 @@ CText& CText::insert(size_type idx, utf8 const* utf8_str, size_type len,
 }
 CText& CText::insert(size_type idx, size_type num, utf32 code_point)
 {
-	MWillBeenChanged();
-	if (FUCS4Length)
-		CHECK_GT(FUCS4Length , idx) << "Index is out of range for CText";
+	LOG_IF(ERROR,code_point == '\0')<<"Unexpected behavior!!";
+	if (num == 0 || code_point == '\0')
+		(void) 0;
+	else
+	{
 
-	CHECK_NE (num ,npos) << "Length of char array can not be 'npos'";
+		MWillBeenChanged();
+		if (!empty())
+			CHECK_GT(size() , idx) << "Index is out of range for CText";
 
-	size_type newsz = FUCS4Length + num;
-	MGrow(newsz);
+		CHECK_NE (num ,npos) << "Length of char array can not be 'npos'";
 
-	memmove(&ptr()[idx + num], &ptr()[idx],
-			(FUCS4Length - idx) * sizeof(utf32));
+		size_type newsz = size() + num;
+		MGrow(newsz);
 
-	utf32* pt = &ptr()[idx + num - 1];
+		memmove(&ptr()[idx + num], &ptr()[idx],
+				(size() - idx) * sizeof(utf32));
 
-	while (num--)
+		utf32* pt = &ptr()[idx + num - 1];
+
+		while (num--)
 		*pt-- = code_point;
 
-	MSetLen(newsz);
-
+		MSetLen(newsz);
+	}
 	return *this;
 }
 
@@ -568,15 +610,15 @@ CText& CText::erase(size_type idx, size_type len)
 	if (len == 0)
 		return *this;
 	MWillBeenChanged();
-	CHECK_GT(FUCS4Length,idx) << "Index is out of range for CText";
+	CHECK_GT(size(),idx) << "Index is out of range for CText";
 
 	if (len == npos)
-		len = FUCS4Length - idx;
+		len = size() - idx;
 
-	size_type newsz = FUCS4Length - len;
+	size_type newsz = size() - len;
 
 	memmove(&ptr()[idx], &ptr()[idx + len],
-			(FUCS4Length - idx - len) * sizeof(utf32));
+			(size() - idx - len) * sizeof(utf32));
 	MSetLen(newsz);
 	return *this;
 }
@@ -585,14 +627,14 @@ CText& CText::erase(size_type idx, size_type len)
 //////////////////////////////////////////////////////////////////////////
 void CText::resize(size_type num, utf32 code_point)
 {
-	if (num < FUCS4Length)
+	if (num < size())
 	{
 		MWillBeenChanged();
 		MSetLen(num);
 	}
 	else
 	{
-		append(num - FUCS4Length, code_point);
+		append(num - size(), code_point);
 	}
 
 }
@@ -602,24 +644,24 @@ void CText::resize(size_type num, utf32 code_point)
 CText& CText::replace(size_type idx, size_type len, const CText& str,
 		size_type str_idx, size_type str_num)
 {
-	CHECK_GE(FUCS4Length , idx) << "Index is out of range for CText";
-	CHECK_GE(str.FUCS4Length , str_idx) << "Index is out of range for CText";
+	CHECK_GE(size() , idx) << "Index is out of range for CText";
+	CHECK_GE(str.size() , str_idx) << "Index is out of range for CText";
 
-	if (((str_idx + str_num) > str.FUCS4Length) || (str_num == npos))
-		str_num = str.FUCS4Length - str_idx;
+	if (((str_idx + str_num) > str.size()) || (str_num == npos))
+		str_num = str.size() - str_idx;
 
-	if (((len + idx) > FUCS4Length) || (len == npos))
-		len = FUCS4Length - idx;
+	if (((len + idx) > size()) || (len == npos))
+		len = size() - idx;
 
 	MWillBeenChanged();
 
-	size_type newsz = FUCS4Length + str_num - len;
+	size_type newsz = size() + str_num - len;
 
 	MGrow(newsz);
 
-	if ((idx + len) < FUCS4Length)
+	if ((idx + len) < size())
 		memmove(&ptr()[idx + str_num], &ptr()[len + idx],
-				(FUCS4Length - idx - len) * sizeof(utf32));
+				(size() - idx - len) * sizeof(utf32));
 
 	memcpy(&ptr()[idx], &str.ptr()[str_idx], str_num * sizeof(utf32));
 	MSetLen(newsz);
@@ -629,7 +671,7 @@ CText& CText::replace(size_type idx, size_type len, const CText& str,
 CText& CText::replace(size_type idx, size_type len, const std::string& std_str,
 		size_type str_idx, size_type str_num)
 {
-	CHECK_GE(FUCS4Length , idx) << "Index is out of range for CText";
+	CHECK_GE(size() , idx) << "Index is out of range for CText";
 
 	CHECK_GE(std_str.size() , str_idx)
 			<< "Index is out of range for  std::string";
@@ -637,18 +679,18 @@ CText& CText::replace(size_type idx, size_type len, const std::string& std_str,
 	if (((str_idx + str_num) > std_str.size()) || (str_num == npos))
 		str_num = (size_type) std_str.size() - str_idx;
 
-	if (((len + idx) > FUCS4Length) || (len == npos))
-		len = FUCS4Length - idx;
+	if (((len + idx) > size()) || (len == npos))
+		len = size() - idx;
 
 	MWillBeenChanged();
 
-	size_type newsz = FUCS4Length + str_num - len;
+	size_type newsz = size() + str_num - len;
 
 	MGrow(newsz);
 
-	if ((idx + len) < FUCS4Length)
+	if ((idx + len) < size())
 		memmove(&ptr()[idx + str_num], &ptr()[len + idx],
-				(FUCS4Length - idx - len) * sizeof(utf32));
+				(size() - idx - len) * sizeof(utf32));
 
 	utf32* pt = &ptr()[idx + str_num - 1];
 
@@ -663,7 +705,7 @@ CText& CText::replace(size_type idx, size_type len, const std::string& std_str,
 CText& CText::replace(size_type idx, size_type len, utf8 const* utf8_str,
 		size_type str_len, ICodeConv const& aType)
 {
-	CHECK_GE(FUCS4Length, idx) << "Index is out of range for CText";
+	CHECK_GE(size(), idx) << "Index is out of range for CText";
 	CHECK_NE(str_len , npos)
 			<< "Length for utf8 encoded string can not be 'npos'";
 
@@ -671,21 +713,21 @@ CText& CText::replace(size_type idx, size_type len, utf8 const* utf8_str,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	if (((len + idx) > FUCS4Length) || (len == npos))
+	if (((len + idx) > size()) || (len == npos))
 	{
 		LOG_IF(WARNING,len != npos) << "Length was out of range ";
-		len = FUCS4Length - idx;
+		len = size() - idx;
 	}
 
 	MWillBeenChanged();
 
-	size_type newsz = FUCS4Length + str_len - len;
+	size_type newsz = size() + str_len - len;
 
 	MGrow(newsz);
 
-	if ((idx + len) < FUCS4Length)
+	if ((idx + len) < size())
 		memmove(ptr() + idx + str_len, ptr() + len + idx,
-				(FUCS4Length - idx - len) * sizeof(utf32));
+				(size() - idx - len) * sizeof(utf32));
 
 	MToUCS4(utf8_str, ptr() + idx, str_len, aType, str_len);
 
@@ -695,21 +737,21 @@ CText& CText::replace(size_type idx, size_type len, utf8 const* utf8_str,
 CText& CText::replace(size_type idx, size_type len, size_type num,
 		utf32 code_point)
 {
-	CHECK_GE(FUCS4Length, idx) << "Index is out of range for CText";
+	CHECK_GE(size(), idx) << "Index is out of range for CText";
 	CHECK_NE(len , npos) << "Length for utf8 encoded string can not be 'npos'";
 
-	if (((len + idx) > FUCS4Length) || (len == npos))
-		len = FUCS4Length - idx;
+	if (((len + idx) > size()) || (len == npos))
+		len = size() - idx;
 
 	MWillBeenChanged();
 
-	size_type newsz = FUCS4Length + num - len;
+	size_type newsz = size() + num - len;
 
 	MGrow(newsz);
 
-	if ((idx + len) < FUCS4Length)
+	if ((idx + len) < size())
 		memmove(&ptr()[idx + num], &ptr()[len + idx],
-				(FUCS4Length - idx - len) * sizeof(utf32));
+				(size() - idx - len) * sizeof(utf32));
 
 	utf32* pt = &ptr()[idx + num - 1];
 
@@ -737,18 +779,35 @@ CText& CText::replace(iterator iter_beg, iterator iter_end,
 		size_type idx = MSafeIterDif(iter_beg, iterator(ptr()));
 		size_type len = MSafeIterDif(iter_end, iter_beg);
 
-		if ((len + idx) > FUCS4Length)
-			len = FUCS4Length - idx;
+		if ((len + idx) > size())
+			len = size() - idx;
 
-		size_type newsz = FUCS4Length + str_len - len;
+		size_type newsz = size() + str_len - len;
+		utf32* const _old_ptr=ptr();
 
 		MGrow(newsz);
 
-		if ((idx + len) < FUCS4Length)
-			memmove(&ptr()[idx + str_len], &ptr()[len + idx],
-					(FUCS4Length - idx - len) * sizeof(utf32));
+		utf32* const _ptr=ptr();
 
-		memcpy(&ptr()[idx], iter_newBeg.d_ptr, str_len * sizeof(utf32));
+		if (_old_ptr != _ptr //
+				&& ((ptr_const() < iter_newBeg.d_ptr
+						&& iter_newBeg.d_ptr
+								< (ptr_const() + MGetBufferLength())) || //
+						(ptr_const() < iter_newEnd.d_ptr
+								&& iter_newEnd.d_ptr
+										< (ptr_const() + MGetBufferLength()))))
+		{
+			LOG(ERROR)<< "Undefined behavior! The buffer has been reallocated. Therefore iterator has been invalidated.";
+			CText::size_type const _begin=MSafeIterDif(iter_newBeg, iterator(_old_ptr));
+			CText::size_type const _end=MSafeIterDif(iter_newEnd, iterator(_old_ptr));
+			iter_newBeg=const_iterator(_ptr+_begin);
+			iter_newEnd=const_iterator(_ptr+_end);
+		}
+		if ((idx + len) < size())
+			memmove(&_ptr[idx + str_len], &_ptr[len + idx],
+					(size() - idx - len) * sizeof(utf32));
+
+		memcpy(&_ptr[idx], iter_newBeg.d_ptr, str_len * sizeof(utf32));
 		MSetLen(newsz);
 	}
 
@@ -761,14 +820,14 @@ CText& CText::replace(iterator iter_beg, iterator iter_end,
 
 CText::size_type CText::find(utf32 code_point, size_type idx) const
 {
-	if (idx >= FUCS4Length)
+	if (idx >= size())
 	{
 		VLOG(0) << "Invalid string index indx=" << idx;
 		return npos;
 	}
 
 	const utf32* _begin = ptr() + idx;
-	const utf32* _end = ptr() + FUCS4Length;
+	const utf32* _end = ptr() + size();
 
 	for (; _begin < _end; ++_begin)
 	{
@@ -780,16 +839,16 @@ CText::size_type CText::find(utf32 code_point, size_type idx) const
 }
 CText::size_type CText::rfind(utf32 code_point, size_type aIndx) const
 {
-	if (FUCS4Length == 0)
+	if (empty())
 	{
-		LOG(WARNING)<< "String Length is Null ="<<FUCS4Length;
+		LOG(WARNING)<< "String Length is Null ="<<size();
 		return npos;
 	}
-	if (aIndx >= FUCS4Length)
-	aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+	aIndx = size() - 1;
 
 	const utf32 *_begin = ptr()
-	+ (aIndx < FUCS4Length - 1 ? aIndx : FUCS4Length - 1 );
+	+ (aIndx < size() - 1 ? aIndx : size() - 1 );
 
 	for(;;--_begin)
 	{
@@ -803,17 +862,17 @@ CText::size_type CText::rfind(utf32 code_point, size_type aIndx) const
 }
 CText::size_type CText::find(const CText& str, size_type aIndx) const
 {
-	if (((str.FUCS4Length == 0) && (aIndx < FUCS4Length))
-			|| aIndx >= FUCS4Length)
+	if (((str.empty()) && (aIndx < size()))
+			|| aIndx >= size())
 	{
-		LOG(WARNING)<<"Invalid string index indx="<<aIndx<<" or String is Null Length="<<str.FUCS4Length;
+		LOG(WARNING)<<"Invalid string index indx="<<aIndx<<" or String is Null Length="<<str.size();
 		return npos;
 	}
 
 	// loop while search string could fit in to search area
-	for (;(FUCS4Length - aIndx) >= str.FUCS4Length;++aIndx)//FIXME
+	for (;(size() - aIndx) >= str.size();++aIndx)//FIXME
 	{
-		if (0 == compare(aIndx, str.FUCS4Length, str)) return aIndx;
+		if (0 == compare(aIndx, str.size(), str)) return aIndx;
 	}
 
 	return npos;
@@ -821,18 +880,18 @@ CText::size_type CText::find(const CText& str, size_type aIndx) const
 
 CText::size_type CText::rfind(const CText& str, size_type idx) const
 {
-	if (str.FUCS4Length == 0)
-		return (idx < FUCS4Length) ? idx : FUCS4Length;
+	if (str.empty())
+		return (idx < size()) ? idx : size();
 
-	if (str.FUCS4Length > FUCS4Length)
+	if (str.size() > size())
 		return npos;
 
-	if (idx > (FUCS4Length - str.FUCS4Length))
-		idx = FUCS4Length - str.FUCS4Length;
+	if (idx > (size() - str.size()))
+		idx = size() - str.size();
 
 	do
 	{
-		if (0 == compare(idx, str.FUCS4Length, str))
+		if (0 == compare(idx, str.size(), str))
 			return idx;
 
 	} while (idx-- != 0);
@@ -843,7 +902,7 @@ CText::size_type CText::find(const std::string& std_str, size_type idx) const
 {
 	std::string::size_type sze = std_str.size();
 
-	if ((sze == 0) && (idx < FUCS4Length))
+	if ((sze == 0) && (idx < size()))
 		return idx;
 
 	return find(std_str.c_str(), idx, std_str.length());
@@ -853,7 +912,7 @@ CText::size_type CText::rfind(const std::string& std_str, size_type idx) const
 	std::string::size_type sze = std_str.size();
 
 	if (sze == 0)
-		return (idx < FUCS4Length) ? idx : FUCS4Length;
+		return (idx < size()) ? idx : size();
 
 	return rfind(std_str.c_str(), idx, std_str.length());
 }
@@ -868,14 +927,14 @@ CText::size_type CText::find(utf8 const* utf8_str, size_type idx,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	if (idx >= FUCS4Length || str_len == 0)
+	if (idx >= size() || str_len == 0)
 	{
 		LOG(WARNING)<<"Invalid string length . Indx="<<idx
-		<<" , Size="<<str_len<<", Code Point Length="<<FUCS4Length;
+		<<" , Size="<<str_len<<", Code Point Length="<<size();
 		return npos;
 	}
 
-	for (; (FUCS4Length - idx) >= str_len; ++idx)
+	for (; (size() - idx) >= str_len; ++idx)
 	{
 		if (0 == compare(idx, str_len, utf8_str, str_len, aType))
 			return idx;
@@ -893,14 +952,14 @@ CText::size_type CText::rfind(utf8 const* utf8_str, size_type aPos,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	if (aPos >= FUCS4Length || str_len == 0)
+	if (aPos >= size() || str_len == 0)
 	{
 		LOG(WARNING)<<"Invalid string length . Indx="<<aPos
-		<<" , Size="<<str_len<<", Code Point Length="<<FUCS4Length;
+		<<" , Size="<<str_len<<", Code Point Length="<<size();
 		return npos;
 	}
-	VLOG(2) << "FCodePointLength=" << FUCS4Length;
-	aPos = std::min(FUCS4Length - str_len, aPos);
+	VLOG(2) << "FCodePointLength=" << size();
+	aPos = std::min(size() - str_len, aPos);
 
 	do
 	{
@@ -919,14 +978,14 @@ CText::size_type CText::rfind(utf8 const* utf8_str, size_type aPos,
 //////////////////////////////////////////////////////////////////////////
 CText::size_type CText::find_first_of(const CText& str, size_type aIndx) const
 {
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
 	}
 
 	const utf32* _begin = ptr()+aIndx;
-	const utf32* _end = ptr()+FUCS4Length;
+	const utf32* _end = ptr()+size();
 
 	for(;_begin != _end;++_begin)
 	{
@@ -938,14 +997,14 @@ CText::size_type CText::find_first_of(const CText& str, size_type aIndx) const
 CText::size_type CText::find_first_not_of(const CText& str,
 		size_type aIndx) const
 {
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
 	}
 
 	const utf32* _begin = ptr()+aIndx;
-	const utf32* _end = ptr()+FUCS4Length;
+	const utf32* _end = ptr()+size();
 
 	for(;_begin != _end;++_begin)
 	{
@@ -958,7 +1017,7 @@ CText::size_type CText::find_first_not_of(const CText& str,
 CText::size_type CText::find_first_of(const std::string& std_str,
 		size_type aIndx) const
 {
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
@@ -969,7 +1028,7 @@ CText::size_type CText::find_first_of(const std::string& std_str,
 CText::size_type CText::find_first_not_of(const std::string& std_str,
 		size_type aIndx) const
 {
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
@@ -982,7 +1041,7 @@ CText::size_type CText::find_first_of(utf8 const* utf8_str, size_type aIndx,
 {
 	CHECK_NE(str_len , npos) << "Length for string can not be 'npos'";
 
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
@@ -993,7 +1052,7 @@ CText::size_type CText::find_first_of(utf8 const* utf8_str, size_type aIndx,
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
 	const utf32* _begin = ptr() + aIndx;
-	const utf32* _end = ptr() + FUCS4Length;
+	const utf32* _end = ptr() + size();
 
 	VLOG(3) << "New Search:";
 	for (; _begin != _end; ++_begin)
@@ -1011,7 +1070,7 @@ CText::size_type CText::find_first_not_of(utf8 const* utf8_str, size_type aIndx,
 {
 	CHECK_NE(str_len , npos) << "Length for string can not be 'npos'";
 
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
@@ -1021,7 +1080,7 @@ CText::size_type CText::find_first_not_of(utf8 const* utf8_str, size_type aIndx,
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
 	const utf32* _begin = ptr() + aIndx;
-	const utf32* _end = ptr() + FUCS4Length;
+	const utf32* _end = ptr() + size();
 
 	for (; _begin != _end; ++_begin)
 	{
@@ -1035,13 +1094,13 @@ CText::size_type CText::find_first_not_of(utf8 const* utf8_str, size_type aIndx,
 CText::size_type CText::find_first_not_of(utf32 code_point,
 		size_type aIndx) const
 {
-	if (aIndx >= FUCS4Length)
+	if (aIndx >= size())
 	{
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
 	}
 	const utf32* _begin = ptr();
-	const utf32* _end = ptr() + FUCS4Length;
+	const utf32* _end = ptr() + size();
 
 	for(;_begin!=_end;++_begin)
 	{
@@ -1056,14 +1115,14 @@ CText::size_type CText::find_first_not_of(utf32 code_point,
 //////////////////////////////////////////////////////////////////////////
 CText::size_type CText::find_last_of(const CText& str, size_type aIndx) const
 {
-	if (FUCS4Length == 0)
+	if (empty())
 	{
 		LOG(WARNING)<<"String is null.";
 		return npos;
 	}
 
-	if (aIndx >= FUCS4Length)
-	aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+	aIndx = size() - 1;
 
 	const utf32* _begin = ptr() + aIndx;
 	for (;;)
@@ -1081,14 +1140,14 @@ CText::size_type CText::find_last_of(const CText& str, size_type aIndx) const
 CText::size_type CText::find_last_not_of(const CText& str,
 		size_type aIndx) const
 {
-	if (FUCS4Length == 0)
+	if (empty())
 	{
 		LOG(WARNING)<<"String is null.";
 		return npos;
 	}
 
-	if (aIndx >= FUCS4Length)
-	aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+	aIndx = size() - 1;
 
 	const utf32* _begin = ptr() + aIndx;
 
@@ -1113,14 +1172,14 @@ CText::size_type CText::find_last_of(utf8 const* utf8_str, size_type aIndx,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	if (FUCS4Length == 0)
+	if (empty())
 	{
 		LOG(WARNING)<<"String is null.";
 		return npos;
 	}
 
-	if (aIndx >= FUCS4Length)
-		aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+		aIndx = size() - 1;
 
 	const utf32* _begin = ptr() + aIndx;
 	for (;;)
@@ -1144,13 +1203,13 @@ CText::size_type CText::find_last_not_of(utf8 const* utf8_str, size_type aIndx,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	if (FUCS4Length == 0)
+	if (empty())
 	{
 		LOG(WARNING)<<"String is null.";
 		return npos;
 	}
-	if (aIndx >= FUCS4Length)
-		aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+		aIndx = size() - 1;
 
 	const utf32* _begin = ptr() + aIndx;
 
@@ -1181,13 +1240,13 @@ CText::size_type CText::find_last_not_of(const std::string& std_str,
 CText::size_type CText::find_last_not_of(utf32 code_point,
 		size_type aIndx) const
 {
-	if (FUCS4Length == 0)
+	if (empty())
 	{
 		LOG(WARNING)<<"String is null.";
 		return npos;
 	}
-	if (aIndx >= FUCS4Length)
-	aIndx = FUCS4Length - 1;
+	if (aIndx >= size())
+	aIndx = size() - 1;
 
 	const utf32* _begin = ptr() + aIndx;
 
@@ -1212,9 +1271,9 @@ CText::size_type CText::find_last_of(utf32 code_point, size_type aIndx) const
 //////////////////////////////////////////////////////////////////////////
 CText CText::substr(size_type idx, size_type len) const
 {
-	if (empty() || FUCS4Length == idx)
+	if (empty() || size() == idx)
 		return CText();
-	CHECK_GT(FUCS4Length, idx) << "Index is out of range for CText";
+	CHECK_GT(size(), idx) << "Index is out of range for CText";
 	return CText(*this, idx, len);
 }
 /*************************************************************************
@@ -1228,24 +1287,22 @@ bool CText::MGrow(size_type new_size)
 	// increase, as we always null-terminate the buffer.
 	++new_size;
 
-	if (new_size > FReserve)
+	if (new_size > MGetBufferLength())
 	{
 		const size_type _reserved_new_size=static_cast<size_type>(new_size*1.3);
-		utf32* temp = new utf32[_reserved_new_size];
+		cow_impl_t _tmp = FImpl;
 
-		if (FReserve > QUICKBUFF_SIZE)
-		{
-			memcpy(temp, FUCS4Buf, (FUCS4Length + 1) * sizeof(utf32));
-			delete[] FUCS4Buf;
-		}
-		else
-		{
-			memcpy(temp, FQuickUCS4, (FUCS4Length + 1) * sizeof(utf32));
-		}
+		cow_impl_t _new(impl_t(_tmp.MRead().FAllocator),_tmp.MGetAllocator());
 
-		FUCS4Buf = temp;
-		FReserve = _reserved_new_size;
+		impl_t& _new_data=_new.MWrite();
 
+		_new_data.FMultiByteBufferLen = _reserved_new_size;
+		_new_data.FMultiByteBuf = (utf32*) _new_data.FAllocator->MAllocate(
+				_new_data.FMultiByteBufferLen * sizeof(utf32));
+
+		memcpy(_new_data.FMultiByteBuf, _tmp.MRead().FMultiByteBuf,
+				size() * sizeof(utf32));
+		FImpl=_new;
 		return true;
 	}
 
@@ -1254,7 +1311,7 @@ bool CText::MGrow(size_type new_size)
 
 CText& CText::MTrimSpace()
 {
-	if (FUCS4Length == 0)
+	if (empty())
 		return *this;
 	size_type _ind = find_last_not_of(static_cast<utf32>(' '));
 	if (_ind == npos)
@@ -1264,33 +1321,9 @@ CText& CText::MTrimSpace()
 
 	return *this;
 }
-// perform re-allocation to remove wasted space.
-void CText::MTrim(void)
+void CText::MRemoveBuffer(void)
 {
-	size_type min_size = FUCS4Length + 1;
-
-	// only re-allocate when not using quick-buffer, and when size can be trimmed
-	if ((FReserve > QUICKBUFF_SIZE) && (FReserve > min_size))
-	{
-		// see if we can trim to quick-buffer
-		if (min_size <= QUICKBUFF_SIZE)
-		{
-			memcpy(FQuickUCS4, FUCS4Buf, min_size * sizeof(utf32));
-			delete[] FUCS4Buf;
-			FReserve = QUICKBUFF_SIZE;
-		}
-		// re-allocate buffer
-		else
-		{
-			utf32* temp = new utf32[min_size];
-			memcpy(temp, FUCS4Buf, min_size * sizeof(utf32));
-			delete[] FUCS4Buf;
-			FUCS4Buf = temp;
-			FReserve = min_size;
-		}
-
-	}
-
+	FImpl=cow_impl_t(impl_t(FImpl.MRead().FAllocator),FImpl.MGetAllocator());
 }
 void CText::clear()
 {
@@ -1298,16 +1331,15 @@ void CText::clear()
 	MWillBeenChanged();
 
 	MSetLen(0);
-	MTrim();
 }
 inline void CText::MSetLen(size_type len)
 {
-	FUCS4Length = len;
+	FCodePointLength = len;
 	ptr()[len] = (utf32) (0);
 }
 bool CText::MInside(utf32* inptr)
 {
-	if (inptr < ptr() || ptr() + FUCS4Length <= inptr)
+	if (inptr < ptr() || ptr() + size() <= inptr)
 		return false;
 	else
 		return true;
@@ -1355,30 +1387,34 @@ CText::size_type CText::MUCS4Length(const utf32* utf32_str) const
 static const char g_null = '\0';
 utf8* CText::MBuildUtf8Buff(ICodeConv const& _code) const
 {
-	if (!FUCS4Length)
+	if (empty())
 		return (utf8 *) &g_null;
-	if (FEncodedBuffLen > 0)
-		return FEncodedBuff;
-	size_type buffsize = length_code(_code) + 1;
+
+	impl_t const& _impl = FImpl.MRead();
+	if (_impl.FSingleByteDatalen!=0)
+		return _impl.FSingleByteBuffer;
+
+	_impl.FSingleByteDatalen=length_code(_code);
+
+	size_type const buffsize =_impl.FSingleByteDatalen + 1;
 //	VLOG(2) << "Buff size=" << buffsize << ", UCS4 Length=" << FUCS4Length;
-	if (buffsize > FEncodedBuffLen)
+	if (buffsize > _impl.FSingleByteBufferLen)
 	{
 
-		if (FEncodedBuffLen > 0)
+		if (_impl.FSingleByteBufferLen > 0)
 		{
-			delete[] FEncodedBuff;
+			_impl.FAllocator->MDeallocate(_impl.FSingleByteBuffer, _impl.FSingleByteBufferLen);
 		}
-
-		FEncodedBuff = new utf8[buffsize];
-		FEncodedBuffLen = buffsize;
+		_impl.FSingleByteBufferLen=buffsize;
+		_impl.FSingleByteBuffer = (utf8*) _impl.FAllocator->MAllocate(
+				_impl.FSingleByteBufferLen);
 	}
-	MFromUCS4(ptr(), FEncodedBuff, buffsize, FUCS4Length, _code);
+	MFromUCS4(ptr(), _impl.FSingleByteBuffer, _impl.FSingleByteDatalen, size(), _code);
 
 	// always add a null at end
-	FEncodedBuff[buffsize - 1] = ((utf8) 0);
-	FEncodedDatlen = buffsize;
+	_impl.FSingleByteBuffer[_impl.FSingleByteDatalen] = ((utf8) 0);
 
-	return FEncodedBuff;
+	return _impl.FSingleByteBuffer;
 }
 inline CText::size_type CText::MFindCodepoint(utf8 const* aStr,
 		size_type chars_len, utf32 code_point, ICodeConv const& aType) const
@@ -1403,37 +1439,17 @@ inline CText::size_type CText::MFindCodepoint(utf8 const* aStr,
 //////////////////////////////////////////////////////////////////////////
 void CText::swap(CText& str)
 {
-	size_type temp_len = FUCS4Length;
-	FUCS4Length = str.FUCS4Length;
-	str.FUCS4Length = temp_len;
-
-	size_type temp_res = FReserve;
-	FReserve = str.FReserve;
-	str.FReserve = temp_res;
-
-	utf32* temp_buf = FUCS4Buf;
-	FUCS4Buf = str.FUCS4Buf;
-	str.FUCS4Buf = temp_buf;
-
-	// see if we need to swap 'quick buffer' data
-	if (temp_res <= QUICKBUFF_SIZE)
-	{
-		utf32 temp_qbf[QUICKBUFF_SIZE];
-
-		memcpy(temp_qbf, FQuickUCS4, QUICKBUFF_SIZE * sizeof(utf32));
-		memcpy(FQuickUCS4, str.FQuickUCS4, QUICKBUFF_SIZE * sizeof(utf32));
-		memcpy(str.FQuickUCS4, temp_qbf, QUICKBUFF_SIZE * sizeof(utf32));
-	}
-
+	std::swap(FImpl,str.FImpl);
+	std::swap(FCodePointLength,str.FCodePointLength);
 }
 NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 {
-	if (FUCS4Length)
+	if (!empty())
 	{
 		COMPILE_ASSERT(sizeof(CCodeUTF8::utf8_t)>=sizeof(NSHARE::CBuffer::value_type),CannotConvertUtf8ToBuf);
 		const size_t _befor = aBuf.size();
 		
-		aBuf.reserve(_befor +FUCS4Length);
+		aBuf.reserve(_befor +size());
 		aBuf.resize(aBuf.capacity()-1/*de bene esse*/);
 
 //		const unsigned _factor=sizeof(CCodeUTF8::utf8_t)/sizeof(NSHARE::CBuffer::value_type);
@@ -1441,7 +1457,7 @@ NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 //		NSHARE::CBuffer::value_type _buf[_factor*4]; //max 4 byte
 //		CBuffer::const_iterator const _p_buf(_buf);
 
-		size_type const src_len = FUCS4Length;
+		size_type const src_len = size();
 		const utf32* _src_begin = ptr();
 		utf32 const* const _src_end = _src_begin + src_len;
 		
@@ -1480,10 +1496,10 @@ NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 }
 std::ostream& CText::MPrint(std::ostream& aStream) const //optimized for utf8
 {
-	if (FUCS4Length)
+	if (!empty())
 	{
 		CCodeUTF8::utf8_t _buf[4]; //max 4 byte
-		size_type const src_len = FUCS4Length;
+		size_type const src_len = size();
 		const utf32* _src_begin = ptr();
 		utf32 const* const _src_end = _src_begin + src_len;
 
@@ -1506,15 +1522,14 @@ std::ostream& CText::MPrint(std::ostream& aStream) const //optimized for utf8
 }
 std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 {
-	if (FUCS4Length)
+	if (!empty())
 	{
-		if (FEncodedBuffLen > 0)
-			aStream << (utf8 const*) FEncodedBuff;
+		impl_t const& _impl = FImpl.MRead();
+		if (_impl.FSingleByteBufferLen > 0)
+			aStream << (const char*) _impl.FSingleByteBuffer;
 		else
 		{
-			utf8* _var=MBuildUtf8Buff(aType);
-			if(FEncodedBuffLen)
-				aStream <<(const char*)_var;
+			aStream <<(const char*)MBuildUtf8Buff(aType);
 		}
 	}
 	else
@@ -1999,7 +2014,7 @@ CText& CText::MRightJustified(int width, utf32 fill, bool truncate)
 }
 int CText::MCompareNoCase(const CText& str) const
 {
-	return MCompareNoCase(0, FUCS4Length, str);
+	return MCompareNoCase(0, size(), str);
 }
 static utf32 ucs4_tolower(utf32 c) //FIXME
 {
@@ -2157,17 +2172,17 @@ std::string CText::MToStdString(ICodeConv const& aType) const //FIXME using MBui
 int CText::MCompareNoCase(size_type aFirst, size_type aLen, const CText& aStr,
 		size_type aStrFirst, size_type aStrLen) const
 {
-	if (!FUCS4Length && !aFirst && !aStr.FUCS4Length)
+	if (empty() && !aFirst && aStr.empty())
 		return 0;
 
-	CHECK_GT(FUCS4Length , aFirst) << "Index was out of range for CText object";
+	CHECK_GT(size() , aFirst) << "Index was out of range for CText object";
 
-	CHECK_GT(aStr.FUCS4Length , aStrFirst)
+	CHECK_GT(aStr.size() , aStrFirst)
 			<< "Index was out of range for CText object. StrLen=" << aFirst
-			<< ", Code point length=" << FUCS4Length;
+			<< ", Code point length=" << size();
 
-	if ((aStrLen == npos) || (aStrFirst + aStrLen > aStr.FUCS4Length))
-		aStrLen = aStr.FUCS4Length - aStrFirst;
+	if ((aStrLen == npos) || (aStrFirst + aStrLen > aStr.size()))
+		aStrLen = aStr.size() - aStrFirst;
 
 	if (aLen)
 	{
@@ -2204,7 +2219,7 @@ CText& CText::MReplaceAll(CText const& aSubStr, CText const& aReplaceTo,
 
 	VLOG(2) << "Replace all " << aSubStr << " to " << aReplaceTo;
 
-	CHECK_GT (FUCS4Length , idx) << "Index is out of range for CText";
+	CHECK_GT (size() , idx) << "Index is out of range for CText";
 	size_t _pos = 0;
 	//if the aReplace is null
 	//and the aSubStr is at the end of the Text
@@ -2252,31 +2267,31 @@ CText& CText::MMakeRandom(size_t aLen, ICodeConv const& aType)
 }
 bool CText::isalpha() const
 {
-	for (size_type _len = 0; _len < FUCS4Length; ++_len)
+	for (size_type _len = 0; _len < size(); ++_len)
 		if (!std::isalpha<wchar_t>(ptr()[_len], utf8_locale()))
 			return false;
 	return true;
 }
 bool CText::isdigit() const
 {
-	for (size_type _len = 0; _len < FUCS4Length; ++_len)
+	for (size_type _len = 0; _len < size(); ++_len)
 		if (!std::isdigit<wchar_t>(ptr()[_len], utf8_locale()))
 			return false;
 	return true;
 }
 bool CText::isalnum() const
 {
-	for (size_type _len = 0; _len < FUCS4Length; ++_len)
+	for (size_type _len = 0; _len < size(); ++_len)
 		if (!std::isalnum<wchar_t>(ptr()[_len], utf8_locale()))
 			return false;
 	return true;
 }
 void CText::MWillBeenChanged()
 {
-	if (FEncodedBuffLen > 0)
+	impl_t & _impl = FImpl.MWrite();
+	if (_impl.FSingleByteBuffer)
 	{
-		delete[] FEncodedBuff;//fixme don't remove the buffer
-		FEncodedBuffLen = 0;
+		_impl.FSingleByteDatalen = 0;
 	}
 }
 void CText::sMUnitTest()
@@ -2464,6 +2479,7 @@ void CText::sMUnitTest()
 		CHECK_LT(CText("!").compare("z"), 0);
 
 		CText s1_copy = s1 + s1;
+		s1.reserve(s1.size()*2);
 		s1.insert(s1.end(), s1.begin(), s1.end()); //copy
 		CHECK_EQ(s1, s1_copy);
 	}

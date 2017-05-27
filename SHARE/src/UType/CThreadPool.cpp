@@ -1,10 +1,10 @@
 /*
  * CThreadPool.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 08.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -12,10 +12,13 @@
 #include <deftype>
 #include <UType/CThreadPool.h>
 #include <UType/CThreadPoolImpl.h>
-#define MAX_NUM_OF_IO_THREAD ((size_t)CThread::sMNumberOfProcessor()+9) //10 - is minimal //fixme
+
 namespace NSHARE
 {
 const CText CThreadPool::NAME="tpool";
+const CText CThreadPool::NUMBER_OF_THREAD="thnum";
+const CText CThreadPool::MAX_NUMBER_OF_IO_THREAD="th_io_max";
+
 COperationQueue::COperationQueue() :
 		FMutex(CMutex::MUTEX_NORMAL)
 {
@@ -59,21 +62,21 @@ operation_t COperationQueue::MNextOperation(bool aIfBlocking)
 
 	operation_t currentOperation(*FCurrentOperationIterator);
 
-	if (!currentOperation.MIsKeep())
-	{
-		VLOG(2) << "Removing  operation " << currentOperation;
+//	if (!currentOperation.MIsKeep())
+//	{
+//		VLOG(2) << "Removing  operation " << currentOperation;
 
 		FCurrentOperationIterator = FOperations.erase(
 				FCurrentOperationIterator);
 
-		VLOG(2) << "Now " << FOperations.size();
-		VLOG_IF(2,FOperations.empty()) << "Data empty now";
-	}
-	else
-	{
-		VLOG(2) << "Move on to the next operation...";
-		++FCurrentOperationIterator;
-	}
+//		VLOG(2) << "Now " << FOperations.size();
+//		VLOG_IF(2,FOperations.empty()) << "Data empty now";
+//	}
+//	else
+//	{
+//		VLOG(2) << "Move on to the next operation...";
+//		++FCurrentOperationIterator;
+//	}
 
 	return currentOperation;
 }
@@ -274,14 +277,19 @@ void CPoolThread::MRun()
 		if (operation.MIs())
 		{
 			VLOG(4)<<"operation";
-			(operation)(this, &operation); //fixme keep
-			if ( operation.MIsKeep() //change flag
-					)
+			eCBRval const _rval=(operation)(this, &operation);
+
+			switch (_rval)
 			{
-				operation.MKeep(false);
-				VLOG(1) << " Keeping operartion";
+			case E_CB_REMOVE:
+				//
+				break;
+			case E_CB_SAFE_IT:
+			case E_CB_BLOCING_OTHER:
+				VLOG(2) << " Keeping operartion";
 				operationQueue->MAdd(operation);
-			}
+				break;
+			};
 		}
 		{
 			CRAII<CMutex> lock(FMutex);
@@ -300,13 +308,41 @@ void CPoolThread::MRun()
 //
 //--------------------
 //
-CThreadPool::CThreadPool(int aVal) :
-		FImpl(new CImpl)
+CThreadPool::CThreadPool(int aVal,unsigned aMaxNumberOfIOThread) :
+		FImpl(new CImpl),//
+		FMaxNumberOfIOThread(aMaxNumberOfIOThread)
 {
 	FIs = MCreate(aVal);
 }
+CThreadPool::CThreadPool(NSHARE::CConfig const& aConfig) :
+		FImpl(new CImpl),//
+		FIs(false),//
+		FMaxNumberOfIOThread(
+				aConfig.MValue(MAX_NUMBER_OF_IO_THREAD,
+						std::numeric_limits<unsigned>::max()))
+{
+	int _number = -1;
+	if (aConfig.MGetIfSet(NUMBER_OF_THREAD, _number))
+	{
+		if (aConfig.MIsChild(CThread::param_t::NAME))
+		{
+			CThread::param_t const _param(
+					aConfig.MChild(CThread::param_t::NAME));
+			FIs = _param.MIsValid() && MCreate(_number, &_param);
+		}
+		else
+			FIs = MCreate(_number);
+	}
+}
+CThreadPool::CThreadPool(int aNum, CThread::param_t const& aParam,unsigned aMaxNumberOfIOThread):
+				FImpl(new CImpl),//
+				FMaxNumberOfIOThread(aMaxNumberOfIOThread)
+{
+	FIs = MCreate(aNum,&aParam);
+}
 CThreadPool::CThreadPool() :
-		FImpl(new CImpl)
+		FImpl(new CImpl),//
+		FMaxNumberOfIOThread(std::numeric_limits<unsigned>::max())
 {
 	FIs = false;
 }
@@ -321,7 +357,7 @@ bool CThreadPool::MIsRunning() const
 	return FIs;
 }
 
-bool CThreadPool::MCreate(int aNum, CThread::param_t* aParam)
+bool CThreadPool::MCreate(int aNum, CThread::param_t const* aParam)
 {
 	VLOG(2) << "Create thread pool Number=" << aNum;
 	CRAII<CMutex> _blocked(FImpl->FMutex);
@@ -357,7 +393,7 @@ bool CThreadPool::MCreate(int aNum, CThread::param_t* aParam)
 	return FIs;
 }
 /////////////////////////////////////////////////
-bool CThreadPool::MAddThread(CThread::param_t* aParam)
+bool CThreadPool::MAddThread(CThread::param_t const* aParam)
 {
 	CRAII<CMutex> _blocked(FImpl->FMutex);
 	if (!FImpl->FTask.get())
@@ -392,7 +428,7 @@ bool CThreadPool::MRemoveThread(unsigned aId)
 	LOG(ERROR)<<"Cannot remove "<<aId<<" thread from pool. Current ID "<<CThread::sMThreadId();
 	return false;
 }
-bool CThreadPool::CImpl::MAddIOThreadIfNeed()
+bool CThreadPool::CImpl::MAddIOThreadIfNeed(unsigned aMaxNumber)
 {
 	CRAII<CMutex> _blocked(FMutex);
 	unsigned _size = FIOTask->MSize();
@@ -413,15 +449,14 @@ bool CThreadPool::CImpl::MAddIOThreadIfNeed()
 			}
 		}
 	}
-//	LOG_IF(DFATAL,FIOThreads.size() >= MAX_NUM_OF_IO_THREAD) //
-//	<< "Maximum amount of IO threads.";
-	//if (FIOThreads.size() < MAX_NUM_OF_IO_THREAD)
+	LOG_IF(DFATAL,FIOThreads.size() >= aMaxNumber)<< "Maximum amount of IO threads.";
+	if (FIOThreads.size() <  aMaxNumber)
 	{
 		MAddIOThread();
 		return true;
 	}
-//	else
-//		return false;
+	else
+		return false;
 }
 bool CThreadPool::CImpl::MAddIOThread()
 {
@@ -484,7 +519,7 @@ NSHARE::CConfig CThreadPool::MSerialize() const
 	{
 		NSHARE::CConfig _tasks("tasks", FImpl->FTask->MSize());
 		aTo.MAdd(_tasks);
-		_tasks.MAdd("th", FImpl->FThreads.size());
+		_tasks.MAdd(NUMBER_OF_THREAD, FImpl->FThreads.size());
 
 		for (CImpl::threads_t::const_iterator _it = FImpl->FThreads.begin();
 				_it != FImpl->FThreads.end(); ++_it)
@@ -496,7 +531,9 @@ NSHARE::CConfig CThreadPool::MSerialize() const
 	{
 		NSHARE::CConfig _tasks("io", FImpl->FIOTask->MSize());
 		aTo.MAdd(_tasks);
-		_tasks.MAdd("th", FImpl->FIOThreads.size());
+		_tasks.MAdd(NUMBER_OF_THREAD, FImpl->FIOThreads.size());
+		_tasks.MAdd(MAX_NUMBER_OF_IO_THREAD, MGetMaxNumberOfIOThread() );
+
 
 		for (CImpl::threads_t::const_iterator _it = FImpl->FIOThreads.begin();
 				_it != FImpl->FIOThreads.end(); ++_it)
@@ -546,7 +583,7 @@ bool CThreadPool::MAdd(operation_t const& task)
 	{
 		VLOG(2) << "Adding  IO operation!!!";
 		CHECK_NOTNULL(FImpl->FIOTask.get());
-		bool _val=FImpl->MAddIOThreadIfNeed();
+		bool _val=FImpl->MAddIOThreadIfNeed(MGetMaxNumberOfIOThread());
 		if(_val)
 			FImpl->FIOTask->MAdd(task);
 		else
@@ -569,36 +606,36 @@ unsigned CThreadPool::MThreadNum() const
 	return (unsigned)FImpl->FThreads.size();
 }
 operation_t::operation_t(eType const& aType) :
-		cb_t(), FType(aType), FKeep(new bool(false))
+		cb_t(), FType(aType)//, FKeep(new bool(false))
 {
 }
 operation_t::operation_t(pM const& aSignal, void * const aData,
 		eType const& aType) :
-		cb_t(aSignal, aData), FType(aType), FKeep(new bool(false))
+		cb_t(aSignal, aData), FType(aType)//, FKeep(new bool(false))
 {
 }
 operation_t::operation_t(operation_t const& aCB) :
-		cb_t(aCB), FType(aCB.FType), FKeep(aCB.FKeep)
+		cb_t(aCB), FType(aCB.FType)//, FKeep(aCB.FKeep)
 {
 	;
 }
 operation_t& operation_t::operator=(operation_t const& aCB)
 {
 	FType=aCB.FType;
-	FKeep=aCB.FKeep;
+	//FKeep=aCB.FKeep;
 	return *this;
 }
-void operation_t::MKeep(bool aKeep)
-{
-	CHECK_NOTNULL(FKeep.get());
-	*FKeep.get() = aKeep;
-}
-
-bool operation_t::MIsKeep() const
-{
-	CHECK_NOTNULL(FKeep.get());
-	return *FKeep.get();
-}
+//void operation_t::MKeep(bool aKeep)
+//{
+//	CHECK_NOTNULL(FKeep.get());
+//	*FKeep.get() = aKeep;
+//}
+//
+//bool operation_t::MIsKeep() const
+//{
+//	CHECK_NOTNULL(FKeep.get());
+//	return *FKeep.get();
+//}
 operation_t::eType operation_t::MType() const
 {
 	return FType;

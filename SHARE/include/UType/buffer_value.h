@@ -1,10 +1,10 @@
 /*
  * buffer_value.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 29.06.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -76,7 +76,13 @@ template<class T>
 inline std::ostream& print_b_value(std::ostream& aStream, T const& aVal)
 {
 	aStream.setf(std::ios::hex, std::ios::basefield);
-	aStream << "0x" << static_cast<unsigned const&>(aVal);
+	typedef unsigned char const _array_t[sizeof(T)];
+	_array_t const&  _array=reinterpret_cast<_array_t const&>(aVal);
+
+	aStream.setf(std::ios::hex, std::ios::basefield);
+	aStream << "0x";
+	for(size_t i=0;i<sizeof(_array_t);++i)
+		aStream<< static_cast<unsigned const>(_array[i]);
 	aStream.unsetf(std::ios::hex);
 	return aStream;
 }
@@ -118,9 +124,7 @@ template<typename T>
 inline std::ostream& operator<<(std::ostream & aStream,
 		NSHARE::buf_val_t<T> const& aVal)
 {
-	aStream.setf(ios::hex, ios::basefield);
-	aStream << "0x" << static_cast<unsigned const&>(aVal);
-	aStream.unsetf(ios::hex);
+	NSHARE::detail::print_b_value<NSHARE::buf_val_t<T> >(aStream,aVal);
 	return aStream;
 }
 //inline std::ostream& operator<<(std::ostream& aStream,

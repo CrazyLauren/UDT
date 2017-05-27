@@ -1,10 +1,10 @@
 /*
  * CHttpIOManger.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 11.05.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -126,11 +126,11 @@ bool CHttpIOManger::MOpen(const void*)
 	FIo->MAddChannelFor(Fd, this, _split);
 	return true;
 }
-int CHttpIOManger::sMReceiver(NSHARE::CThread const* WHO,
+NSHARE::eCBRval CHttpIOManger::sMReceiver(NSHARE::CThread const* WHO,
 		NSHARE::operation_t * WHAT, void* aData)
 {
 	reinterpret_cast<CHttpIOManger*>(aData)->MReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 void CHttpIOManger::MReceiver()
 {
@@ -596,16 +596,16 @@ bool CHttpIOManger::MIsOpen() const
 	return FTcpServiceSocket.MIsOpen();
 }
 
-int CHttpIOManger::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CHttpIOManger::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
 //	CTCPServer::client_t* _client =
 //			reinterpret_cast<CTCPServer::client_t*>(aWhat);
 //	reinterpret_cast<CKernelIOByTCP*>(aThis)->MConnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int CHttpIOManger::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CHttpIOManger::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -613,7 +613,7 @@ int CHttpIOManger::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 //			reinterpret_cast<CTCPServer::client_t*>(aWhat);
 //	CRAII<CMutex> _blocked(reinterpret_cast<CKernelIOByTCP*>(aThis)->FMutex);
 //	reinterpret_cast<CKernelIOByTCP*>(aThis)->MDisconnectImpl(_client->FAddr);
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)

@@ -2,9 +2,9 @@
  * CCustomer.cpp
  *
  *  Created on: 19.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -66,7 +66,7 @@ COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SI
 const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=(E_HANDLER_IS_NOT_EXIST);
 const CCustomer::error_t CCustomer::E_NO_ROUTE=(E_NO_ROUTE);
 const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=(E_UNKNOWN_ERROR);
-const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=-(E_PARSER_IS_NOT_EXIST);
+const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=(E_PARSER_IS_NOT_EXIST);
 const CCustomer::error_t CCustomer::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=(E_HANDLER_NO_MSG_OR_MORE_THAN_ONE);
 const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=(E_SOCKET_CLOSED);
 const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=(E_BUFFER_IS_FULL);
@@ -304,7 +304,7 @@ bool CCustomer::_pimpl::MOpen()
 			_priority))
 	{
 		NSHARE::CThread::param_t _param;
-		_param.FPrior = _priority;
+		_param.priority = _priority;
 		_result = FWorker->MOpen(&_param);
 //		if (_result)
 //			FThread.MCreate(&_param);

@@ -1,10 +1,10 @@
 /*
  * client.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 24.06.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren/UDT)
+ *      Author:  (https://github.com/CrazyLauren/UDT)
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -20,6 +20,8 @@ using namespace NSHARE;
 int main(int argc, char *argv[])
 {
 	init_trace(argc, argv);
+	CText::sMUnitTest();
+	CBuffer::sMUnitTest(NULL);
 
 	size_t _buf_size = (argc > 1) ? atoi(argv[1]) : SEND_BUF_SIZE;
 
@@ -38,7 +40,8 @@ int main(int argc, char *argv[])
 	unsigned _flags=1;
 	for (;;)
 	{
-		NSHARE::CBuffer _buf = _client.MAllocate(_buf_size);
+		NSHARE::CBuffer _buf= _client.MAllocate(_buf_size);
+
 		if(!_buf.empty()&& _client.MSend(_buf, false, _flags)== CSharedMemoryClient::E_SENDED)
 			++_flags;
 	}

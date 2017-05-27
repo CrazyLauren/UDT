@@ -1,10 +1,10 @@
 /*
  * CKernelChannel.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 28.07.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -53,16 +53,16 @@ CKernelIOByTCPClient::CKernelChannel::CKernelChannel(CConfig const& aWhat,
 	FTcp += CTCPServer::value_t(CTCP::EVENT_DISCONNECTED, FCBServiceDisconncet);
 }
 
-int IMPL::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval IMPL::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
 
 	net_address *_client = reinterpret_cast<net_address*>(aWhat);
 	reinterpret_cast<CKernelChannel*>(aThis)->MConnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -70,7 +70,7 @@ int IMPL::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 	net_address *_client = reinterpret_cast<net_address*>(aWhat);
 
 	reinterpret_cast<CKernelChannel*>(aThis)->MDisconnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 void IMPL::MConnect(NSHARE::net_address* aVal)
@@ -126,10 +126,10 @@ void IMPL::MDisconnect(NSHARE::net_address* aVal)
 	Fd=-1;
 }
 
-int IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
+NSHARE::eCBRval IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
 {
 	reinterpret_cast<CKernelChannel*>(aData)->MServiceReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 
 void IMPL::MServiceReceiver()

@@ -1,10 +1,10 @@
 /*
  * CKernelIo.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 29.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -84,13 +84,13 @@ void CKernelIo::MRouteOperation(void* aP, const routing_t& aTo,
 	delete _p;
 	//return _r;
 }
-int CKernelIo::sMRouteOperation(const NSHARE::CThread* WHO,
+NSHARE::eCBRval CKernelIo::sMRouteOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, void* YOU_DATA)
 {
 	CKernelIo* _p = reinterpret_cast<CKernelIo*>(YOU_DATA);
 	CHECK_NOTNULL(_p);
 	_p->MRoute();
-	return 0;
+	return NSHARE::E_CB_REMOVE;
 }
 void CKernelIo::MRoute()
 {
@@ -367,12 +367,12 @@ NSHARE::CConfig CKernelIo::MSerialize() const
 	}
 	return _conf;
 }
-int CKernelIo::sMSendUser(NSHARE::CThread const* WHO,
+NSHARE::eCBRval CKernelIo::sMSendUser(NSHARE::CThread const* WHO,
 		NSHARE::operation_t * WHAT, void* YOU_DATA)
 {
 	CKernelIo* _client = reinterpret_cast<CKernelIo*>(YOU_DATA);
 	_client->MSendUserDataImpl();
-	return 0;
+	return NSHARE::E_CB_REMOVE;
 }
 
 void CKernelIo::MSendingUserDataTo(descriptor_t aTo, IIOManager* aBy,

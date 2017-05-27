@@ -1,10 +1,10 @@
 /*
  * uuid.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 30.11.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -21,7 +21,10 @@ typedef UUID uuid_t;
 
 namespace NSHARE
 {
-
+/** \brief класс для хранения уникального индификационного номера
+ * равному 64 бит.
+ *
+ */
 struct SHARE_EXPORT uuid_t
 {
 	static const CText NAME;
@@ -50,7 +53,11 @@ struct SHARE_EXPORT uuid_t
 
 	uint64_t FVal;
 };
-uuid_t SHARE_EXPORT get_programm_uuid(CText const& = CText());//При первом вызове создаёт уникальный UUID
+/** \brief При первом вызове создаёт уникальный UUID
+ *	\param aVal - строка используемая для исключения одинаковых
+ *	uuid для разных приложений
+ */
+uuid_t SHARE_EXPORT get_programm_uuid(CText const& aVal= CText());
 uuid_t SHARE_EXPORT get_uuid(CText const& =CText());
 
 

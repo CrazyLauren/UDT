@@ -2,9 +2,9 @@
  * CCOWPtr.h
  *
  *  Created on: 24.02.2017
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *	
- *	Copyright © 2017 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2017  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -15,7 +15,9 @@
 
 namespace NSHARE
 {
-//todo allocator
+/** \brief template for Copy-On-Write idiom
+ *
+ */
 template<typename T>
 class CCOWPtr
 {
@@ -30,34 +32,44 @@ class CCOWPtr
 		T FVal;
 	};
 public:
-
 	typedef T value_type;
+	typedef IAllocater allocator_type;
 
-	CCOWPtr() :
+	explicit CCOWPtr(allocator_type * aAllocator=get_default_allocator()) :
+			FAllocator(aAllocator),//
 			FPtr(allocate())
 	{
 	}
 
-	CCOWPtr(T const& aVal) :
-			FPtr(allocate(aVal))
+	CCOWPtr(T const& aVal,allocator_type * aAllocator=get_default_allocator()) :
+		FAllocator(aAllocator),//
+		FPtr(allocate(aVal))
 	{
 	}
 
 	CCOWPtr(const CCOWPtr& x) :
+			FAllocator(x.FAllocator),//
 			FPtr(x.FPtr)
 	{
-		if (FPtr)
-			FPtr->FCounter.MIncrement();
+		hold(FPtr);
 	}
 
 	~CCOWPtr()
 	{
 		release(FPtr);
+		FAllocator=NULL;
 	}
-
-	CCOWPtr& operator=(CCOWPtr x)
+	CCOWPtr& operator=(CCOWPtr const& aRht)
 	{
-		swap(*this, x);
+		if (FPtr != aRht.FPtr || //
+				FAllocator != aRht.FAllocator)
+		{
+			release(FPtr);
+			hold(aRht.FPtr);
+
+			FAllocator=aRht.FAllocator;
+			FPtr=aRht.FPtr;
+		}
 		return *this;
 	}
 
@@ -114,10 +126,22 @@ public:
 	{
 		return FPtr == x.FPtr;
 	}
-
+	bool MIsAllocatorEqual(IAllocater* aAlloc) const
+	{
+		return FAllocator==aAlloc;
+	}
+	IAllocater*  MGetAllocator() const
+	{
+		return FAllocator;
+	}
 	friend inline void swap(CCOWPtr& x, CCOWPtr& y)
 	{
-		std::swap(x.FPtr, y.FPtr);
+		if (x.FPtr != y.FPtr || //
+				x.FAllocator != y.FAllocator)
+		{
+			std::swap(x.FPtr, y.FPtr);
+			std::swap(x.FAllocator, y.FAllocator);
+		}
 	}
 
 	friend inline bool operator<(const CCOWPtr& aLt, const CCOWPtr& aRht)
@@ -155,36 +179,42 @@ public:
 	}
 private:
 
-	static implementation_t* allocate(const T& aVal = T())
+	implementation_t* allocate(const T& aVal = T())
 	{
+		using namespace std;
 		implementation_t* _tmp = NULL;
-
+		assert(FAllocator && "NULL allocator");
 		try
 		{
-			_tmp = ::new implementation_t(aVal);
+			_tmp =allocate_object<implementation_t>(*FAllocator,aVal);
 		} catch (...)
 		{
-			delete _tmp;
+			deallocate_object(*FAllocator,_tmp);
 			throw;
 		}
 		return _tmp;
 	}
 
-	static void release(implementation_t* aVal)
+	void release(implementation_t* aVal) const
 	{
-
+		using namespace std;
 		if (aVal == 0 || aVal->FCounter.MDecrement() != 1)
 			return;
-		delete aVal;
+		assert(FAllocator && "NULL allocator");
+		deallocate_object(*FAllocator,aVal);
 	}
-
+	void hold(implementation_t* aVal)
+	{
+		if (aVal)
+			aVal->FCounter.MIncrement();
+	}
 	void reset(implementation_t* to)
 	{
 		release(FPtr);
 		FPtr = to;
 	}
-
-	implementation_t* FPtr;
+	allocator_type* FAllocator;
+	mutable implementation_t* FPtr;
 };
 
 }

@@ -1,10 +1,10 @@
 /*
  * CControlByTCP.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 15.12.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -158,10 +158,10 @@ bool CKernelIOByTCP::MOpen(const void* aP)
 	return true;
 }
 
-int CKernelIOByTCP::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
+NSHARE::eCBRval CKernelIOByTCP::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
 {
 	reinterpret_cast<CKernelIOByTCP*>(aData)->MServiceReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 
 void CKernelIOByTCP::MServiceReceiver()
@@ -503,14 +503,14 @@ bool CKernelIOByTCP::MHandleNewLinkage(CTCPServer::client_t const& aAb,
 	return true;
 }
 
-int CKernelIOByTCP::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CKernelIOByTCP::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
 	CTCPServer::client_t* _client =
 			reinterpret_cast<CTCPServer::client_t*>(aWhat);
 	reinterpret_cast<CKernelIOByTCP*>(aThis)->MConnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 void CKernelIOByTCP::MConnect(CTCPServer::client_t* aVal)
@@ -532,7 +532,7 @@ void CKernelIOByTCP::MConnect(CTCPServer::client_t* aVal)
 	new_channels_t::value_type _val(_addr, _link);
 	FNewChannels.insert(_val);
 }
-int CKernelIOByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CKernelIOByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -540,7 +540,7 @@ int CKernelIOByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 			reinterpret_cast<CTCPServer::client_t*>(aWhat);
 	CRAII<CMutex> _blocked(reinterpret_cast<CKernelIOByTCP*>(aThis)->FMutex);
 	reinterpret_cast<CKernelIOByTCP*>(aThis)->MDisconnectImpl(_client->FAddr);
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 void CKernelIOByTCP::MDisconnectImpl(const NSHARE::net_address& _addr)

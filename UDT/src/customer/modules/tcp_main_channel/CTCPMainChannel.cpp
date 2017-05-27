@@ -2,9 +2,9 @@
  * CTCPMainChannel.cpp
  *
  *  Created on: 25.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -63,10 +63,10 @@ void CTCPMainChannel::MCloseImpl()
 	FThreadReceiver.MCancel();
 	FIsConnected = false;
 }
-int CTCPMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
+NSHARE::eCBRval CTCPMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CTCPMainChannel*>(aData)->MReceiver();
-	return 0;
+	return NSHARE::E_CB_REMOVE;
 }
 void CTCPMainChannel::MReceiver()
 {

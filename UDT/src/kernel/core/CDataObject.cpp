@@ -1,10 +1,10 @@
 /*
  * CDataObject.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 03.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -103,20 +103,20 @@ void CDataObject::user_operation_t::MPush(routing_user_data_t & aVal)
 	}
 }
 
-int CDataObject::user_operation_t::sMUserDataOperation(const NSHARE::CThread* WHO,
+NSHARE::eCBRval CDataObject::user_operation_t::sMUserDataOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, void* YOU_DATA)
 {
 	VLOG(2) << "User data Operation ";
 	user_operation_t* _p = reinterpret_cast<user_operation_t*>(YOU_DATA);
-	CHECK_NOTNULL(_p);
-	_p->MUserOperation(WHO, WHAT,routing_user_data_t::NAME );
-	return 0;
+	return _p->MUserOperation(WHO, WHAT,routing_user_data_t::NAME );
 }
-void CDataObject::user_operation_t::MUserOperation(const NSHARE::CThread* WHO,
+NSHARE::eCBRval CDataObject::user_operation_t::MUserOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, const NSHARE::CText& aWhat)
 {
 	VLOG(2) << "Operation for user data " << aWhat;
 	CHECK_EQ(routing_user_data_t::NAME, aWhat);
+
+	NSHARE::eCBRval _rval=E_CB_REMOVE;
 	args_data_t _args;
 	_args.FType = aWhat;
 	routing_user_data_t _data;
@@ -139,7 +139,7 @@ void CDataObject::user_operation_t::MUserOperation(const NSHARE::CThread* WHO,
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FFifoMutex);
 		if (!FUserData.FData.empty())
 		{
-			WHAT->MKeep(true);
+			_rval=E_CB_SAFE_IT;
 		}
 		else
 		{
@@ -148,6 +148,7 @@ void CDataObject::user_operation_t::MUserOperation(const NSHARE::CThread* WHO,
 		}
 	}
 	VLOG(2) << "Finish handle";
+	return _rval;
 }
 void CDataObject::MPush(const kernel_infos_array_id_t & aVal)
 {

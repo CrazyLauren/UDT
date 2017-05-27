@@ -1,10 +1,10 @@
 /*
  * crc8.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 03.09.2012
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -167,7 +167,7 @@ struct crc8_t<FPolynom, TOffset, FTLSb>::make_t
 		for (size_t i = (SizeTable >> 1); i; i >>= 1)
 		{
 			_remaind = (_remaind >> 1) ^ (_remaind & 1 ? Polynom : 0);
-			for (int j = 0; j < SizeTable; j += 2 * i)
+			for (size_t j = 0; j < SizeTable; j += 2 * i)
 				_crctab[i + j] = _crctab[j] ^ _remaind;
 		}
 
@@ -188,7 +188,7 @@ struct crc8_t<FPolynom, TOffset, FTLSb>::make_t<TPolyType,false>
 		for (size_t i = 1; i < base_t::SizeTable; i *= 2)
 		{
 			_remaind = (_remaind << 1) ^ (_remaind & msbit ? base_t::Polynom : 0);
-			for (int j = 0; j < i; j++)
+			for (size_t j = 0; j < i; j++)
 				_crctab[i + j] = _crctab[j] ^ _remaind;
 		}
 

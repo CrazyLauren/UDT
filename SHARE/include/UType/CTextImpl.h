@@ -1,10 +1,10 @@
 /*
  * CTextImpl.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.02.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -17,7 +17,7 @@ namespace NSHARE
 
 inline CText::size_type const& CText::size() const
 {
-	return FUCS4Length;
+	return FCodePointLength;
 }
 inline CText::size_type const& CText::length() const
 {
@@ -33,13 +33,18 @@ inline CText::size_type CText::max_size() const
 }
 inline CText::size_type CText::capacity() const
 {
-	return FReserve - 1;
+	using  namespace std;
+	CText::size_type const _length=MGetBufferLength();
+
+	assert(_length && "Wtf? Invalid buffer length!");
+
+	return  _length- 1;
 }
 inline void CText::reserve(size_type num)
 {
 	MWillBeenChanged();
 	if (num == 0)
-		MTrim();
+		MRemoveBuffer();
 	else
 		MGrow(num);
 }
@@ -67,14 +72,26 @@ inline utf8 const* CText::c_str() const
 {
 	return (utf8 const*) MBuildUtf8Buff();
 }
+inline CText::size_type CText::MGetBufferLength() const
+{
+	return FImpl.MRead().FMultiByteBufferLen;
+}
 inline utf32* CText::ptr(void)
 {
-	return (FReserve > QUICKBUFF_SIZE) ? FUCS4Buf : FQuickUCS4;
+	using namespace std;
+	impl_t & _impl = FImpl.MWrite();
+	return _impl.FMultiByteBuf;
 }
 
+inline const utf32* CText::ptr_const(void) const
+{
+	using namespace std;
+	impl_t const& _impl = FImpl.MRead();
+	return _impl.FMultiByteBuf;
+}
 inline const utf32* CText::ptr(void) const
 {
-	return (FReserve > QUICKBUFF_SIZE) ? FUCS4Buf : FQuickUCS4;
+	return ptr_const();
 }
 inline void CText::push_back(utf32 code_point)
 {
@@ -252,12 +269,12 @@ inline CText::const_iterator CText::begin(void) const
 
 inline CText::iterator CText::end(void)
 {
-	return iterator(&ptr()[FUCS4Length]);
+	return iterator(&ptr()[FCodePointLength]);
 }
 
 inline CText::const_iterator CText::end(void) const
 {
-	return const_iterator(&ptr()[FUCS4Length]);
+	return const_iterator(&ptr()[FCodePointLength]);
 }
 inline CText::reverse_iterator CText::rbegin(void)
 {
@@ -519,6 +536,14 @@ inline std::ostream& operator<<(std::ostream& s, const NSHARE::CText& str)
 {
 	return str.MPrint(s);
 }
+inline std::ostream& operator<<(std::ostream & aStream,
+		const NSHARE::Strings& aSrts)
+{
+	for (NSHARE::Strings::const_iterator _it = aSrts.begin();
+			_it != aSrts.end(); ++_it)
+		aStream << *_it << std::endl;
+	return aStream;
+}
 template<class _Elem, class _Traits>
 inline basic_istream<_Elem, _Traits>& operator>>(
 		basic_istream<_Elem, _Traits>& aStream, NSHARE::CText& _Str)
@@ -606,6 +631,7 @@ struct equal_to<NSHARE::CText>: public binary_function<NSHARE::CText, NSHARE::CT
 		return false;
 	}
 };
+
 }
 
 #endif /* CTEXTIMPL_H_ */

@@ -1,10 +1,10 @@
 /*
  * CIntrusived.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 22.04.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,7 +14,11 @@
 
 namespace NSHARE
 {
-
+/** \brief base class for intrusive pointer to object
+ *
+ * Stores an embedded counter.
+ *
+ */
 class  SHARE_EXPORT CIntrusived
 {
 public:
@@ -22,9 +26,10 @@ public:
 	CIntrusived(const CIntrusived& aRht);
 
 	template<class T>
-	static int sMRef(T**);
+	static int sMRef(T*);
 	template<class T>
-	static int sMUnref(T**);
+	static int sMUnref(T*);
+
 	int MUnrefWithoutDelete() const;
 	int MCountRef() const;
 	unsigned MReferedCount() const;
@@ -59,30 +64,30 @@ private:
 	template<class U> friend class intrusive_ptr;
 };
 template<class T>
-inline int CIntrusived::sMRef(T** aP)
+inline int CIntrusived::sMRef(T* aP)
 {
 	int _val = 0;
 	{
-		if (!aP || !(*aP))
+		if (!aP)
 			return 0;
-		_val = (*aP)->CIntrusived::MRefImpl();
+		_val = aP->CIntrusived::MRefImpl();
 		if (_val <= 0)
-			*aP = NULL;
+			aP = NULL;
 	}
 	return _val;
 }
 template<class T>
-inline int CIntrusived::sMUnref(T** aP)
+inline int CIntrusived::sMUnref(T* aP)
 {
 	int _val;
 	T* _tmp = NULL;
 	{
-		if (!aP || !(*aP))
+		if (!aP)
 			return 0;
-		if ((_val = (*aP)->CIntrusived::MUnrefImpl()) == 0)
+		if ((_val = aP->CIntrusived::MUnrefImpl()) == 0)
 		{
-			_tmp = (*aP);
-			*aP = NULL;
+			_tmp = aP;
+			aP = NULL;
 		}
 	}
 	if (_val == 0)
@@ -97,11 +102,11 @@ namespace boost
 {
 inline void intrusive_ptr_add_ref(NSHARE::CIntrusived* p)
 {
-	NSHARE::CIntrusived::sMRef(&p);
+	NSHARE::CIntrusived::sMRef(p);
 }
 inline void intrusive_ptr_release(NSHARE::CIntrusived* p)
 {
-	NSHARE::CIntrusived::sMUnref(&p);
+	NSHARE::CIntrusived::sMUnref(p);
 }
 }
 

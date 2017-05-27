@@ -1,10 +1,10 @@
 /*
  * CSmMainChannel.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 05.07.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -481,10 +481,10 @@ const NSHARE::ISocket* CSmMainChannel::MGetSocket() const
 {
 	return &FSmServer;
 }
-int CSmMainChannel::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*aData)
+NSHARE::eCBRval CSmMainChannel::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*aData)
 {
 	reinterpret_cast<CSmMainChannel*>(aData)->MReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 size_t CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data, NSHARE::shared_identify_t const& _from,ILink* aLink)
 {

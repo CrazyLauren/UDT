@@ -1,10 +1,10 @@
 /*
  * test.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.09.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -53,7 +53,7 @@ namespace mutex_test_impl
 using namespace NSHARE;
 std::string g_buffer;
 CMutex g_mutex;
-int thread1_run(void*, void*, void*)
+eCBRval thread1_run(void*, void*, void*)
 {
 	for (int i = 0; i < 10; ++i)
 	{
@@ -64,9 +64,9 @@ int thread1_run(void*, void*, void*)
 		}
 		NSHARE::usleep(rand() % 500);
 	}
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int thread2_run(void*, void*, void*)
+eCBRval thread2_run(void*, void*, void*)
 {
 	for (int i = 0; i < 10;)
 	{
@@ -78,10 +78,10 @@ int thread2_run(void*, void*, void*)
 		}
 		NSHARE::usleep(rand() % 500);
 	}
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
-int thread3_run(void*, void*, void*)
+eCBRval thread3_run(void*, void*, void*)
 {
 	for (int i = 0; i < 10;)
 	{
@@ -93,7 +93,7 @@ int thread3_run(void*, void*, void*)
 		}
 		NSHARE::usleep(rand() % 500);
 	}
-	return 0;
+	return E_CB_SAFE_IT;
 }
 }
 bool NSHARE::CMutex::sMUnitTest()
@@ -122,7 +122,7 @@ char buffer[50] = "";
 CMutex bufferLock(CMutex::MUTEX_NORMAL);
 CCondvar cond;
 bool ok = true;
-int thread1_run(void*, void*, void*)
+eCBRval thread1_run(void*, void*, void*)
 {
 	NSHARE::usleep(1000);
 	for (int i = 0; i < 10; ++i)
@@ -140,10 +140,10 @@ int thread1_run(void*, void*, void*)
 
 		NSHARE::usleep(rand() % 500);
 	}
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
-int thread2_run(void*, void*, void*)
+eCBRval thread2_run(void*, void*, void*)
 {
 	for (int i = 0; i < 10;)
 	{
@@ -163,7 +163,7 @@ int thread2_run(void*, void*, void*)
 
 		NSHARE::usleep(rand() % 500);
 	}
-return 0;
+return E_CB_SAFE_IT;
 }
 }
 bool NSHARE::CCondvar::sMUnitTest()

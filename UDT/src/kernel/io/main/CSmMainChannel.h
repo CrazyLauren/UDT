@@ -1,10 +1,10 @@
 /*
  * CSmMainChannel.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 05.07.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -105,7 +105,7 @@ private:
 	typedef safe_data_t::RAccess<> const r_access;
 	typedef safe_data_t::WAccess<> w_access;
 
-	static int sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
+	static NSHARE::eCBRval sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	void MThreadSafetyAssign(NSHARE::intrusive_ptr<sm_io_t> &aFrom,NSHARE::intrusive_ptr<sm_io_t> const& aTo) const;
 	void MThreadSafetyReset(NSHARE::intrusive_ptr<sm_io_t> &aFrom)const;
 	void MReceiver();

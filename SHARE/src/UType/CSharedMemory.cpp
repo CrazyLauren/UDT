@@ -1,10 +1,10 @@
 /*
  * CSharedMemory.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 13.04.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -33,6 +33,7 @@ SHARED_PACKED(
 			{
 				memset(FSharedMutex,0,sizeof(FSharedMutex));
 				memset(FAllocMutex,0,sizeof(FAllocMutex));
+				memset(FAligment, 0, sizeof(FAligment));
 			}
 			crc_t::type_t FCrc;
 			uint8_t FAligment[4-sizeof(crc_t::type_t)];
@@ -47,21 +48,28 @@ SHARED_PACKED(
 		});
 bool CSharedMemory::mem_info_t::MUpdateCRC()
 {
+	/// \note crc берётся от двух переменных
+	const size_t _crc_length = (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t);
+	
 	const mem_info_t::crc_t::type_t* _begin =
 			(mem_info_t::crc_t::type_t*) (&FSize);
-	const size_t _crc_length = sizeof(FPidOffCreator) + sizeof(FSize);
 	const mem_info_t::crc_t::type_t* _end =
-		_begin+ _crc_length / sizeof(mem_info_t::crc_t::type_t);
+		_begin+ _crc_length;
+
 	FCrc = crc_t::sMCalcCRCofBuf(_begin, _end);
 	return true;
 }
 
 bool CSharedMemory::mem_info_t::MCheckCRC() const
 {
+	/// \note crc берётся от двух переменных
+	const size_t _crc_length = (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t);
+
 	const mem_info_t::crc_t::type_t* _begin =
 			(mem_info_t::crc_t::type_t*) (&FSize);
-	crc_t::type_t _crc = crc_t::sMCalcCRCofBuf(_begin,
-			_begin + (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t));
+
+	crc_t::type_t const _crc = crc_t::sMCalcCRCofBuf(_begin,
+			_begin + _crc_length);
 	return _crc == FCrc && FPidOffCreator>0 && FSize>0;
 }
 class CSharedAllocatorImpl: public IAllocater

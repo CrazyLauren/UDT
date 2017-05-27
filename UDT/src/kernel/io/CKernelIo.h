@@ -1,10 +1,10 @@
 /*
  * CKernelIo.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 29.02.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -100,7 +100,7 @@ private:
 
 	template<class T>
 	void MRouteOperation(void*,const routing_t& aTo,descriptor_t const&);
-	static int sMRouteOperation(const NSHARE::CThread* WHO,
+	static NSHARE::eCBRval sMRouteOperation(const NSHARE::CThread* WHO,
 			NSHARE::operation_t* WHAT, void* YOU_DATA);
 	void MRoute();
 	template<class T>
@@ -110,7 +110,7 @@ private:
 	void MRecvImpl(const routing_t& aRoute, const descriptor_t& aFrom,
 			const T& aWhat,error_info_t const& aError);
 
-	static int sMSendUser(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT,	void* YOU_DATA);
+	static NSHARE::eCBRval sMSendUser(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT,	void* YOU_DATA);
 	void MSendUserDataImpl();
 
 	std::pair<descriptor_t,IIOManager*> MBeginSend(CBuffering::data_list_t& _data);

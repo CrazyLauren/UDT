@@ -1,10 +1,10 @@
 /*
  * CPacketDivisor.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.09.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -65,9 +65,9 @@ private:
 	{
 		merge_operation_t(CPacketDivisor& aThis,user_data_info_t const& aFor,descriptor_t aDesc);
 		void MMerge(user_datas_t & aVal,user_datas_t& aTo);
-		static int sMMergeOperation(NSHARE::CThread const* WHO,
+		static NSHARE::eCBRval sMMergeOperation(NSHARE::CThread const* WHO,
 				NSHARE::operation_t* WHAT, void* YOU_DATA);
-		void MMergeOperation(NSHARE::CThread const* WHO,
+		NSHARE::eCBRval MMergeOperation(NSHARE::CThread const* WHO,
 				NSHARE::operation_t* WHAT);
 		bool MMergePacket(const user_data_t& aWhat);
 		bool MCreatePacket(user_datas_t& aTo);

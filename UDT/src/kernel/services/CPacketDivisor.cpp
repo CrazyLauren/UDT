@@ -1,10 +1,10 @@
 /*
  * CPacketDivisor.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.09.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -85,14 +85,14 @@ bool CPacketDivisor::merge_operation_t::MMergePacket(const user_data_t& aWhat)
 	}
 	return false;
 }
-int CPacketDivisor::merge_operation_t::sMMergeOperation(
+NSHARE::eCBRval CPacketDivisor::merge_operation_t::sMMergeOperation(
 		const NSHARE::CThread* WHO, NSHARE::operation_t* WHAT, void* YOU_DATA)
 {
 	VLOG(2) << "User data Operation ";
 	merge_operation_t* _p = reinterpret_cast<merge_operation_t*>(YOU_DATA);
 	CHECK_NOTNULL(_p);
-	_p->MMergeOperation(WHO, WHAT);
-	return 0;
+
+	return _p->MMergeOperation(WHO, WHAT);
 }
 bool CPacketDivisor::merge_operation_t::MCreatePacket(user_datas_t& aTo)
 {
@@ -112,10 +112,11 @@ bool CPacketDivisor::merge_operation_t::MCreatePacket(user_datas_t& aTo)
 	}
 	return false;
 }
-void CPacketDivisor::merge_operation_t::MMergeOperation(
+NSHARE::eCBRval CPacketDivisor::merge_operation_t::MMergeOperation(
 		const NSHARE::CThread* WHO, NSHARE::operation_t* WHAT)
 {
 	VLOG(2) << "Operation merge ";
+	NSHARE::eCBRval _rval=NSHARE::E_CB_REMOVE;
 	{
 
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FThis.FMergeMutex);
@@ -152,7 +153,7 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 					merge_key(FFor.FRouting.FFrom.FUuid, FDescriptor));//warning erase all
 		}else	if (!FNewPackets.empty())
 		{
-			WHAT->MKeep(true);
+			_rval=NSHARE::E_CB_SAFE_IT;
 		}
 		else
 		{
@@ -161,6 +162,7 @@ void CPacketDivisor::merge_operation_t::MMergeOperation(
 		}
 	}
 	VLOG(2) << "Finish handle";
+	return _rval;
 }
 CPacketDivisor::merge_operation_t::merge_operation_t(CPacketDivisor& aThis,
 		user_data_info_t const& aFor, descriptor_t aDesc) :

@@ -1,10 +1,10 @@
 /*
  * CTCPServerImpl.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 07.09.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -118,11 +118,11 @@ bool IMPL::MOpen()
 	VLOG(1) << "The server has been opened successfully.";
 	return true;
 }
-int IMPL::sMCleanupMutex(void*, void*, void* aP)
+eCBRval IMPL::sMCleanupMutex(void*, void*, void* aP)
 {
 	CRAII<CMutex> *_block = reinterpret_cast<CRAII<CMutex>*>(aP);
 	_block->MUnlock();
-	return 0;
+	return E_CB_SAFE_IT;
 }
 void IMPL::MMakeNonBlocking(CSocket& aSocket)
 {
@@ -158,15 +158,14 @@ void IMPL::MExpectConnection()
 	VLOG(0) << "Not connected,expect signal ";
 	CRAII<CMutex> _mutex(FMutex);
 
-	FThread.MSetCleanUp(NSHARE::CB_t(sMCleanupMutex, &_mutex));
+	FThread.MPutCleanUp(NSHARE::CB_t(sMCleanupMutex, &_mutex));
 	for (HANG_INIT; !MCanReceive() && FIsWorking;HANG_CHECK)
 	{
 		VLOG(0) << "Wait for.";
 		FCond.MTimedwait(&FMutex);
 		LOG_IF(ERROR,!MCanReceive()) << "No clients.";
 	}
-
-	FThread.MSetCleanUp(NSHARE::CB_t());
+	FThread.MRemoveAllCleanUp();
 }
 void IMPL::MReserveMemory(data_t* aBuf,
 		CSelectSocket::socks_t const& _to)
@@ -355,10 +354,10 @@ CTCPServer::sent_state_t IMPL::MSendTo(clients_fd_t::value_type const& aVal, con
 	FDiagnostic.MSend(nSize);
 	return _state;
 }
-int IMPL::sMConnect(void*, void*, void* pData)
+eCBRval IMPL::sMConnect(void*, void*, void* pData)
 {
 	reinterpret_cast<CImpl*>(pData)->MAccept();
-	return 0;
+	return E_CB_SAFE_IT;
 }
 #ifdef _WIN32
 static const char* inet_ntop(int af, const void* src, char* dst, int cnt)

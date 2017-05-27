@@ -1,10 +1,10 @@
 /*
  * CEvent.hpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 27.11.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,56 +14,74 @@
 
 namespace NSHARE
 {
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline CEvent<TSender_type, TEvent_t, TEventArg_type>::CEvent() :
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::CEvent() :
 		FSender(NULL)
 {
 	;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline CEvent<TSender_type, TEvent_t, TEventArg_type>::CEvent(sender_t aSender) :
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::CEvent(sender_t aSender) :
 		FSender(aSender)
 {
 	;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::MAdd(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MAdd(
 		value_t const & aCB, unsigned int aPrior)
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	iterator _it=FCBs.begin();
 	for (; _it != FCBs.end() && !(*_it == aCB);++_it)
 		;
-	if (_it == FCBs.end())
+	if (_it != FCBs.end())
 	{
-		Type _val =
-		{ aPrior, aCB };
-
-		FCBs.insert(_val);
+		if(aPrior==_it->FPrior)
+			return true;
+		else
+			FCBs.erase(_it);
 	}
-	else
-		_it->FCb = aCB;
+
+	Type _val =
+	{ aPrior, aCB };
+
+	iterator const _instert_to=std::upper_bound(FCBs.begin(),FCBs.end(),_val);
+
+	FCBs.insert(_instert_to,_val);
+	++FNumberOfArrayChange;
 	return true;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::MErase(
-		value_t const& aM)
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MErase(
+		value_t const& aCB)
 {
-	iterator _it = find(FCBs.begin(), FCBs.end(), aM); //�� removew algorithm
-	if (_it == FCBs.end())
-		return false;
-	FCBs.erase(_it);
-	return true;
+	CRAII<mutex_t> _blocked(FMutex);
+	iterator _it=FCBs.begin();
+	for (; _it != FCBs.end() && !(*_it == aCB);++_it)
+		;
+	if (_it != FCBs.end())
+	{
+		FCBs.erase(_it);
+		++FNumberOfArrayChange;
+		return true;
+	}
+	return false;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::MIs(
-		value_t const& aM) const
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MIs(
+		value_t const& aCB) const
 {
-	return FCBs.end() != find(FCBs.begin(), FCBs.end(), aM);
+	CRAII<mutex_t> _blocked(FMutex);
+	const_iterator _it=FCBs.begin();
+	for (; _it != FCBs.end() && !(*_it == aCB);++_it)
+		;
+	return _it != FCBs.end();
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline int CEvent<TSender_type, TEvent_t, TEventArg_type>::MCall(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline int CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MCall(
 		value_arg_t const& aCallbackArgs)
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	int _count = 0;
 	for (iterator _it(FCBs.begin()); _it != FCBs.end();)
 	{
@@ -72,6 +90,7 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type>::MCall(
 		switch(_rval)
 		{
 			case E_CB_REMOVE:
+				++FNumberOfArrayChange;
 				FCBs.erase(_it++);
 				break;
 
@@ -88,74 +107,80 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type>::MCall(
 	}
 	return _count;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::MChangePrior(
-		value_t const& aM, unsigned int aPrior)
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MChangePrior(
+		value_t const& aCB, unsigned int aPrior)
 {
-	//TODO Call CB
+	CRAII<mutex_t> _blocked(FMutex);
+	iterator _it=FCBs.begin();
+	for (; _it != FCBs.end() && !(*_it == aCB);++_it)
+		;
+	if (_it != FCBs.end())
+	{
+		Type _val(*_it);
+		FCBs.erase(_it);
+		_val.FPrior = aPrior;
 
-	iterator _it = find(FCBs.begin(), FCBs.end(), aM);
-	if (_it == FCBs.end())
-		return false;
-
-	Type _val(*_it);
-	FCBs.erase(_it);
-	_val.FPrior = aPrior;
-	FCBs.insert(_val);
-	return true;
+		iterator const _instert_to=std::upper_bound(FCBs.begin(),FCBs.end(),_val);
+		FCBs.insert(_instert_to,_val);
+		++FNumberOfArrayChange;
+		return true;
+	}
+	return false;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::Type::operator ()(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator ()(
 		sender_t aSender, value_arg_t aWhat) const
 {
 	return FCb(aSender, aWhat)!=0;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::Type::operator <(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator <(
 		Type const& right) const
 {
 	return FPrior < right.FPrior;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::Type::operator ==(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator ==(
 		Type const& right) const
 {
 	return FPrior == right.FPrior;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::Type::operator !=(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator !=(
 		Type const& right) const
 {
 	return FPrior != right.FPrior;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::Type::operator ==(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator ==(
 		value_t const& right) const
 {
 	return FCb == right;
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::operator+=(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::operator+=(
 		value_t const & aCB)
 {
 	return MAdd(aCB);
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type>::operator-=(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::operator-=(
 		value_t const & aCB)
 {
 	return MErase(aCB);
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline typename CEvent<TSender_type, TEvent_t, TEventArg_type>::size_t CEvent<
-		TSender_type, TEvent_t, TEventArg_type>::MSize() const
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline typename CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::size_t CEvent<
+		TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MSize() const
 {
 	return FCBs.size();
 }
-template<class TSender_type, class TEvent_t, class TEventArg_type>
-inline std::ostream& CEvent<TSender_type, TEvent_t, TEventArg_type>::MPrintEvent(
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
+inline std::ostream& CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MPrintEvent(
 		std::ostream & aStream) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	const_iterator _it = FCBs.begin();
 	const_iterator const _it_end = FCBs.end();
 
@@ -163,12 +188,74 @@ inline std::ostream& CEvent<TSender_type, TEvent_t, TEventArg_type>::MPrintEvent
 		aStream << "Prior = " << _it->FPrior << ". \t" << _it->FCb << std::endl;
 	return aStream;
 }
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline void CEvent<TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>::MSynchronizeChange(
+		CEvent& aOldValue, CEvent& aNewValue)
+{
+	CRAII<mutex_t> _blocked(FMutex);
+
+	if (!aOldValue.MWasChanged(MGetNumberOfChange())) //Мы не изменились
+	{
+		FCBs.swap(aNewValue.FCBs);
+		FNumberOfArrayChange = aNewValue.FNumberOfArrayChange;
+	}
+	else//синхронизировать списки
+	{
+		//1) ищем, что было удалено
+		//2) удаляем их в текущем списке
+
+		iterator _it_old = aOldValue.FCBs.begin();
+		iterator _it_new = aNewValue.FCBs.begin();
+		for (; _it_new != aNewValue.FCBs.end() &&		//
+				_it_old != aOldValue.FCBs.end();)
+		{
+			if(_it_old->FCb==_it_new->FCb)
+			{
+				++_it_new;
+				++_it_old;
+			}else//removed
+			{
+				MErase(_it_old->FCb);
+				++_it_old;
+			}
+		}
+		for(;_it_old != aOldValue.FCBs.end();++_it_old)
+		{
+			MErase(_it_old->FCb);
+		}
+	}
+}
+
+
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline atomic_t::value_type CEvent<TSender_type, TEvent_t, TEventArg_type,
+		TIEvent, TMutexType>::MGetNumberOfChange() const
+{
+	return FNumberOfArrayChange;
+}
+
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline bool CEvent<TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>::MWasChanged(
+		atomic_t::value_type const& aVal) const
+{
+	return MGetNumberOfChange()!=aVal;
+}
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline void CEvent<TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>::MClear()
+{
+	CRAII<mutex_t> _blocked(FMutex);
+	FCBs.clear();
+}
 } //namespace USHARE
 namespace std
 {
-template<class TSender_type, class TEvent_t, class TEventArg_type>
+template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
 inline std::ostream& operator <<(std::ostream& aStream,
-		NSHARE::CEvent<TSender_type, TEvent_t, TEventArg_type> const& aEvent)
+		NSHARE::CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType> const& aEvent)
 {
 	return aEvent.MPrintEvent(aStream);
 }

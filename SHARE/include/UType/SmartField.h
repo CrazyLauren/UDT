@@ -1,10 +1,10 @@
 /*
  * SmartField.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 06.08.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,6 +14,14 @@
 #define SMART_FIELD_EXIST
 namespace NSHARE
 {
+/** \brief Шаблон класса хранящего информацию
+ * об иницилизации объекта
+ *
+ * Этот шаблон заменяет два поля:
+ * 1) непосресдвенно данные
+ * 2) флаг об их изменении
+ */
+
 template<typename _T>
 struct  smart_field_t
 {

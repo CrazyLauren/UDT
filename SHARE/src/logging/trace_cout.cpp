@@ -2,9 +2,9 @@
  * trace_cout.cpp
  *
  *  Created on: 24.11.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *	
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)

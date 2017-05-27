@@ -1,10 +1,10 @@
 /*
  * CBuffer.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 14.03.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -27,8 +27,7 @@
 
 namespace NSHARE
 {
-const IAllocater::offset_pointer_t IAllocater::NULL_OFFSET =
-		std::numeric_limits<IAllocater::offset_pointer_t>::max(); //held here by historical reason
+
 //static CMutex g_mutex;
 #define BUF_FACTOR 1.5//fixme
 const size_t CBuffer::DEF_BUF_RESERVE = 256; //fixme
@@ -464,6 +463,16 @@ void CBuffer::_buffer_t::add_ref_copy(bool aIsExist) const
 bool CBuffer::_buffer_t::empty() const
 {
 	return FBeginOfStorage == NULL;
+}
+void CBuffer::_buffer_t::swap(_buffer_t& aTo)
+{
+	VLOG(3) << "Swap";
+	if (aTo.FBeginOfStorage != FBeginOfStorage)
+	{
+		std::swap(FAllocator,aTo.FAllocator);
+		std::swap(FBeginOfStorage,aTo.FBeginOfStorage);
+		std::swap(FAllocatorType,aTo.FAllocatorType);
+	}
 }
 void CBuffer::_buffer_t::MMoveTo(_buffer_t& aTo)
 {
@@ -946,7 +955,7 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,
 					_data_ptr += aSize;
 					if(_elems_after)
 					{
-						memmove(_data_ptr, _data_ptr+_elems_after, _elems_after);
+						memmove(_data_ptr, _p_coping, _elems_after);
 						_data_ptr += _elems_after;
 					}
 
@@ -1241,17 +1250,23 @@ CBuffer::iterator CBuffer::erase(iterator aBegin, iterator aEnd)
 {
 	if (!empty() && aBegin < aEnd)
 	{
-		if (aEnd != end())
-
-		{
-			LOG_IF(FATAL,aEnd<begin()) << " Sigsegv";
-			LOG_IF(FATAL,aEnd>end()) << " Sigsegv";
-			memmove(aBegin.base(), aEnd.base(), end() - aEnd);
-		}
 		buf_info& _info = FBuffer.MGetBuff();
 		_buffer_safety_operation_t _block(FBuffer.FAllocator,
 				FBuffer.FBeginOfStorage);
-		_info.MSetSize(_info.MSize() - (aEnd - aBegin));
+		const size_t _remove=aEnd - aBegin;
+		if (aEnd == end())
+			_info.MSetSize(_info.MSize() - _remove);
+		else if (aBegin==begin())
+		{
+			_info.MSetStartOffset(_info.MStartOffset() + _remove);
+		}
+		else
+		{
+			LOG_IF(FATAL,aEnd<begin()) << " Segmentation failed";
+			LOG_IF(FATAL,aEnd>end()) << " Segmentation failed";
+			memmove(aBegin.base(), aEnd.base(), end() - aEnd);
+			_info.MSetSize(_info.MSize() - _remove);
+		}
 	}
 	return aBegin;
 }
@@ -1263,6 +1278,8 @@ void CBuffer::sMUnitTest(IAllocater* aAlloc)
 void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 {
 	//std::cout<<aSize<<std::endl;
+	if(!aAlloc)
+		aAlloc=CBuffer::sMDefAllaocter();
 	size_t const _size = aSize;
 	size_t const _check_size = _size;
 
@@ -1376,8 +1393,6 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 		}
 
 		CHECK_GT(_buffer.capacity(), _new_size);
-		if (_is_begin_capacity)
-			CHECK_GT(_buffer.begin_capacity(), 0);
 		//std::cout << "EOK6" << std::endl;
 	}
 	//insert test
@@ -1522,9 +1537,13 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 		{
 			CHECK_EQ(i % _max, *_it);
 		}
+		VLOG(2)<<"Begin capacity "<<_buf.begin_capacity();
 		CHECK_EQ(_buf.begin_capacity(), 0);
+		size_t const _full_capacity=_buf.capacity();
 		_buf.insert(_buf.begin(), 0);
-		CHECK_EQ(_buf.begin_capacity(), _capacity);
+		size_t const _n_size=_buf.size();
+		size_t const _begin=_buf.begin_capacity();
+		CHECK_EQ(_begin,std::min(_full_capacity-_n_size,_capacity));
 
 		//std::cout << "EOK11" << std::endl;
 	}
@@ -1653,8 +1672,7 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 }
 CBuffer::allocator_type * CBuffer::sMDefAllaocter()
 {
-	static CCommonAllocater<> g_common_allocater;
-	return &g_common_allocater;
+	return get_default_allocator();
 }
 bool CBuffer::MIsAllocatorEqual(CBuffer const& aRht) const
 {
@@ -1673,6 +1691,11 @@ IAllocater* CBuffer::MAllocator() const
 bool CBuffer::MIsRestored() const
 {
 	return FBuffer.MIsRestored();
+}
+void CBuffer::swap(CBuffer& aBuf)
+{
+	FBuffer.swap(aBuf.FBuffer);
+	std::swap(FIsDetached,aBuf.FIsDetached);
 }
 }
 /* namespace NSHARE */

@@ -1,10 +1,10 @@
 /*
  * CSharedMemoryServerImpl.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 09.07.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -853,9 +853,9 @@ int IMPL_CLASS::sMCleanUpMemory(CSharedAllocator* WHO, void* aWHAT,
 		}
 	}
 	VLOG(2)<<"Clean Up server finished";
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int IMPL_CLASS::sMServerCleaner(void*, void*, void* pData)
+eCBRval IMPL_CLASS::sMServerCleaner(void*, void*, void* pData)
 {
 	CHECK_NOTNULL(pData);
 	CImpl* _server=reinterpret_cast<CImpl*>(pData);
@@ -863,7 +863,7 @@ int IMPL_CLASS::sMServerCleaner(void*, void*, void* pData)
 	{
 		_server->FSharedMemory.MCleanUpResourceByWatchDog(sMCleanUpMemory,pData);
 	}
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 std::ostream& IMPL_CLASS::MPrint(std::ostream& aStream) const

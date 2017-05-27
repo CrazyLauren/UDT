@@ -1,10 +1,10 @@
 /*
  * CConfig.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 20.01.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -21,6 +21,12 @@ namespace NSHARE
 class SHARE_EXPORT CConfig;
 class CBuffer;
 typedef std::list<CConfig> ConfigSet;
+
+/** \brief Config - это класс для сериализации данных в формат JSON или XML
+ *
+ * В начале обэект конвертируется в Config, далее Config конвертируется требуемый формат.
+ * CConfig реализован с использованием COW
+ */
 
 class SHARE_EXPORT CConfig
 {
@@ -79,14 +85,6 @@ public:
 	bool MFromJSON(std::istream&);
 	NSHARE::CText MToJSON(bool aPretty=false) const;
 
-	//relative
-	void MSetReferrer(const CText& value);
-	void MInheritReferrer(const CText& value);
-	const CText& MReferrer() const
-	{
-		return CText::sMEmpty();
-		//return FData.MRead().FReferrer;
-	}
 
 	bool MIsEmpty() const
 	{
@@ -218,8 +216,6 @@ public:
 		out << value;
 		FData.MWrite().FChildren.push_back(CConfig(key, out.str()));
 #endif
-//		CConfig& _new=FData.MWrite().FChildren.back();
-//		_new.MInheritReferrer(FData.MWrite().FReferrer);
 		return *this;
 	}
 
@@ -228,9 +224,6 @@ public:
 	CConfig& MAdd(const CConfig& conf)
 	{
 		FData.MWrite().FChildren.push_back(conf);
-
-//		CConfig& _new=FData.MWrite().FChildren.back();
-//		_new.MInheritReferrer(FData.MWrite().FReferrer);
 		return *this;
 	}
 
@@ -294,10 +287,7 @@ public:
 	}
 
 
-	const CText MReferrer(const CText& key) const
-	{
-		return MChild(key).MReferrer();
-	}
+
 
 #ifdef SMART_FIELD_EXIST
 	// populates the output value iff the Config exists.
@@ -328,6 +318,14 @@ public:
 	CConfig operator -(const CConfig& rhs) const;
 	std::ostream& MPrint(std::ostream & aStream) const;
 
+	NSHARE::CConfig MSerialize() const
+	{
+		return *this;
+	}
+	bool MIsValid() const
+	{
+		return !MIsEmpty();
+	}
 private:
 	struct SHARE_EXPORT data_t
 	{
@@ -340,7 +338,6 @@ private:
 		CText FKey;
 		CText FValue;
 		ConfigSet FChildren;
-		//CText FReferrer; //todo it has been change COW object ==> decrease performance
 	};
 	template<class T>
 	inline void MReadFrom(T const&, bool aFirst = true); //ptree - boost
@@ -395,9 +392,6 @@ template<> inline
 CConfig& CConfig::MAdd<CText>(const CText& key, const CText& value)
 {
 	FData.MWrite().FChildren.push_back(CConfig(key, value));
-	//_children.back().setReferrer( _referrer );
-	//CConfig& _new=FData.MWrite().FChildren.back();
-	//_new.MInheritReferrer(FData.MWrite().FReferrer);
 	return *this;
 }
 template<> inline
@@ -405,14 +399,9 @@ CText CConfig::MValue<CText>(CText _val) const
 {
 	return MValue();
 }
-//fixme
-//template<> inline
-// CBuffer CConfig::MValue<CBuffer>() const
-//{
-//	CBuffer _to;
-//	MValue(_to);
-//	return _to;
-//}
+template<>
+CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const;
+
 template<> inline
 CConfig& CConfig::MAdd<CBuffer>(const CText& key,CBuffer const & aTo)
 {

@@ -1,10 +1,10 @@
 /*
  * CSharedAllocator.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 10.04.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -1023,7 +1023,7 @@ void* CSharedAllocator::MReallocate(void* aPtr,block_size_t aSize,bool aBlock,bo
 	block_node_t* const _p_node = sMGetBlockNode(aPtr);
 	size_t const _size = _p_node->FBlockSize&~BLOCK_ALLOCATED_BIT;
 
-	if(_size>=aSize)//fixme
+	if(_size>=aSize)//fixme reduce size
 		return aPtr;
 
 	void* _p=MMalloc(aSize,aBlock,aFromReserv);//fixme

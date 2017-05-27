@@ -1,10 +1,10 @@
 /*
  * CThreadPosix.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 10.02.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -38,7 +38,7 @@ struct CThread::CImpl
 	static void* sMThreadFunc(void* p);
 	static void sMCleanUpHandler(void* arg);
 
-	inline void MStart(const param_t* aParam);
+	inline void MStart(const param_t& aParam);
 	inline void MConvert(attr_t* aTo, const param_t&);
 	void MWaitForCreated();
 private:
@@ -163,12 +163,14 @@ void CThread::CImpl::MSetPriority(attr_t*& aTo)
 	if (FThis.MGetSchedulePolicy() != CThread::SPORADIC)
 		switch (FThis.MGetPriority())
 		{
+			case CThread::THREAD_PRIORITY_REAL_TIME://todo
 			case CThread::THREAD_PRIORITY_MAX:
 				_sp.sched_priority = _max;
 				break;
 			case CThread::THREAD_PRIORITY_HIGH:
 				_sp.sched_priority = (_max + _normal) / 2;
 				break;
+			case CThread::THREAD_PRIORITY_DEFAULT:
 			case CThread::THREAD_PRIORITY_NOMINAL:
 				_sp.sched_priority = _normal;
 				break;
@@ -178,8 +180,8 @@ void CThread::CImpl::MSetPriority(attr_t*& aTo)
 			case CThread::THREAD_PRIORITY_MIN:
 				_sp.sched_priority = _min;
 				break;
-			default:
-				_sp.sched_priority = _normal;
+			case CThread::THREAD_PRIORITY_AS_IDLE:
+				LOG(DFATAL)<<"Cannot set idle priority thread";
 				break;
 		}
 
@@ -204,10 +206,11 @@ inline void CThread::CImpl::MConvert(attr_t* aTo, const param_t& aParam)
 		LOG_IF(DFATAL,_rval) << strerror(_rval);
 	}
 }
-inline void CThread::CImpl::MStart(const param_t* aP)
+inline void CThread::CImpl::MStart(const param_t& aP)
 {
 	attr_t _attr;
-	MConvert(&_attr, *aP);
+	MConvert(&_attr, aP);
+
 	int _rval = pthread_create(&FID, &_attr, CThread::CImpl::sMThreadFunc,
 			this);
 	(void) _rval;
@@ -239,32 +242,57 @@ void CThread::CImpl::sMCleanUpHandler(void* arg)
 }
 
 CThread::CThread() :
-		FImpl(new CImpl(*this))
+		FImpl(new CImpl(*this)),//
+		FCleanUp(this)
 {
 	VLOG(2) << "Create CThread: " << this;
 	MInit();
 }
-
-CThread::CThread(const CB_t& aCB) :
-		FImpl(new CImpl(*this))
+CThread::CThread(const param_t& aParam) :
+		FImpl(new CImpl(*this)), //
+		FCleanUp(this), //
+		FParam(aParam)
 {
-	VLOG(2) << "Create CThread: " << this;
+	DCHECK(FParam.MIsValid());
 	MInit();
+}
+CThread::CThread(const NSHARE::CConfig& aConf) :
+		FImpl(new CImpl(*this)), //
+		FCleanUp(this), //
+		FParam(param_t(aConf.MChild(param_t::NAME)))
+{
+	DCHECK(FParam.MIsValid());
+	MInit();
+}
+CThread::CThread(CB_t const& aCB, const param_t& aParam) :
+		FImpl(new CImpl(*this)), //
+		FCleanUp(this), //
+		FParam(aParam)
+{
+	DCHECK(FParam.MIsValid());
 	if (aCB.MIs())
 		MAdd(aCB);
+	MInit();
+}
+CThread::CThread(CB_t const& aCB, const NSHARE::CConfig& aConf) :
+		FImpl(new CImpl(*this)), //
+		FCleanUp(this), //
+		FParam(param_t(aConf.MChild(param_t::NAME)))
+{
+	DCHECK(FParam.MIsValid());
+	if (aCB.MIs())
+		MAdd (aCB);
+	MInit();
 }
 inline void CThread::MInit()
 {
-	FPriority = THREAD_PRIORITY_DEFAULT;
-	FShed = FIFO;
-	FCPUNum = -1;
 	FIsDetached = false;
 	MSetRunnig(false);
 
 }
 CThread::~CThread()
 {
-	VLOG(2) << "Destruct CThread: " << this;
+	VLOG(3) << "Destruct CThread: " << this;
 	if (MIsRunning())
 	{
 		VLOG(1) << "Thread still running." << (*this);
@@ -276,7 +304,7 @@ CThread::~CThread()
 		MSetRunnig(false);
 	}
 	delete FImpl;
-	FImpl = 0;
+	FImpl = NULL;
 }
 
 bool CThread::MCreate(const param_t* aParam)
@@ -287,26 +315,19 @@ bool CThread::MCreate(const param_t* aParam)
 		LOG(ERROR)<< "The Thread already running." << (*this);
 		MCancel();
 	}
-	FImpl->MStart(aParam);
+	if(aParam)
+		FParam=*aParam;
+
+	FImpl->MStart(FParam);
+
 	FImpl->MWaitForCreated();
 	return MIsRunning();
 }
 
-bool CThread::MSetProcessor(unsigned int cpunum)
-{
-	VLOG(2) << "Selecting  " << cpunum << " processor";
-	if (cpunum > sMNumberOfProcessor() || MIsRunning())
-	{
-		LOG(ERROR)<< "Selecting processor error. Invalid number of CPU or the Thread is running.";
-		return false;
-	}
 
-	FCPUNum = cpunum;
-	return true;
-}
 bool CThread::MTestCancel()
 {
-	CHECK(MIsRunning());
+	LOG_IF(DFATAL,!MIsRunning())<<"The thread is not running.";
 	if (sMThreadId() != MThreadId())
 	{
 		LOG(DFATAL)<< "Test cancel. The current thread ID and thread ID not equal.";
@@ -321,13 +342,14 @@ bool CThread::MCancel()
 	if (!MIsRunning())
 		return false;
 
-	int _rval = pthread_cancel(FImpl->FID);
+	int const _rval = pthread_cancel(FImpl->FID);
 	(void) _rval;
 	LOG_IF(ERROR,_rval) << strerror(_rval);
 
-	bool _is = _rval == 0;
+	bool const _is = _rval == 0;
 	if (_is)
 		FIsRunning = false;
+
 	return _is;
 }
 void CThread::MDetach()
@@ -375,13 +397,6 @@ void CThread::MRun(void)
 	MCall(NULL);
 }
 
-void CThread::MCancelCleanUp()
-{
-	if (MIsRunning())
-	{
-		FCleanUp(this, NULL);
-	}
-}
 bool CThread::MSignal(int signal)
 {
 	VLOG(2) << "Signal " << signal;
@@ -404,7 +419,7 @@ bool CThread::MSetPriority(eThreadPriority priority)
 	VLOG(2) << "Setting priority " << priority;
 	if (!MIsRunning())
 	{
-		FPriority = priority;
+		FParam.priority = priority;
 		return true;
 	}
 	else
@@ -416,12 +431,12 @@ bool CThread::MSetPolicy(eSched aPolicy)
 	VLOG(2) << "Setting Policy " << aPolicy;
 	if (!MIsRunning())
 	{
-		FShed = aPolicy;
+		FParam.scheduling = aPolicy;
 		return true;
 	}
 	else
 		LOG(WARNING)<<"RT Setting Policy is not supported";
-	return false; //TODO
+	return false;
 
 }
 unsigned CThread::sMNumberOfProcessor()
@@ -550,8 +565,8 @@ std::ostream& CThread::MPrint(std::ostream& aVal) const
 #endif
 			break;
 	};
-	if (FCPUNum >= 0)
-		aVal << ". CPU:" << FCPUNum;
+	if (FParam.cpu_number >= 0)
+		aVal << ". CPU:" << FParam.cpu_number;
 	if (FIsDetached)
 		aVal << ". Detached";
 

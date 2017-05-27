@@ -1,14 +1,14 @@
 /*
  * CBuffer.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 14.03.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */  
+ */
 #ifndef CBUFFER_H_
 #define CBUFFER_H_
 
@@ -31,18 +31,24 @@ public:
 			_M_current(NULL)
 	{
 	}
-//	template<class RPointer, class RRefer, class Rdiff_type>
-//	iterator_type(iterator_type<RPointer,RRefer,Rdiff_type>const & aRht) :
-//			_M_current(aRht._M_current)
-//	{
-//	}
-//	template<class RPointer, class RRefer, class Rdiff_type>
-//	iterator_type&
-//	operator=(iterator_type<RPointer, RRefer, Rdiff_type> const & aRht)
-//	{
-//		_M_current = aRht._M_current;
-//		return *this;
-//	}
+	/** \note using only for const_iterator -> iterator convertion
+	 *
+	 */
+	template<class Rdiff_type>
+	iterator_type(iterator_type<const Pointer,const Refer,Rdiff_type>const & aRht) :
+			_M_current(aRht._M_current)
+	{
+	}
+	/** \note using only for const_iterator -> iterator convertion
+	 *
+	 */
+	template<class Rdiff_type>
+	iterator_type&
+	operator=(iterator_type<const Pointer,const Refer,Rdiff_type>const & aRht)
+	{
+		_M_current = aRht._M_current;
+		return *this;
+	}
 	iterator_type(iterator_type const & aRht) :
 			_M_current(aRht._M_current)
 	{
@@ -133,6 +139,10 @@ public:
 protected:
 	pointer _M_current;
 };
+/** \brief Class equal of Copy on write std::vector<char>
+ * specialization for storing data of buffer's.
+ *
+ */
 
 class SHARE_EXPORT CBuffer
 {
@@ -140,12 +150,12 @@ public:
 	typedef IAllocater::offset_pointer_t offset_pointer_t;
 	typedef buf_val_t<uint8_t> value_type;
 	typedef value_type* pointer;
-	typedef const value_type* const_pointer; //fixme
+	typedef const value_type* const_pointer;
 	typedef value_type& reference;
 	typedef const value_type& const_reference;
 	typedef size_t size_type;
 	typedef std::ptrdiff_t difference_type;
-	typedef iterator_type<pointer, reference, difference_type> iterator; //fixme
+	typedef iterator_type<pointer, reference, difference_type> iterator;
 	typedef iterator_type<const_pointer, const_reference, difference_type> const_iterator;
 	typedef IAllocater allocator_type;
 
@@ -189,7 +199,7 @@ public:
 	const_iterator end() const;
 	const_iterator cbegin() const;
 	const_iterator cend() const;
-	//todo swap
+	void swap(CBuffer& aBuf);
 	//reference operator[](size_type __n);//for safety
 	const_reference operator[](size_type __n) const;
 
@@ -207,6 +217,13 @@ public:
 	void insert(iterator __position, iterator aBegin, iterator aEnd);
 	void insert(iterator __position, const_iterator aBegin,
 			const_iterator aEnd);
+	template<class T>
+	void insert_pod(iterator __position, T* aBegin, T* aEnd);
+	template<class T>
+	void insert_pod(iterator __position, T const& aVal);
+	template<class T>
+	void insert_pod(iterator __position, size_type __n, T const&);
+
 	iterator erase(iterator aBegin, iterator aEnd);
 	void push_back(const value_type& __x);
 	void pop_back();
@@ -246,6 +263,7 @@ private:
 		_buffer_t & operator=(_buffer_t const & r);
 		_buffer_t &deep_copy(_buffer_t const & r);
 		void MMoveTo(_buffer_t& aTo);
+		void swap(_buffer_t& aTo);
 		~_buffer_t();
 
 		value_type* MGetPtr(void* aVal) const;
@@ -305,6 +323,31 @@ inline bool CBuffer::MIsDetached() const
 {
 	return FIsDetached;
 }
+template<class T>
+inline void CBuffer::insert_pod(iterator __position, T* aBegin, T* aEnd)
+{
+	pointer _p = MInsertImpl(__position, (aEnd - aBegin)*sizeof(T));
+	if (_p)
+		MFill(_p, (const_pointer)aBegin, (const_pointer)aEnd);
+}
+template<class T>
+inline void CBuffer::insert_pod(iterator __position, T const& aVal)
+{
+	pointer _p = MInsertImpl(__position, sizeof(T));
+	if (_p)
+		MFill(_p, (const_pointer)&aVal, (const_pointer)(&aVal+1));
+}
+template<class T>
+inline void CBuffer::insert_pod(iterator __position,size_type __n, T const& aVal)
+{
+	pointer _p = MInsertImpl(__position, __n*sizeof(T));
+	if (_p)
+	{
+		for (; __n != 0; --__n, _p += sizeof(T))
+			MFill(_p, (const_pointer) &aVal, (const_pointer) (&aVal + 1));
+	}
+}
+
 template<class Pointer, class Refer, class diff_type>
 inline bool operator==(const iterator_type<Pointer, Refer, diff_type>& __lhs,
 		const iterator_type<Pointer, Refer, diff_type>& __rhs)
@@ -389,7 +432,7 @@ inline CBuffer::CBuffer(IAllocater* aAlloc,ItT aBegin, ItT aEnd,eAllocatorType a
 	const size_t _sizeof = sizeof(*aBegin) / sizeof(value_type);
 	resize((aEnd - aBegin)*_sizeof);
 	iterator _begin = begin();
-	iterator _end = end();
+	//iterator _end = end();
 	for (; aBegin != aEnd; ++aBegin)
 	{
 		for(unsigned i=0;i<_sizeof;++i, ++_begin)
@@ -412,6 +455,264 @@ inline bool operator!=(const CBuffer& __lhs, const CBuffer& __rhs)
 {
 	return !operator==(__lhs, __rhs);
 }
+template<typename TPod>
+class  CPODBuffer
+{
+public:
+	typedef IAllocater::offset_pointer_t offset_pointer_t;
+	typedef buf_val_t<TPod> value_type;
+	typedef value_type* pointer;
+	typedef const value_type* const_pointer;
+	typedef value_type& reference;
+	typedef const value_type& const_reference;
+	typedef size_t size_type;
+	typedef std::ptrdiff_t difference_type;
+	typedef iterator_type<pointer, reference, difference_type> iterator;
+	typedef iterator_type<const_pointer, const_reference, difference_type> const_iterator;
+	typedef IAllocater allocator_type;
+
+	CPODBuffer(IAllocater* aAlloc,eAllocatorType aType=ALLOCATE_FROM_COMMON):
+		FBuffer(0,0,aAlloc,aType)//
+	{
+		;
+	}
+	CPODBuffer(size_t aSize=0,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType aType=ALLOCATE_FROM_COMMON):
+		FBuffer(aSize*sizeof(TPod),aBeginSize*sizeof(TPod),aAlloc,aType)//
+	{
+		;
+	}
+
+//	template<class ItT>
+//	CPODBuffer(IAllocater* aAlloc,ItT aBegin, ItT aEnd,eAllocatorType=ALLOCATE_FROM_COMMON);
+//	template<class TPointer>
+//	CPODBuffer(IAllocater* aAlloc, TPointer* aBegin, TPointer* aEnd, eAllocatorType = ALLOCATE_FROM_COMMON);
+
+	CPODBuffer(IAllocater* aAlloc, void const* aBegin, void const* aEnd,eAllocatorType aType=ALLOCATE_FROM_COMMON):
+		FBuffer(aAlloc,aBegin,aEnd,aType)//
+	{
+		;
+	}
+	CPODBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc=true,eAllocatorType aType=ALLOCATE_FROM_COMMON):
+		FBuffer(aAlloc,Offset,aCheckCrc,aType)//
+	{
+		;
+	}
+	CPODBuffer const& deep_copy(const CPODBuffer& aBuf)
+	{
+		FBuffer.deep_copy(aBuf);
+		return *this;
+	}
+	void MMoveTo(CPODBuffer& aTo)
+	{
+		FBuffer.MMoveTo(aTo);
+	}
+
+	size_type size() const
+	{
+		return FBuffer.size()/sizeof(TPod);
+	}
+	size_type max_size() const
+	{
+		return FBuffer.max_size()/sizeof(TPod);
+	}
+	size_type capacity() const
+	{
+		return FBuffer.capacity() / sizeof(TPod);
+	}
+	size_type begin_capacity() const
+	{
+		return FBuffer.begin_capacity() / sizeof(TPod);
+	}
+	bool empty() const
+	{
+		return FBuffer.empty();
+	}
+	iterator begin()
+	{
+		return (pointer)FBuffer.begin().base();
+	}
+	iterator end()
+	{
+		return (pointer)FBuffer.end().base();
+	}
+	const_iterator begin() const
+	{
+		return (const_pointer)FBuffer.begin().base();
+	}
+	const_iterator end() const
+	{
+		return (const_pointer)FBuffer.end().base();
+	}
+	const_iterator cbegin() const
+	{
+		return begin();
+	}
+	const_iterator cend() const
+	{
+		return cend();
+	}
+
+	void swap(CPODBuffer& aBuf)
+	{
+		FBuffer.swap(aBuf);
+	}
+	//reference operator[](size_type __n);//for safety
+	const_reference operator[](size_type __n) const
+	{
+		return reinterpret_cast<const_reference>(FBuffer[__n*sizeof(TPod)]);
+	}
+
+//	reference front(); //for safety
+	const_reference front() const
+	{
+		return reinterpret_cast<const_reference>(FBuffer.front());
+	}
+//	reference back();//for safety
+	const_reference back() const
+	{
+		return reinterpret_cast<const_reference>(FBuffer.back());
+	}
+	void resize(size_type __new_size, bool fromBegin = false,bool aCanDetach=true)//bug fix. aCanDetach - kostil'!
+	{
+		FBuffer.resize(__new_size* sizeof(TPod), fromBegin, aCanDetach);
+	}
+
+	void clear()
+	{
+		FBuffer.clear();
+	}
+
+	void insert(iterator __position, size_type __n, value_type const& aVal)
+	{
+		CBuffer::iterator const _pos((CBuffer::pointer) __position.base());
+		FBuffer.insert_pod(_pos, __n, aVal);
+	}
+	void insert(iterator __position, value_type const& aVal)
+	{
+		CBuffer::iterator const _pos((CBuffer::pointer) __position.base());
+		FBuffer.insert_pod(_pos, aVal);
+	}
+
+	void insert(iterator __position, iterator aBegin, iterator aEnd)
+	{
+		CBuffer::iterator const _pos((CBuffer::pointer) __position.base());
+		FBuffer.insert_pod(_pos, aBegin.base(),aEnd.base());
+	}
+	void insert(iterator __position, const_iterator aBegin,
+			const_iterator aEnd)
+	{
+		CBuffer::iterator const _pos((CBuffer::pointer) __position.base());
+		FBuffer.insert_pod(_pos, aBegin.base(),aEnd.base());
+	}
+	iterator erase(iterator aBegin, iterator aEnd)
+	{
+		CBuffer::iterator const _begin((CBuffer::pointer) aBegin.base());
+		return iterator((pointer)FBuffer.erase(_begin,_begin+(aEnd-aBegin)*sizeof(TPod)));
+	}
+	void push_back(const value_type& __x)
+	{
+		if(sizeof(TPod)==1)
+			FBuffer.push_back(__x);
+		else
+			FBuffer.insert_pod(FBuffer.end(), __x);
+	}
+	void pop_back()
+	{
+		if (sizeof(TPod) == 1)
+			FBuffer.pop_back();
+		else if (FBuffer.size() == 1)
+			FBuffer.clear();
+		else
+		{
+			CBuffer::iterator const _begin((CBuffer::pointer) ((end() - 1)).base());
+			FBuffer.erase(_begin,FBuffer.end());
+		}
+	}
+	void push_front(const value_type& __x)
+	{
+		if(sizeof(TPod)==1)
+			FBuffer.push_front(__x);
+		else
+			FBuffer.insert_pod(FBuffer.begin(), __x);
+	}
+	void pop_front()
+	{
+		if(sizeof(TPod)==1)
+			FBuffer.pop_front();
+		else if(FBuffer.size()==1)
+			FBuffer.clear();
+		else
+			FBuffer.erase(FBuffer.begin(), FBuffer.begin() + sizeof(TPod));
+	}
+	void release()
+	{
+		FBuffer.release();
+	}
+	void reserve(size_t aSize)
+	{
+		FBuffer.reserve(aSize*sizeof(TPod));
+	}
+	const_pointer ptr_const() const
+	{
+		return reinterpret_cast<const_pointer>(FBuffer.ptr_const());
+	}
+
+	pointer ptr()
+	{
+		return reinterpret_cast<pointer>(FBuffer.ptr());
+	}
+	offset_pointer_t refuse()
+	{
+		return FBuffer.refuse();
+	}
+
+	offset_pointer_t offset() const
+	{
+		return FBuffer.offset();
+	}
+
+	unsigned use_count() const
+	{
+		return FBuffer.use_count();
+	}
+	bool MIsDetached() const
+	{
+		return FBuffer.MIsDetached();
+	}
+	bool MIsAllocatorEqual(IAllocater* aAlloc) const
+	{
+		return FBuffer.MIsAllocatorEqual(aAlloc);
+	}
+	bool MIsAllocatorEqual(CPODBuffer const& aPod) const
+	{
+		return FBuffer.MIsAllocatorEqual(aPod.FBuffer);
+	}
+	IAllocater* MAllocator() const
+	{
+		return FBuffer.MAllocator();
+	}
+	bool MIsRestored() const
+	{
+		return FBuffer.MIsRestored();
+	}
+	CBuffer const & MGetBuffer() const
+	{
+		return FBuffer;
+	}
+	operator CBuffer const() const
+	{
+		return MGetBuffer();
+	}
+private:
+	CBuffer FBuffer;
+};
+} /* namespace NSHARE */
+namespace std
+{
+inline void swap(NSHARE::CBuffer& aBuf, NSHARE::CBuffer& aBuf2)
+{
+	aBuf.swap(aBuf2);
+}
 inline std::ostream& operator<<(std::ostream& aStream,
 		NSHARE::CBuffer const& aVal)
 {
@@ -419,5 +720,5 @@ inline std::ostream& operator<<(std::ostream& aStream,
 	NSHARE::print_buffer(aStream, aVal.begin(), aVal.end());
 	return aStream;
 }
-} /* namespace NSHARE */
+}
 #endif /* CBUFFER_H_ */

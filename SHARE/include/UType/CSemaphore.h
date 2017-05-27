@@ -1,10 +1,10 @@
 /*
  * CSemaphore.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 15.09.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -16,7 +16,15 @@
 
 namespace NSHARE
 {
-class SHARE_EXPORT CSemaphore: NSHARE::CDenyCopying//TODO check recursive block + to .cpp через pimpl
+/**\brief кроссплатформенная реализация семафора
+ *
+ *
+ * Существуют три реализации семафора:
+ * 1) Через CreateSemaphore (в Windows)
+ * 2) Через sem_init (в posix)
+ * 3) Костыль на базе услов. перем. и .мютексов
+ */
+class SHARE_EXPORT CSemaphore: NSHARE::CDenyCopying
 {
 public:
 

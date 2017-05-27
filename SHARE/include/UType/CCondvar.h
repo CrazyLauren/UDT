@@ -1,10 +1,10 @@
 /*
  * CCondvar.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 04.04.2013
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,6 +14,9 @@
 
 namespace NSHARE
 {
+/** \brief condition variable
+ *
+ */
 class SHARE_EXPORT CCondvar:CDenyCopying
 {
 public:
@@ -44,8 +47,6 @@ public:
 	bool MTimedwait(CMutex *, double const);
 	bool MBroadcast(void);
 
-
-	void * MGetPtr()const;
 
 	static bool sMUnitTest();
 private:

@@ -1,10 +1,10 @@
 /*
  * CText.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.02.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -37,6 +37,7 @@ public:
 	typedef const utf32& const_reference;//!< Type used for constant utf32 code point references
 	typedef utf32* pointer;			//!< Type used for utf32 code point pointers
 	typedef const utf32* const_pointer;	//!< Type used for constant utf32 code point pointers
+	typedef IAllocater allocator_type;
 
 	class SHARE_EXPORT iterator;
 	class SHARE_EXPORT const_iterator;
@@ -45,30 +46,33 @@ public:
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
 	static const size_type npos;//!< Value used to represent 'not found' conditions and 'all code points' etc.
-	static const size_type QUICKBUFF_SIZE = 32;
+//	static const size_type QUICKBUFF_SIZE = 32;
 	static const size_type S_MAX_SIZE;
 
-	CText();
+	explicit CText(allocator_type*aAllocator=get_default_allocator());
 
-	CText(const CText& str, size_type str_idx, size_type str_num = npos);
 	CText(const CText& str);
 	CText& operator=(const CText& str);
 
-	CText(const std::string& std_str);							//todo utf 8
+	CText(const CText& str, size_type str_idx, size_type str_num = npos);
+
+	CText(const std::string& std_str, allocator_type*aAllocator =
+			get_default_allocator());//todo utf 8
 	CText& operator=(const std::string& std_str);
 
 	CText(const std::string& std_str, size_type str_idx, size_type str_num =
-			npos);							//todo utf 8
+			npos, allocator_type*aAllocator = get_default_allocator());	//todo utf 8
 
-	CText(size_type num, utf32 code_point);
+	CText(size_type num, utf32 code_point,allocator_type*aAllocator=get_default_allocator());
 	CText& operator=(utf32 code_point);
 
-	CText(const_iterator const& iter_beg, const_iterator const& iter_end);
+	CText(const_iterator const& iter_beg, const_iterator const& iter_end,allocator_type*aAllocator=get_default_allocator());
 
-	CText(utf8 const* cstr, ICodeConv const& aType = CCodeUTF8()); //todo if cstr is utf8, check when initilize
+	CText(utf8 const* cstr, ICodeConv const& aType = CCodeUTF8(),allocator_type*aAllocator=get_default_allocator());
 	CText& operator=(utf8 const* cstr);
+
 	CText(utf8 const* chars, size_type chars_len, ICodeConv const& aType =
-			CCodeUTF8());
+			CCodeUTF8(),allocator_type*aAllocator=get_default_allocator());
 
 	~CText();
 	static CText const& sMEmpty();
@@ -116,9 +120,9 @@ public:
 	utf8 const* data(void) const;
 	utf8* data_unsafety(void);
 
-	utf32* ptr(void);
 
 	const utf32* ptr(void) const;
+	const utf32* ptr_const(void) const;
 
 	size_type copy(char* buf, size_type len = npos, size_type idx = 0,
 			ICodeConv const& aType = CCodeUTF8()) const;
@@ -328,6 +332,32 @@ public:
 
 	static void sMUnitTest();
 private:
+	struct impl_t
+	{
+		impl_t(allocator_type*);
+		impl_t(const impl_t&);
+		~impl_t();
+		/** \note Single buffer is used when:
+		 * called c_str() or data (for converting MultiByte to Single Byte)
+		 */
+
+		mutable utf8* FSingleByteBuffer;	//!< holds string data encoded as utf8 (generated only by calls to c_str() and data())
+		mutable size_type FSingleByteDatalen;//!< holds length of encoded data (in case it's smaller than buffer).
+		mutable size_type FSingleByteBufferLen;//!< length of above buffer (since buffer can be bigger then the data it holds to save re-allocations).
+
+		/** \note MultiByte buffer is used when:
+		 *  - FCodePointLength >= countof(FQuickUCS4)
+		 */
+		size_type FMultiByteBufferLen;	//!< code point reserve size (currently allocated buffer size in code points).
+		utf32* FMultiByteBuf; //!< Pointer the the main buffer memory.  This is only valid when quick-buffer is not being used
+
+		allocator_type* FAllocator;//!<Allocator
+	private:
+		impl_t& operator=(const impl_t&){
+			return *this;
+		}
+	};
+	typedef CCOWPtr<impl_t> cow_impl_t;
 
 	// string management
 	// change size of allocated buffer so it is at least 'new_size'.
@@ -335,8 +365,7 @@ private:
 	// will never re-allocate to make size smaller.  (see trim())
 	bool MGrow(size_type new_size);
 
-	// perform re-allocation to remove wasted space.
-	void MTrim(void);
+	void MRemoveBuffer(void);
 
 	// set the length of the string, and terminate it,
 	//according to the given value (will not re-allocate, use grow() first).
@@ -375,17 +404,23 @@ private:
 	static bool sMIsMatch(const_iterator _pat_it, const_iterator _pat_end,
 			const_iterator _it, const_iterator _it_end);
 
+
 	void MWillBeenChanged();
-	size_type FUCS4Length;//!< holds length of string in code points (not including null termination)
-	size_type FReserve;	//!< code point reserve size (currently allocated buffer size in code points).
 
-	mutable utf8* FEncodedBuff;	//!< holds string data encoded as utf8 (generated only by calls to c_str() and data())
-	mutable size_type FEncodedDatlen;//!< holds length of encoded data (in case it's smaller than buffer).
-	mutable size_type FEncodedBuffLen;//!< length of above buffer (since buffer can be bigger then the data it holds to save re-allocations).
+	/** \brief return buffer length
+	 *
+	 */
+	size_type MGetBufferLength() const;
 
-	utf32 FQuickUCS4[QUICKBUFF_SIZE]; //!< This is a integrated 'quick' buffer to save allocations for smallish strings
-	utf32* FUCS4Buf; //!< Pointer the the main buffer memory.  This is only valid when quick-buffer is not being used
+	/** \brief pointer to the buffer
+	 *
+	 */
+	utf32* ptr(void);
+
+	cow_impl_t FImpl;//!< Copy on write data
+	size_type FCodePointLength;//!< holds length of string in code points (not including null termination)
 };
+typedef std::deque<CText> Strings;
 
 /*!
  \brief

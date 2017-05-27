@@ -1,10 +1,10 @@
 #
 # SHAREMacros.cmake
 #
-# Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+# Copyright © 2016  https://github.com/CrazyLauren
 #
 #  Created on: 12.11.2016
-#      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+#      Author:  https://github.com/CrazyLauren
 #
 # Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
 # https://www.mozilla.org/en-US/MPL/2.0)
@@ -18,7 +18,7 @@
 	FIND_PACKAGE(log4cplus)
 
 	OPTION(LOGGING_TO_GLOG "Using glog for loging" OFF)
-	OPTION(LOGGING_TO_LOG4CPLUS "Using log4cplus for loging" OFF)
+	OPTION(LOGGING_TO_LOG4CPLUS "Using log4cplus for loging" ON)
 	OPTION(LOGGING_TO_COUT "Logging to cout" OFF)
 	OPTION(LOGGING_HAS_TO_BE_REMOVED "Removed logging" OFF)
 	SET(LOGGING_COMMAND_FLAG "v" CACHE STRING  "")
@@ -146,7 +146,7 @@ macro (share_add_library _LIB_NAME _IS_MODULE _SOURCE_FILES_VAR _HEADER_FILES_VA
     string(TOUPPER ${_LIB_NAME}_EXPORTS _EXPORT_DEFINE)
 	
     #STATIC LIBRARY SET UP
-	set(${_LIB_NAME_UP}_BUILD_STATIC_TOO true CACHE BOOL "Build ${_LIB_NAME} as static library too")
+	set(${_LIB_NAME_UP}_BUILD_STATIC_TOO false CACHE BOOL "Build ${_LIB_NAME} as static library too")
 	set(${_LIB_NAME_UP}_WITH_STATIC_DEPENDENCIES false CACHE BOOL "Link ${_LIB_NAME} with static dependecies")
 	#OPTION(${_LIB_NAME_UP}_BUILD_STATIC_TOO "Build static library too" ON)
 

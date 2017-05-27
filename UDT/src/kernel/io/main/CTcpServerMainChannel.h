@@ -1,10 +1,10 @@
 /*
  * CTcpServerMainChannel.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 13.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -79,7 +79,7 @@ private:
 	bool MSendImpl(const void* pData, size_t nSize, const NSHARE::net_address&);
 	//void MSendImpl();
 	static int sMSend(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT,	void* YOU_DATA);
-	static int sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
+	static NSHARE::eCBRval sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	void MReceiver();
 	bool MSendSetting(ILink* aHandler, descriptor_t aFor);
 	bool MCheckingForOverload(NSHARE::CTCPServer::recvs_t const& _from) const;
@@ -93,8 +93,8 @@ private:
 	template<class T>
 	inline void MFill(data_t* _buf, const T& _id);
 
-	static int sMConnect(void* aWho, void* aWhat, void* aThis);
-	static int sMDisconnect(void* aWho, void* aWhat, void* aThis);
+	static NSHARE::eCBRval sMConnect(void* aWho, void* aWhat, void* aThis);
+	static NSHARE::eCBRval sMDisconnect(void* aWho, void* aWhat, void* aThis);
 	split_info MGetLimits(size_t aSize,ILink* aHandler) const;
 	bool MOpenIfNeed();
 

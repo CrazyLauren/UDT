@@ -2,9 +2,9 @@
  * CSmMainChannel.cpp
  *
  *  Created on: 25.01.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -67,10 +67,10 @@ void CSmMainChannel::MClose()
 	FCounter=sm_counter_t();
 	FCustomer=NULL;
 }
-int CSmMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
+NSHARE::eCBRval CSmMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CSmMainChannel*>(aData)->MReceiver();
-	return 0;
+	return E_CB_REMOVE;
 }
 void CSmMainChannel::MCheckPacketSequence(const unsigned aPacket,
 		unsigned & aLast)const
@@ -199,7 +199,7 @@ void CSmMainChannel::MHandleServiceDG(main_channel_param_t const* aP)
 			NSHARE::CThread::param_t _param;
 			NSHARE::CThread::eThreadPriority _priority =
 					NSHARE::CThread::THREAD_PRIORITY_MAX;
-			_param.FPrior = _priority;
+			_param.priority = _priority;
 			if (_is)
 				FThreadReceiver.MCreate(&_param);
 			else

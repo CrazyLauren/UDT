@@ -1,10 +1,10 @@
 /*
  * deftype
  *
- * Copyright Â© 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright Â© 2016  https://github.com/CrazyLauren
  *
  *  Created on: 12.04.2012
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -39,12 +39,16 @@
 #	define HASH_MULTIMAP boost::unordered_multimap
 #endif
 
+/** \brief define standard headers
+ * \{
+ */
 #include <set>
 #include <map>
 #include <string>
 #include <vector>
 #include <list>
 #include <queue>
+#include <deque>
 #include <stdint.h>
 #include <cassert>
 #include <exception>
@@ -54,22 +58,21 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#include <macro_attributes.h>
+#include <errno.h>
+#include <stdexcept>
+#include <sstream>
+#include <limits.h>
+#include <functional>
+#include <ctype.h> //isdigit ...
+//\}
 
+/** \brief define shared ptr
+ * \{
+ */
 #if defined (__QNX__)
-#	define HAVE_POSIX_SEMAPHORES
-#	include <sys/neutrino.h>
 #	include <boost/shared_ptr.hpp>
-#	include <ctype.h>
-#	include <limits>
-#	include <malloc.h>
-
 #	define SHARED_PTR boost::shared_ptr 
-
-#elif defined(unix) || defined(__MINGW32__)
-//#elif _WIN32
-#	define HAVE_POSIX_SEMAPHORES
-#	include <limits>
+#elif defined(unix) || defined(__MINGW32__)//#if defined (__QNX__)
 
 #	if (__cplusplus>= 201103L)
 #		ifdef __MINGW32__//version of gcc
@@ -80,100 +83,73 @@
 #			include<shared_ptr.h>
 #			define SHARED_PTR std::shared_ptr
 #		endif
-#	else
-# 	include <tr1/memory>
-#	define SHARED_PTR std::tr1::shared_ptr
-# 	endif
-
-/*
-namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
-{
-  using namespace std;
-
-  template<>
-    struct hash<string>
-    {
-      size_t operator()(const string& s) const
-      {
-        const collate<char>& c = use_facet<collate<char> >(locale::classic());
-        return c.hash(s.c_str(), s.c_str() + s.size());
-      }
-    };
-}
-
-#	define HASH __gnu_cxx::hash
-#	define HASH_SET __gnu_cxx::hash_set
-#	define HASH_MAP __gnu_cxx::hash_map
-*/
+#	else //#if (__cplusplus>= 201103L)
+# 		include <tr1/memory>
+#		define SHARED_PTR std::tr1::shared_ptr
+#	endif//#if (__cplusplus>= 201103L)
 #elif defined(_WIN32)
-#	if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
-/*
-#		define HASH std::hash
-#		define HASH_SET std::unordered_set
-#		define HASH_MAP std::unordered_map
-*/
-#	else
-/*
-#		define HASH std::hash
-#		define HASH_SET std::hash_set
-#		define HASH_MAP std::hash_map
-*/
-#	endif
 #	define SHARED_PTR std::shared_ptr 
 #endif //#elif defined(_WIN32)
+//\}
 
+/** \brief define system headers
+ * \{
+ */
 #ifdef _WIN32
 #	ifdef _MSC_VER
 #		ifndef NOMINMAX
 #			define NOMINMAX
 #		endif
 #		include <win_unistd.h>
-#	pragma warning(disable : 4290)
-#	pragma warning(disable : 4996)
-#	pragma warning(disable : 4355)
-#	pragma warning(disable : 4251)
+#		pragma warning(disable : 4290)
+#		pragma warning(disable : 4996)
+#		pragma warning(disable : 4355)
+#		pragma warning(disable : 4251)
 #	else
 #		include <unistd.h> //mingw,cygwin
 #	endif
+
 #	include <winsock2.h>
 #	include <windows.h>
+
 #	ifdef _MSC_VER
 #		include <memory>
-#	undef uuid_t
+#		undef uuid_t
 #	endif
 #else
 #	include <unistd.h>
+#	ifdef  __QNX__
+#		include <sys/neutrino.h>
+#	endif
 #endif
+//\}
 
 #if   defined(__QNX__)||defined(unix) ||  defined(__MINGW32__)
-#include <pthread.h>                        // POSIX threads support
-#include <errno.h>
+#	define HAVE_POSIX_SEMAPHORES
+#	include <pthread.h>                        // POSIX threads support
 #endif
 
 
 #ifdef  __QNX__
-#include <sys/time.h>
+#	include <sys/time.h>
 #else
-#include <ctime>
+#	include <ctime>
 #endif
-#include <errno.h>
 
-#include <stdexcept>
-#include <stdlib.h>
-#include <sstream>
-#include <limits.h>
-#include <functional>
-
+#include <macro_attributes.h>
 #include <endian_type.h>
+#include <UType/little_big_endian_t.h>
+
 #include <type_manip.h>
 //#include <type_utf8.h>
 #include <UType/CDenyCopying.h>
-#include <UType/atomic_t.h>
-#include <UType/CCOWPtr.h>
 #include <UType/CRAII.h>
+#include <UType/atomic_t.h>
+#include <UType/IAllocater.h>
+#include <UType/CCOWPtr.h>
 #include <UType/CFlags.h>
 #include <UType/CMutex.h>
-#include <UType/CSharedCounter.h>
+#include <UType/allocators.h>
 #include <UType/CText.h>
 #include <UType/strtonum.h>
 #include <UType/numtostr.h>
@@ -183,18 +159,19 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/CSingleton.h>
 #include <UType/CAntiHang.h>
 #include <UType/CCheckNoMultiThread.h>
-#include <UType/CIntrusived.h>
 #include <UType/CTypeInfo.h>
+#include <UType/CIntrusived.h>
+#include <UType/intrusive_ptr.h>
 #include <FloatCompare.h>
 #include <UType/SmartField.h>
-#include <UType/IAllocater.h>
 #include <UType/CBuffer.h>
 #include <UType/CConfig.h>
 #include <UType/version.h>
 #include <UType/uuid.h>
-#include <UType/intrusive_ptr.h>
 #include <dymamic_modules.h>
-#include <UType/deftype.h>
+#include <UType/cb_t.h>
+#include <UType/CEvent.h>
+#include <UType/CEvents.h>
 #include <UType/deffunc.h>
 #include <UType/CCondvar.h>
 #include <UType/CSemaphore.h>
@@ -203,15 +180,10 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/CIPCSignalEvent.h>
 
 
-//#include <interface/IEvent.h> //TODO ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
-#include <UType/CEvent.h>
-#include <UType/CEvents.h>
 #include <UType/CThread.h>
 #include <UType/CThreadPool.h>
+
 #include <UType/CSafeData.h>
-#include <UType/CPFile.h>
-#include <UType/CFile.h>
-//#include <UType/CMutex.h>
 #include <UType/CWaitingQueue.h>
 #include <UType/CSafeQueue.h>
 #include <UType/CCounter.h>
@@ -221,8 +193,5 @@ namespace __gnu_cxx //FIXME ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gcc ï¿½ï¿½ ï¿
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
 #include <UType/CAddress.h>
-//#ifdef __MINGW32__
-//#	define _WIN32
-//#	undef unix
-//#endif //__MINGW32__
+
 #endif /*DEFTYPE_*/

@@ -1,10 +1,10 @@
 /*
  * CAsynchronousSocket.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 14.03.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -53,10 +53,10 @@ bool CAsyncSocket::MJoin()
 		return FThreadReceiver.MJoin();
 	return false;
 }
-int CAsyncSocket::sMReceiver(void* aWho, void* aWhat, void*aData)
+eCBRval CAsyncSocket::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CAsyncSocket*>(aData)->MReceiver();
-	return 0;
+	return E_CB_SAFE_IT;
 }
 void CAsyncSocket::MReceivedData(const ISocket::data_t& aData)
 {

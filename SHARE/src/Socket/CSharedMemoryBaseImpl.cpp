@@ -1,10 +1,10 @@
 /*
  * CSharedMemoryBaseImpl.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 11.05.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -51,10 +51,10 @@ IMPL::CImpl() :
 	FSignalHandler += NSHARE::CB_t(sMEventHandler, this);
 }
 
-int IMPL::sMEventHandler(void*, void*, void* pData)
+eCBRval IMPL::sMEventHandler(void*, void*, void* pData)
 {
 	reinterpret_cast<IMPL*>(pData)->MEventHandler();
-	return 0;
+	return E_CB_SAFE_IT;
 }
 bool IMPL::MWaitForEvent(event_cv_t& aFrom,event_info_t* aVal, double const aTime)
 {
@@ -307,7 +307,7 @@ bool IMPL::MInitSignalEvent(event_cv_t & aEvent,
 bool IMPL::MCreateEventHandler(event_cv_t & aEvent)
 {
 	NSHARE::CThread::param_t _param;
-	_param.FPrior = static_cast<CThread::eThreadPriority>(MGetOption(CSharedMemoryBase::THREAD_PRIORITY));
+	_param.priority = static_cast<CThread::eThreadPriority>(MGetOption(CSharedMemoryBase::THREAD_PRIORITY));
 	return FSignalHandler.MCreate(&_param);
 }
 

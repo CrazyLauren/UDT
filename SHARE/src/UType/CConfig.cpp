@@ -1,10 +1,10 @@
 /*
  * CConfig.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 20.01.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -241,28 +241,6 @@ CText getFullPath(const CText& relativeTo, const CText &relativePath)
 	path += filename.substr(start, CText::npos);
 	return path;
 }
-void CConfig::MSetReferrer(const CText& referrer)
-{
-//	FData.MWrite().FReferrer = referrer;
-//	for (ConfigSet::iterator _it = FData.MWrite().FChildren.begin(); _it !=  FData.MWrite().FChildren.end();
-//			++_it)
-//	{
-//		CConfig& _new = *_it;
-//		_new.MSetReferrer(getFullPath( FData.MWrite().FReferrer, _new. FData.MWrite().FReferrer));
-//	}
-}
-
-void CConfig::MInheritReferrer(const CText& referrer)
-{
-//	if (FData.MWrite().FReferrer.empty() || !is_relative(referrer))
-//	{
-//		MSetReferrer(referrer);
-//	}
-//	else if (!referrer.empty())
-//	{
-//		MSetReferrer(concatPaths(FData.MWrite().FReferrer, referrer));
-//	}
-}
 CConfig const& CConfig::MChild(const CText& childName) const
 {
 	data_t const& _data = FData.MRead();
@@ -396,8 +374,6 @@ std::ostream& CConfig::MPrint(std::ostream & aStream) const
 	aStream << "Key:" << _data.FKey;
 	if (!_data.FValue.empty())
 		aStream << "; Value:" << _data.FValue<<":EndValue; ";
-//	if (!_data.FReferrer.empty())
-//		aStream << "; Referer:" << _data.FReferrer;
 	if (!_data.FChildren.empty())
 	{
 		aStream << "; Child of " << _data.FKey;
@@ -1061,7 +1037,6 @@ CConfig& CConfig::MAdd(const CText& key, void const* aTo, size_t aMaxLen)
 {
 	FData.MWrite().FChildren.push_back(CConfig(key));
 	CConfig& _new = FData.MWrite().FChildren.back();
-//	_new.MInheritReferrer(FData.MWrite().FReferrer);
 	base64_encode(_new.FData.MWrite().FValue, (char const*) aTo, aMaxLen);
 	VLOG(6) << "Data string for " << key << " is " << _new.MValue();
 	VLOG(7)<<(*this);
@@ -1071,5 +1046,10 @@ CConfig& CConfig::MAddTo(const CText& key, CBuffer const & aTo)
 {
 	return MAdd(key, aTo.ptr_const(), aTo.size());
 }
-
+template<>
+CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
+{
+	MValue(_val);
+	return _val;
+}
 } /* namespace NSHARE */

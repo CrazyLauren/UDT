@@ -1,10 +1,10 @@
 /*
  * CSharedMemoryServerImpl.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 23.06.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -62,7 +62,7 @@ private:
 	typedef std::map<shared_identify_t, smart_client_t> clients_t;
 	typedef NSHARE::CSafeData<clients_t> safe_clients_t;
 
-	static int sMServerCleaner(void*, void*, void* pData);
+	static eCBRval sMServerCleaner(void*, void*, void* pData);
 	static int sMCleanUpMemory(CSharedAllocator* WHO,
 				void* WHAT, void* YOU_DATA);
 	void MEventConnect(client_info_t* aClient);

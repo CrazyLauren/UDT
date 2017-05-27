@@ -1,10 +1,10 @@
 /*
  * CHttpIOManger.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 11.05.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -73,14 +73,14 @@ private:
 	typedef std::list<ser_sniffed_data_t> data_fifo_t;
 
 	inline void MCloseImpl();
-	static int sMConnect(void* aWho, void* aWhat, void* aThis);
-	static int sMDisconnect(void* aWho, void* aWhat, void* aThis);
+	static NSHARE::eCBRval sMConnect(void* aWho, void* aWhat, void* aThis);
+	static NSHARE::eCBRval sMDisconnect(void* aWho, void* aWhat, void* aThis);
 
 	bool MHandleFrom(CHttpRequest const* aRequest, CHttpResponse & _response);
 	void MReceivedImpl(
 			const NSHARE::ISocket::data_t& aData, const NSHARE::CTCPServer::recvs_t& aFrom);
 	void MReceiver();
-	static int sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
+	static NSHARE::eCBRval sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	int MSettingDgParserFor(const NSHARE::CText& aReq,
 			NSHARE::CText FProtocolName, required_header_t aNumber,NSHARE::CText aParser);
 	bool MRemoveDgParserFor(uint32_t aNumber);

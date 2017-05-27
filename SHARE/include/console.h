@@ -1,10 +1,10 @@
 /*
  * console.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 14.02.2014
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -54,13 +54,13 @@ public:
 		return aStream << "\x1b[" << (int)aMod.FCode << "m";
 	}
 };
-inline  NSHARE::String center(size_t const aWidth, const NSHARE::String& aStr)
+inline  NSHARE::CText center(size_t const aWidth, const NSHARE::CText& aStr)
 {
 	if (aWidth < aStr.length())
 		return aStr;
 
 	size_t const _diff = aWidth - aStr.length();
-	return NSHARE::String(_diff / 2, ' ') + aStr;
+	return NSHARE::CText(_diff / 2, ' ') + aStr;
 }
 template<size_t aWidth, class T>
 class table_column

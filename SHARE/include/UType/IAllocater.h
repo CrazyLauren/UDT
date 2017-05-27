@@ -1,10 +1,10 @@
 /*
  * IAllocater.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 14.03.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,25 +14,46 @@
 #include <UType/eAllocatorType.h>
 namespace NSHARE
 {
-class IAllocater
+class IAllocater;
+/** \brief definition default allocator
+ *
+ *	There is the same function without template. It's
+ *	really default allocator. For more information  see class \see CCommonAllocater
+ */
+template<typename T>
+inline IAllocater* get_default_allocator();
+extern SHARE_EXPORT IAllocater* get_default_allocator();
+
+/** \brief Interface for allocate memory
+ *
+ *	There are two different type of allocators. The first is allocating memory
+ *	in own process memory. The second is allocating in Shared Memory. The part
+ *	of memory can be reserved see \see eAllocatorType.
+ *	\warning As Shared memory using only offset instead of pointer,
+ *	 recommendation don't use the pointer!
+ */
+class IAllocater //fixme rename to IAllocator
 {
 public:
 	typedef size_t size_type;
-	typedef /*uint32_t*/uintptr_t offset_pointer_t;//fixme Maybe problem if using x64 and x86 programm with SM
+	typedef/*uint32_t*/uintptr_t offset_pointer_t; //fixme Maybe problem if using x64 and x86 programm with SM
 	//need using Small code model
-	static  const offset_pointer_t NULL_OFFSET;// held in CBuffer.cpp by historical reason
+	static const offset_pointer_t NULL_OFFSET;//!< held in CCommonAllocater.cpp by historical reason
 
 	virtual ~IAllocater()
 	{
 	}
 
-	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = 4,eAllocatorType =ALLOCATE_FROM_COMMON ) = 0;
+	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = 4,
+			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
 
 	virtual void MDeallocate(void* p, size_type aSize) = 0;
-	virtual void* MReallocate(void* p, size_type aSize, uint8_t aAlignment = 4,eAllocatorType =ALLOCATE_FROM_COMMON) = 0;
+	virtual void* MReallocate(void* p, size_type aSize, uint8_t aAlignment = 4,
+			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
+//	virtual void* MMove(void* aWhat)=0; \todo
 	virtual offset_pointer_t MOffset(void* aP) const
 	{
-		return (offset_pointer_t)(intptr_t)(aP);
+		return (offset_pointer_t) (intptr_t) (aP);
 	}
 	virtual void* MPointer(offset_pointer_t aOffset) const
 	{
@@ -44,10 +65,21 @@ public:
 	}
 	virtual size_type MMaxSize() const=0;
 
+	/** \brief Lock change memory in P if possibly
+	 *
+	 *	The method is used for lock "atomic" operation.
+	 *	\warning Usually Allocators are definition only one mutex for
+	 *	all memory. Therefore be carefully!
+	 *	\todo rename to MAtomicLock
+	 */
 	virtual bool MLock(void* p) const
 	{
 		return false;
 	}
+	/** \brief Unlock change memory in P if possibly
+	 *
+	 **	\todo rename to MAtomicUnlock
+	 */
 	virtual bool MUnlock(void* p) const
 	{
 		return false;
@@ -123,7 +155,7 @@ template<class T> void deallocate_object(IAllocater* aAllocator, T* aObject)
 	{
 		return;
 	}
-	deallocate_object(*aAllocator,aObject);
+	deallocate_object(*aAllocator, aObject);
 }
 namespace _impl
 {
@@ -150,6 +182,7 @@ template<class T> size_t get_size_of_array_len()
 	return _length_size;
 }
 }
+/*
 template<class T> T* allocate_array(IAllocater& aAllocator, size_t aCount,
 		const T& aVal)
 {
@@ -167,7 +200,7 @@ template<class T> T* allocate_array(IAllocater& aAllocator, size_t aCount,
 
 	*(((size_t*) _p) - 1) = aCount;
 	char* _end = _p + sizeof(T) * (aCount);
-	for (char* _begin=_p; _begin != _end; _begin += sizeof(T))
+	for (char* _begin = _p; _begin != _end; _begin += sizeof(T))
 		new (_begin) T(aVal);
 
 	return (T*) _p;
@@ -177,7 +210,7 @@ template<class T> T* allocate_array(IAllocater& aAllocator, size_t aCount)
 	//CHECK_NE(aCount, 0);
 
 	//Calculate how much extra memory need allocate to store the length before the array
-	size_t _length_size = _impl::get_size_of_array_len<T>();
+	size_t const _length_size = _impl::get_size_of_array_len<T>();
 
 	//CHECK_NE(_length_size, 0);
 
@@ -189,6 +222,14 @@ template<class T> T* allocate_array(IAllocater& aAllocator, size_t aCount)
 	*(((size_t*) _p) - 1) = aCount;
 	return (T*) _p;
 }
+template<class T> size_t get_count_of_array(T* aArray)
+{
+	return *(((size_t*) aArray) - 1);
+}
+template<class T> size_t get_size_of_array(T* aArray)
+{
+	return get_count_of_array<T>(aArray)*sizeof(T);
+}
 template<class T> void deallocate_array(IAllocater& aAllocator, T* aArray)
 {
 	if (!aArray)
@@ -196,15 +237,15 @@ template<class T> void deallocate_array(IAllocater& aAllocator, T* aArray)
 		return;
 	}
 
-	size_t _len = *(((size_t*) aArray) - 1);
+	size_t const _len = *(((size_t*) aArray) - 1);
 
 	for (size_t i = 0; i < _len; i++)
 		aArray[i].~T();
 
 	size_t _length_size = _impl::get_size_of_array_len<T>();
 
-	aAllocator.MDeallocate((char*) aArray - _length_size, _len + _length_size);
-}
+	aAllocator.MDeallocate((char*) aArray - _length_size, _len*sizeof(T) + _length_size);
+}*/
 
 template<> class CRAII<IAllocater> : public CDenyCopying
 {

@@ -1,10 +1,10 @@
 /*
  * trace_share.cpp
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 15.10.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -26,6 +26,7 @@
 #include <map>
 #include <algorithm>
 #include <vector>
+#include <deque>
 #include <fstream>
 #include <istream>
 #include <iostream>
@@ -42,7 +43,12 @@
 #include <math.h>
 #include <iostream>
 #include <stdint.h>
-#include <functional> 
+#include <functional>
+#include <UType/CDenyCopying.h>
+#include <UType/CRAII.h>
+#include <UType/atomic_t.h>
+#include <UType/IAllocater.h>
+#include <UType/CCOWPtr.h>
 #include <UType/CText.h>
 #include <logging/vlog_is_on.h>
 #ifdef GLOG
@@ -56,13 +62,12 @@
 # 	include <logging/share_nolog.h>
 #endif
 #include <limits>
-#include <deque>
 #include <set>
-#include <UType/deftype.h>
+#include <UType/cb_t.h>
+#include <UType/CFlags.h>
+#include <UType/CMutex.h>
 #include <UType/CEvent.h>
-#include <UType/CDenyCopying.h>
-#include <UType/atomic_t.h>
-#include <UType/CCOWPtr.h>
+
 #include <UType/CConfig.h>
 #include <UType/CThread.h>
 #include <logging/CShareLogArgsParser.h>

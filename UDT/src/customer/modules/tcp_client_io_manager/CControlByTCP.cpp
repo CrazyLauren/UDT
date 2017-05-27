@@ -2,9 +2,9 @@
  * CControlByTCP.cpp
  *
  *  Created on: 17.12.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ *	Copyright © 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -696,16 +696,16 @@ void CControlByTCP::MReplaceMainChannelTo(ILocalChannel* aNew)
 	FMain = aNew;
 
 }
-int CControlByTCP::sMConnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CControlByTCP::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
 
 	net_address *_client = reinterpret_cast<net_address*>(aWhat);
 	reinterpret_cast<CControlByTCP*>(aThis)->MConnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
-int CControlByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
+NSHARE::eCBRval CControlByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
 	CHECK_NOTNULL(aThis);
@@ -713,7 +713,7 @@ int CControlByTCP::sMDisconnect(void* aWho, void* aWhat, void* aThis)
 	net_address *_client = reinterpret_cast<net_address*>(aWhat);
 
 	reinterpret_cast<CControlByTCP*>(aThis)->MDisconnect(_client);
-	return 0;
+	return E_CB_SAFE_IT;
 }
 
 void CControlByTCP::MConnect(NSHARE::net_address* aVal)

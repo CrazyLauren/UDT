@@ -1,10 +1,10 @@
 /*
  * CTCPServerImpl.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 07.09.2016
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -50,9 +50,9 @@ struct CTCPServer::CImpl:public CTcpImplBase, CIntrusived
 	bool MIsClient() const;
 	int MWaitData(const float aTime) const;
 	bool MOpen();
-	static int sMConnect(void*, void*, void* pData);
+	static eCBRval sMConnect(void*, void*, void* pData);
 	void MAccept();
-	static int sMCleanupMutex(void*, void*, void* aP);
+	static eCBRval sMCleanupMutex(void*, void*, void* aP);
 
 	sent_state_t MSend(const void* pData, size_t nSize);
 	sent_state_t MSendTo(clients_fd_t::value_type const& aSock, const void* pData, size_t nSize);

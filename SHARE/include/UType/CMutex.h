@@ -1,10 +1,10 @@
 /*
  * CMutex.h
  *
- * Copyright © 2016 Sergey Cherepanov (sergey0311@gmail.com)
+ * Copyright © 2016  https://github.com/CrazyLauren
  *
  *  Created on: 27.09.2015
- *      Author: Sergey Cherepanov (https://github.com/CrazyLauren)
+ *      Author:  https://github.com/CrazyLauren
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-extern "C" SHARE_EXPORT unsigned thread_id();
+//todo IAlloctor
 class SHARE_EXPORT CMutex: CDenyCopying
 {
 public:
@@ -80,9 +80,16 @@ public:
 	~CRAII(void)
 	{
 	}
+	void MUnlock(void)
+	{
+		return CRaii.MUnlock();
+	}
 private:
 	CRAII<CMutex> CRaii;
 };
+/** \brief Используется в шаблонах, для указания отсуствия mutex
+ *
+ */
 struct  CMutexEmpty: CDenyCopying
 {
 
@@ -98,13 +105,47 @@ struct  CMutexEmpty: CDenyCopying
 	bool MUnlock(void);
 	volatile unsigned FNumber;
 };
-
 template<> struct SHARE_EXPORT CRAII<CMutexEmpty> : public CDenyCopying
 {
 public:
 	explicit CRAII(CMutexEmpty const& aMutex)
 	{
 
+	}
+	void MUnlock(void)
+	{
+	}
+};
+/** \brief Используется в шаблонах, для указания отсуствия mutex
+ * в отличии от CMutexEmpty, этот класс можно копировать
+ *
+ */
+struct  CNoMutex
+{
+
+	CNoMutex()
+	{
+	}
+	bool MLock(void){
+		return true;
+	}
+	bool MCanLock(void)
+	{
+		return true;
+	}
+	bool MUnlock(void){
+		return true;
+	}
+};
+template<> struct SHARE_EXPORT CRAII<CNoMutex> : public CDenyCopying
+{
+public:
+	explicit CRAII(CNoMutex const& aMutex)
+	{
+
+	}
+	void MUnlock(void)
+	{
 	}
 };
 } //namespace USHARE
