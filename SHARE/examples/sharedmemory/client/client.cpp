@@ -12,6 +12,7 @@
 #include <deftype>
 #include <iostream>
 #include <share_socket.h>
+#include <unit_tests.h>
 
 using namespace NSHARE;
 
@@ -20,8 +21,9 @@ using namespace NSHARE;
 int main(int argc, char *argv[])
 {
 	init_trace(argc, argv);
-	CText::sMUnitTest();
-	CBuffer::sMUnitTest(NULL);
+	bool const _is=NSHARE::unit_testing();
+	if(!_is)
+		std::cerr << "testing error" << std::endl;
 
 	size_t _buf_size = (argc > 1) ? atoi(argv[1]) : SEND_BUF_SIZE;
 

@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-//todo IAlloctor
+
 class SHARE_EXPORT CMutex: CDenyCopying
 {
 public:
@@ -26,7 +26,8 @@ public:
 	};
 	explicit CMutex(eMutexType aType = MUTEX_RECURSIVE);
 	~CMutex(void);
-	// API
+
+
 	bool MLock(void);
 	bool MCanLock(void);
 	bool MUnlock(void);
@@ -34,11 +35,28 @@ public:
 	{
 		return FFlags.MGetMask();
 	}
-	void* MGetPtr() const;
+
+
+
+	/** \brief mutex unit test
+	 *
+	 * \note realization in test.cpp
+	 */
 	static bool sMUnitTest();
+
+	/** \brief thread ID which locked mutex
+	 *
+	 *	\return thread id if locked otherwise 0
+	 */
 	unsigned MThread()const;
+
 private:
 	struct CImpl;
+
+	/** \brief using in Condvar
+	 *
+	 */
+	void* MGetPtr() const;
 
 	CFlags<eMutexType,eMutexType> FFlags;
 	CImpl *FImpl;
@@ -87,24 +105,50 @@ public:
 private:
 	CRAII<CMutex> CRaii;
 };
+
 /** \brief Используется в шаблонах, для указания отсуствия mutex
  *
+ * \note реализация находится в CWin32Mutex.cpp
  */
-struct  CMutexEmpty: CDenyCopying
+struct SHARE_EXPORT CMutexEmpty: CDenyCopying
 {
+	typedef CMutex::eMutexType eMutexType;
 
-	CMutexEmpty()
+	explicit CMutexEmpty(CMutex::eMutexType aType = CMutex::MUTEX_RECURSIVE) :
+			FFlags(aType)
 	{
-		FNumber = 0;
+		FThreadID = 0;
 	}
 	bool MLock(void);
-	bool MCanLock(void)
-	{
-		return true;
-	}
+	bool MCanLock(void);
 	bool MUnlock(void);
-	volatile unsigned FNumber;
+	eMutexType MGetMutexType() const
+	{
+		return FFlags.MGetMask();
+	}
+
+	/** \brief mutex unit test
+	 *
+	 * \todo
+	 */
+	static bool sMUnitTest();
+
+	/** \brief thread ID which locked mutex
+	 *
+	 *	\return thread id if locked otherwise 0
+	 */
+	unsigned MThread()const;
+
+private:
+	void* MGetPtr() const
+	{
+		return NULL;
+	}
+
+	CFlags<eMutexType,eMutexType> FFlags;
+	atomic_t FThreadID;
 };
+
 template<> struct SHARE_EXPORT CRAII<CMutexEmpty> : public CDenyCopying
 {
 public:
@@ -122,11 +166,12 @@ public:
  */
 struct  CNoMutex
 {
-
-	CNoMutex()
+	typedef CMutex::eMutexType eMutexType;
+	explicit CNoMutex(CMutex::eMutexType aType = CMutex::MUTEX_RECURSIVE)
 	{
 	}
-	bool MLock(void){
+	bool MLock(void)
+	{
 		return true;
 	}
 	bool MCanLock(void)
@@ -136,6 +181,29 @@ struct  CNoMutex
 	bool MUnlock(void){
 		return true;
 	}
+
+	eMutexType MGetMutexType() const
+	{
+		return CMutex::MUTEX_RECURSIVE;
+	}
+
+	/** \brief mutex unit test
+	 *
+	 * \todo
+	 */
+	static bool sMUnitTest();
+
+	unsigned MThread() const
+	{
+		return 0;
+	}
+
+private:
+	void* MGetPtr() const
+	{
+		return NULL;
+	}
+
 };
 template<> struct SHARE_EXPORT CRAII<CNoMutex> : public CDenyCopying
 {

@@ -1270,12 +1270,14 @@ CBuffer::iterator CBuffer::erase(iterator aBegin, iterator aEnd)
 	}
 	return aBegin;
 }
-void CBuffer::sMUnitTest(IAllocater* aAlloc)
+bool CBuffer::sMUnitTest(IAllocater* aAlloc)
 {
+	bool _is=true;
 	for (size_t _size = 0x1 << 2; _size <= 65536; _size = _size << 1)
-		sMUnitTest(_size, aAlloc);
+		_is=_is&&sMUnitTest(_size, aAlloc);
+	return _is;
 }
-void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
+bool CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 {
 	//std::cout<<aSize<<std::endl;
 	if(!aAlloc)
@@ -1669,6 +1671,7 @@ void CBuffer::sMUnitTest(size_t aSize, IAllocater* aAlloc)
 //		_buffer=_buffer2;
 //		_buffer2.release();
 	}
+	return true;
 }
 CBuffer::allocator_type * CBuffer::sMDefAllaocter()
 {

@@ -129,6 +129,9 @@ public:
 	inline bool MWasChanged(atomic_t::value_type const& aVal) const;
 
 	void MClear();
+
+	CEvent(CEvent const& aRht);
+	CEvent& operator=(CEvent const& aRht);
 protected:
 
 	/** \brief метод используется в CEvents::MCall для синхронизации
@@ -150,7 +153,7 @@ private:
 	}
 
 	MapOfCallback_t FCBs;
-	sender_t const FSender;
+	sender_t  FSender;
 	mutable mutex_t	 FMutex;
 	NSHARE::atomic_t FNumberOfArrayChange;//<! Счётчик изменений FCBs, используется для оптимизации в методе MSynchronizeChange
 

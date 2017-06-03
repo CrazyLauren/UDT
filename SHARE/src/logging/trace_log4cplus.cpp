@@ -458,7 +458,7 @@ void _log4cplus_impl::abort_impl(const char* aWhat)
 	cerr<<aWhat<<endl;
 	log4cplus::Logger::getRoot().shutdown();
 	//throw std::runtime_error(aWhat);
-	std::abort();
+	terminate();
 }
 log4cplus::Logger& _log4cplus_impl::get_logging_to_file(eLavel alevel)
 {

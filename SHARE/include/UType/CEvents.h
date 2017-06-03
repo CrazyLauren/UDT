@@ -92,6 +92,10 @@ public:
 	 *	\return true - если список изменился
 	 */
 	inline bool MWasChanged(atomic_t::value_type const& aVal) const;
+
+	CEvents(CEvents const& aRht);
+	CEvents& operator=(CEvents const& aRht);
+
 #ifndef TEST
 protected:
 #endif

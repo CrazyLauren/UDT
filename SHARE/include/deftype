@@ -140,8 +140,10 @@
 #include <endian_type.h>
 #include <UType/little_big_endian_t.h>
 
+#include <UType/CAssertException.h>
+#include <logging/share_trace.h>
+
 #include <type_manip.h>
-//#include <type_utf8.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CRAII.h>
 #include <UType/atomic_t.h>
@@ -149,13 +151,13 @@
 #include <UType/CCOWPtr.h>
 #include <UType/CFlags.h>
 #include <UType/CMutex.h>
+#include <UType/CCondvar.h>
+#include <UType/CSemaphore.h>
 #include <UType/allocators.h>
 #include <UType/CText.h>
 #include <UType/strtonum.h>
 #include <UType/numtostr.h>
-#include <UType/CAssertException.h>
 #include <uclock.h>
-#include <logging/share_trace.h>
 #include <UType/CSingleton.h>
 #include <UType/CAntiHang.h>
 #include <UType/CCheckNoMultiThread.h>
@@ -168,30 +170,27 @@
 #include <UType/CConfig.h>
 #include <UType/version.h>
 #include <UType/uuid.h>
-#include <dymamic_modules.h>
 #include <UType/cb_t.h>
 #include <UType/CEvent.h>
 #include <UType/CEvents.h>
 #include <UType/deffunc.h>
-#include <UType/CCondvar.h>
-#include <UType/CSemaphore.h>
 
 #include <UType/CIPCSem.h>
 #include <UType/CIPCSignalEvent.h>
-
 
 #include <UType/CThread.h>
 #include <UType/CThreadPool.h>
 
 #include <UType/CSafeData.h>
-#include <UType/CWaitingQueue.h>
 #include <UType/CSafeQueue.h>
-#include <UType/CCounter.h>
+#include <UType/CWaitingQueue.h>
 
-#include <UType/sync_field_t.h>
+#include <dymamic_modules.h>
 #include <UType/IFactory.h>
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
+#include <UType/CResources.h>
+
 #include <UType/CAddress.h>
 
 #endif /*DEFTYPE_*/

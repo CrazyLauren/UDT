@@ -17,27 +17,35 @@
 #endif 
 namespace NSHARE
 {
+/** \brief Базовый класс всех классов-фабрик
+*
+*/
 class SHARE_EXPORT IFactory
 {
 public:
+	/** \brief Return factory name
+	*
+	*/
 	const CText& MGetType() const
 	{
 		return FType;
 	}
-
-	//! Destructor.
+	
 	virtual ~IFactory()
 	{
 	}
 
 protected:
+	/** \brief Fuctory constructor
+	* \param type Factory name
+	*/
 	IFactory(const CText& type) :
 			FType(type)
 	{
 	}
 
 protected:
-	CText FType;
+	CText const FType;
 };
 }
 

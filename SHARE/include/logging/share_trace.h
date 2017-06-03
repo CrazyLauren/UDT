@@ -13,11 +13,17 @@
 #ifndef SHARE_TRACE_H_
 #define SHARE_TRACE_H_
 
-// There are three type of logging: NOLOG - no logging, GLOG - logging
-// by google-glog library, CPLUS_LOG - logging by log4cplus library,COUT_LOG
-// - logging to cout only.If neither of these macro are set,the macro NOLOG
-// is setting. For corectly logging initiliaze, Function
-// init_trace(int argc, char *argv[]) should be call at the first set-out of
+// \note There are 5 type of logging:
+//	- NOLOG - no logging, but checking macros is exist;
+//	- REMOVE_LOG - no logging, no checking macros - all trace info will be removed;
+//	- GLOG - logging by google-glog library;
+//	- CPLUS_LOG - logging by log4cplus library;
+//	- COUT_LOG - logging to cout, cerr only.
+//
+// If neither of these macro are set, the macro NOLOG is setting.
+//
+// For corectly logging initiliaze, Function
+// init_trace should be call at the first set-out of
 // the "int main(nt argc, char *argv[])" function.
 //
 // Make a bunch of macros for logging.  The way to log things is to stream
@@ -241,18 +247,56 @@
 // timestamps from different machines.
 
 
+/** \brief инициализация логирования
+ *
+ * При инциализации логирования считывается имя ПО и настройки логирования
+ * заддаными в опции default_logging_option_name или default_logging_short_option_name
+ *
+ *	\param argv -argv ф-ии main
+ *	\param argc argc ф-ии main
+ */
 extern SHARE_EXPORT void init_trace(int argc, char *argv[]);
+
+/** \brief инициализация логирования
+ *
+ *	Инициализация логирования без использования коммандной строки.
+ *	Для "разбора" коммандной строки в части логирования
+ *	см. CShareLogArgsParser
+ *
+ *	\param aFileName имя программы
+ */
 extern SHARE_EXPORT void init_share_trace(char const *aFileName);
 
+/** \brief полное название опции используемой при настройки логирования
+ * через коммандную строку
+ *
+ * По умолчанию, опция называется "verbose". Название опции
+ *  можно изменить, но до вызова метода init_trace
+ */
 extern SHARE_EXPORT char default_logging_option_name[];
+
+/** \brief короткое название опции используемой при настройки логирования
+ * через коммандную строку
+ *
+ * По умолчанию, опция называется "v". Название опции
+ * можно изменить, но до вызова метода init_trace
+ */
 extern SHARE_EXPORT char default_logging_short_option_name;
 
 
+/** \name implementation function
+ * \internal
+ * \{
+ */
 extern SHARE_EXPORT void init_trace_cplus(int argc, char *argv[]);
 extern SHARE_EXPORT void init_trace_glog(int argc, char *argv[]);
 extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();
+//\}
 
+/** \name selection logging system
+ *\{
+ */
 #ifndef REMOVE_LOG
 #ifndef NOLOG
 #	ifdef GLOG
@@ -270,7 +314,13 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #if defined(NOLOG) //#ifndef NOLOG
 # include <logging/share_nolog.h>
 #endif//#ifndef NOLOG
+//\}
 
+/**\def LOG_IF_EVERY_TIME
+ * \brief convenient macro for logging if condition is true and the last logging time
+ * is more than "period".
+ *
+ */
 #if defined(HAVE_GET_TIME) && !defined(NOLOG)
 
 #	define LOG_IF_EVERY_TIME(severity, condition,period)\
@@ -281,6 +331,9 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #	define	LOG_IF_EVERY_TIME(severity, condition,period) LOG(severity)<<"***ERROR***: LOG_IF_EVERY_TIME isn't available."
 #endif
 
+/** \name define using logging system name
+ *\{
+ */
 #ifdef GLOG
 #	define SHARE_TRACE_NAME "glog"
 #elif defined(COUT_LOG)//#ifdef GLOG
@@ -294,5 +347,6 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #	include <logging/share_dellog.h>
 #	define SHARE_TRACE_NAME "removed"
 #endif //#ifndef REMOVE_LOG
+//\}
 
 #endif /*SHARE_TRACE_H_*/

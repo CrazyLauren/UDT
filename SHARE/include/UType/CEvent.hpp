@@ -14,6 +14,34 @@
 
 namespace NSHARE
 {
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline CEvent<TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>::CEvent(
+		CEvent const& aRht)
+{
+	;// \note don't copy mutex!
+	CRAII<mutex_t> _blocked(aRht.FMutex);
+	FCBs=aRht.FCBs;
+	FSender=aRht.FSender;
+	FNumberOfArrayChange=aRht.FNumberOfArrayChange;
+}
+template<class TSender_type, class TEvent_t, class TEventArg_type, template<
+		class > class TIEvent, class TMutexType>
+inline CEvent<TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>&CEvent<
+		TSender_type, TEvent_t, TEventArg_type, TIEvent, TMutexType>::operator=(
+		CEvent const& aRht)
+{
+	if (&aRht != this)
+	{
+		CRAII<mutex_t> _blocked(FMutex);
+		CRAII<mutex_t> _blocked2(aRht.FMutex);
+		FCBs=aRht.FCBs;
+		FSender=aRht.FSender;
+		FNumberOfArrayChange=aRht.FNumberOfArrayChange;
+	}
+	return *this;
+}
+
 template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
 inline CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::CEvent() :
 		FSender(NULL)

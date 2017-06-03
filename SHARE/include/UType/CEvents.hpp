@@ -21,6 +21,32 @@ struct CEventLessComapare<CText> : NSHARE::CStringFastLessCompare
 };
 template<class key_type, class event_type,
 		template<class, class > class TIEvents, class mutex_type>
+inline CEvents<key_type, event_type, TIEvents, mutex_type>::CEvents(CEvents const& aRht)
+{
+	;// \note don't copy mutex!
+	CRAII<mutex_t> _blocked(aRht.FMutex);
+	FCBs=aRht.FCBs;
+	FSender=aRht.FSender;
+	FNumberOfArrayChange=aRht.FNumberOfArrayChange;
+}
+template<class key_type, class event_type,
+		template<class, class > class TIEvents, class mutex_type>
+inline CEvents<key_type, event_type, TIEvents, mutex_type>&
+CEvents<key_type, event_type, TIEvents, mutex_type>::operator=(
+		CEvents const& aRht)
+{
+	if (&aRht != this)
+	{
+		CRAII<mutex_t> _blocked(FMutex);
+		CRAII<mutex_t> _blocked2(aRht.FMutex);
+		FCBs=aRht.FCBs;
+		FSender=aRht.FSender;
+		FNumberOfArrayChange=aRht.FNumberOfArrayChange;
+	}
+	return *this;
+}
+template<class key_type, class event_type,
+		template<class, class > class TIEvents, class mutex_type>
 inline CEvents<key_type, event_type, TIEvents, mutex_type>::CEvents(
 		sender_t const& aSender) :
 		FSender(aSender)

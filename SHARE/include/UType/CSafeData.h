@@ -12,6 +12,8 @@
 #ifndef CSAFEDATA_H_
 #define CSAFEDATA_H_
 
+/** \brief Выбор типа используемой RW блокировки
+*/
 #if !defined(USE_SHARE_RW) // This one can be defined by users, so it should go first
 #	ifdef _WIN32
 #		define SHARE_RW_USE_SRWLOCK
@@ -27,6 +29,8 @@ namespace NSHARE
 {
 namespace _impl
 {
+/** \brief Определение данных для конкретной реализации
+*/
 #ifdef USE_SHARE_RW
 struct safe_data_t
 {
@@ -79,13 +83,38 @@ struct safe_data_t
 };
 #endif
 }
+/** \brief RW lock
+*
+*   Фактически этот класс это реализация RAII для блокировки чтения записи. Использоватеь его очень легкою
+*
+*	\code
+*	CSafeData<int> _rw_int;
+*	{ 
+*		CSafeData<int>::WAccess<> _locked_int(_rw_int);\\блокируем на запись
+*		*_rw_int=10;
+*	}//здесь отработает RAII
+*	{
+*		CSafeData<int>::RAccess<> _locked_int(_rw_int);\\блокируем на чтение
+*		std::cout<<(*_rw_int)<<std::endl;
+*	}//здесь отработает RAII
+*	\endcode
+*
+*	Выбор реализации блокировки чтения-записи осуществляется путём установки препроцессоров:
+*		USE_SHARE_RW - реализация RW блокировки при помощи двух УП и мютекса, эта реализация
+*				не зависит от типа ОС.
+*		SHARE_RW_USE_SRWLOCK - реализация RW блокировки SRWLOCK в windows. Для её работы требуется ОС Vista и выше.
+*		SHARE_RW_USE_PTHREAD - реализация RW блокировки SRWLOCK в pthread.
+* \warning Недопускается рекурсивный вызов RW блокировки. Т.е. если данные были заблокированы
+* только для чтения, то для того чтобы захватить их для записи, нужно вначале "освободить" блокировку
+* чтения.
+*/
 template<class T> class  CSafeData
 {
 public:
 	typedef T value_type;
 	typedef T* pointer;
 
-	//pthread asserts
+	
 	template<class Y = T>
 	class  WAccess;
 	template<class Y = T>

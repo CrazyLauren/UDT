@@ -14,6 +14,8 @@
 
 namespace NSHARE
 {
+/** \brief блокировка на запись
+*/
 template<class _T>
 template<class _Y>
 class CSafeData<_T>::WAccess
@@ -55,7 +57,7 @@ public:
 	{
 		return &FSafe.FData;
 	}
-private:
+
 	WAccess(CSafeData<_T>& aA) :
 			FSafe(aA)
 	{
@@ -65,6 +67,7 @@ private:
 		*FPThread = CThread::sMThreadId();
 #endif //NDEBUG
 	}
+private:
 	WAccess<_Y>& operator=(WAccess<_Y> const& aRhs)
 	{
 		return *this;
@@ -137,6 +140,8 @@ inline CSafeData<_T>::WAccess<_Y>::~WAccess()
 	MUnlock();
 }
 
+/** \brief блокировка на чтение
+*/
 template<class _T>
 template<class _Y>
 class CSafeData<_T>::RAccess
@@ -176,12 +181,12 @@ public:
 	{
 		return &FSafe.FData;
 	}
-private:
 	RAccess(CSafeData<_T> const& aA) :
 			FSafe(aA)
 	{
 		MLock();
 	}
+private:
 	RAccess<_Y>& operator=(RAccess<_Y> const& aRhs) const
 	{
 		return *this;

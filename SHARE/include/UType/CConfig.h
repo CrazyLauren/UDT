@@ -227,11 +227,16 @@ public:
 		return *this;
 	}
 
-	CConfig& MAdd(const CText& key, const CConfig& conf)
+	CConfig& MAdd(const CText& aKey, const CConfig& aConf)
 	{
-		CConfig temp = conf;
-		temp.MKey() = key;
-		return MAdd(temp);
+		if(aKey==aConf.MKey())
+			return MAdd(aConf);
+		else
+		{
+			CConfig _temp = aConf;
+			_temp.MKey() = aKey;
+			return MAdd(_temp);
+		}
 	}
 
 	void MAdd(const ConfigSet& set)

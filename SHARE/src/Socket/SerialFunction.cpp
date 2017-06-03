@@ -338,7 +338,7 @@ void get_all_ports(ports_t *aTo)
 #include <devguid.h>
 #include <cstring>
 #include <Socket/SerialFunction.h>
-#include <type_utf8.h>
+
 
 static const DWORD port_name_max_length = 256;
 static const DWORD friendly_name_max_length = 256;
@@ -350,7 +350,6 @@ namespace NSHARE
 	{
 		using std::vector;
 		using std::string;
-		using NSHARE::utf8_encode;
 
 		extern void get_all_ports(ports_t *aTo)
 		{

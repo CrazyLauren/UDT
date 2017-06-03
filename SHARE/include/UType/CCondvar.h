@@ -24,29 +24,10 @@ public:
 	CCondvar();
 	~CCondvar(void);
 
-	SHARED_DEPRECATED_F( bool Signal(void)
-	{
-		return MSignal();
-	})
-	SHARED_DEPRECATED_F(bool Timedwait(CMutex * aVal, const struct timespec* aVal2 = NULL)
-	{
-		return MTimedwait(aVal, aVal2);
-	})
-	SHARED_DEPRECATED_F(bool Timedwait(CMutex *aVal, double const aVal2)
-	{
-		return MTimedwait(aVal, aVal2);
-	})
-	SHARED_DEPRECATED_F(bool Broadcast(void)
-	{
-		return MBroadcast();
-	})
-
-
 	bool MSignal(void);
 	bool MTimedwait(CMutex *, const struct timespec* = NULL);
 	bool MTimedwait(CMutex *, double const);
 	bool MBroadcast(void);
-
 
 	static bool sMUnitTest();
 private:

@@ -12,9 +12,17 @@
 #ifndef STRTONUM_H_
 #define STRTONUM_H_
 #define FROM_STRING_EXIST
-//fixme replace to boost
 namespace NSHARE
 {
+/** \brief преобразование строки в стандартные типы
+ *
+ * стандартный ostream определяет преобразование типов
+ * с учётом локалей, чтобы этого избежать есть два варианта
+ * либо установить "глобальный" локаль, либо написать свой
+ * костыль.
+ *
+ * \todo заменить на boost lexical_cast
+ */
 template<class T,class TStr>
 inline  bool str_to_decimal(TStr const& aVal, T &aTo)
 {

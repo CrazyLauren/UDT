@@ -237,8 +237,8 @@ public:
 	offset_pointer_t offset() const;
 	unsigned use_count() const;
 	void release_force() const; //todo
-	static void sMUnitTest(IAllocater*);
-	static void sMUnitTest(size_t aSize, IAllocater*);
+	static bool sMUnitTest(IAllocater*);
+	static bool sMUnitTest(size_t aSize, IAllocater*);
 	bool MIsDetached() const;
 	bool MIsAllocatorEqual(IAllocater* aAlloc) const;
 	bool MIsAllocatorEqual(CBuffer const&) const;

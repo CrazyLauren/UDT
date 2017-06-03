@@ -15,14 +15,34 @@
 namespace NSHARE
 {
 class  CRegistration;
+
+
+/** \brief имя домена записанного слева направо (ru.kremlin)
+ *
+ */
 class SHARE_EXPORT CAddress
 {
 
 public:
 	static const char SEPERATOR;
 	CAddress();
-	explicit CAddress(const char*);//raw name
-	explicit CAddress(NSHARE::CText const&);//raw name
+
+	/** \brief constructor
+	 *
+	 *	\param aAddress address in format: a.b.c
+	 */
+	explicit CAddress(const char* aAddress);
+
+	/** \brief constructor
+	 *
+	 *	\param aAddress address in format: a.b.c
+	 */
+	explicit CAddress(NSHARE::CText const& aAddress);
+
+	/** \brief constructor
+	 *
+	 *	\param aGroups list of domain
+	 */
 	explicit CAddress(std::vector<NSHARE::CText> const& aGroups);
 
 	bool MSet(NSHARE::CText const&);
@@ -58,15 +78,36 @@ public:
 private:
 	NSHARE::CText FAddress;
 };
+
+/** \brief идентификатор ПО наподобие почты (program@ru.kremlin)
+ *
+ */
 class  SHARE_EXPORT CRegistration
 {
 
 public:
 	static const NSHARE::CText NAME;
 	static const char SEPERATOR;
+
 	CRegistration();
-	explicit CRegistration(const char*);//raw name
-	explicit CRegistration(NSHARE::CText const&);//raw name
+
+	/** \brief constructor
+	 *
+	 *	\param aAddress address in format: xz@a.b.c
+	 */
+	explicit CRegistration(const char*);
+
+	/** \brief constructor
+	 *
+	 *	\param aAddress address in format: xz@a.b.c
+	 */
+	explicit CRegistration(NSHARE::CText const&);
+
+	/** \brief constructor
+	 *
+	 *	\param aName name
+	 *	\param aGroup domains
+	 */
 	explicit CRegistration(NSHARE::CText const& aName,CAddress const&aGroup);
 	explicit CRegistration(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize() const;

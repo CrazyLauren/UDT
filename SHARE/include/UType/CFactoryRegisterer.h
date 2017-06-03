@@ -14,7 +14,16 @@
 
 namespace NSHARE
 {
-
+/** \brief класс для добавления фабрик при загрузки динамических библиотек
+ *
+ * Принцип работы следующий:
+ * 1) В каждой библиотеке создается функция с сигнатурой factory_registry_func_t, содержащая
+ * объекты наследники CFactoryRegisterer
+ * 2) После вызова метода MLoad класса CResources во всех библиотеках ищется функция
+ * с сигнатурой factory_registry_func_t (по умолчанию, с индетиф. ф-и FACTORY_REGISTRY_FUNC_NAME)
+ * 3) Для всех CFactoryRegisterer вызывается метод MRegisterFactory
+ * 4) Наследники класса CFactoryRegisterer добавляют новые фабрики
+ */
 class SHARE_EXPORT CFactoryRegisterer
 {
 public:
@@ -53,7 +62,15 @@ protected:
 	virtual bool MIsAlreadyRegistered() const = 0;
 };
 typedef std::vector<CFactoryRegisterer*> factory_registry_t;
-typedef factory_registry_t*(*factory_registry_func_t)();
+
+/** \brief сигнатура ф-и регистратора
+ *
+ */
+typedef factory_registry_t* (*factory_registry_func_t)(NSHARE::CConfig const*);
+
+/** \brief идентификатор ф-ии регистратора по умолчанию
+ *
+ */
 #define FACTORY_REGISTRY_FUNC_NAME "get_factory_registry"
 }
 

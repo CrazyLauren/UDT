@@ -25,9 +25,9 @@ public:
 		E_SENDED = 0, //
 		E_ERROR = -1,//
 		E_AGAIN = -2,//The client buffer is full
-		E_TOO_LARGE = -3,
-		E_NOT_OPENED = -4,
-		E_INVALID_VALUE = -5
+		E_TOO_LARGE = -3,//
+		E_NOT_OPENED = -4,//
+		E_INVALID_VALUE = -5//
 	};
 	struct sent_state_t
 	{
@@ -44,20 +44,16 @@ public:
 		}
 		bool MIs() const
 		{
-			return FError ==E_SENDED;
+			return FError==E_SENDED;
 		}
 		eSendState FError;
 		size_t FBytes;
 	};
 
-	//typedef CSocket socket_t;
 	enum eFlush
 	{
-		FLUSH_IN = 0x1 << 0, FLUSH_OUT = 0x1 << 1,
-	};
-	class CE_CAN_NOT_OPEN
-	{
-
+		FLUSH_IN = 0x1 << 0,//
+		FLUSH_OUT = 0x1 << 1,
 	};
 
 	typedef NSHARE::CBuffer data_t;
@@ -68,8 +64,8 @@ public:
 		data_t::iterator FBufBegin;
 		data_t::difference_type FSize;
 	};
-	typedef std::vector<receive_from_t> recvs_from_t;
 
+	typedef std::vector<receive_from_t> recvs_from_t;
 	struct status_t
 	{
 		size_t FReadBytes;
@@ -93,7 +89,7 @@ public:
 	//virtual bool MRemoveFrom(CSelectSocket&)=0;//todo
 	virtual const CSocket& MGetSocket(void) const=0;
 
-	//one of the method must be oveloaded, otherwise the recursion will be.
+	//one of the method must be oveloaded, otherwise the recursion call will be.
 	virtual sent_state_t MSend(void const* aData, std::size_t aSize,
 			NSHARE::CConfig const& aTo)
 	{
@@ -105,19 +101,19 @@ public:
 	sent_state_t MSend(data_t const& aVal)
 	{
 		if(aVal.empty())
-		return MSend(NULL, 0);
+			return MSend(NULL, 0);
 		else
-		return MSend(aVal.ptr_const(), aVal.size());
+			return MSend(aVal.ptr_const(), aVal.size());
 	}
 	sent_state_t MSend(data_t const& aVal, NSHARE::CConfig const& aTo)
 	{
 		if(aVal.empty())
-		return MSend(NULL, 0);
+			return MSend(NULL, 0);
 		else
-		return MSend(aVal.ptr_const(), aVal.size(),
+			return MSend(aVal.ptr_const(), aVal.size(),
 				aTo);
 	}
-	//one of the method must be oveloaded, otherwise the recursion will be.
+	//one of the method must be oveloaded, otherwise the recursion call will be.
 	virtual ssize_t MReceiveData(data_t * aData, float const aTime,
 			recvs_from_t *aFrom)
 	{

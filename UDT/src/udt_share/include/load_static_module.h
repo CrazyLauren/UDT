@@ -23,7 +23,7 @@ class CStaticRegister
 public:
 	CStaticRegister()
 	{
-		static_factory_registry(new TStaticRegister);
+		NUDT::static_factory_registry(new TStaticRegister);
 	}
 };
 }

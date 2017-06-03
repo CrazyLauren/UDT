@@ -1,5 +1,5 @@
 /*
- * CSafeQueue.h
+ * CThreadSafeQueue.h
  *
  * Copyright © 2016  https://github.com/CrazyLauren
  *
@@ -14,9 +14,14 @@
 
 namespace NSHARE
 {
-template<class DataType, typename _Sequence = std::deque<DataType> >
-class  CSafeQueue: protected _Sequence
+/** \brief Thread-safe queue
+ *
+ */
+template<class DataType, typename _Sequence = std::deque<DataType>,
+		class TMutexType = CMutex >
+class  CThreadSafeQueue: private _Sequence
 {
+	typedef TMutexType mutex_t;
 public:
 	typedef typename _Sequence::value_type value_type;
 	typedef typename _Sequence::size_type size_type;
@@ -24,35 +29,56 @@ public:
 	typedef typename _Sequence::const_reference const_reference;
 	typedef _Sequence container_type;
 
-	CSafeQueue()
+	CThreadSafeQueue()
 	{
 		;
 	}
 
-	CSafeQueue(CSafeQueue const& aRht) :
-			_Sequence(aRht) //TODO �����������
+	explicit CThreadSafeQueue(container_type const& aRht) :
+			_Sequence(aRht)
 	{
 		;
 	}
-	CSafeQueue& operator=(CSafeQueue const& aRht)
+	CThreadSafeQueue(CThreadSafeQueue const& aRht)
 	{
-		CRAII<CMutex> _block(aRht.FMutex);
+		;// \note don't copy mutex!
+		CRAII<mutex_t> _block(aRht.FMutex);
 		_Sequence::operator=(aRht);
+	}
+	CThreadSafeQueue& operator=(CThreadSafeQueue const& aRht)
+	{
+		if (&aRht != this)
+		{
+			CRAII<mutex_t> _block(FMutex);
+			CRAII<mutex_t> _block2(aRht.FMutex);
+			_Sequence::operator=(aRht);
+		}
 		return *this;
 	}
 
 	bool back_pop(value_type&);
 	bool front_pop(value_type&);
 
-	value_type& back();
-	value_type const& back() const;
+	value_type back() const;
 
-	value_type& front();
-	value_type const& front() const;
+	value_type front() const;
 
 	bool empty() const;
 
+	/** \brief push value to queue to end
+	 *
+	 *	\return false if queue was empty
+	 */
 	bool push(value_type const&);
+	bool push_back(value_type const&);
+
+	/** \brief push value to queue to begin
+	 *
+	 *	\return false if queue was empty
+	 */
+	bool push_front(value_type const&);
+
+
 	size_type size() const;
 
 	template<typename _Func>
@@ -60,7 +86,7 @@ public:
 	{
 		if (container_type::empty())
 			return aMaxCount;
-		CRAII<CMutex> _block(FMutex);
+		CRAII<mutex_t> _block(FMutex);
 		for (; !container_type::empty() && aMaxCount > 0; --aMaxCount)
 		{
 			aFunc(container_type::back());
@@ -73,7 +99,7 @@ public:
 	{
 		if (container_type::empty())
 			return aMaxCount;
-		CRAII<CMutex> _block(FMutex);
+		CRAII<mutex_t> _block(FMutex);
 		for (; !container_type::empty() && aMaxCount > 0; --aMaxCount)
 		{
 			aFunc(container_type::front());
@@ -83,32 +109,34 @@ public:
 	}
 
 protected:
-	CMutex FMutex;
+	mutex_t FMutex;
 };
 
-template<class DataType, typename _Sequence>
-typename CSafeQueue<DataType, _Sequence>::value_type& CSafeQueue<DataType,
-		_Sequence>::back()
+template<class DataType, typename _Sequence,class TMutexType>
+typename CThreadSafeQueue<DataType, _Sequence,TMutexType>::value_type CThreadSafeQueue<DataType,
+		_Sequence,TMutexType>::back() const
 {
-	CRAII<CMutex> _block(FMutex);
+	CRAII<mutex_t> _block(FMutex);
+	CHECK(!container_type::empty());
+
 	return container_type::back();
 }
-template<class DataType, typename _Sequence>
-bool CSafeQueue<DataType, _Sequence>::back_pop(
-		typename CSafeQueue<DataType, _Sequence>::value_type& aVal)
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::back_pop(
+		typename CThreadSafeQueue<DataType, _Sequence,TMutexType>::value_type& aVal)
 {
-	CRAII<CMutex> _block(FMutex);
+	CRAII<mutex_t> _block(FMutex);
 	if (container_type::empty())
 		return false;
 	aVal = container_type::back();
 	container_type::pop_back();
 	return true;
 }
-template<class DataType, typename _Sequence>
-bool CSafeQueue<DataType, _Sequence>::front_pop(
-		typename CSafeQueue<DataType, _Sequence>::value_type& aVal)
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::front_pop(
+		typename CThreadSafeQueue<DataType, _Sequence,TMutexType>::value_type& aVal)
 {
-	CRAII<CMutex> _block(FMutex);
+	CRAII<mutex_t> _block(FMutex);
 	if (container_type::empty())
 		return false;
 	aVal = container_type::front();
@@ -116,61 +144,69 @@ bool CSafeQueue<DataType, _Sequence>::front_pop(
 	return true;
 }
 
-template<class DataType, typename _Sequence>
-typename CSafeQueue<DataType, _Sequence>::value_type const& CSafeQueue<DataType,
-		_Sequence>::front() const
+template<class DataType, typename _Sequence,class TMutexType>
+typename CThreadSafeQueue<DataType, _Sequence,TMutexType>::value_type  CThreadSafeQueue<DataType,
+		_Sequence,TMutexType>::front() const
 {
-	CRAII<CMutex> _block(FMutex);
-	return container_type::back();
-}
-template<class DataType, typename _Sequence>
-typename CSafeQueue<DataType, _Sequence>::value_type& CSafeQueue<DataType,
-		_Sequence>::front()
-{
-	CRAII<CMutex> _block(FMutex);
+	CRAII<mutex_t> _block(FMutex);
+	CHECK(!container_type::empty());
+
 	return container_type::front();
 }
 
-template<class DataType, typename _Sequence>
-bool CSafeQueue<DataType, _Sequence>::empty() const
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::empty() const
 {
-	CRAII<CMutex> _block(FMutex);
-	return container_type::front();
+	CRAII<mutex_t> _block(FMutex);
+	return container_type::empty();
 }
-template<class DataType, typename _Sequence>
-bool CSafeQueue<DataType, _Sequence>::push(value_type const&aVal)
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::push(value_type const&aVal)
 {
-	CRAII<CMutex> _block(FMutex);
+	return push_back(aVal);
+}
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::push_back(value_type const&aVal)
+{
+	CRAII<mutex_t> _block(FMutex);
 	bool const _is=container_type::empty();
 	container_type::push_back(aVal);
 	return !_is;
 }
-template<class DataType, typename _Sequence>
-typename CSafeQueue<DataType, _Sequence>::size_type CSafeQueue<DataType,
-		_Sequence>::size() const
+template<class DataType, typename _Sequence,class TMutexType>
+bool CThreadSafeQueue<DataType, _Sequence,TMutexType>::push_front(value_type const&aVal)
 {
-	CRAII<CMutex> _block(FMutex);
+	CRAII<mutex_t> _block(FMutex);
+	bool const _is=container_type::empty();
+	container_type::push_front(aVal);
+	return !_is;
+}
+
+template<class DataType, typename _Sequence,class TMutexType>
+typename CThreadSafeQueue<DataType, _Sequence,TMutexType>::size_type CThreadSafeQueue<DataType,
+		_Sequence,TMutexType>::size() const
+{
+	CRAII<mutex_t> _block(FMutex);
 	return container_type::size();
 }
 } //namespace USHARE
-//��� ��������� ���������
 namespace std
 {
 template<class T>
-class back_insert_iterator<class NSHARE::CSafeQueue<T> > : public iterator<
+class back_insert_iterator<class NSHARE::CThreadSafeQueue<T> > : public iterator<
 		output_iterator_tag, void, void, void, void>
 {
 protected:
-	NSHARE::CSafeQueue<T>* container;
+	NSHARE::CThreadSafeQueue<T>* container;
 
 public:
-	typedef NSHARE::CSafeQueue<T> container_type;
-	explicit back_insert_iterator(NSHARE::CSafeQueue<T>& aX) :
+	typedef NSHARE::CThreadSafeQueue<T> container_type;
+	explicit back_insert_iterator(NSHARE::CThreadSafeQueue<T>& aX) :
 			container(&aX)
 	{
 	}
 	back_insert_iterator&
-	operator=(typename NSHARE::CSafeQueue<T>::const_reference aValue)
+	operator=(typename NSHARE::CThreadSafeQueue<T>::const_reference aValue)
 	{
 		container->push(aValue);
 		return *this;
@@ -192,21 +228,21 @@ public:
 };
 
 template<class T>
-class front_insert_iterator<class NSHARE::CSafeQueue<T> > : public iterator<
+class front_insert_iterator<class NSHARE::CThreadSafeQueue<T> > : public iterator<
 		output_iterator_tag, void, void, void, void>
 {
 protected:
-	NSHARE::CSafeQueue<T>* container;
+	NSHARE::CThreadSafeQueue<T>* container;
 
 public:
-	typedef NSHARE::CSafeQueue<T> container_type;
+	typedef NSHARE::CThreadSafeQueue<T> container_type;
 
-	explicit front_insert_iterator(NSHARE::CSafeQueue<T>& aX) :
+	explicit front_insert_iterator(NSHARE::CThreadSafeQueue<T>& aX) :
 			container(&aX)
 	{
 	}
 	front_insert_iterator&
-	operator=(typename NSHARE::CSafeQueue<T>::const_reference aValue)
+	operator=(typename NSHARE::CThreadSafeQueue<T>::const_reference aValue)
 	{
 		container->front(aValue);
 		return *this;

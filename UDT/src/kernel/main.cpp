@@ -161,7 +161,7 @@ void initialize_def_io_managers()
 }
 void initialize_extern_modules()
 {
-	CResources::sMGetInstance().MLoad();
+	NUDT::CResources::sMGetInstance().MLoad();
 }
 void initialize_def_sevices()
 {
@@ -244,7 +244,7 @@ void initialize_core(int argc, char* argv[])
 
 		NSHARE::CText _ext_path;
 		CConfigure::sMGetInstance().MGet().MGetIfSet("modules_path",_ext_path);
-		new CResources(_text,_ext_path);
+		new NUDT::CResources(_text,_ext_path);
 	}
 }
 void perpetual_loop()

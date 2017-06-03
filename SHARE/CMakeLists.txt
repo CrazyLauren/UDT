@@ -7,7 +7,7 @@ if(COMMAND cmake_policy)#i don't know what is it
     cmake_policy(SET CMP0005 OLD)
 endif(COMMAND cmake_policy)
 
-# default to Release build (it's what most people will use, except cegui devs)
+# default to Release build (it's what most people will use)
 if (NOT CMAKE_BUILD_TYPE)
     set( CMAKE_BUILD_TYPE Release CACHE STRING "Sets the configuration to build (Release, Debug, etc...)")
 endif()

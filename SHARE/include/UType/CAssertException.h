@@ -54,9 +54,9 @@ public:
 	}
 	std::string MLineNumberStr() const
 	{
-		std::string _str;
-		NSHARE::num_to_str(MLineNumber(), _str);
-		return _str;
+		std::stringstream _buf;
+		_buf<<MLineNumber();
+		return _buf.str();
 	}
 private:
 	char FDescription[512];
@@ -73,9 +73,11 @@ inline void massert(_T const& aVal1, _Y const& aVal2,char const* description, ch
 	_assert="Assertion failed.";
 	_assert+=std::string(description)+';';
 	_assert+=std::string(filename)+':';
-	std::string _tmp;
-	NSHARE::num_to_str(lineNumber, _tmp);
-	_assert+=_tmp;
+
+	std::stringstream _buf;
+	_buf<<lineNumber;
+	_assert+=_buf.str();
+
 	std::cerr<<_assert<<std::endl;
 	throw new CAssertException (description,filename,lineNumber);
 }
@@ -90,9 +92,11 @@ inline void massert(_T* const& aVal1, _Y const& aVal2,char const* description, c
 	_assert+="Assertion failed.";
 	_assert+=std::string(description)+';';
 	_assert+=std::string(filename)+':';
-	std::string _tmp;
-	NSHARE::num_to_str(lineNumber, _tmp);
-	_assert+=_tmp;
+
+	std::stringstream _buf;
+	_buf<<lineNumber;
+	_assert+=_buf.str();
+
 	std::cerr<<_assert<<std::endl;
 	throw new CAssertException (description,filename,lineNumber);
 }
@@ -106,9 +110,11 @@ inline void massert(_T const& aVal,char const* description, char const* filename
 	_assert+="Assertion failed.";
 	_assert+=std::string(description)+';';
 	_assert+=std::string(filename)+':';
-	std::string _tmp;
-	NSHARE::num_to_str(lineNumber, _tmp);
-	_assert+=_tmp;
+
+	std::stringstream _buf;
+	_buf<<lineNumber;
+	_assert+=_buf.str();
+
 	std::cerr<<_assert<<std::endl;
 	throw new CAssertException (description,filename,lineNumber);
 }

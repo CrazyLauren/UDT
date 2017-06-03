@@ -8,21 +8,22 @@
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */ 
+ */
 #include <deftype>
-const NSHARE::CText NSHARE::version_t::NAME="ver";
-#ifndef NO_SHARE_TEST
-#include <iostream>
-#include <TestingConfig.h>
+#include <unit_tests.h>
 
-using namespace NSHARE;
+const NSHARE::CText NSHARE::version_t::NAME = "ver";//by historical reason
 
-#ifdef DEFINE_MAIN
-int main()
+#ifdef START_UNIT_TESTING
+int main(int argc, char *argv[])
 {
-	return 0;
+	init_trace(argc, argv);
+	return NSHARE::unit_testing()?0:-1;
 }
 #endif
+
+namespace NSHARE
+{
 static void _volatile_test()
 {
 	const int local = 10;
@@ -36,85 +37,148 @@ static void _volatile_test()
 	}
 
 }
-UNIT_TEST_FUNC_ATTR void __testing__()
+UNIT_TEST_FUNC_ATTR bool unit_testing()
 {
-	std::cout << "Share testing before execution program." << std::endl;
+	std::cout << "Share testing ..." << std::endl;
 	_volatile_test();
 	if (!NSHARE::CMutex::sMUnitTest())
+	{
 		std::cerr << "CMutex::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
 	if (!NSHARE::CCondvar::sMUnitTest())
+	{
 		std::cerr << "CCondvar::sMUnitTest() - " << "***Failed***" << std::endl;
-//	if (!CProperties<>::sMUnitTest())
-//		std::cerr << "CPTree::sMUnitTest() - " << "***Failed***" << std::endl;
-}
-#endif//#ifndef NO_SHARE_TEST
-namespace mutex_test_impl
-{
-using namespace NSHARE;
-std::string g_buffer;
-CMutex g_mutex;
-eCBRval thread1_run(void*, void*, void*)
-{
-	for (int i = 0; i < 10; ++i)
-	{
-		{
-			CRAII<CMutex> _block(g_mutex);
-
-			g_buffer += "**************11111**************";
-		}
-		NSHARE::usleep(rand() % 500);
+		return false;
 	}
-	return E_CB_SAFE_IT;
-}
-eCBRval thread2_run(void*, void*, void*)
-{
-	for (int i = 0; i < 10;)
+
+	if (!NSHARE::CText::sMUnitTest())
 	{
-		if (g_mutex.MCanLock())
-		{
-			g_buffer += "##############2222###############";
-			g_mutex.MUnlock();
-			++i;
-		}
-		NSHARE::usleep(rand() % 500);
+		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
 	}
-	return E_CB_SAFE_IT;
-}
 
-eCBRval thread3_run(void*, void*, void*)
-{
-	for (int i = 0; i < 10;)
+	if (!NSHARE::CBuffer::sMUnitTest(NULL))//todo for several allocators
 	{
-		if (g_mutex.MCanLock())
-		{
-			g_buffer += "##############33333###############";
-			g_mutex.MUnlock();
-			++i;
-		}
-		NSHARE::usleep(rand() % 500);
+		std::cerr << "CBuffer::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
 	}
-	return E_CB_SAFE_IT;
-}
-}
-bool NSHARE::CMutex::sMUnitTest()
-{
-	CThread t1;
-	t1 += CB_t(mutex_test_impl::thread1_run, NULL);
-	CThread t2;
-	t2 += CB_t(mutex_test_impl::thread2_run, NULL);
-
-	CThread t3;
-	t3 += CB_t(mutex_test_impl::thread3_run, NULL);
-
-	t1.MCreate();
-	t2.MCreate();
-	t3.MCreate();
-
-	t1.MJoin();
-	t2.MJoin();
-	t3.MJoin();
+	if (!NSHARE::CRegistration::sMUnitTest())
+	{
+		std::cerr << "CAddress::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
 	return true;
 }
+/****************************************************
+ *		      		Mutex test		     			*
+ ****************************************************/
+template<typename TMutex>
+struct CMutexTestImpl
+{
+	TMutex mutex;
+	atomic_t thread_number;
+	volatile bool is;
+	std::vector<SHARED_PTR<CThread> > threads;
+
+	bool MIs()
+	{
+		for(unsigned i=0;i<20;++i)
+		{
+			threads[i]->MCreate();
+		}
+		for(unsigned i=0;i<20;++i)
+		{
+			threads[i]->MJoin();
+		}
+		return is;
+	}
+	CMutexTestImpl()
+	{
+		thread_number=0;
+		is=true;
+		for(unsigned i=0;i<20;++i)
+		{
+			threads.push_back(SHARED_PTR<CThread>(new CThread));
+			*threads.back()+=CB_t(thread_run, this);
+		}
+	}
+
+	static eCBRval thread_run(void*, void*, void* aData)
+	{
+		CMutexTestImpl<TMutex>* _p=reinterpret_cast<CMutexTestImpl<TMutex>*>(aData);
+		if(_p->is)
+		{
+			CRAII < TMutex > _block(_p->mutex);
+			for (int i = 0; i < 100; ++i)
+			{
+				++_p->thread_number;
+				CThread::sMYield();
+			}
+			if(_p->thread_number!=100)
+			_p->is=false;
+
+			_p->thread_number=0;
+		}
+		return E_CB_SAFE_IT;
+	}
+
+};
+template<typename Mutex>
+bool test_mutex()
+{
+	{
+		Mutex _mutex1(Mutex::MUTEX_NORMAL);
+		Mutex _mutex2(Mutex::MUTEX_NORMAL);
+		Mutex _mutex3(Mutex::MUTEX_NORMAL);
+		{
+			_mutex1.MLock();
+			_mutex2.MLock();
+			_mutex3.MLock();
+
+			_mutex1.MUnlock();
+			_mutex2.MUnlock();
+			_mutex3.MUnlock();
+		}
+		{
+			_mutex1.MLock();
+			_mutex2.MLock();
+			_mutex3.MLock();
+
+			_mutex3.MUnlock();
+			_mutex2.MUnlock();
+			_mutex1.MUnlock();
+		}
+	}
+	{
+		bool _is = true;
+		Mutex _mutex1(Mutex::MUTEX_RECURSIVE);
+		Mutex _mutex2(Mutex::MUTEX_RECURSIVE);
+
+		_mutex1.MLock();
+		_mutex2.MLock();
+		_is = _mutex1.MCanLock() && _is;
+		_is = _mutex2.MCanLock() && _is;
+
+		_mutex1.MUnlock();
+		_mutex2.MUnlock();
+
+		_mutex1.MUnlock();
+		_mutex2.MUnlock();
+		if (!_is)
+			return false;
+	}
+	CMutexTestImpl<Mutex> _test;
+	return _test.MIs();
+}
+
+bool CMutex::sMUnitTest()
+{
+	return test_mutex<CMutex>();
+}
+/****************************************************
+ *		      		Condvar test		     		*
+ ****************************************************/
 namespace condvar_test_impl
 {
 using namespace NSHARE;
@@ -130,7 +194,7 @@ eCBRval thread1_run(void*, void*, void*)
 
 		bufferLock.MLock();
 
-		for (HANG_INIT;buffer[0] != '\0' ; HANG_CHECK)
+		for (HANG_INIT;buffer[0] != '\0'; HANG_CHECK)
 		{
 			cond.MTimedwait(&bufferLock);
 		}
@@ -163,10 +227,10 @@ eCBRval thread2_run(void*, void*, void*)
 
 		NSHARE::usleep(rand() % 500);
 	}
-return E_CB_SAFE_IT;
+	return E_CB_SAFE_IT;
 }
 }
-bool NSHARE::CCondvar::sMUnitTest()
+bool CCondvar::sMUnitTest()
 {
 	CThread t1;
 	t1 += CB_t(condvar_test_impl::thread1_run, NULL);
@@ -180,4 +244,4 @@ bool NSHARE::CCondvar::sMUnitTest()
 	t2.MJoin();
 	return condvar_test_impl::ok;
 }
-
+}

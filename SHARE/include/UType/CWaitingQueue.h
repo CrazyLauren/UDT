@@ -14,8 +14,11 @@
 
 namespace NSHARE
 {
+/** \brief Production-consumer realization
+ *
+ */
 template<typename Tp, typename _Sequence = std::list<Tp> >
-class  CWaitingQueue: protected _Sequence, CDenyCopying
+class  CWaitingQueue: private _Sequence
 {
 public:
 	typedef typename _Sequence::value_type value_type;
@@ -29,68 +32,185 @@ public:
 	{
 	}
 
-	inline bool empty() const
-	{
-		return _Sequence::empty();
-	}
-	inline size_type size() const
-	{
-		return _Sequence::size();
-	}
-	value_type& back()
+	bool empty() const
 	{
 		CRAII<CMutex> _block(FMutex);
-		MWaitForData();
-		return _Sequence::back();
+		return _Sequence_type::empty();
 	}
+	size_type size() const
+	{
+		CRAII<CMutex> _block(FMutex);
+		return _Sequence_type::size();
+	}
+
+	/** \brief return the last element of queue, if it isn't exit
+	 * then expect it
+	 *
+	 * \warning returning reference to element
+	 */
 	value_type const& back() const
 	{
 		CRAII<CMutex> _block(FMutex);
 		MWaitForData();
-		return _Sequence::back();
+		return _Sequence_type::back();
 	}
 
-	value_type& front()
+	/** \brief copy the last element of queue, if it isn't exit
+	 * then expect it
+	 *
+	 */
+	void back(value_type & aTo) const
 	{
 		CRAII<CMutex> _block(FMutex);
 		MWaitForData();
-		return _Sequence::front();
+		aTo=_Sequence_type::back();
 	}
+
+	/** \brief return the first element of queue, if it isn't exit
+	 * then expect it
+	 *
+	 * \warning returning reference to element
+	 */
 	value_type const& front() const
 	{
 		CRAII<CMutex> _block(FMutex);
 		MWaitForData();
-		return _Sequence::front();
+		return _Sequence_type::front();
 	}
 
-	void pop()
+	/** \brief copy the first element of queue, if it isn't exit
+	 * then expect it
+	 *
+	 */
+	void front(value_type & aTo) const
 	{
 		CRAII<CMutex> _block(FMutex);
-		_Sequence::pop_back();
+		MWaitForData();
+		aTo = _Sequence_type::front();
 	}
-	void back_pop(value_type& aVal)
+
+	/** \brief copy and remove the last element of queue,
+	 *  if it isn't exit then expect it.
+	 *
+	 *	\return true - EOK
+	 */
+	bool back_pop(value_type& aVal)
 	{
 		CRAII<CMutex> _block(FMutex);
 		MWaitForData();
 		if(!empty())
 		{
-			aVal = _Sequence::back();
-			_Sequence::pop_back();
+			aVal = _Sequence_type::back();
+			_Sequence_type::pop_back();
+			return true;
 		}
+		return false;
 	}
-	void push(const value_type& aVal)
+
+	/** \brief copy and remove the first element of queue,
+	 *  if it isn't exit then expect it.
+	 *
+	 *	\return true - EOK
+	 */
+	bool front_pop(value_type& aVal)
 	{
 		CRAII<CMutex> _block(FMutex);
-		_Sequence::push_back(aVal);
-		MDataSignal();
+		MWaitForData();
+		if(!empty())
+		{
+			aVal = _Sequence_type::front();
+			_Sequence_type::pop_front();
+			return true;
+		}
+		return false;
 	}
-protected:
-	CCondvar FCond;
-	CMutex FMutex;
-private:
-	inline void MWaitForData()
+
+	/** \brief pop queue from end
+	 */
+	void pop()
 	{
-		for (HANG_INIT; _Sequence::empty();HANG_CHECK)
+		pop_back();
+	}
+
+	/** \brief pop queue from end
+	 */
+	void pop_back()
+	{
+		CRAII<CMutex> _block(FMutex);
+		_Sequence_type::pop_back();
+	}
+
+	/** \brief pop queue from begin
+	 */
+	void pop_front()
+	{
+		CRAII<CMutex> _block(FMutex);
+		_Sequence_type::pop_front();
+	}
+
+	/** \brief push value to queue to end
+	 *
+	 *	\return false if queue was empty
+	 */
+	bool push_back(const value_type& aVal)
+	{
+		CRAII<CMutex> _block(FMutex);
+		bool const _is=_Sequence_type::empty();
+		_Sequence_type::push_back(aVal);
+		MDataSignal();
+		return !_is;
+	}
+
+	bool push(const value_type& aVal)
+	{
+		return push_back(aVal);
+	}
+
+
+	/** \brief push value to queue to begin
+	 *
+	 *	\return false if queue was empty
+	 */
+	bool push_front(const value_type& aVal)
+	{
+		CRAII<CMutex> _block(FMutex);
+		bool const _is=_Sequence_type::empty();
+		_Sequence_type::push_front(aVal);
+		MDataSignal();
+		return !_is;
+	}
+
+
+	CWaitingQueue(CWaitingQueue const& aRht) :
+		FMutex(CMutex::MUTEX_NORMAL)
+	{
+		;// \note don't copy mutex!
+		CRAII<CMutex> _block(aRht.FMutex);
+		_Sequence::operator=(aRht);
+	}
+	CWaitingQueue& operator=(CWaitingQueue const& aRht)
+	{
+		if (&aRht != this)
+		{
+			CRAII<CMutex> _block(FMutex);
+
+			CRAII<CMutex> _block2(aRht.FMutex);
+			_Sequence::operator=(aRht);
+			_block2.MUnlock();
+
+			if(!_Sequence_type::empty())
+				MDataSignal();
+		}
+		return *this;
+	}
+
+protected:
+	mutable CCondvar FCond;
+	mutable CMutex FMutex;
+private:
+	inline void MWaitForData() const
+	{
+		for (HANG_INIT; _Sequence_type::empty(); HANG_CHECK)
 			FCond.MTimedwait(&FMutex);
 	}
 	inline void MDataSignal()
@@ -99,7 +219,6 @@ private:
 	}
 };
 }//namespace USHARE
-//��� ��������� ���������
 namespace std
 {
 template<class T>

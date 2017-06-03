@@ -93,7 +93,7 @@ private:
 		mutable NSHARE::CMutex FBufMutex;
 	};
 
-	typedef NSHARE::CSafeQueue<routing_op_t> routings_t;
+	typedef NSHARE::CThreadSafeQueue<routing_op_t> routings_t;
 	typedef std::map<descriptor_t, NSHARE::intrusive_ptr<manager_t> > managers_t;
 	typedef NSHARE::CSafeData<managers_t> safe_manager_t;
 	bool MIsForMe(const routing_t& aRoute) const;

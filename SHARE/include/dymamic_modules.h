@@ -15,10 +15,9 @@
 
 namespace NSHARE
 {
-/** Класс динамического подключения библиотек
+/** \brief Класс динамического подключения библиотек
  *
  */
-
 class SHARE_EXPORT CDynamicModule
 {
 public:

@@ -56,7 +56,8 @@ public:
 		}
 	}
 
-	intrusive_ptr(const intrusive_ptr& aRht)
+	intrusive_ptr(const intrusive_ptr& aRht):
+		FPtrBase(NULL)
 	{
 		MSet(aRht.MPtr());
 		VLOG(5) << "Construct intrusive_ptr for "
@@ -71,7 +72,8 @@ public:
 	 *
 	 */
 	template<class U>
-	explicit intrusive_ptr(const intrusive_ptr<U>& aCopy )
+	explicit intrusive_ptr(const intrusive_ptr<U>& aCopy ):
+		FPtrBase(NULL)
 	{
 		MSet(aCopy.MPtr());
 		VLOG(5) << "Construct intrusive_ptr for "

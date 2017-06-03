@@ -330,7 +330,7 @@ public:
 	bool isdigit() const;
 //	bool isxdigit ();
 
-	static void sMUnitTest();
+	static bool sMUnitTest();
 private:
 	struct impl_t
 	{

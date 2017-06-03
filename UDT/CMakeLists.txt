@@ -4,7 +4,7 @@ SET(CMAKE_MODULE_PATH "${SHARE_ROOT_PATH}/CMakeModules;${CMAKE_MODULE_PATH}")
 INCLUDE(FindPackageHandleStandardArgs)
 
 cmake_policy(SET CMP0022 NEW)
-# default to Release build (it's what most people will use, except cegui devs)
+# default to Release build (it's what most people will use)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Sets the configuration to build (Release, Debug, etc...)")
 endif()

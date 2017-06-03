@@ -93,8 +93,8 @@ void CResources::MLoadChannels()
 					"' was not found in dynamic module '" << _it->FName<< "'.";
 					if(!_func)
 					continue;
-					// get the WindowRendererModule object for this module.
-					_it->FRegister = _func();
+					
+					_it->FRegister = _func(NULL);
 					CHECK_NOTNULL(_it->FRegister);
 				}
 				catch(...)

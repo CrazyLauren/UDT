@@ -12,7 +12,16 @@
 #ifndef NUMTOSTR_H_
 #define NUMTOSTR_H_
 #define NUM_TO_STRING_EXIST
-//fixme to boost
+
+/** \brief преобразование стандартных типов в строку
+ *
+ * стандартный ostream определяет преобразование типов
+ * с учётом локалей, чтобы этого избежать есть два варианта
+ * либо установить "глобальный" локаль, либо написать свой
+ * костыль.
+ *
+ * \todo заменить на boost lexical_cast
+ */
 namespace NSHARE
 {
 template<class TStr>

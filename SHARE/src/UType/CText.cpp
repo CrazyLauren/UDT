@@ -183,12 +183,12 @@ CText::~CText()
 }
 CText::reference CText::at(size_type idx)
 {
-	CHECK_LE(idx, size()) << "Index is out of range for CEGUI::String";
+	CHECK_LE(idx, size()) << "Index is out of range for CText";
 	return operator[](idx);
 }
 CText::const_reference CText::at(size_type idx) const
 {
-	CHECK_LE(idx, size()) << "Index is out of range for CEGUI::String";
+	CHECK_LE(idx, size()) << "Index is out of range for CText";
 
 	return operator[](idx);
 }
@@ -2294,7 +2294,7 @@ void CText::MWillBeenChanged()
 		_impl.FSingleByteDatalen = 0;
 	}
 }
-void CText::sMUnitTest()
+bool CText::sMUnitTest()
 {
 	using namespace NSHARE;
 	{
@@ -2676,6 +2676,7 @@ void CText::sMUnitTest()
 		s1 = CText("1245452");
 		CHECK(s1.isdigit());
 	}
+	return true;
 }
 static CText g_empty;
 CText const& CText::sMEmpty()

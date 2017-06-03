@@ -12,8 +12,13 @@
 #ifndef CANTIHANG_H_
 #define CANTIHANG_H_
 
-#define HANG_INIT NSHARE::CAntiHang _hang(__FILE__,__LINE__)
-#define HANG_CHECK _hang()
+#ifndef NDEBUG
+#	define HANG_INIT NSHARE::CAntiHang _hang(__FILE__,__LINE__)
+#	define HANG_CHECK _hang()
+#else
+#	define HANG_INIT (void)0
+#	define HANG_CHECK (void)0
+#endif
 namespace NSHARE
 {
 /** \brief Очень полезный класс для защиты от зависания
