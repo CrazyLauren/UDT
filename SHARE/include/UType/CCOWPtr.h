@@ -116,7 +116,14 @@ public:
 	{
 		return &MRead();
 	}
-
+	const T* get() const
+	{
+		return &MRead();
+	}
+	T* get()
+	{
+		return &MWrite();
+	}
 	bool MIsOne() const
 	{
 		return !FPtr || FPtr->FCounter.MIsOne();
@@ -177,6 +184,7 @@ public:
 	{
 		return FPtr!=NULL;
 	}
+	static bool sMUnitTest();
 private:
 
 	implementation_t* allocate(const T& aVal = T())
@@ -216,7 +224,6 @@ private:
 	allocator_type* FAllocator;
 	mutable implementation_t* FPtr;
 };
-
 }
 
 namespace std

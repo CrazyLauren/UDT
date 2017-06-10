@@ -5,7 +5,7 @@ OPTION(LOGGING_IS_DISABLED_IN_${TARGET_NAME} "Disable logging in share library" 
 
 SET(PATH_TO_REVISION_IN ${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in CACHE INTERNAL  "" FORCE)
 
-configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 1)
+configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 2)
 
 OPTION(SHARE_NO_STATRUP_TEST "Disable  start up tests " ON)
 

@@ -10,7 +10,6 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <dymamic_modules.h>
 #include <stdexcept>
 
 namespace NSHARE
@@ -149,7 +148,7 @@ static DYN_LIB_HANDLE dyn_lib_load(const CText& name,const CText& aPath)
 CDynamicModule::CDynamicModule(const string_t& name,const string_t& aPath) :
 		FPimpl(new CImpl(name))
 {
-	MASSERT_1 (!name.empty());
+	CHECK (!name.empty());
 
 	if (!has_extension(FPimpl->FModuleName))
 	add_suffixes(FPimpl->FModuleName);

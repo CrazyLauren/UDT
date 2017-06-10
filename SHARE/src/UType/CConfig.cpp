@@ -244,7 +244,7 @@ CText getFullPath(const CText& relativeTo, const CText &relativePath)
 CConfig const& CConfig::MChild(const CText& childName) const
 {
 	data_t const& _data = FData.MRead();
-	VLOG(6) << "Find child:" << childName << "  Number of children:"
+	VLOG(6) << "Find child:" << childName << "; Number of children:"
 						<< _data.FChildren.size();
 	for (ConfigSet::const_iterator i = _data.FChildren.begin();
 			i != _data.FChildren.end(); ++i)
@@ -1051,5 +1051,82 @@ CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
 {
 	MValue(_val);
 	return _val;
+}
+bool CConfig::sMUnitTest()
+{
+	{
+		CConfig _conf("test");
+		CConfig _copy(_conf);
+
+		CHECK(_copy.MIsValid());
+		CHECK(_conf.MIsValid());
+
+		CHECK(!_conf.FData.MIsOne());
+
+		_copy.MAdd(_conf);
+		CHECK(!_conf.FData.MIsOne());
+		CHECK(_copy.FData.MIsOne());
+
+		CHECK(_copy.MIsValid());
+		CHECK(_conf.MIsValid());
+	}
+	{
+		CText const _test_str=
+				"{\"test\":{\"num\":\"10\","
+				"\"test_0\":{\"double\":\"1.7976e+308\",\"float\":\"3.4028e+38\",\"uint64\":\"0\",\"int64\":\"0\",\"buf\":{}},"
+				"\"test_1\":{\"double\":\"9.0506e+263\",\"float\":\"2.0907e+33\",\"uint64\":\"1844674407370955161\",\"int64\":\"922337203685477580\",\"buf\":\"AA==\"},"
+				"\"test_2\":{\"double\":\"4.5566e+219\",\"float\":\"1.2846e+28\",\"uint64\":\"3689348814741910322\",\"int64\":\"1844674407370955160\",\"buf\":\"AAE=\"},"
+				"\"test_3\":{\"double\":\"2.294e+175\",\"float\":\"7.8929e+22\",\"uint64\":\"5534023222112865483\",\"int64\":\"2767011611056432740\",\"buf\":\"AAEC\"},"
+				"\"test_4\":{\"double\":\"1.1549e+131\",\"float\":\"4.8495e+17\",\"uint64\":\"7378697629483820644\",\"int64\":\"3689348814741910320\",\"buf\":\"AAECAw==\"},"
+				"\"test_5\":{\"double\":\"5.8147e+86\",\"float\":\"2.9796e+12\",\"uint64\":\"9223372036854775805\",\"int64\":\"4611686018427387900\",\"buf\":\"AAECAwQ=\"},"
+				"\"test_6\":{\"double\":\"2.9274e+42\",\"float\":\"1.8307e+7\",\"uint64\":\"11068046444225730966\",\"int64\":\"5534023222112865480\",\"buf\":\"AAECAwQF\"},"
+				"\"test_7\":{\"double\":\"0\",\"float\":\"112.4871\",\"uint64\":\"12912720851596686127\",\"int64\":\"6456360425798343060\",\"buf\":\"AAECAwQFBg==\"},"
+				"\"test_8\":{\"double\":\"0\",\"float\":\"6.9114e-4\",\"uint64\":\"14757395258967641288\",\"int64\":\"7378697629483820640\",\"buf\":\"AAECAwQFBgc=\"},"
+				"\"test_9\":{\"double\":\"0\",\"float\":\"4.2465e-9\",\"uint64\":\"16602069666338596449\",\"int64\":\"8301034833169298220\",\"buf\":\"AAECAwQFBgcI\"}"
+				"}}";
+
+		CConfig _ser_data;
+		bool const _is=_ser_data.MFromJSON(_test_str);
+		CConfig _probe=_ser_data.MChild("test");
+		CHECK(_probe.MIsValid());
+		VLOG(6)<<_probe.MToJSON(true);
+
+		CConfig _test("test");
+		size_t const _number=_probe.MValue("num",0);
+		_test.MAdd("num",_number);
+
+		for(size_t i=0;i<_number;++i)
+		{
+			CConfig _conf(CText::sMPrintf(CCodeUTF8(), "test_%d",i));
+
+			const double _double=std::numeric_limits< double>::max()/ exp( std::numeric_limits< double>::max_exponent/_number*i);
+			_conf.MAdd("double",_double);
+
+			const float _float=std::numeric_limits< float>::max()/ exp( std::numeric_limits< float>::max_exponent/_number*i);
+			_conf.MAdd("float",_float);
+
+			const uint64_t _64=std::numeric_limits< uint64_t>::max()/_number*i;
+			_conf.MAdd("uint64",_64);
+
+			const int64_t _i64=std::numeric_limits< int64_t>::max()/_number*i;
+			_conf.MAdd("int64",_i64);
+
+			CBuffer _buf(i);
+			{//!< Filling message
+				NSHARE::CBuffer::iterator _it=_buf.begin(),_it_end=_buf.end();
+				for(unsigned j=0;_it!=_it_end;++j,++_it)
+				{
+					*_it=j%255;
+				}
+			}
+
+			_conf.MAdd("buf",_buf);
+
+			_test.MAdd(_conf);
+		}
+		NSHARE::CText const _result(_test.MToJSON(false));
+		CHECK_EQ(_test_str,_result);
+	}
+	return true;
 }
 } /* namespace NSHARE */

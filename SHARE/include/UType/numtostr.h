@@ -171,10 +171,22 @@ inline bool float_to_str(T f, TStr &aTo, int const aPrecision = 4)
 		{
 			aTo.push_back('+');
 		}
-
-		aTo.push_back('0' + exp / 10);
-		exp -= (exp / 10) * 10;
-		aTo.push_back('0' + exp);
+		char _buf[8]="";//max 2^64
+		int i=0;
+		do
+		{
+			int const _digit = (char) (exp % 10);
+			_buf[i++]='0' + _digit;
+			exp /= 10;
+		} while (exp);
+		for(;--i>=0;)
+		{
+			aTo.push_back(_buf[i]);
+		}
+//		int const _digit=exp/10;//fixme
+//		aTo.push_back('0' + _digit);
+//		exp -= _digit * 10;
+//		aTo.push_back('0' + exp);
 
 	}
 	return true;

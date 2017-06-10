@@ -185,7 +185,7 @@
 #include <UType/CSafeQueue.h>
 #include <UType/CWaitingQueue.h>
 
-#include <dymamic_modules.h>
+#include <UType/dymamic_modules.h>
 #include <UType/IFactory.h>
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
@@ -193,4 +193,5 @@
 
 #include <UType/CAddress.h>
 
+#include <UType/CCOWPtrTest.h>
 #endif /*DEFTYPE_*/

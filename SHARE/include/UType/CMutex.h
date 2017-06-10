@@ -33,7 +33,7 @@ public:
 	bool MUnlock(void);
 	eMutexType MGetMutexType() const
 	{
-		return FFlags.MGetMask();
+		return FFlags;
 	}
 
 
@@ -58,7 +58,7 @@ private:
 	 */
 	void* MGetPtr() const;
 
-	CFlags<eMutexType,eMutexType> FFlags;
+	eMutexType FFlags;
 	CImpl *FImpl;
 
 	friend class CCondvar;
@@ -124,7 +124,7 @@ struct SHARE_EXPORT CMutexEmpty: CDenyCopying
 	bool MUnlock(void);
 	eMutexType MGetMutexType() const
 	{
-		return FFlags.MGetMask();
+		return FFlags;
 	}
 
 	/** \brief mutex unit test
@@ -145,7 +145,7 @@ private:
 		return NULL;
 	}
 
-	CFlags<eMutexType,eMutexType> FFlags;
+	eMutexType FFlags;
 	atomic_t FThreadID;
 };
 

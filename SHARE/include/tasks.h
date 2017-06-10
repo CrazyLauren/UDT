@@ -14,10 +14,10 @@
 #define TASKS_H_
 namespace NSHARE
 {
-SHARE_EXPORT NSHARE::CText process_name(int pid);
-SHARE_EXPORT bool is_process_exist(int pid);
-SHARE_EXPORT void pid_list(std::list<unsigned long long>* aOut);
-SHARE_EXPORT void process_name_list(std::list<NSHARE::CText> *aOut);
+extern SHARE_EXPORT NSHARE::CText process_name(int pid);
+extern SHARE_EXPORT bool is_process_exist(int pid);
+extern SHARE_EXPORT void pid_list(std::list<unsigned long long>* aOut);
+extern SHARE_EXPORT void process_name_list(std::list<NSHARE::CText> *aOut);
 }
 
 #endif /* TASKS_H_ */

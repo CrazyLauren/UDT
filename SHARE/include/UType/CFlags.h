@@ -15,16 +15,28 @@
 #include <bitset>
 namespace NSHARE
 {
-template<typename TFlags = unsigned, typename TVal = unsigned>
+class CNoMutex;
+
+/** \brief класс для манипуляции с побитовыми флагами
+ *
+ *	\tparam TFlags - enum в котором определены флаги
+ *	\tparam TVal - тип для хранения флагов
+ */
+template<typename TFlags = unsigned, typename TVal = unsigned,class TMutexType = CNoMutex>
 class  CFlags
 {
 public:
 	typedef TFlags flags_t;
 	typedef TVal value_type;
+	typedef TMutexType mutex_t;
+
 	explicit CFlags(TVal const& aVal = TFlags()) :
 			FFlags(aVal)
 	{
 	}
+	CFlags(CFlags const& aVal);
+	CFlags& operator=(CFlags const& aRht);
+
 	bool operator==(TFlags const& aFlag) const;
 	bool operator==(CFlags const& aFlag) const;
 	bool operator!=(CFlags const& aFlag) const;
@@ -33,58 +45,101 @@ public:
 	bool MGetFlag(TFlags const& aFlag) const;
 	void MSetFlag(TVal aFlag, bool val);
 	void MReset();
-	TVal const& MGetMask() const;
+	TVal  MGetMask() const;
+
+	static bool sMUnitTest();
 private:
 	TVal FFlags;
+	mutable mutex_t	 FMutex;
 };
-template<typename TFlags, typename TVal>
-inline void CFlags<TFlags, TVal>::MReset()
+template<typename TFlags, typename TVal, class TMutexType>
+CFlags<TFlags, TVal, TMutexType>::CFlags(CFlags const& aRht)
 {
+	;// \note don't copy mutex!
+	CRAII<mutex_t> _blocked(aRht.FMutex);
+	FFlags=aRht.FFlags;
+}
+
+template<typename TFlags, typename TVal, class TMutexType>
+CFlags<TFlags, TVal, TMutexType>& CFlags<TFlags, TVal, TMutexType>::operator=(
+		CFlags const& aRht)
+{
+	if (&aRht != this)
+	{
+		CRAII<mutex_t> _blocked(FMutex);
+		CRAII<mutex_t> _blocked2(aRht.FMutex);
+		FFlags = aRht.FFlags;
+	}
+	return *this;
+}
+
+template<typename TFlags, typename TVal,class TMutexType>
+inline void CFlags<TFlags, TVal,TMutexType>::MReset()
+{
+	CRAII<mutex_t> _blocked(FMutex);
 	FFlags = TFlags();
 }
-template<typename TFlags, typename TVal>
-inline bool CFlags<TFlags, TVal>::MGetFlag(TFlags const& aFlag) const
+template<typename TFlags, typename TVal,class TMutexType>
+inline bool CFlags<TFlags, TVal,TMutexType>::MGetFlag(TFlags const& aFlag) const
 {
-	return (MGetMask() & aFlag)!=0;
+	CRAII<mutex_t> _blocked(FMutex);
+	return (FFlags & aFlag)!=0;
 }
-template<typename TFlags, typename TVal>
-inline bool CFlags<TFlags, TVal>::operator==(TFlags const& aFlag) const
+template<typename TFlags, typename TVal,class TMutexType>
+inline bool CFlags<TFlags, TVal,TMutexType>::operator==(TFlags const& aFlag) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	return MGetFlag(aFlag);
 }
-template<typename TFlags, typename TVal>
-inline bool CFlags<TFlags, TVal>::operator==(CFlags const& aFlag) const
+template<typename TFlags, typename TVal,class TMutexType>
+inline bool CFlags<TFlags, TVal,TMutexType>::operator==(CFlags const& aFlag) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
+	CRAII<mutex_t> _blocked2(aFlag.FMutex);
 	return FFlags==aFlag.FFlags;
 }
-template<typename TFlags, typename TVal>
-inline bool CFlags<TFlags, TVal>::operator!=(CFlags const& aFlag) const
+template<typename TFlags, typename TVal,class TMutexType>
+inline bool CFlags<TFlags, TVal,TMutexType>::operator!=(CFlags const& aFlag) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
+	CRAII<mutex_t> _blocked2(aFlag.FMutex);
+
 	return !(*this==aFlag);
 }
-template<typename TFlags, typename TVal>
-inline void CFlags<TFlags, TVal>::MSetFlag(TVal aFlag, bool val)
+template<typename TFlags, typename TVal,class TMutexType>
+inline void CFlags<TFlags, TVal,TMutexType>::MSetFlag(TVal aFlag, bool val)
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	FFlags = (val) ? (FFlags | aFlag) : (FFlags & (~aFlag));
 }
-template<typename TFlags, typename TVal>
-inline CFlags<TFlags, TVal>& CFlags<TFlags, TVal>::operator+=(
+template<typename TFlags, typename TVal,class TMutexType>
+inline CFlags<TFlags, TVal,TMutexType>& CFlags<TFlags, TVal,TMutexType>::operator+=(
 		TFlags const& aFlag)
 {
 	MSetFlag(aFlag, true);
 	return *this;
 }
-template<typename TFlags, typename TVal>
-inline CFlags<TFlags, TVal>& CFlags<TFlags, TVal>::operator-=(
+template<typename TFlags, typename TVal,class TMutexType>
+inline CFlags<TFlags, TVal,TMutexType>& CFlags<TFlags, TVal,TMutexType>::operator-=(
 		TFlags const& aFlag)
 {
 	MSetFlag(aFlag, false);
 	return *this;
 }
-template<typename TFlags, typename TVal>
-inline TVal const& CFlags<TFlags, TVal>::MGetMask() const
+template<typename TFlags, typename TVal,class TMutexType>
+inline TVal CFlags<TFlags, TVal,TMutexType>::MGetMask() const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	return FFlags;
+}
+namespace detail
+{
+extern SHARE_EXPORT bool test_cflags();
+}
+template<typename TFlags, typename TVal,class TMutexType>
+inline bool CFlags<TFlags, TVal,TMutexType>::sMUnitTest()
+{
+	return detail::test_cflags();
 }
 } //namespace USHARE
 namespace std

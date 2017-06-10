@@ -122,6 +122,9 @@ IF (NOT SHARE_DEX_SOCKET)
 	#todo
 ENDIF ()
 
+
+
+
 # Windows specific config
 IF (WIN32)
    if (MSVC)
@@ -136,6 +139,18 @@ IF (WIN32)
     endif(MSVC)
 ENDIF()
 
+FIND_PACKAGE(Doxygen)
+if(DOXYGEN_FOUND)	
+	
+	IF   (EXISTS "${CMAKE_SOURCE_DIR}/doc/doxygen.conf.in")		
+		CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen.conf)
+		SET(DOXY_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen.conf")
+	ENDIF()
+	
+	ADD_CUSTOM_TARGET(doc COMMAND ${DOXYGEN_EXECUTABLE}  ${DOXY_CONFIG} COMMENT "Generating documentation" VERBATIM)
+else()
+	MESSAGE(STATUS "WARNING: cannot create documentation as doxygen is not found.")	
+endif()
 
 ################################################################################
 # descend into subdirs
@@ -143,3 +158,6 @@ ENDIF()
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(examples)
+
+
+

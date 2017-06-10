@@ -36,6 +36,8 @@ public:
 	void MPost();
 	int MValue() const;
 	bool MIsInited() const;
+
+	static bool sMUnitTest();
 private:
 	struct CImpl;
 	CImpl* FImpl;

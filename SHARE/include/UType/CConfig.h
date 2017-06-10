@@ -331,6 +331,7 @@ public:
 	{
 		return !MIsEmpty();
 	}
+	static bool sMUnitTest();
 private:
 	struct SHARE_EXPORT data_t
 	{

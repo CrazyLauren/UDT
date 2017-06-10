@@ -33,9 +33,18 @@ static void _volatile_test()
 	if (local == 10)
 	{
 
-		std::cout << "Warning - need using volatiles variable" << std::endl;
+		std::cout << "Warning - code optimization was turn on" << std::endl;
 	}
 
+}
+namespace
+{
+SHARED_PACKED(
+struct _non_alligned
+{
+	uint8_t _aligen[11];
+});
+COMPILE_ASSERT(sizeof(_non_alligned)==11,IvalidSizeofnon_alligned);
 }
 UNIT_TEST_FUNC_ATTR bool unit_testing()
 {
@@ -66,6 +75,47 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 	if (!NSHARE::CRegistration::sMUnitTest())
 	{
 		std::cerr << "CAddress::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+	if (!NSHARE::CCOWPtr<int>::sMUnitTest())
+	{
+		std::cerr << "CCOWPtr<int>::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+	if (!NSHARE::CCOWPtr<uint64_t>::sMUnitTest())
+	{
+		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
+		return false;
+	}
+	if (!NSHARE::CCOWPtr<uint16_t>::sMUnitTest())
+	{
+		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
+		return false;
+	}
+	if (!NSHARE::CCOWPtr<_non_alligned>::sMUnitTest())
+	{
+		std::cerr << "CCOWPtr<_non_alligned>::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
+		return false;
+	}
+	if (!NSHARE::CFlags<>::sMUnitTest())
+	{
+		std::cerr << "NSHARE::CFlags<>::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
+		return false;
+	}
+	if (!NSHARE::CSemaphore::sMUnitTest())
+	{
+		std::cerr << "NSHARE::CSemaphore::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
+		return false;
+	}
+	if (!NSHARE::CConfig::sMUnitTest())
+	{
+		std::cerr << "NSHARE::CConfig::sMUnitTest() - " << "***Failed***"
+				<< std::endl;
 		return false;
 	}
 	return true;
@@ -243,5 +293,64 @@ bool CCondvar::sMUnitTest()
 	t1.MJoin();
 	t2.MJoin();
 	return condvar_test_impl::ok;
+}
+/****************************************************
+ *		      		CFlags	 test		     		*
+ ****************************************************/
+
+namespace detail
+{
+enum eTestCFlags
+{
+	E_NO=0x0,
+	E_TEST_1=0x1<<0,
+	E_TEST_2=0x1<<1,
+	E_TEST_16=0x1<<15,
+
+};
+template<class T>
+inline bool test_cflags_impl()
+{
+	CFlags<eTestCFlags,uint16_t> _flags;
+	CHECK_EQ(_flags.MGetMask(),E_NO);
+
+	_flags.MSetFlag(E_TEST_1|E_TEST_2, true);
+	CHECK_EQ(_flags.MGetMask(),0x3);
+
+	_flags.MSetFlag(E_TEST_2, false);
+	CHECK_EQ(_flags.MGetMask(),0x1);
+
+	_flags.MReset();
+	CHECK_EQ(_flags.MGetMask(),E_NO);
+
+	_flags.MSetFlag(E_TEST_16, true);
+	CHECK_EQ(_flags.MGetMask(),0x8000);
+
+	_flags+=E_TEST_1;
+	CHECK_EQ(_flags.MGetMask(),0x8001);
+	CHECK(_flags.MGetFlag(E_TEST_1));
+
+	_flags-=E_TEST_2;
+	CHECK_EQ(_flags.MGetMask(),0x8001);
+
+	_flags-=E_TEST_1;
+	CHECK_EQ(_flags.MGetMask(),0x8000);
+	return _flags.MGetFlag(E_TEST_16);
+}
+extern bool test_cflags()
+{
+	return test_cflags_impl<uint16_t>() && test_cflags_impl<int16_t>() && test_cflags_impl<uint32_t>() && test_cflags_impl<int32_t>() && test_cflags_impl<uint64_t>() && test_cflags_impl<int64_t>();
+}
+}
+
+/****************************************************
+ *		      		Semaphore test		     		*
+ ****************************************************/
+namespace sem_test_impl
+{
+}
+bool CSemaphore::sMUnitTest()
+{
+	return true;//todo
 }
 }
