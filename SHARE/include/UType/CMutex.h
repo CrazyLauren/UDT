@@ -164,8 +164,9 @@ public:
  * в отличии от CMutexEmpty, этот класс можно копировать
  *
  */
-struct  CNoMutex
+class  CNoMutex
 {
+public:
 	typedef CMutex::eMutexType eMutexType;
 	explicit CNoMutex(CMutex::eMutexType aType = CMutex::MUTEX_RECURSIVE)
 	{

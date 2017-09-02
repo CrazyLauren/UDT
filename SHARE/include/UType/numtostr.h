@@ -95,7 +95,7 @@ inline bool num_to_str(T const& aVal, TStr &aTo, unsigned const aBase = 10)
 	return true;
 }
 template<typename T, class TStr>
-inline bool float_to_str(T f, TStr &aTo, int const aPrecision = 4)
+inline bool float_to_str(T f, TStr &aTo, int const aPrecision = (std::numeric_limits<T>::max_digits10+1))
 {
 	assert(!std::numeric_limits<T>::is_integer);
 	int i;

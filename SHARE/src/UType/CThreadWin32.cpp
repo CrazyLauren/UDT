@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <winbase.h>
 
+#if __cplusplus >=201103L
+#	include <thread>
+#endif
 struct _thread_canceled_t{};
 namespace NSHARE
 {
@@ -122,6 +125,7 @@ unsigned CThread::CImpl::sMThreadFunc(void* aData)
 	try
 	{
 		_pThis->FThis.MRun();
+		//todo
 	} catch (_thread_canceled_t const&)
 	{
 		_pThis->FThis.MCancelCleanUp();
@@ -134,7 +138,22 @@ unsigned CThread::CImpl::sMThreadFunc(void* aData)
 	{
 		LOG(DFATAL)<<"Unknown unhandled exception.";
 	}
-	_pThis->FThis.MSetRunnig(false);
+
+	if (_pThis->FPThread != INVALID_HANDLE_VALUE)
+	{
+		HANDLE _tmp=_pThis->FPThread;
+		_pThis->FPThread=INVALID_HANDLE_VALUE;
+		CloseHandle(_tmp);
+	}
+
+	{
+		CRAII<CMutex> _lock(_pThis->FMutex);
+		_pThis->FThis.MSetRunnig(false);
+		_pThis->FCond.MBroadcast();
+	}
+
+
+	VLOG(2)<<"Thread closed...";
 	_endthreadex(0);
 	return 0;
 }
@@ -245,6 +264,7 @@ bool CThread::MCancel()
 	{
 		LOG(ERROR)<<"Unknown error";
 		FImpl->FPThread = _tmp;
+		FIsRunning=false;
 	}
 
 	return _rval;
@@ -267,19 +287,6 @@ void CThread::MRun(void)
 	LOG_IF(DFATAL,!MIsRunning())<<"The thread is not running.";
 	if(MIsRunning())
 		MCall(NULL);
-	if (FImpl->FPThread != INVALID_HANDLE_VALUE)
-	{
-		HANDLE _tmp=FImpl->FPThread;
-		FImpl->FPThread=INVALID_HANDLE_VALUE;
-		CloseHandle(_tmp);
-	}
-	{
-		CRAII<CMutex> _lock(FImpl->FMutex);
-		FIsRunning = false;
-		FImpl->FCond.MBroadcast();
-	}
-	VLOG(2)<<"Thread closed...";
-	_endthreadex(0);
 }
 
 bool CThread::MSignal(int signal)
@@ -336,7 +343,7 @@ unsigned CThread::sMNumberOfProcessor()
 }
 bool CThread::sMYield()
 {
-#if __cplusplus >=201103L
+#if __cplusplus >=201103L && !defined(__MINGW32__)
 	std::this_thread::yield();
 #else
 	if (!SwitchToThread())

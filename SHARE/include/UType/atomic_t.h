@@ -14,7 +14,7 @@
 #define ATOMIC_T_H_
 
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L && 0//todo for c++11, copy operation of atomic_t
 #	include <atomic>
 #elif defined(NOATOMIC)
 // do not do anything
@@ -27,7 +27,7 @@ namespace NSHARE
 {
 	namespace impl//definition in impl as atomic_t defined in macro SHARED_PACKED
 	{
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L && 0//todo for c++11, copy operation of atomic_t
 		typedef std::atomic<uint32_t> atomic_value_type;
 #else
 		typedef uint32_t atomic_value_type;

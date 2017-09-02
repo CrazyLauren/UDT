@@ -14,10 +14,12 @@
 
 namespace NSHARE
 {
+
 #ifdef MINGW_WITHOUT_DLFCN
 #undef __MINGW32__
 #undef __MINGW64__
 #endif
+
 #if (defined(__WIN32__) || defined(_WIN32)) && !defined(__MINGW32__)
 #   if defined(_MSC_VER)
 #       pragma warning(disable : 4552)  // warning: operator has no effect; expected operator with side-effect

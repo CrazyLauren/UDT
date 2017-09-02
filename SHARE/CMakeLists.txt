@@ -23,6 +23,8 @@ else()
 endif()
 
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
+
+INCLUDE(CheckIncludeFiles)
 INCLUDE(FindPackageHandleStandardArgs)
 INCLUDE(SHAREMacros)
 
@@ -128,6 +130,7 @@ ENDIF ()
 # Windows specific config
 IF (WIN32)
    if (MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4200") #disabling of 4200 warning
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX )
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
         OPTION(BUILD_BY_MP "Set to ON to build SHARE with the /MP option (Visual Studio 2005 and above)." OFF)

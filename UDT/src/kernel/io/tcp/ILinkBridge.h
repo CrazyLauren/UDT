@@ -15,7 +15,7 @@
 namespace NUDT
 {
 
-class ILinkBridge:public NSHARE::CIntrusived
+class ILinkBridge:public NSHARE::IIntrusived
 {
 public:
 	typedef NSHARE::ISocket::data_t data_t;

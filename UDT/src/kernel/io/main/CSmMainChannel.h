@@ -56,7 +56,7 @@ public:
 	NSHARE::IAllocater* MAllocater() const;
 private:
 	typedef CInParser<CSmMainChannel, ILink*> parser_t;
-	struct sm_io_t:NSHARE::CIntrusived
+	struct sm_io_t:NSHARE::IIntrusived
 	{
 		sm_io_t():FFrom(0),FTo(1)
 		{

@@ -118,6 +118,14 @@ public:
 	unsigned MThreadNum() const;
 	unsigned MGetMaxNumberOfIOThread() const;
 
+	/** \brief ожидает окончания выполнения операций
+	 *
+	 * \param aTime - время (если <=0.0 то ожидать заверешения до победного конца)
+	 * \return false - timeout
+	 */
+	bool MWaitForTask(double aTime=-1.0) const;
+	bool MWaitForIO(double aTime=-1.0) const;
+
 	void MEraseAll();
 	std::ostream& MPrint(std::ostream& aVal) const;
 	NSHARE::CConfig MSerialize() const;

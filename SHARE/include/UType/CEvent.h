@@ -32,13 +32,13 @@ class  IEventEmpty;
  *
  * \tparam TSender_type - тип объекта инициализирующего событие (тип первого аргумета CB)
  * \tparam TEvent_t - тип указателя на CB - сигнатура CB ()
- * \tparam TEventArg_type - тип объкта параметров события
+ * \tparam TEventArg_type - тип аргумента события
  * \tparam TIEvent - тип интерфейса класса CEvent. Если нужно добавить возможность пергрузки методов класса то в качестве этого параметра укажите IEvent
  * \tparam TMutexType - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
  * \todo заменить  multiset на vector
  */
 template<class TSender_type = void*, class TEvent_t = CB_t,
-		class TEventArg_type = void*,template<class > class TIEvent = IEventEmpty,
+		class TEventArg_type =CB_t::arg_t,template<class > class TIEvent = IEventEmpty,
 		class TMutexType = CNoMutex>
 class CEvent: public TIEvent<TEvent_t>
 {

@@ -1,5 +1,5 @@
 /*
- * CIntrusived.cpp
+ * IIntrusived.cpp
  *
  * Copyright © 2016  https://github.com/CrazyLauren
  *
@@ -10,13 +10,13 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <deftype>
-#include <UType/CIntrusived.h>
+#include <UType/IIntrusived.h>
 
 namespace NSHARE
 {
-struct CIntrusived::_w_counter_t
+struct IIntrusived::_w_counter_t
 {
-	_w_counter_t(CIntrusived* aPtr) :
+	_w_counter_t(IIntrusived* aPtr) :
 			FCount(0), FWPtr(aPtr)
 	{
 
@@ -48,7 +48,7 @@ struct CIntrusived::_w_counter_t
 			return FCount;
 	}
 	 mutable atomic_t FCount;
-	CIntrusived* FWPtr;
+	IIntrusived* FWPtr;
 protected:
 	~_w_counter_t()
 	{
@@ -60,20 +60,20 @@ protected:
 	}
 };
 
-CIntrusived::w_counter_t::w_counter_t(CIntrusived* aP) :
+IIntrusived::w_counter_t::w_counter_t(IIntrusived* aP) :
 		FWCounter(new _w_counter_t(aP))
 {
 	CHECK_NOTNULL(FWCounter);
 	FWCounter->MRef();
 }
-CIntrusived::w_counter_t::w_counter_t(w_counter_t const & aRht) :
+IIntrusived::w_counter_t::w_counter_t(w_counter_t const & aRht) :
 		FWCounter(aRht.FWCounter)
 {
 	CHECK_NOTNULL(FWCounter);
 	if (FWCounter->MRef() == 0)
 		FWCounter = NULL;
 }
-CIntrusived::w_counter_t& CIntrusived::w_counter_t::operator =(
+IIntrusived::w_counter_t& IIntrusived::w_counter_t::operator =(
 		const w_counter_t& aRht)
 {
 	if (this != &aRht)
@@ -87,40 +87,40 @@ CIntrusived::w_counter_t& CIntrusived::w_counter_t::operator =(
 	}
 	return *this;
 }
-CIntrusived* CIntrusived::w_counter_t::MGet() const
+IIntrusived* IIntrusived::w_counter_t::MGet() const
 {
-	CIntrusived* _ptr = FWCounter ? FWCounter->FWPtr : NULL;
+	IIntrusived* _ptr = FWCounter ? FWCounter->FWPtr : NULL;
 	return _ptr;
 }
-CIntrusived::w_counter_t::~w_counter_t()
+IIntrusived::w_counter_t::~w_counter_t()
 {
 	if (FWCounter && FWCounter->MUnref() == 0)
 		FWCounter = NULL;
 }
 
-CIntrusived::CIntrusived() :
+IIntrusived::IIntrusived() :
 		FCount(0), FReferedCount(0), FIsFirst(P_NOT_INITED), FWn(this)
 {
 	VLOG(2) << "Construct object " << this;
 }
-CIntrusived::CIntrusived(const CIntrusived& aRht) :
+IIntrusived::IIntrusived(const IIntrusived& aRht) :
 		FCount(0), FReferedCount(0), FIsFirst(P_NOT_INITED), FWn(this)
 {
 	VLOG(2) << "Constract object " << this;
 	DCHECK(aRht.MCountRef() > 0);
 }
-CIntrusived::~CIntrusived()
+IIntrusived::~IIntrusived()
 {
 	LOG_IF(DFATAL, MCountRef() != 0) << "Ref not null";
 	VLOG(2) << "Destruct object " << this;
 }
-CIntrusived& CIntrusived::operator =(const CIntrusived& aVal)
+IIntrusived& IIntrusived::operator =(const IIntrusived& aVal)
 {
 	LOG(DFATAL)<< "operator = (" << this << ", " << (&aVal);
 	return *this;
 }
 
-int CIntrusived::MRefImpl() const
+int IIntrusived::MRefImpl() const
 {
 	if (FIsFirst == P_NOT_INITED)
 	{
@@ -143,7 +143,7 @@ int CIntrusived::MRefImpl() const
 	}
 }
 
-int CIntrusived::MUnrefImpl() const
+int IIntrusived::MUnrefImpl() const
 {
 	if (FIsFirst != P_INITED)
 		return -1;
@@ -156,21 +156,21 @@ int CIntrusived::MUnrefImpl() const
 	}
 	return FCount;
 }
-int CIntrusived::MUnrefWithoutDelete() const
+int IIntrusived::MUnrefWithoutDelete() const
 {
 	VLOG(3) << "MUnrefWithoutDelete() " << this;
 	--FCount;
 	return FCount;
 }
-int CIntrusived::MCountRef() const
+int IIntrusived::MCountRef() const
 {
 	return FCount;
 }
-unsigned CIntrusived::MReferedCount() const
+unsigned IIntrusived::MReferedCount() const
 {
 	return FReferedCount;
 }
-void CIntrusived::MDelete() const
+void IIntrusived::MDelete() const
 {
 	VLOG(2) << "Delete object " << this;
 	FWn.FWCounter->FWPtr = NULL;

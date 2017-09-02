@@ -16,7 +16,7 @@
 namespace NUDT
 {
 
-class CTcpServerMainChannel::CMainClient: public NSHARE::CIntrusived
+class CTcpServerMainChannel::CMainClient: public NSHARE::IIntrusived
 {
 public:
 	typedef CInParser<CMainClient, CMainClient*> parser_t;

@@ -20,6 +20,10 @@
 #include <tclap/Arg.h>
 #include <tclap/Constraint.h>
 
+namespace TCLAP
+{
+	class SHARE_EXPORT Arg;
+}
 namespace NSHARE
 {
 

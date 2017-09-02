@@ -14,11 +14,11 @@
 #include <Socket/CTcpImplBase.h>
 namespace NSHARE
 {
-struct CTCPServer::loop_back_t: CIntrusived
+struct CTCPServer::loop_back_t: IIntrusived
 {
 	CLoopBack FLoop;
 };
-struct CTCPServer::CImpl:public CTcpImplBase, CIntrusived
+struct CTCPServer::CImpl:public CTcpImplBase, IIntrusived
 {
 	struct cl_t:client_t
 	{

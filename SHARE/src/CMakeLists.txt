@@ -5,7 +5,7 @@ OPTION(LOGGING_IS_DISABLED_IN_${TARGET_NAME} "Disable logging in share library" 
 
 SET(PATH_TO_REVISION_IN ${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in CACHE INTERNAL  "" FORCE)
 
-configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 2)
+configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 3)
 
 OPTION(SHARE_NO_STATRUP_TEST "Disable  start up tests " ON)
 
@@ -44,6 +44,13 @@ IF (NOT SHARE_DEX_SOCKET)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 ENDIF ()
 	
+IF(MINGW)	
+	check_include_files(dlfcn.h  MINGW_DLFCN)
+	
+	IF(NOT MINGW_DLFCN)
+		set_source_files_properties(dymamic_modules.cpp PROPERTIES COMPILE_DEFINITIONS MINGW_WITHOUT_DLFCN)
+	ENDIF()
+ENDIF()
 	
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include 
 					${Boost_INCLUDE_DIRS} 
@@ -53,8 +60,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include
 share_add_library(${TARGET_NAME} FALSE TARGET_SRC SHARE_HEADERS TRUE)
 
 IF (WIN32)
-
 	set (PLATFORM_LIBS ${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid  CACHE STRING     "PLATFORM_LIBS" FORCE)
+	
+
+	
 ELSEIF (UNIX)
 	IF(QNX)
 		SET(PLATFORM_LIBS socket m ${PLATFORM_LIBS} CACHE STRING     "PLATFORM_LIBS" FORCE)

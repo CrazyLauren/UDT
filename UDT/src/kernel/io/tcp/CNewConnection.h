@@ -15,7 +15,7 @@
 
 namespace NUDT
 {
-class CKernelIOByTCP::CConnectionHandler:NSHARE::CDenyCopying,public NSHARE::CIntrusived
+class CKernelIOByTCP::CConnectionHandler:NSHARE::CDenyCopying,public NSHARE::IIntrusived
 {
 public:
 	typedef CInParser<CKernelIOByTCP::CConnectionHandler> parser_t;

@@ -37,7 +37,7 @@ public:
 		VLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << ptr << " :"
 				<< this;
-		if (MPtr() && (CIntrusived::sMRef(MPtr()) == 0))
+		if (MPtr() && (IIntrusived::sMRef(MPtr()) == 0))
 		{
 			MSet(NULL);
 			LOG(WARNING) << "Pointer is empty after Ref.";
@@ -49,7 +49,7 @@ public:
 		LOG_IF(WARNING,!ptr) << "Empty pointer in Constructor.";
 		MSet(ptr);
 
-		if (MPtr() && CIntrusived::sMRef(MPtr()) == 0)
+		if (MPtr() && IIntrusived::sMRef(MPtr()) == 0)
 		{
 			MSet(NULL);
 			LOG(WARNING) << "Pointer is empty after Ref.";
@@ -64,7 +64,7 @@ public:
 				<< NSHARE::get_type_info<T>().MName() << ":" << aRht.MPtr()
 				<< " out of intrusive_ptr. :" << this;
 		if (MPtr()) //MRef cann't return 0;
-			CIntrusived::sMRef(MPtr());
+			IIntrusived::sMRef(MPtr());
 		else
 			VLOG(1) << "Empty pointer in Constructor.";
 	}
@@ -86,7 +86,7 @@ public:
 				<< NSHARE::get_type_info<U>().MName();
 
 		if (MPtr())
-			CIntrusived::sMRef (MPtr()); //MRef cann't return 0;
+			IIntrusived::sMRef (MPtr()); //MRef cann't return 0;
 		else
 			VLOG(1) << "Empty pointer in Constructor.";
 	}
@@ -227,9 +227,9 @@ private:
 		//\note Был Баг когда FPtr удалялся(ref==0) раньше aP
 		T* _kostil = FPtrBase;
 		FPtrBase = _ptr;
-		if (FPtrBase && CIntrusived::sMRef(MPtr()) == 0)
+		if (FPtrBase && IIntrusived::sMRef(MPtr()) == 0)
 			MSet( NULL);
-		if (_kostil && CIntrusived::sMUnref(_kostil) == 0)
+		if (_kostil && IIntrusived::sMUnref(_kostil) == 0)
 			_kostil = NULL;
 	}
 
@@ -251,7 +251,7 @@ private:
 	}
 	void MUnref()
 	{
-		if (MPtr() && CIntrusived::sMUnref(MPtr()) == 0)
+		if (MPtr() && IIntrusived::sMUnref(MPtr()) == 0)
 			MSet(NULL);
 	}
 	mutable T* FPtrBase;
@@ -262,7 +262,7 @@ private:
 template<class T>
 class w_ptr
 {
-	mutable NSHARE::CIntrusived::w_counter_t FWn;
+	mutable NSHARE::IIntrusived::w_counter_t FWn;
 public:
 	typedef T element_type;
 	w_ptr() :
@@ -306,7 +306,7 @@ public:
 
 		return intrusive_ptr<T>();
 	}
-	inline CIntrusived* MGetDynamic() const
+	inline IIntrusived* MGetDynamic() const
 	{
 		return FWn.MGet();
 	}

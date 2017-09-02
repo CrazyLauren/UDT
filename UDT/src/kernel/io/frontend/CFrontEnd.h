@@ -15,7 +15,7 @@
 namespace NUDT
 {
 
-class CExternalChannel::CFrontEnd: public NSHARE::CIntrusived
+class CExternalChannel::CFrontEnd: public NSHARE::IIntrusived
 {
 public:
 	static const NSHARE::CText NAME;

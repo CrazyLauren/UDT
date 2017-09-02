@@ -1,3 +1,15 @@
+UDT SHARE 0.3
+-------------------
+  - Disbale warning 4200 for msvc
+  - Refactoring deftype.h
+  - Now type of epsilon has not to be equal of value type in floating compare function
+  - Fixed bug: Export uint_test function, TCLAP class for msvc
+  - Rename CIntrusived to IIntrusived
+  - Fixed bug:lost "public" access labels in CNoMutex
+  - New methods in CThreadPool
+  - Fixed bug: disbale c++11 atomic operation
+  - Added support MINGW64
+
 UDT SHARE 0.2
 -------------------
 

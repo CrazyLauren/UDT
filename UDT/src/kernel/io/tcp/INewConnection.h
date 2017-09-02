@@ -17,7 +17,7 @@ namespace NUDT
 class ILink;
 class ILinkBridge;
 
-class IConnectionHandler:public NSHARE::CIntrusived
+class IConnectionHandler:public NSHARE::IIntrusived
 {
 public:
 	typedef NSHARE::CBuffer data_t;

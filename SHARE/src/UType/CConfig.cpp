@@ -1102,7 +1102,7 @@ bool CConfig::sMUnitTest()
 			const double _double=std::numeric_limits< double>::max()/ exp( std::numeric_limits< double>::max_exponent/_number*i);
 			_conf.MAdd("double",_double);
 
-			const float _float=std::numeric_limits< float>::max()/ exp( std::numeric_limits< float>::max_exponent/_number*i);
+			const float _float=std::numeric_limits< float>::max()/ (float)exp( std::numeric_limits< float>::max_exponent/_number*i);
 			_conf.MAdd("float",_float);
 
 			const uint64_t _64=std::numeric_limits< uint64_t>::max()/_number*i;

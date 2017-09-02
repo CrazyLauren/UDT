@@ -65,6 +65,7 @@ void CSelectSocket::MRemoveSocket(CSocket const& aSocket)
 	_its_t _its;
 
 	
+//fixme socket has to be only one
 
 	for (std::vector<CSocket>::iterator _it = FFds.begin(); _it != FFds.end();
 			++_it)

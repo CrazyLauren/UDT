@@ -20,7 +20,7 @@ const CText CThreadPool::NUMBER_OF_THREAD="thnum";
 const CText CThreadPool::MAX_NUMBER_OF_IO_THREAD="th_io_max";
 
 COperationQueue::COperationQueue() :
-		FMutex(CMutex::MUTEX_NORMAL)
+		FMutex(CMutex::MUTEX_NORMAL),FNumberOfInvoked(0)
 {
 	FCurrentOperationIterator = FOperations.begin();
 }
@@ -43,6 +43,25 @@ unsigned int COperationQueue::MSize()
 	return static_cast<unsigned int>(FOperations.size());
 }
 
+bool COperationQueue::MWaitFor(double aTime) const
+{
+	CRAII<CMutex> lock(FMutex);
+	if(FNumberOfInvoked == 0 && FOperations.empty())
+		return true;
+
+	if(aTime<=0.0)
+		return FWaitForCond.MTimedwait(&FMutex);
+	else
+		return FWaitForCond.MTimedwait(&FMutex,aTime);
+}
+void COperationQueue::MFinishOperation()
+{
+	CRAII<CMutex> lock(FMutex);
+	--FNumberOfInvoked;
+
+	if (FNumberOfInvoked == 0 && FOperations.empty())
+		FWaitForCond.MBroadcast();
+}
 operation_t COperationQueue::MNextOperation(bool aIfBlocking)
 {
 	CRAII<CMutex> lock(FMutex);
@@ -61,7 +80,7 @@ operation_t COperationQueue::MNextOperation(bool aIfBlocking)
 		FCurrentOperationIterator = FOperations.begin();
 
 	operation_t currentOperation(*FCurrentOperationIterator);
-
+	++FNumberOfInvoked;
 //	if (!currentOperation.MIsKeep())
 //	{
 //		VLOG(2) << "Removing  operation " << currentOperation;
@@ -143,6 +162,7 @@ void COperationQueue::MEraseAll()
 void COperationQueue::MForceUnlock()
 {
 	FCond.MBroadcast();
+	FWaitForCond.MBroadcast();
 }
 
 void COperationQueue::MAddThread(CPoolThread* thread)
@@ -271,7 +291,11 @@ void CPoolThread::MRun()
 			FInOperation = true;
 		}
 		if (FDone)
+		{
+			if(operation.MIs())
+				operationQueue->MFinishOperation();
 			break;
+		}
 		LOG_IF(WARNING,!operation.MIs()) << "Empty operation.";
 
 		if (operation.MIs())
@@ -290,7 +314,9 @@ void CPoolThread::MRun()
 				operationQueue->MAdd(operation);
 				break;
 			};
+			operationQueue->MFinishOperation();
 		}
+
 		{
 			CRAII<CMutex> lock(FMutex);
 			FInOperation = false;
@@ -498,12 +524,26 @@ bool CThreadPool::CImpl::MRemoveIOThread(unsigned aId)
 bool CThreadPool::MCancel()
 {
 	CRAII<CMutex> _blocked(FImpl->FMutex);
+
+	FImpl->FTask->MEraseAll();
+	FImpl->FTask.reset();
+
+	FImpl->FIOTask->MEraseAll();
+	FImpl->FIOTask.reset();
+
 	FImpl->FThreads.clear();
 	FImpl->FIOThreads.clear();
-	FImpl->FTask.reset();
-	FImpl->FIOTask.reset();
+
 	FIs = false;
 	return true;
+}
+bool  CThreadPool::MWaitForTask(double aTime)const
+{
+	return FImpl->FTask->MWaitFor(aTime);
+}
+bool  CThreadPool::MWaitForIO(double aTime) const
+{
+	return FImpl->FIOTask->MWaitFor(aTime);
 }
 void CThreadPool::MEraseAll()
 {

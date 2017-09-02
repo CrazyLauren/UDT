@@ -14,7 +14,7 @@
 
 namespace NUDT
 {
-class ILink:public NSHARE::CIntrusived,public NSHARE::IFactory,public IState
+class ILink:public NSHARE::IIntrusived,public NSHARE::IFactory,public IState
 {
 public:
 	typedef NSHARE::CBuffer data_t;

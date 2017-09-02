@@ -409,7 +409,7 @@ inline size_t get_server_fifo_size(unsigned aFifoSize)
 inline server_info_t::server_info_t(uint32_t aPid, size_t aMemory) : //
 		FCrc(0x1), //
 		FPIDOfLockedMutex(0),//
-		FMemory(aMemory),
+		FMemory(static_cast<uint16_t>(aMemory)),
 		//FMaxClientFifoLen(0), //now it's set by client
 		FNumberOfClients(0), //
 		FOffsetToClient(CSharedAllocator::NULL_OFFSET), //

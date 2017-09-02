@@ -14,7 +14,7 @@
 COMPILE_ASSERT(sizeof(NSHARE::atomic_t) == sizeof(uint32_t),
 		InvalidSizeofAtomic);
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L && 0//todo for c++11, copy operation of atomic_t
 namespace NSHARE
 {
 	atomic_t::atomic_t(value_type const& aVal):FCount(0)

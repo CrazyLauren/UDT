@@ -21,8 +21,10 @@ class SHARE_EXPORT COperationQueue
 public:
 
 	COperationQueue();
-	virtual ~COperationQueue();
+	~COperationQueue();
 
+	bool MWaitFor(double aTime) const;
+	void MFinishOperation();
 	operation_t MNextOperation(bool blockIfEmpty = false);
 
 	bool MIsEmpty();
@@ -51,8 +53,11 @@ protected:
 	void MRemoveThread(CPoolThread* thread);
 
 	typedef std::list<operation_t> Operations;
-	NSHARE::CMutex FMutex;
-	NSHARE::CCondvar FCond;
+	mutable NSHARE::CMutex FMutex;
+	mutable NSHARE::CCondvar FCond;
+	unsigned FNumberOfInvoked;
+	mutable NSHARE::CCondvar FWaitForCond;
+
 	Operations FOperations;
 	Operations::iterator FCurrentOperationIterator;
 	threads_t FThreads;
@@ -89,8 +94,8 @@ protected:
 	/** Run does the opertion thread run loop.*/
 	virtual void MRun();
 
-	bool FDone;
-	bool FInOperation;
+	volatile bool FDone;
+	volatile bool FInOperation;
 
 	mutable NSHARE::CMutex FMutex;
 	SHARED_PTR<COperationQueue> FQueue;

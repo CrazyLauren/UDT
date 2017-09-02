@@ -26,11 +26,11 @@ private:
 #pragma warning(push)
 #pragma warning (disable: 4100)
 #endif
-	CDenyCopying(const CDenyCopying & copy)
+    CDenyCopying(const CDenyCopying & )
 	{
 	}
 	;
-	void operator=(const CDenyCopying & copy)
+    void operator=(const CDenyCopying & )
 	{
 	}
 	;

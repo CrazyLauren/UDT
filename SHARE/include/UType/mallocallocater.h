@@ -72,7 +72,8 @@ struct malloc_allocater
 	}
 	pointer reallocate(pointer p, size_type _new_size)
 	{
-		return(pointer) std::realloc(p, _new_size);
+		using namespace std;
+		return(pointer) realloc(p, _new_size);
 	}
 	size_type max_size() const throw ()
 	{

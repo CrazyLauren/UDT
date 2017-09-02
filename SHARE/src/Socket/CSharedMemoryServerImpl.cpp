@@ -31,7 +31,7 @@ namespace
 static uint16_t g_client_numerator = 0;
 }
 
-struct IMPL_CLASS::CClient: NSHARE::CIntrusived
+struct IMPL_CLASS::CClient: NSHARE::IIntrusived
 {
 	CClient(CImpl* const aThis, client_info_t* aClient) :
 	FThis(aThis), FClient(aClient)

@@ -132,7 +132,7 @@ CCondvar::~CCondvar()
 {
 	delete FPImpl;
 }
-bool CCondvar::MTimedwait(CMutex * aMutex, const struct timespec* aVal)
+bool  CCondvar::MTimedwait(CMutex *aMutex, const struct timespec* aVal)
 {
 	if (!aVal)
 		return FPImpl->MWait(aMutex);

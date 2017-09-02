@@ -22,23 +22,6 @@
 #	define PROFILE_RESUME()
 #endif
 
-#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
-#	include <unordered_set>
-#	include <unordered_map>
-#	define HASH_SET std::unordered_set
-#	define HASH_MAP std::unordered_map
-#	define HASH_MULTISET std::unordered_multiset
-#	define HASH_MULTIMAP std::unordered_multimap
-#	define HASH std::hash
-#else
-#	include<boost/unordered_set.hpp>
-#	include<boost/unordered_map.hpp>
-#	define HASH_SET boost::unordered_set
-#	define HASH_MAP boost::unordered_map
-#	define HASH_MULTISET boost::unordered_multiset
-#	define HASH_MULTIMAP boost::unordered_multimap
-#endif
-
 /** \brief define standard headers
  * \{
  */
@@ -61,10 +44,29 @@
 #include <errno.h>
 #include <stdexcept>
 #include <sstream>
-#include <limits.h>
+//#include <limits.h>
+#include <limits>
 #include <functional>
 #include <ctype.h> //isdigit ...
+#include <algorithm>
 //\}
+
+#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800) //fucking msvc
+#	include <unordered_set>
+#	include <unordered_map>
+#	define HASH_SET std::unordered_set
+#	define HASH_MAP std::unordered_map
+#	define HASH_MULTISET std::unordered_multiset
+#	define HASH_MULTIMAP std::unordered_multimap
+#	define HASH std::hash
+#else
+#	include<boost/unordered_set.hpp>
+#	include<boost/unordered_map.hpp>
+#	define HASH_SET boost::unordered_set
+#	define HASH_MAP boost::unordered_map
+#	define HASH_MULTISET boost::unordered_multiset
+#	define HASH_MULTIMAP boost::unordered_multimap
+#endif
 
 /** \brief define shared ptr
  * \{
@@ -162,7 +164,7 @@
 #include <UType/CAntiHang.h>
 #include <UType/CCheckNoMultiThread.h>
 #include <UType/CTypeInfo.h>
-#include <UType/CIntrusived.h>
+#include <UType/IIntrusived.h>
 #include <UType/intrusive_ptr.h>
 #include <FloatCompare.h>
 #include <UType/SmartField.h>

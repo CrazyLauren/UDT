@@ -449,11 +449,11 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 		NSHARE::CConfig _data(SNIFFER_STATE);
 		bool _is_partial_state=false;
 
-		if((_pos = _req.find(demand_dgs_t::NAME)) != CText::npos && (_is_partial_state=true))
+		if((_pos = _req.find(demand_dgs_t::NAME)) != CText::npos && ((_is_partial_state=true)))
 		{
 			_data.MAdd(FDemands.MSerialize(false));
 		}
-		if((_pos = _req.find(SNIFFED_DATA)) != CText::npos && (_is_partial_state=true))
+		if((_pos = _req.find(SNIFFED_DATA)) != CText::npos && ((_is_partial_state=true)))
 		{
 			MPutSniffedDataFrom(_number, _data);
 		}

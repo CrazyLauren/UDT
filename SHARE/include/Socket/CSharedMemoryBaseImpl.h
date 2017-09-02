@@ -25,7 +25,7 @@ struct event_info_t;
 struct shared_port_t;
 struct shared_info_t;
 
-class CSharedMemoryBase::CImpl:public NSHARE::CIntrusived
+class CSharedMemoryBase::CImpl:public NSHARE::IIntrusived
 {
 public:
 

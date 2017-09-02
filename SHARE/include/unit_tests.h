@@ -22,7 +22,7 @@
 
 namespace NSHARE
 {
-	UNIT_TEST_FUNC_ATTR bool unit_testing();
+	UNIT_TEST_FUNC_ATTR SHARE_EXPORT bool unit_testing();
 }
 
 

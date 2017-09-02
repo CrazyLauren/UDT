@@ -14,6 +14,9 @@
 
 namespace NSHARE
 {
+#ifdef _MSC_VER
+	struct timespec;
+#endif
 /** \brief condition variable
  *
  */

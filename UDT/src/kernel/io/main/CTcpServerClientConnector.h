@@ -15,7 +15,7 @@
 namespace NUDT
 {
 
-class CTcpServerMainChannel::CMainClientConnector:public NSHARE::CIntrusived
+class CTcpServerMainChannel::CMainClientConnector:public NSHARE::IIntrusived
 {
 public:
 	struct new_link_t

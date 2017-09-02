@@ -80,7 +80,7 @@ private:
 		void* FData;
 		void (CKernelIo::*FOperation)(void*,const routing_t&,descriptor_t const&);
 	};
-	struct manager_t:NSHARE::CIntrusived
+	struct manager_t:NSHARE::IIntrusived
 	{
 		manager_t(IIOManager& aWho,CBuffering const& aBuffering) :
 				FWho(aWho), //

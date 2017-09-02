@@ -15,7 +15,7 @@
 namespace NUDT
 {
 
-class CTcpClientMainChannel::CMainClient: public NSHARE::CIntrusived
+class CTcpClientMainChannel::CMainClient: public NSHARE::IIntrusived
 {
 
 public:
