@@ -46,6 +46,7 @@ public:
 	struct mem_info_t;
 private:
 	CImpl* FImpl;
+	bool MCheckSize(size_t)const;
 	friend class CSharedAllocaterImpl;
 };
 

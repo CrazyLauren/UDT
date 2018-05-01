@@ -37,11 +37,11 @@ typedef eCBRval (*psignal_t)(void* WHO, void* WHAT, void* YOU_DATA);
  *
  * \tparam сигнатура CB метода
  */
-template<typename TSignal>
+template<typename TSignal,typename TArg=void>
 struct  Callback_t
 {
 	typedef TSignal pM;
-	typedef void* arg_t;
+	typedef TArg* arg_t;
 	Callback_t() :
 			FSignal(NULL), FYouData(NULL)
 	{
@@ -78,7 +78,7 @@ struct  Callback_t
 		return E_CB_REMOVE;
 	}
 	template<class T>
-	eCBRval operator ()(T* aWho, void * const aArgs) const
+	eCBRval operator ()(T* aWho, arg_t const aArgs) const
 	{
 		if (FSignal)
 			return (eCBRval)(*FSignal)(aWho, aArgs, FYouData);
@@ -121,9 +121,9 @@ struct  CB_static_t
 } //namespace USHARE
 namespace std
 {
-template<typename TSignal>
+template<typename TSignal,typename TArg>
 inline std::ostream& operator<<(std::ostream & aStream,
-		NSHARE::Callback_t<TSignal> const& aCb)
+		NSHARE::Callback_t<TSignal,TArg> const& aCb)
 {
 	aStream.setf(ios::hex, ios::basefield);
 	aStream << "Pointer to data:" << aCb.FYouData << "; Pointer to cb handler: "

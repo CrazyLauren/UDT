@@ -151,7 +151,7 @@ void IMPL::MProcess(user_data_dg_t const* aP,
 	if(deserialize(_user,aP,FBufferAlloc))
 		FHandler->MReceivedData(_user);
 }
-int IMPL::MSendMainChannelError(unsigned aError)
+bool IMPL::MSendMainChannelError(unsigned aError)
 {
 	data_t _channel;
 	_channel.resize(sizeof(main_channel_error_param_t));

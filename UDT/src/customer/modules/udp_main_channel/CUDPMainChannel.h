@@ -41,7 +41,7 @@ public:
 	virtual void MHandleServiceDG(main_channel_error_param_t const* aP);
 	virtual void MHandleServiceDG(request_main_channel_param_t const* aP);
 	virtual void MHandleServiceDG(close_main_channel_t const* aP);
-	virtual data_t MGetNewBuf(unsigned aSize) const;
+	virtual data_t MGetNewBuf(size_t aSize) const;
 private:
 
 	template<class DG_T> void MFill(data_t*);

@@ -12,9 +12,13 @@
 #ifndef CSINGLETON_H_
 #define CSINGLETON_H_
 
+#if defined(_MSC_VER)
+#	pragma warning (push)
+#	pragma warning (disable:4661)
+#endif
 namespace NSHARE
 {
-template<typename T> class  CSingleton
+template<typename T> class CSingleton
 {
 protected:
 	static T* sFSingleton;
@@ -53,4 +57,7 @@ private:
 	}
 };
 }
+#if defined(_MSC_VER)
+#	pragma warning (pop)
+#endif
 #endif /* CSINGLETON_H_ */

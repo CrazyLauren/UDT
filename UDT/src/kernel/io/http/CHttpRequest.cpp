@@ -83,7 +83,7 @@ unsigned CHttpRequest::MParse(void const* aPtr, size_t aSize)
 	CHECK_NOTNULL(FParserSettings);
 	size_t const _size = http_parser_execute(FParser, FParserSettings,
 			(const char*) aPtr, aSize);
-	return _size;
+	return (unsigned)_size;
 }
 NSHARE::smart_field_t<bool> const& CHttpRequest::MShouldKeepAlive() const
 {
@@ -174,8 +174,8 @@ int CHttpRequest::sMHeadersComplete(http_parser *parser)
 	CHttpRequest *_this = static_cast<CHttpRequest *>(parser->data);
 	CHECK_NOTNULL(_this);
 	_this->FMethod = static_cast<eHtppMethod>(parser->method);
-	_this->FVersion.FMajor = parser->http_major;
-	_this->FVersion.FMinor = parser->http_minor;
+	_this->FVersion.FMajor = static_cast<uint8_t>(parser->http_major);
+	_this->FVersion.FMinor = static_cast<uint8_t>(parser->http_minor);
 	VLOG(2) << "Version:" << _this->FVersion;
 
 	//	charset

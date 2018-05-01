@@ -40,15 +40,15 @@ public:
 		{
 			memset(this, 0, sizeof(*this));
 		}
-		unsigned FInvalidVersion; //The number of packets which is not handled
+		std::size_t FInvalidVersion; //The number of packets which is not handled
 								  //as its protocols vesrion is not support
-		unsigned FESize;								//invalid  sizeof header
-		unsigned FEBuffer;								//the buffer is small
-		unsigned FECrc;										//invalid crc
-		unsigned FDGCounter;			//the number of packets handled by user
-		unsigned FNumberOfData;							//count of usefully data
-		unsigned FReadBytes;			//the number of bytes handled by parser
-		unsigned FPackets;			//the naumber of packets handled by parser
+		std::size_t FESize;								//invalid  sizeof header
+		std::size_t FEBuffer;								//the buffer is small
+		std::size_t FECrc;										//invalid crc
+		std::size_t FDGCounter;			//the number of packets handled by user
+		std::size_t FNumberOfData;							//count of usefully data
+		std::size_t FReadBytes;			//the number of bytes handled by parser
+		std::size_t FPackets;			//the naumber of packets handled by parser
 
 		void MSerialize(NSHARE::CConfig& aTo) const
 		{
@@ -86,12 +86,13 @@ public:
 	static bool sMIsValidProtocol(data_t::const_iterator aItBegin,
 			data_t::const_iterator aItEnd)
 	{
-		int _size = aItEnd - aItBegin;
+		using namespace NSHARE;
+		ssize_t const _size = aItEnd - aItBegin;
 		size_t const _head_size = sizeof(head_t);
 
 		CHECK_GE(_size, 0);
 
-		if (_size < (int) _head_size)
+		if (_size < (ssize_t) _head_size)
 		{
 			return false;
 		}
@@ -206,10 +207,11 @@ private:
 	}
 	static e_error_t MLookingForHead(it_t aItBegin, it_t aItEnd, it_t* aLast)
 	{
-		int _size = aItEnd - aItBegin;
+		using namespace NSHARE;
+		ssize_t const _size = aItEnd - aItBegin;
 		size_t const _head_size = sizeof(head_t);
 		CHECK_GE(_size, 0);
-		if (_size < (int) _head_size)
+		if (_size < (ssize_t) _head_size)
 		{
 			*aLast = aItBegin;
 			return EBufferIsSmall;

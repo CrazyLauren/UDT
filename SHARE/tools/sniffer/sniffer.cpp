@@ -175,9 +175,9 @@ public:
 		aStream<<"The number of packet being received:"<<FCountPackets<<".\t Received bytes:"<<FBytesRead<<". Forwarded bytes:"<<FBytesSend<<".\n";
 		return aStream;
 	}
-	unsigned FCountPackets;
-	unsigned FBytesRead;
-	unsigned FBytesSend;
+	std::size_t FCountPackets;
+	std::size_t FBytesRead;
+	std::size_t FBytesSend;
 
 	static NSHARE::CMutex FMutex;
 	int FMyNumer;

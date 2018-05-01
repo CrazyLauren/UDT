@@ -63,7 +63,7 @@ public:
 	//eSendResult MSend(CSendBuffering::data_list_t & aWhat);
 	eSendResult MSend(user_data_t const & aWhat);
 
-	int MSendMainChannelError(unsigned aError);
+	bool MSendMainChannelError(unsigned aError);
 private:
 //	eSendResult MSendImpl(user_data_t const& _id) const;
 

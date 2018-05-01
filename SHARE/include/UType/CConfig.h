@@ -20,7 +20,7 @@ namespace NSHARE
 
 class SHARE_EXPORT CConfig;
 class CBuffer;
-typedef std::list<CConfig> ConfigSet;
+typedef std::vector<CConfig> ConfigSet;
 
 /** \brief Config - это класс для сериализации данных в формат JSON или XML
  *
@@ -139,9 +139,10 @@ public:
 	template<typename T>
 	T MValue(const CText& key, T const& fallback) const
 	{
-		if (MChild(key).MValue().empty())
+		CConfig const& _child = MChild(key);
+		if (_child.MValue().empty())
 			return fallback;
-		return MChild(key).MValue<T>(fallback);
+		return _child.MValue<T>(fallback);
 	}
 
 	const ConfigSet& MChildren() const
@@ -311,12 +312,14 @@ public:
 	template<typename T>
 	bool MGetIfSet(const CText& key, T& output) const
 	{
-		if (MHasValue(key))
+		CConfig const& _child = MChild(key);
+		if (_child.MValue().empty())
+			return false;
+		else		
 		{
-			output = MValue<T>(key, output);
+			output = _child.MValue<T>(output);
 			return true;
-		}
-		return false;
+		}		
 	}
 
 	// remove everything from (this) that also appears in rhs

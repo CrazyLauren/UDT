@@ -11,10 +11,13 @@
  */
 #ifndef CHARDWORKER_H_
 #define CHARDWORKER_H_
+
+#include <malloc.h>
 #include <udt_share.h>
 #include <programm_id.h>
 #include <udt_types.h>
 #include <shared_types.h>
+
 namespace NUDT
 {
 class UDT_SHARE_EXPORT CHardWorker;

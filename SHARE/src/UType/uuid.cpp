@@ -36,7 +36,7 @@ static uint64_t uuid_generate_time(CText const& aText = CText())
 		out[_pos] = out[_pos] ^ (*_it & 0xFF);
 	}
 	boost::uuids::uuid _b_uuid = boost::uuids::random_generator()();
-	for (boost::uuids::uuid::iterator _it = _b_uuid.begin();
+	for (boost::uuids::uuid::const_iterator _it = _b_uuid.begin();
 			_it != _b_uuid.end(); ++_it)
 	{
 		const unsigned _pos=rand()%6;

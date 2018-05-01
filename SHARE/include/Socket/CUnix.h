@@ -19,7 +19,7 @@
 #endif 
 namespace NSHARE
 {
-class SHARE_EXPORT CUnixDGRAM: public ISocket
+class SHARE_EXPORT CUnixDGRAM: public ISocket, NSHARE::CDenyCopying
 {
 public:
 	static const NSHARE::CText NAME;
@@ -71,6 +71,8 @@ public:
 		return FParam;
 	}
 private:
+	class CUnixDGRAM_impl;
+
 	void MClose();
 	int MRemove();
 	inline CSocket MNewSocket();
@@ -82,9 +84,8 @@ private:
 	CSocket FSockTo;
 
 	param_t FParam;
-	class CUnixDGRAM_impl;
 
-	std::auto_ptr<CUnixDGRAM_impl> Impl;
+	SHARED_PTR<CUnixDGRAM_impl> Impl;
 	diagnostic_io_t FDiagnostic;
 };
 }

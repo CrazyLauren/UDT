@@ -254,10 +254,10 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	//fill dg
 	user_data_header_t * _user_data = new (_begin) user_data_header_t();
 	CHECK_NOTNULL(_user_data);
-	_user_data->FEventList = _events.size();
-	_user_data->FDestination = _dest.size();
-	_user_data->FRouting = _routing.size();
-	_user_data->FRegistrators = _reg.size();
+	_user_data->FEventList =static_cast<uint8_t>(_events.size());
+	_user_data->FDestination = static_cast<uint8_t>(_dest.size());
+	_user_data->FRouting = static_cast<uint8_t>(_routing.size());
+	_user_data->FRegistrators = static_cast<uint8_t>(_reg.size());
 
 
 	_user_data->FUUIDFrom = _id.FRouting.FFrom.FUuid.FVal;
@@ -266,7 +266,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FSplitCounter = _id.FSplit.FCounter;
 	_user_data->FSplitCoefficient = _id.FSplit.FCoefficient;
 
-	_user_data->FRawNumber = _id.FRawProtocolNumber;
+	_user_data->FRawNumber = static_cast<uint32_t>(_id.FRawProtocolNumber);
 	_user_data->FMajor=_id.FVersion.FMajor;
 	_user_data->FMinor=_id.FVersion.FMinor;
 
@@ -275,10 +275,10 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 //		_user_data->FName = _name_from_len + 1;
 
 	if (_name_protocol)
-		_user_data->FProtocolName = _name_protocol + 1;
+		_user_data->FProtocolName = static_cast<uint8_t>(_name_protocol) + 1;
 
 	_user_data->FNumber = _id.FPacketNumber;
-	_user_data->FDataSize = aSize;
+	_user_data->FDataSize = static_cast<uint32_t>(aSize);
 
 	//fill dynamic data
 	NSHARE::CBuffer::pointer _p = _begin;
@@ -442,7 +442,7 @@ extern UDT_SHARE_EXPORT int init_id(char const *aName, eType aType, const NSHARE
 
 	g_is_inited = true;
 	g_id.FKernelVersion = aVer;
-	g_id.FTime = g_time;
+	g_id.FTime = static_cast<unsigned>(g_time);
 	g_id.FId.FUuid = NSHARE::get_programm_uuid(NSHARE::CText(aName));
 	g_id.FPid = NSHARE::CThread::sProcessId();
 	g_id.FId.FName = aName;

@@ -36,6 +36,7 @@ public:
 	}
 	CFlags(CFlags const& aVal);
 	CFlags& operator=(CFlags const& aRht);
+	CFlags& operator=(value_type const& aRht);
 
 	bool operator==(TFlags const& aFlag) const;
 	bool operator==(CFlags const& aFlag) const;
@@ -72,7 +73,16 @@ CFlags<TFlags, TVal, TMutexType>& CFlags<TFlags, TVal, TMutexType>::operator=(
 	}
 	return *this;
 }
-
+template<typename TFlags, typename TVal, class TMutexType>
+CFlags<TFlags, TVal, TMutexType>& CFlags<TFlags, TVal, TMutexType>::operator=(
+		value_type const& aRht)
+{
+	{
+		CRAII<mutex_t> _blocked(FMutex);
+		FFlags =aRht;
+	}
+	return *this;
+}
 template<typename TFlags, typename TVal,class TMutexType>
 inline void CFlags<TFlags, TVal,TMutexType>::MReset()
 {

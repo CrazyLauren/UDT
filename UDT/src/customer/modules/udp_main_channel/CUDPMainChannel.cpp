@@ -169,7 +169,7 @@ void CUDPMainChannel::MHandleServiceDG(main_channel_error_param_t const* aP)
 	FIsConnected = aP->FError == 0;
 	LOG_IF(ERROR,!FIsConnected) << "Error during setting main channel.";
 }
-NSHARE::CBuffer CUDPMainChannel::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CUDPMainChannel::MGetNewBuf(size_t aSize) const
 {
 	return NSHARE::CBuffer(aSize);
 }

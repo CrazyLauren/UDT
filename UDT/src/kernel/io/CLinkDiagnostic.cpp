@@ -24,7 +24,7 @@ CLinkDiagnostic::CLinkDiagnostic()
 void CLinkDiagnostic::MOutput(const user_data_t& aVal,bool aSent)
 {
 	unsigned const aNumber = aVal.FDataId.FPacketNumber, aSize =
-			aVal.FData.size();
+			(unsigned)aVal.FData.size();
 	if (aSent)
 	{
 		FSizeOfSentUserData += aSize;
@@ -54,7 +54,7 @@ void CLinkDiagnostic::MOutput(const user_data_t& aVal,bool aSent)
 void CLinkDiagnostic::MInput(const user_data_t& aVal)
 {
 	unsigned const aNumber = aVal.FDataId.FPacketNumber, aSize =
-			aVal.FData.size();
+			(unsigned)aVal.FData.size();
 	FSizeOfRecvUserData += aSize;
 	VLOG(1) << "Packet#" << aNumber << " totalsize="
 						<< (FSizeOfRecvUserData / 1024 / 1024) << " mb;";

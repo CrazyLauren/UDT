@@ -132,7 +132,7 @@ void CBuffer::buf_info::MSetSize(size_t const& aVal)
 {
 	CHECK_NOTNULL(this);
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
-	FSize.MWrite(aVal);
+	FSize.MWrite((atomic_t::value_type)aVal);
 	MSetCrc();
 }
 size_t CBuffer::buf_info::MBufSize()
@@ -144,7 +144,7 @@ void CBuffer::buf_info::MSetBufSize(size_t const& aVal)
 {
 	CHECK_NOTNULL(this);
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
-	FBufSize.MWrite(aVal);
+	FBufSize.MWrite((atomic_t::value_type)aVal);
 	MSetCrc();
 }
 uint32_t CBuffer::buf_info::use_count() const

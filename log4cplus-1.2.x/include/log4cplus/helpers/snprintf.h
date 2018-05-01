@@ -34,8 +34,12 @@
 #include <log4cplus/tchar.h>
 #include <cstdarg>
 #include <vector>
-
-
+#if defined(__GNUC__) && defined(__QNX__) && __GNUC__<4
+namespace std
+{
+	typedef ::va_list  va_list;
+}
+#endif
 namespace log4cplus { namespace helpers {
 
 

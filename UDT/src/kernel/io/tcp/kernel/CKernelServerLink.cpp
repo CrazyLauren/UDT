@@ -211,7 +211,7 @@ inline unsigned CKernelServerLink::MFill<fail_send_t>(data_t* _buf,
 		const fail_send_t& _id, const routing_t& aRoute,
 		error_info_t const& aError)
 {
-	return serialize<user_data_fail_send_t>(_buf, _id, aRoute, aError);
+	return (unsigned)serialize<user_data_fail_send_t>(_buf, _id, aRoute, aError);
 }
 
 template<>
@@ -219,21 +219,21 @@ inline unsigned CKernelServerLink::MFill<program_id_t>(data_t* _buf,
 		const program_id_t& _id, const routing_t& aRoute,
 		error_info_t const& aError)
 {
-	return serialize<requiest_info2_t>(_buf, _id, aRoute, aError);
+	return (unsigned)serialize<requiest_info2_t>(_buf, _id, aRoute, aError);
 }
 template<>
 inline unsigned CKernelServerLink::MFill<kernel_infos_array_t>(data_t* _buf,
 		const kernel_infos_array_t& _id, const routing_t& aRoute,
 		error_info_t const& aError)
 {
-	return serialize<kernels_info_t>(_buf, _id, aRoute, aError);
+	return (unsigned)serialize<kernels_info_t>(_buf, _id, aRoute, aError);
 }
 template<>
 inline unsigned CKernelServerLink::MFill<demand_dgs_for_t>(data_t* _buf,
 		const demand_dgs_for_t& _id, const routing_t& aRoute,
 		error_info_t const& aError)
 {
-	return serialize<customers_demands_t>(_buf, _id, aRoute, aError);
+	return (unsigned)serialize<customers_demands_t>(_buf, _id, aRoute, aError);
 }
 template<>
 void CKernelServerLink::MProcess(accept_info_t const* aP, parser_t* aThis)
@@ -435,7 +435,7 @@ bool CKernelServerLink::MSendIDInfo()
 }
 bool CKernelServerLink::MIsMainChannel() const
 {
-	return FMainChannel;
+	return FMainChannel!=NULL;
 }
 void CKernelServerLink::MChangeState(eState aNew)
 {

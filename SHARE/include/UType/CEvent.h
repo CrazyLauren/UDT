@@ -54,7 +54,7 @@ private:
 	{
 		unsigned int FPrior;
 		mutable value_t FCb;
-		bool operator ()(sender_t aSender, value_arg_t aWhat) const;
+		eCBRval operator ()(sender_t aSender, value_arg_t aWhat) const;
 		bool operator <(Type const& right) const;
 		bool operator ==(Type const& right) const;
 		bool operator !=(Type const& right) const;

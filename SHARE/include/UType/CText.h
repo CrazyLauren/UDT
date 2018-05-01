@@ -16,6 +16,10 @@
 #include <stdexcept>
 #include <cstddef>
 #include <UType/CCodeConv.h>
+#if defined(_MSC_VER)
+#	pragma warning (push)
+#	pragma warning (disable:4251)
+#endif
 namespace NSHARE
 {
 class CBuffer;
@@ -332,7 +336,7 @@ public:
 
 	static bool sMUnitTest();
 private:
-	struct impl_t
+	struct SHARE_EXPORT impl_t
 	{
 		impl_t(allocator_type*);
 		impl_t(const impl_t&);
@@ -442,4 +446,7 @@ struct CStringFastLessCompare
 #include <UType/CTextIterator.h>
 #include <UType/CTextImpl.h>
 
+#if defined(_MSC_VER)
+#	pragma warning (pop)
+#endif
 #endif	// #ifndef CTEXT_H_

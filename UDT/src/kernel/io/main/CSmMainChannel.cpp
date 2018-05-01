@@ -280,7 +280,7 @@ bool CSmMainChannel::MClose(descriptor_t aFor)
 	}
 	return false;
 }
-NSHARE::CBuffer CSmMainChannel::MGetNewBuf(unsigned aSize,NSHARE::eAllocatorType aType) const
+NSHARE::CBuffer CSmMainChannel::MGetNewBuf(std::size_t aSize,NSHARE::eAllocatorType aType) const
 {
 	if (FSmServer.MIsOpen())
 		return FSmServer.MAllocate(aSize,0,aType);
@@ -359,7 +359,7 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 				VLOG(0) << aVal.FData.size()
 									<< " bytes sent successfully Counter="
 									<< _mask.FCounter;
-				_io->FSendBytes += _data_buf.size();
+				_io->FSendBytes += (unsigned)_data_buf.size();
 				return true;
 			}
 			else
@@ -602,7 +602,7 @@ void CSmMainChannel::MReceiver()
 			size_t _num = MReceiveImpl(_mask.FType, _data, _from,
 					_param.FHandler);
 
-			_param.FIo->FRecvBytes += _num;
+			_param.FIo->FRecvBytes += (unsigned)_num;
 
 			MThreadSafetyReset(_param.FIo);
 		}

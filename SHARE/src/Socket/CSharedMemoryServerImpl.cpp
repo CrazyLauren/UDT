@@ -365,12 +365,12 @@ void IMPL_CLASS::MInsertClientIntoList(IAllocater* const aAllocator,
 	if (!_last)
 	{
 		VLOG(2) << "It's the first.";
-		FServerInfo->FOffsetToClient = aAllocator->MOffset(aClient);
+		FServerInfo->FOffsetToClient = static_cast<CSharedAllocator::offset_t>(aAllocator->MOffset(aClient));
 	}
 	else
 	{
 		VLOG(2) << "Insert " << aClient->FInfo.FId << " into list after "<< _last->FInfo.FId;
-		_last->FNext = aAllocator->MOffset(aClient);
+		_last->FNext =static_cast<CSharedAllocator::offset_t>( aAllocator->MOffset(aClient));
 	}
 }
 void IMPL_CLASS::MEraseClientFromList(IAllocater* const aAllocator,

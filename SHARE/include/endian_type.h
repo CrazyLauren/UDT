@@ -138,6 +138,26 @@ enum eEndian
 		aVal=((aVal<<16)&0xFFFF0000FFFF0000ULL)|((aVal>>16)&0x0000FFFF0000FFFFULL);
 		return (aVal<<32)|((aVal>>32)&0xFFFFFFFFULL);
 	}
+	inline float swap_endian(float  aVal)
+	{
+		union
+		{
+			float f;
+			uint32_t i;
+		};
+		i = swap_endian(*(uint32_t*)&aVal);
+		return f;
+	}
+	inline double swap_endian(double  aVal)
+	{
+		union
+		{
+			double f;
+			uint64_t i;
+		};
+		i = swap_endian(*(uint64_t*)&aVal);
+		return f;
+	}
 	//\}
 
 	namespace _impl
@@ -150,28 +170,32 @@ enum eEndian
 		template<class T>
 		inline T swap_byte_endain(const T& aVal,endian_wrapper_t<1> const&)
 		{
-			swap_endian((uint8_t const)aVal);
+			uint8_t const _val=swap_endian(*(uint8_t const*)&aVal);
+			return *(T const*)&_val;
 		}
 		template<class T>
 		inline T swap_byte_endain(const T& aVal,endian_wrapper_t<2> const&)
 		{
-			swap_endian((uint16_t const)aVal);
+			uint16_t const _val = swap_endian(*(uint16_t const*)&aVal);
+			return *(T const*)&_val;
 		}
 		template<class T>
 		inline T swap_byte_endain(const T& aVal,endian_wrapper_t<4> const&)
 		{
-			swap_endian((uint32_t const)aVal);
+			uint32_t const _val=swap_endian(*(uint32_t const*)&aVal);
+			return *(T const*)&_val;
 		}
 		template<class T>
 		inline T swap_byte_endain(const T& aVal,endian_wrapper_t<8> const&)
 		{
-			swap_endian((uint64_t const)aVal);
+			uint64_t const _val=swap_endian(*(uint64_t const*)&aVal);
+			return *(T const*)&_val;
 		}
 	}
 	template<class T>
 	inline T swap_endain(const T&aVal)
 	{
-		return _impl::swap_byte_endain<T,sizeof(T)>(aVal,_impl::endian_wrapper_t<sizeof(T)>());
+		return _impl::swap_byte_endain<T>(aVal,_impl::endian_wrapper_t<sizeof(T)>());
 	}
 
 }

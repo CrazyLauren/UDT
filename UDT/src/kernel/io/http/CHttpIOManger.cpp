@@ -529,10 +529,10 @@ void CHttpIOManger::MPutToFifo(data_fifo_t::value_type & _new_data)
 	const size_t _size=_new_data.FSize;
 	for (;_size && (FBufferingBytes < (int)_size) && !FSniffedData.empty();)
 	{
-		FBufferingBytes += FSniffedData.front().FSize;
+		FBufferingBytes += (int)FSniffedData.front().FSize;
 		FSniffedData.pop_front();
 	}
-	FBufferingBytes-=_new_data.FSize;
+	FBufferingBytes-= (int)_new_data.FSize;
 
 	_new_data.FSinffedNum=++FSinffedNum;
 	_new_data.FData.MAdd(SEQUENCE_NUMBER, _new_data.FSinffedNum);
@@ -618,14 +618,15 @@ NSHARE::eCBRval CHttpIOManger::sMDisconnect(void* aWho, void* aWhat, void* aThis
 
 bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 {
+	using namespace std;
 	CRAII<CMutex> _block(FParserMutex);
 	if (aParser.empty())
 		aParser = _val.FProtocol;
 	IExtParser* _ser = CParserFactory::sMGetInstance().MGetFactory(aParser);
 	if (!_ser && _val.FProtocol==aParser)
 		return false;
-	unsigned _i = 0;
-	unsigned const _size = FDemands.size();
+	size_t _i = 0;
+	size_t const _size = FDemands.size();
 	for (; _i != _size && !FDemands[_i].MIsEqual(_val); ++_i)
 		;
 	if (_i == _size)
@@ -671,9 +672,12 @@ int CHttpIOManger::MSettingDgParserFor(const NSHARE::CText& aReq,
 }
 std::pair<demand_dg_t, bool> CHttpIOManger::MGetDemand(uint32_t aNumber)
 {
+	using namespace std;
+
 	CRAII<CMutex> _block(FParserMutex);
-	unsigned _i = 0;
-	unsigned const _size = FDemands.size();
+
+	size_t _i = 0;
+	size_t const _size = FDemands.size();
 	for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
 		;
 	if (_i == _size)
@@ -687,10 +691,11 @@ bool CHttpIOManger::MRemoveDgParserFor(uint32_t aNumber)
 	VLOG(2) << "Remove parser for " << aNumber;
 
 	{
+		using namespace std;
 		CRAII<CMutex> _block(FParserMutex);
 
-		unsigned _i = 0;
-		unsigned const _size = FDemands.size();
+		size_t _i = 0;
+		size_t const _size = FDemands.size();
 		for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
 			VLOG(5) << FDemands[_i].FHandler << " != " << aNumber;
 		if (_i == _size)

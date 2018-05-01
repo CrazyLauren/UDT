@@ -164,7 +164,7 @@ public:
  * в отличии от CMutexEmpty, этот класс можно копировать
  *
  */
-class  CNoMutex
+class  SHARE_EXPORT CNoMutex
 {
 public:
 	typedef CMutex::eMutexType eMutexType;

@@ -497,6 +497,15 @@ public:
 	{
 		;
 	}
+	CPODBuffer(CBuffer const& aBuf):
+		FBuffer(aBuf)
+	{
+
+	}
+	CPODBuffer(CBuffer& aBuf,bool aMoveIt)
+	{
+		aBuf.MMoveTo(FBuffer);
+	}
 	CPODBuffer const& deep_copy(const CPODBuffer& aBuf)
 	{
 		FBuffer.deep_copy(aBuf);

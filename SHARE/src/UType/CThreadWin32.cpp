@@ -258,16 +258,17 @@ bool CThread::MCancel()
 		return false;
 
 	HANDLE const _tmp=FImpl->FPThread;
-	FImpl->FPThread=INVALID_HANDLE_VALUE;
-	bool const _rval =CloseHandle(_tmp)!=FALSE;
-	if(!_rval)
-	{
-		LOG(ERROR)<<"Unknown error";
-		FImpl->FPThread = _tmp;
-		FIsRunning=false;
-	}
+	//FImpl->FPThread=INVALID_HANDLE_VALUE;
+	//bool const _rval =CloseHandle(_tmp)!=FALSE;
+//	if(!_rval)
+//	{
+//		LOG(ERROR)<<"Unknown error";
+//		FImpl->FPThread = _tmp;
+//		FIsRunning=false;
+//	}
 
-	return _rval;
+	//return _rval;
+	return true;
 }
 void CThread::MDetach()
 {
@@ -276,9 +277,37 @@ void CThread::MDetach()
 bool CThread::MJoin(uint64_t aTime)
 {
 	CRAII<CMutex> _lock(FImpl->FMutex);
-	if (!MIsRunning() ||FIsDetached)
-		return false;
-	FImpl->FCond.MTimedwait(&FImpl->FMutex);
+	 if (!MIsRunning() ||FIsDetached)
+		 return false;
+	 DWORD exit_code = -1;
+	 GetExitCodeThread(FImpl->FPThread, &exit_code);
+	 if (exit_code != STILL_ACTIVE)
+		 return false;
+	 FImpl->FCond.MTimedwait(&FImpl->FMutex);
+	/*
+	{
+		CRAII<CMutex> _lock(FImpl->FMutex);
+		if (!MIsRunning() || FIsDetached)
+			return false;
+	}
+	BOOL b_ret;
+	DWORD dw_ret;
+
+	dw_ret = WaitForSingleObject(FImpl->FPThread, INFINITE);
+	if (dw_ret == WAIT_OBJECT_0)
+	{
+		CRAII<CMutex> _lock(FImpl->FMutex);
+		FIsRunning = false;
+		return true;
+	}
+	else
+	{
+		DWORD exit_code = -1;
+		GetExitCodeThread(FImpl->FPThread, &exit_code);
+
+		CHECK_NE(STILL_ACTIVE, exit_code);
+	}
+	*/
 	return true;
 }
 

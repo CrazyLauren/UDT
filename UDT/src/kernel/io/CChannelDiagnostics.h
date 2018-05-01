@@ -35,12 +35,12 @@ struct COverload
 	//time you have to multiply MAX_DELAY and FOveloadCount
 
 	void MStartCheking();
-	void MCheking(TFrom const& FWho, unsigned aCountBytes);
+	void MCheking(TFrom const& FWho, size_t aCountBytes);
 	void MFinishCheking(over_t& aResult);
 
 	static void sMPrint(std::ostream & aStream, over_t const& aVal); //fix bug of mingw
 private:
-	typedef std::map<TFrom, unsigned> fbytes_t;
+	typedef std::map<TFrom, std::size_t> fbytes_t;
 	void MGetFrom(std::vector<TFrom>&);
 	uint64_t FTime;
 	uint64_t FCount;
@@ -62,9 +62,9 @@ inline void COverload<TFrom>::MStartCheking()
 	FTime = NSHARE::get_unix_time();
 }
 template<class TFrom>
-inline void COverload<TFrom>::MCheking(TFrom const& FWho, unsigned aCount)
+inline void COverload<TFrom>::MCheking(TFrom const& FWho, size_t aCount)
 {
-	FDelta += NSHARE::get_unix_time() - FTime;
+	FDelta += static_cast<unsigned>(NSHARE::get_unix_time() - FTime);
 	FBytes[FWho] += aCount;
 }
 template<class TFrom>
@@ -92,8 +92,9 @@ inline void COverload<TFrom>::MFinishCheking(over_t& aResult)
 template<class TFrom>
 inline void COverload<TFrom>::MGetFrom(std::vector<TFrom>& aTo)
 {
+	using namespace std;
 	typename fbytes_t::iterator _it = FBytes.begin();
-	unsigned _max = 0;
+	size_t _max = 0;
 	for (; _it != FBytes.end(); ++_it)
 		_max += _it->second;
 	if (!_max || FBytes.empty())

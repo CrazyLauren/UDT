@@ -34,7 +34,7 @@ namespace NSHARE
 {
 CSocket CTcpImplBase::MNewSocket()
 {
-	return socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	return static_cast<CSocket::socket_t>(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
 }
 void CTcpImplBase::MWaitForSend(CSocket const & aTo) const
 {

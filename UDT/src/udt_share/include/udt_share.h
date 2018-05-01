@@ -37,7 +37,7 @@ extern  size_t UDT_SHARE_EXPORT get_full_size(user_data_t const& aData);
 extern  size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer  aTo,user_data_info_t const& aData,NSHARE::CBuffer::offset_pointer_t aOffset);
 
 template<class aKdTypeY,class T>
-inline unsigned serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t& aRoute,error_info_t const&aError)
+inline size_t serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t& aRoute,error_info_t const&aError)
 {
 	NSHARE::CConfig _conf(aWhat.MSerialize());
 	if (!aRoute.empty())

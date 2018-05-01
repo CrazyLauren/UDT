@@ -1081,8 +1081,8 @@ bool CConfig::sMUnitTest()
 				"\"test_5\":{\"double\":\"5.8147e+86\",\"float\":\"2.9796e+12\",\"uint64\":\"9223372036854775805\",\"int64\":\"4611686018427387900\",\"buf\":\"AAECAwQ=\"},"
 				"\"test_6\":{\"double\":\"2.9274e+42\",\"float\":\"1.8307e+7\",\"uint64\":\"11068046444225730966\",\"int64\":\"5534023222112865480\",\"buf\":\"AAECAwQF\"},"
 				"\"test_7\":{\"double\":\"0\",\"float\":\"112.4871\",\"uint64\":\"12912720851596686127\",\"int64\":\"6456360425798343060\",\"buf\":\"AAECAwQFBg==\"},"
-				"\"test_8\":{\"double\":\"0\",\"float\":\"6.9114e-4\",\"uint64\":\"14757395258967641288\",\"int64\":\"7378697629483820640\",\"buf\":\"AAECAwQFBgc=\"},"
-				"\"test_9\":{\"double\":\"0\",\"float\":\"4.2465e-9\",\"uint64\":\"16602069666338596449\",\"int64\":\"8301034833169298220\",\"buf\":\"AAECAwQFBgcI\"}"
+				"\"test_8\":{\"double\":\"0\",\"float\":\"0\",\"uint64\":\"14757395258967641288\",\"int64\":\"7378697629483820640\",\"buf\":\"AAECAwQFBgc=\"},"
+				"\"test_9\":{\"double\":\"0\",\"float\":\"0\",\"uint64\":\"16602069666338596449\",\"int64\":\"8301034833169298220\",\"buf\":\"AAECAwQFBgcI\"}"
 				"}}";
 
 		CConfig _ser_data;
@@ -1099,11 +1099,15 @@ bool CConfig::sMUnitTest()
 		{
 			CConfig _conf(CText::sMPrintf(CCodeUTF8(), "test_%d",i));
 
-			const double _double=std::numeric_limits< double>::max()/ exp( std::numeric_limits< double>::max_exponent/_number*i);
-			_conf.MAdd("double",_double);
+			const double _double=std::numeric_limits< double>::max()/ exp( (double)(std::numeric_limits< double>::max_exponent/_number*i));
+			CText _tmp;
+			float_to_str(_double,_tmp,4);
+			_conf.MAdd("double",_tmp);
 
-			const float _float=std::numeric_limits< float>::max()/ (float)exp( std::numeric_limits< float>::max_exponent/_number*i);
-			_conf.MAdd("float",_float);
+			const float _float=std::numeric_limits< float>::max()/ expf( std::numeric_limits< float>::max_exponent/_number*(float)i);
+			_tmp.clear();
+			float_to_str(_float,_tmp,4);
+			_conf.MAdd("float",_tmp);
 
 			const uint64_t _64=std::numeric_limits< uint64_t>::max()/_number*i;
 			_conf.MAdd("uint64",_64);

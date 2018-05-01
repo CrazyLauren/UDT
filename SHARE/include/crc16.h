@@ -70,7 +70,7 @@ struct crc16_t
 		static table_t const _table;
 		using namespace std;
 
-		/*register*/unsigned const _size = (pEnd - pBegin) * sizeof(T)
+		/*register*/size_t const _size = (pEnd - pBegin) * sizeof(T)
 				/*/ sizeof(uint8_t)*/;
 
 		uint8_t const* __restrict _begin = (uint8_t const*) (pBegin);

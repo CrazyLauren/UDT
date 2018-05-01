@@ -485,7 +485,7 @@ bool IMPL::MSendKeapAliveRequest(const shared_port_t& aFrom,event_cv_t& aEvent) 
 	event_info_t _info;
 	_info.FEventType = event_info_t::E_KEEPALIVE_REQUEST;
 	_info.FIdFrom = aFrom;
-	_info.FKeapAlive.FInfoOffset = _p_alloc->MOffset(aEvent.FEvents);
+	_info.FKeapAlive.FInfoOffset =static_cast<CSharedAllocator::offset_t>(_p_alloc->MOffset(aEvent.FEvents));
 	bool _is = MInvokeEventTo(aEvent, &_info);
 	return _is;
 }
@@ -510,7 +510,7 @@ bool IMPL::MSendKeapAliveAnswer(const shared_port_t& aFrom,event_cv_t& aEvent,
 	event_info_t _info;
 	_info.FEventType = event_info_t::E_KEEPALIVE_ANSWER;
 	_info.FIdFrom = aFrom;
-	_info.FKeapAlive.FInfoOffset = _p_alloc->MOffset(aEvent.FEvents);
+	_info.FKeapAlive.FInfoOffset = static_cast<CSharedAllocator::offset_t>(_p_alloc->MOffset(aEvent.FEvents));
 	_info.FKeapAlive.FAnswer = aAnswer;
 	return MInvokeEventTo(aEvent,  &_info);
 }

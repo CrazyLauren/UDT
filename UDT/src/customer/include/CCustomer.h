@@ -297,7 +297,7 @@ public:
 	std::ostream& MPrintEvents(std::ostream & aStream) const;
 
 	bool MEmpty  ()const;
-	NSHARE::CBuffer MGetNewBuf(unsigned aSize) const;
+	NSHARE::CBuffer MGetNewBuf(std::size_t aSize) const;
 
 	int MSettingDgParserFor(const NSHARE::CText& aFrom,
 			const msg_parser_t& aHeader, const callback_t& aCB);

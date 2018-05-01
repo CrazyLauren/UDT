@@ -23,9 +23,9 @@ struct operation_t;
  */
 typedef eCBRval (*op_signal_t)(CThread const* WHO, operation_t * WHAT,
 		void* YOU_DATA);
-struct SHARE_EXPORT operation_t: NSHARE::Callback_t<op_signal_t>
+struct SHARE_EXPORT operation_t: NSHARE::Callback_t<op_signal_t, operation_t>
 {
-	typedef NSHARE::Callback_t<op_signal_t> cb_t;
+	typedef NSHARE::Callback_t<op_signal_t, operation_t> cb_t;
 	enum eType
 	{
 		IMMEDIATE, // Should run immediately

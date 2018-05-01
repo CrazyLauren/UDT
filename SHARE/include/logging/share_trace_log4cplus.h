@@ -29,7 +29,9 @@
 #	undef WARNING
 #	undef ERROR
 #	undef FATAL
-
+#ifndef LOG4CPLUS_MACRO_FUNCTION
+#	define LOG4CPLUS_MACRO_FUNCTION() "unknown"
+#endif
 
 enum eLavel
 {

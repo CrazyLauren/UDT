@@ -80,7 +80,7 @@ void CUDP::MClose()
 
 inline CSocket CUDP::MNewSocket()
 {
-	return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	return static_cast<CSocket::socket_t>(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
 }
 bool CUDP::MOpen(const param_t& aParam, int aFlags)
 {
@@ -201,7 +201,7 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 			data_t::value_type* _pbegin=aBuf->ptr()+(aBuf->size() - _size);
 #ifdef _WIN32
 			_recvd = recvfrom(MGetSocket().MGet(),
-					(char*) _pbegin, _size,
+					(char*) _pbegin, (int)_size,
 					0, (struct sockaddr*) &_addr, &_len);
 #else
 			_recvd = recvfrom(MGetSocket().MGet(),

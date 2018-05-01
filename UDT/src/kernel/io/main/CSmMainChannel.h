@@ -50,7 +50,7 @@ public:
 			descriptor_t);
 	bool MHandleServiceDG(close_main_channel_t const* aP, descriptor_t);
 	bool MIsOveload(descriptor_t aFor) const;
-	NSHARE::CBuffer MGetNewBuf(unsigned aSize,NSHARE::eAllocatorType) const;
+	NSHARE::CBuffer MGetNewBuf(std::size_t aSize,NSHARE::eAllocatorType) const;
 
 	NSHARE::CConfig MSerialize() const;
 	NSHARE::IAllocater* MAllocater() const;
@@ -129,8 +129,8 @@ private:
 	safe_data_t FData;
 	std::map<NSHARE::CBuffer::offset_pointer_t, user_data_info_t> FRecv;
 	mutable NSHARE::CMutex FMutex;
-	unsigned FReserv;
-	unsigned FSize;
+	size_t FReserv;
+	size_t FSize;
 	bool FIsUsingAsDef;
 	NSHARE::CText FName;
 	NSHARE::CMutex FOpenMutex;

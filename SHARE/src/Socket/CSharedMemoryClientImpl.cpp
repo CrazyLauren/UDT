@@ -154,7 +154,7 @@ bool IMPL_CLASS::MConnect(double aTime)
 	VLOG(2) << "Connect "<<FMyInfo->FInfo.FId<<" Time=" << aTime;
 	event_info_t _info;
 	_info.FEventType = event_info_t::E_CONNECT;
-	_info.FConnect.FClientOffset = FSharedMemory.MGetAllocator()->MOffset(FMyInfo);
+	_info.FConnect.FClientOffset = static_cast<CSharedAllocator::offset_t>(FSharedMemory.MGetAllocator()->MOffset(FMyInfo));
 	MInvokeEvent(&_info);
 
 	_info.FEventType = event_info_t::E_NO;
@@ -247,8 +247,8 @@ void IMPL_CLASS::MDisconnect()
 
 	event_info_t _info;
 	_info.FEventType = event_info_t::E_DISCONECT;
-	_info.FConnect.FClientOffset = FSharedMemory.MGetAllocator()->MOffset(
-			FMyInfo);
+	_info.FConnect.FClientOffset =static_cast<CSharedAllocator::offset_t>( FSharedMemory.MGetAllocator()->MOffset(
+			FMyInfo));
 	MInvokeEvent(&_info);
 
 	LOG_IF(DFATAL,FEventDone) << "The event handler is not working";

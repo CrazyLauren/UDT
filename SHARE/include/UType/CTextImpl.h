@@ -72,23 +72,6 @@ inline utf8 const* CText::c_str() const
 {
 	return (utf8 const*) MBuildUtf8Buff();
 }
-inline CText::size_type CText::MGetBufferLength() const
-{
-	return FImpl.MRead().FMultiByteBufferLen;
-}
-inline utf32* CText::ptr(void)
-{
-	using namespace std;
-	impl_t & _impl = FImpl.MWrite();
-	return _impl.FMultiByteBuf;
-}
-
-inline const utf32* CText::ptr_const(void) const
-{
-	using namespace std;
-	impl_t const& _impl = FImpl.MRead();
-	return _impl.FMultiByteBuf;
-}
 inline const utf32* CText::ptr(void) const
 {
 	return ptr_const();

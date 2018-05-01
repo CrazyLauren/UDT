@@ -280,7 +280,7 @@ const NSHARE::CText demand_dg_t::NAME = "dem";
 const NSHARE::CText demand_dg_t::HANDLER = "hand";
 const NSHARE::CText demand_dg_t::KEY_FLAGS = "dflag";
 
-const uint32_t demand_dg_t::NO_HANDLER = -1;
+const uint32_t demand_dg_t::NO_HANDLER = static_cast<uint32_t>(-1);
 
 extern std::pair<required_header_t, bool> UDT_SHARE_EXPORT parse_head(
 		NSHARE::CConfig const& aConf, NSHARE::CText const& _proto)

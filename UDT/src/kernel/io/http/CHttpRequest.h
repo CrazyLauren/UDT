@@ -13,8 +13,8 @@
 #define CHTTPREQUEST_H_
 
 #include "parser-cpp.h"
-class http_parser;
-class http_parser_settings;
+struct http_parser;
+struct http_parser_settings;
 namespace NUDT
 {
 class CHttpRequest

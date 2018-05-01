@@ -1327,10 +1327,11 @@ void CText::MRemoveBuffer(void)
 }
 void CText::clear()
 {
-
-	MWillBeenChanged();
-
-	MSetLen(0);
+	if(!empty())
+	{
+		MWillBeenChanged();
+		MSetLen(0);
+	}
 }
 inline void CText::MSetLen(size_type len)
 {
@@ -1432,6 +1433,24 @@ inline CText::size_type CText::MFindCodepoint(utf8 const* aStr,
 			return idx;
 	}
 	return npos;
+}
+
+CText::size_type CText::MGetBufferLength() const
+{
+	return FImpl.MRead().FMultiByteBufferLen;
+}
+utf32* CText::ptr(void)
+{
+	using namespace std;
+	impl_t & _impl = FImpl.MWrite();
+	return _impl.FMultiByteBuf;
+}
+
+const utf32* CText::ptr_const(void) const
+{
+	using namespace std;
+	impl_t const& _impl = FImpl.MRead();
+	return _impl.FMultiByteBuf;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -39,9 +39,9 @@ SHARED_PACKED(
 			uint8_t FAligment[4-sizeof(crc_t::type_t)];
 			uint8_t FSharedMutex[CIPCSem::eReguredBufSize];
 			uint8_t FAllocMutex[CIPCSem::eReguredBufSize];
-			uint32_t FPIDOfLockedMutex;
-			uint32_t FPIDOfLockedAllocMutex;
-			uint32_t FSize;
+			CSharedAllocator::pid_type FPIDOfLockedMutex;
+			CSharedAllocator::pid_type FPIDOfLockedAllocMutex;
+			CSharedAllocator::block_size_t FSize;
 			const uint32_t FPidOffCreator;
 			bool MUpdateCRC();
 			bool MCheckCRC()const;
@@ -511,6 +511,7 @@ bool CSharedMemory::CImpl::MInit(const NSHARE::CText& aName, size_t aSize,bool a
 	FIsInited = true;
 	return true;
 
+	//goto operator using for  decrease algorithm complexity
 error:
 	VLOG(2)<<"Clean up ShM";
 
@@ -620,9 +621,20 @@ bool CSharedMemory::MIsOpened() const
 {
 	return FImpl && FImpl->FIsInited;
 }
+bool CSharedMemory::MCheckSize(size_t aVal)const
+{
+	return aVal<=static_cast<size_t>(std::numeric_limits<boost::interprocess::offset_t>::max())&&//
+			aVal<=static_cast<size_t>(std::numeric_limits<CSharedAllocator::offset_t>::max());
+}
+
 bool CSharedMemory::MOpenOrCreate(const NSHARE::CText& aName, size_t aSize,size_t aReserv)
 {
 	VLOG(2) << "Open shared memory " << aName<<" Size = "<<aSize;
+	if(!MCheckSize(aSize))
+	{
+		LOG(DFATAL)<<"Invalid size of memory "<<aSize;
+		return false;
+	}
 	CHECK(!FImpl);
 	try
 	{

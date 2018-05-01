@@ -125,7 +125,7 @@ SHARED_PACKED(struct event_info_t
 		keap_t FKeapAlive;
 	};
 });
-COMPILE_ASSERT(sizeof(event_info_t::recv_t) ==(sizeof(uint32_t)*3+sizeof(CSharedAllocator::offset_t)),
+COMPILE_ASSERT(sizeof(event_info_t::recv_t) ==(sizeof(uint32_t)*2+sizeof(CSharedAllocator::offset_t)+sizeof(CSharedAllocator::block_size_t)),
 		IVALID_SIZEOF_EVENT_INFO_RECV);
 COMPILE_ASSERT(sizeof(event_info_t) ==(sizeof(shared_port_t)+sizeof(event_info_t::recv_t)+sizeof(uint32_t)),
 		IVALID_SIZEOF_EVENT_INFO);
@@ -139,13 +139,13 @@ SHARED_PACKED(struct event_fifo_t
 	event_fifo_t(uint32_t aMemorySize) :
 			FPIDOfLockedMutex(0x0),//
 			FCrc(0x1), //
-			FArraySize((aMemorySize - sizeof(event_fifo_t)) / sizeof(FInfo[0])), //
+			FArraySize(static_cast<uint16_t>((aMemorySize - sizeof(event_fifo_t)) / sizeof(FInfo[0]))), //
 			FRead(0), //
 			FWrite(0), //
 			FMaxCountRecvEvent(FArraySize>EVENT_RESERV?(FArraySize-EVENT_RESERV):FArraySize), //
 			FCountRecvEvent(0),//
 			FReadTime(0),//
-			FMaxValue((std::numeric_limits<uint16_t>::max()/FArraySize)*FArraySize)
+			FMaxValue(static_cast<uint16_t>((std::numeric_limits<uint16_t>::max()/FArraySize)*FArraySize))
 	{
 		FState=0;
 		CHECK_GT(aMemorySize, sizeof(event_fifo_t));

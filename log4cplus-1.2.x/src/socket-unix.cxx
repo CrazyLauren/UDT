@@ -70,6 +70,8 @@
 
 #ifdef LOG4CPLUS_HAVE_POLL_H
 #include <poll.h>
+#elif defined (__QNX__)
+#include <sys/poll.h>
 #endif
 
 

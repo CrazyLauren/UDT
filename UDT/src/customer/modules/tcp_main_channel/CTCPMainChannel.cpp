@@ -189,7 +189,7 @@ void CTCPMainChannel::MHandleServiceDG(main_channel_error_param_t const* aP)
 	LOG_IF(ERROR,!FIsConnected) << "Error during setting main channel.";
 	MSendMainChannelError(main_channel_error_param_t::E_OK);
 }
-NSHARE::CBuffer CTCPMainChannel::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CTCPMainChannel::MGetNewBuf(size_t aSize) const
 {
 	return NSHARE::CBuffer(aSize);
 }

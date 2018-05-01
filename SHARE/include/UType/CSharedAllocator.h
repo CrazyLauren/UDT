@@ -17,8 +17,17 @@ namespace NSHARE
 class SHARE_EXPORT CSharedAllocator: NSHARE::CDenyCopying
 {
 public:
+#ifdef SHARED_ALLOCATOR_X64
+	typedef uint64_t offset_t;
+	typedef uint64_t block_size_t;
+#elif defined(SHARED_ALLOCATOR_X32)
 	typedef uint32_t offset_t;
 	typedef uint32_t block_size_t;
+#else
+	typedef IAllocater::offset_pointer_t offset_t;
+	typedef IAllocater::size_type block_size_t;
+#endif
+
 	typedef uint32_t pid_type;
 	typedef uint16_t index_type;
 
@@ -27,7 +36,7 @@ public:
 	static const offset_t NULL_OFFSET;// max 2GB
 	static bool sMIsNullOffset(const offset_t& aWhat);
 
-	COMPILE_ASSERT(sizeof(NULL_OFFSET)==4,InvalidSizeNullOffset);
+	//COMPILE_ASSERT(sizeof(NULL_OFFSET)==4,InvalidSizeNullOffset);
 
 	struct memory_info_t
 	{
@@ -112,6 +121,7 @@ public:
 	struct pid_offset_t;
 	//struct free_index_t;
 	typedef  uint32_t free_index_t;
+	typedef uint32_t reserve_t;
 private:
 	bool MLock() const;
 	bool MUnlock() const;
@@ -169,8 +179,8 @@ private:
 	void * MMallocBlockFromReserv( heap_head_t* const _p_head,process_node_t * const, block_size_t const xWantedSize) const;
 
 	nodes_block_t MGetFreeBlockFromBegin(offset_t const aOffset,
-			uint32_t const _alligment_size, heap_head_t* const _p_head) const;
-	nodes_block_t MGetFreeBlockFromEnd(uint32_t _alligment_size,
+			block_size_t const _alligment_size, heap_head_t* const _p_head) const;
+	nodes_block_t MGetFreeBlockFromEnd(block_size_t _alligment_size,
 			heap_head_t* const _p_head) const;
 
 	size_t MFreeBlock(
@@ -184,9 +194,9 @@ private:
 			block_node_t *aInsertBlock, //pointer for the inserting block
 			block_node_t *aPrev //pointer to the previous block of the free list
 			) const;
-	void MSplitBlockAndUpdateList(nodes_block_t& _nodes, uint32_t _alligment_size,
+	void MSplitBlockAndUpdateList(nodes_block_t& _nodes, block_size_t _alligment_size,
 			bool aFromEnd, heap_head_t* const _p_head) const;
-	block_node_t* MSplitInto2Block(block_node_t *& aWho,uint32_t _alligment_size,
+	block_node_t* MSplitInto2Block(block_node_t *& aWho,block_size_t _alligment_size,
 			bool aFromEnd,
 			heap_head_t* const _p_head) const;
 	static block_node_t* sMGetBlockNode(void * const aPointer);

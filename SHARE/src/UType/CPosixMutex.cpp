@@ -15,20 +15,6 @@
 #include <errno.h>
 namespace NSHARE
 {
-bool CMutexEmpty::MLock(void)
-{
-	if (FNumber)
-		MASSERT(FNumber, thread_id());
-
-	FNumber = thread_id();
-	return true;
-}
-bool CMutexEmpty::MUnlock(void)
-{
-	MASSERT(FNumber, thread_id());
-	FNumber = 0;
-	return true;
-}
 struct CMutex::CImpl
 {
 

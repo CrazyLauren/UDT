@@ -113,13 +113,13 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MC
 	int _count = 0;
 	for (iterator _it(FCBs.begin()); _it != FCBs.end();)
 	{
-		eCBRval _rval=(eCBRval)(*_it)(FSender, aCallbackArgs);
+		eCBRval const _rval=(*_it)(FSender, aCallbackArgs);
 
 		switch(_rval)
 		{
 			case E_CB_REMOVE:
 				++FNumberOfArrayChange;
-				FCBs.erase(_it++);
+				_it=FCBs.erase(_it);
 				break;
 
 			case E_CB_SAFE_IT:
@@ -130,6 +130,10 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MC
 			case E_CB_BLOCING_OTHER:
 				VLOG(2)<<"passing cb";
 				return _count;
+			break;
+			default:
+				LOG(DFATAL) << "Unknown code " << (int)_rval;
+				++_it;
 			break;
 		}
 	}
@@ -157,10 +161,10 @@ inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::M
 	return false;
 }
 template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
-inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator ()(
+inline eCBRval CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator ()(
 		sender_t aSender, value_arg_t aWhat) const
 {
-	return FCb(aSender, aWhat)!=0;
+	return (eCBRval) FCb(aSender, aWhat);
 }
 template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
 inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::Type::operator <(

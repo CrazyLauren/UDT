@@ -457,8 +457,8 @@ void IMPL::MAccept()
 		socklen_t addrlen = sizeof(_addr);
 
 		VLOG(2) << "Accepting";
-		CSocket _sock = accept(FHostSock, (struct sockaddr *) &(_addr),
-				&addrlen);
+		CSocket _sock (static_cast<CSocket::socket_t>(accept(FHostSock, (struct sockaddr *) &(_addr),
+				&addrlen)));
 		VLOG(2) << "New client: " << _sock << "; host " << FHostSock;
 		if (!FHostSock.MIsValid())
 		{

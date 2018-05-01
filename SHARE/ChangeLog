@@ -1,3 +1,10 @@
+UDT SHARE 0.4
+-------------------
+  - Reduced number of warnings
+  - Added CBarrier
+  - Fixed some compile problem
+  - Now max size of SM server can be more than 2 GB
+
 UDT SHARE 0.3
 -------------------
   - Disbale warning 4200 for msvc

@@ -34,7 +34,7 @@ public:
 	virtual void MHandleServiceDG(request_main_channel_param_t const* aP)=0;
 	virtual void MHandleServiceDG(close_main_channel_t const* aP)=0;
 
-	virtual data_t MGetNewBuf(unsigned aSize) const=0;
+	virtual data_t MGetNewBuf(size_t aSize) const=0;
 protected:
 	ILocalChannel(const NSHARE::CText& type) :
 		NSHARE::IFactory(type)

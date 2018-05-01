@@ -155,6 +155,7 @@
 #include <UType/CMutex.h>
 #include <UType/CCondvar.h>
 #include <UType/CSemaphore.h>
+#include <UType/CBarrier.h>
 #include <UType/allocators.h>
 #include <UType/CText.h>
 #include <UType/strtonum.h>

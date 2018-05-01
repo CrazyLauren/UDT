@@ -121,12 +121,13 @@ void CKernelIo::MRecvImpl(const routing_t& aRoute, const descriptor_t& aFrom,
 	else
 	{
 		LOG(ERROR)<<"Sent error to "<<aError.FTo<<" by "<<aError.FWhere<<" code:"<<aError.FError;
-		switch (aError.FError)
+		//todo error sent of
+		/*switch (aError.FError)
 		{
-			//todo error sent of
+			
 			default:
 			break;
-		}
+		}*/
 	}
 }
 

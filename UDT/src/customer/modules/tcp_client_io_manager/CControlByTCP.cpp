@@ -551,8 +551,8 @@ bool CControlByTCP::MIsAvailable() const
 		return true;
 	struct sockaddr_in _serv;
 
-	NSHARE::CSocket _sock;
-	_sock = socket(AF_INET, SOCK_STREAM, 0);
+	NSHARE::CSocket _sock(
+		static_cast<NSHARE::CSocket::socket_t>( socket(AF_INET, SOCK_STREAM, 0)));
 	bool _result = false;
 	if (_sock.MIsValid())
 	{
@@ -649,7 +649,7 @@ int CControlByTCP::MWaitForSend(unsigned aNumber, unsigned aTime)//fixme depreci
 	return 0;
 }
 
-NSHARE::CBuffer CControlByTCP::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CControlByTCP::MGetNewBuf(std::size_t  aSize) const
 {
 	CRAII<CMutex> _block(FMainLock);
 	if (FMain)

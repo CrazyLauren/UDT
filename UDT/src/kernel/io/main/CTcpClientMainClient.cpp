@@ -144,7 +144,7 @@ void IMPL::MProcess(user_data_dg_t const* aP,
 	if(deserialize(_user,aP,FBufferAlloc))
 		FHandler->MReceivedData(_user);
 }
-int IMPL::MSendMainChannelError(unsigned aError)
+bool IMPL::MSendMainChannelError(unsigned aError)
 {
 	data_t _channel;
 	_channel.resize(sizeof(main_channel_error_param_t));
@@ -184,7 +184,7 @@ int IMPL::MReceive()
 	ISocket::data_t _data; //fixme shared memory
 	FOverload.MStartCheking();
 	VLOG(5)<<"Receive by "<<FAddr;
-	int _size=FTcp.MReceiveData(&_data, 0.0);
+	ssize_t const _size=FTcp.MReceiveData(&_data, 0.0);
 	VLOG(5)<<"Receive  "<<_size<<" bytes.";
 	if ( _size> 0)
 	{
@@ -197,7 +197,7 @@ int IMPL::MReceive()
 		ISocket::data_t const& _fix_data=_data;
 		MReceivedData(_fix_data.begin(),_fix_data.end());
 	}
-	return _size;
+	return (int)_size;
 }
 bool IMPL::MSendService(const data_t& aVal) const
 {

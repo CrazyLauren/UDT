@@ -62,13 +62,13 @@ void CThread::CImpl::MSetCpuNum(attr_t*& aTo)
 	if (sMNumberOfProcessor() == 1)
 		return;
 #if !defined(__QNX__) && !defined(__MINGW32__)
-	CHECK_LE(FThis.FCPUNum, static_cast<int>(sMNumberOfProcessor()));
-	VLOG(2)<<"The Cpu number is "<<FThis.FCPUNum;
+	CHECK_LE(FThis.FParam.cpu_number, static_cast<int>(sMNumberOfProcessor()));
+	VLOG(2)<<"The Cpu number is "<<FThis.FParam.cpu_number;
 	cpu_set_t cpus;
 	CPU_ZERO(&cpus);
 
-	if (FThis.FCPUNum >= 0)
-	CPU_SET(FThis.FCPUNum, &cpus);
+	if (FThis.FParam.cpu_number >= 0)
+		CPU_SET(FThis.FParam.cpu_number, &cpus);
 	else
 	{
 		for (unsigned i = 0; i < sMNumberOfProcessor(); ++i)

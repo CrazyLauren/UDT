@@ -29,6 +29,7 @@
 
 #if !defined(_WIN32)
 #  include <netdb.h>
+#  include <arpa/inet.h>                      // htons, htonl
 #else
 #  include <log4cplus/config/windowsh-inc.h>
 #endif

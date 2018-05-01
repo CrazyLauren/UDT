@@ -44,6 +44,7 @@ struct __gag_t
 #	define DVLOG(some) LOG(some)
 #	define DLOG(some) LOG(some)
 #	define DLOG_IF(some,other) LOG(some)
+#	define DVLOG_IF(some,other) LOG(some)
 #	define LOG_ASSERT(some)
 #	define CHECK_NE(some,some1) true?(void)0: __gag_t()^ std::cout
 #	define CHECK_LE(some,some1) true?(void)0: __gag_t()^ std::cout

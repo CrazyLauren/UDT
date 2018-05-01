@@ -58,7 +58,7 @@ public:
 	NSHARE::ISocket* MGetSocket();
 	const NSHARE::ISocket* MGetSocket() const;
 	bool MIsKernel()const;
-	virtual NSHARE::CBuffer MGetNewBuf(unsigned) const;
+	virtual NSHARE::CBuffer MGetNewBuf(std::size_t ) const;
 	int MSendMainChannelError(NSHARE::CText const& _channel_type, unsigned aError);
 private:
 

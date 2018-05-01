@@ -283,15 +283,16 @@ inline bool str_to_float(TStr const& aVal, T &aTo)
 	long double a = 0.0;
 	int e = 0;
 	unsigned _num_dig = 0;
+
 	for (; _it != aVal.end() && isdigit(*_it); ++_it, ++_num_dig)
-		a = a * 10.0 + (*_it - '0');
+		a=a*10.0+(*_it - '0');
 
 	if (_it != aVal.end() && *_it == '.')
 	{
-		for (; ++_it != aVal.end() && isdigit(*_it);)
+		long double _pow10=10.0;
+		for (; ++_it != aVal.end() && isdigit(*_it); _pow10 *= 10.0)
 		{
-			a = a * 10.0 + (*_it - '0');
-			e -= 1;
+			a+=(*_it - '0')/_pow10;			
 		}
 	}
 	if (_it != aVal.end() && (*_it == 'e' || *_it == 'E'))

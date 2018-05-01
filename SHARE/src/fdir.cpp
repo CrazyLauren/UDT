@@ -181,8 +181,8 @@ extern int filecmp(FILE* aF1, FILE* aF2)
 	fseek(aF2, 0, SEEK_SET);
 	do
 	{
-		_s1 = fread(_buf1, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF1);
-		_s2 = fread(_buf2, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF2);
+		_s1 = (int)fread(_buf1, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF1);
+		_s2 = (int)fread(_buf2, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF2);
 		if (!_s1 || _s1 != _s2 || (memcmp(_buf1, _buf2, _s1)!=0))
 			return 1;
 	} while (!feof(aF1) && !feof(aF2));

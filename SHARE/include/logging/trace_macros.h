@@ -111,6 +111,7 @@
 #	define DLOG(severity) LOG(severity)
 #	define DVLOG(verboselevel) VLOG(verboselevel)
 #	define DLOG_IF(severity, condition) LOG_IF(severity, condition)
+#	define DVLOG_IF(severity, condition) VLOG_IF(severity, condition)
 #	define DLOG_EVERY_N(severity, n) LOG_EVERY_N(severity, n)
 #	define DLOG_IF_EVERY_N(severity, condition, n) \
   LOG_IF_EVERY_N(severity, condition, n)
@@ -150,6 +151,9 @@ namespace NSHARE
 		DLOG(INFO)
 
 #	define DLOG_IF(severity, condition) \
+		DLOG(INFO)
+
+#	define DVLOG_IF(severity, condition) \
 		DLOG(INFO)
 
 #	define DLOG_EVERY_N(severity, n) \

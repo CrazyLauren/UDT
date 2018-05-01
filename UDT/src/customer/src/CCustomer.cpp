@@ -626,8 +626,8 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 	CHECK_EQ(FDemands.size(), FEvents.size());
 
 	VLOG(2) << "Our turn.";
-	unsigned _i = 0;
-	unsigned const _size = FDemands.size();
+	size_t _i = 0;
+	size_t const _size = FDemands.size();
 	for (; _i != _size && !(FDemands[_i] == _val); ++_i)
 		;
 
@@ -642,7 +642,7 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 	}
 	else
 	{
-		LOG(WARNING) << "Replace handler "<<FEvents[_i]<< " to " << aHandler;
+		LOG(WARNING) << "Replace handler "<<FEvents[(uint32_t)_i]<< " to " << aHandler;
 		CHECK(FEvents.find(_val.FHandler)!=FEvents.end());
 		FEvents[_val.FHandler]=aHandler;
 	}
@@ -672,8 +672,8 @@ int CCustomer::_pimpl::MRemoveDgParserFor(const NSHARE::CText& aReq,
 	_val.FProtocol = aNumber.FProtocolName;
 	_val.FWhat = aNumber.FRequired;
 
-	unsigned _i = 0;
-	unsigned const _size = FDemands.size();
+	size_t _i = 0;
+	size_t const _size = FDemands.size();
 	for (; _i != _size && !(FDemands[_i] == _val); ++_i)
 		;
 	if (_i == _size)
@@ -788,7 +788,7 @@ int CCustomer::_pimpl::MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data)
 	}
 	return _data.FDataId.FPacketNumber;
 }
-NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(size_t aSize) const
 {
 	if (FWorker)
 		return FWorker->MGetNewBuf(aSize);
@@ -1108,7 +1108,7 @@ bool CCustomer::MEmpty() const
 {
 	return FImpl->MEmpty();
 }
-NSHARE::CBuffer CCustomer::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CCustomer::MGetNewBuf(std::size_t aSize) const
 {
 	CHECK_NOTNULL(FImpl);
 	return FImpl->MGetNewBuf(aSize);

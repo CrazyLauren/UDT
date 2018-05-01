@@ -38,7 +38,7 @@ public:
 	virtual void MReceivedData(progs_id_t const & aData)=0;
 	virtual void MReceivedData(fail_send_t const & aData)=0;
 
-	virtual NSHARE::CBuffer MGetNewBuf(unsigned aSize) const=0;
+	virtual NSHARE::CBuffer MGetNewBuf(std::size_t aSize) const=0;
 protected:
 	IIOConsumer(const NSHARE::CText& type) :
 		NSHARE::IFactory(type)

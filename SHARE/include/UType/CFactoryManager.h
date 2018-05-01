@@ -11,6 +11,12 @@
  */ 
 #ifndef CFACTORYMANAGER_H_
 #define CFACTORYMANAGER_H_
+
+#if defined(_MSC_VER)
+#	pragma warning (push)
+#	pragma warning (disable:4661)
+#endif
+
 namespace NSHARE
 {
 /** \brief Класс работы с фабричными объектами
@@ -200,4 +206,7 @@ inline typename CFactoryManager<TFactory>::factory_its_t CFactoryManager<TFactor
 	return _it;
 }
 } /* namespace NSHARE */
+#if defined(_MSC_VER)
+#	pragma warning (pop)
+#endif
 #endif /* CFACTORYMANAGER_H_ */

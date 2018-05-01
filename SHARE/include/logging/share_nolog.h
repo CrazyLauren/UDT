@@ -103,6 +103,7 @@ namespace NSHARE
 #	define DVLOG(some) VLOG(some)
 #	define DLOG(some) LOG(some)
 #	define DLOG_IF(some,other) VLOG_IF(some,other)
+#	define DVLOG_IF(some,other) VLOG_IF(some,other)
 #	define LOG_ASSERT(some) (some)?(void)0:NSHARE::logging_impl::__gag_nc_t()& NSHARE::logging_impl::__logging_nc_t<FATAL>()<<__FILE__<<":"<<__LINE__<<" "
 #ifndef NDEBUG
 #	define DLOG_ASSERT(condition) LOG_ASSERT(condition)

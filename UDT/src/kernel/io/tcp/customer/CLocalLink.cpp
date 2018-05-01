@@ -193,25 +193,25 @@ template<>
 inline unsigned CLocalLink::MFill<progs_id_t>(data_t* _buf,
 		const progs_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
-	return serialize<clients_info2_t,progs_id_t>(_buf,_id,aRoute,aError);
+	return (unsigned)serialize<clients_info2_t,progs_id_t>(_buf,_id,aRoute,aError);
 }
 template<>
 inline unsigned CLocalLink::MFill<fail_send_t>(data_t* _buf,
 		const fail_send_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
-	return serialize<user_data_fail_send_t,fail_send_t>(_buf,_id,aRoute,aError);
+	return (unsigned)serialize<user_data_fail_send_t,fail_send_t>(_buf,_id,aRoute,aError);
 }
 template<>
 inline unsigned CLocalLink::MFill<demand_dgs_t>(data_t* _buf,
 		const demand_dgs_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
-	return serialize<custom_filters_dg2_t,demand_dgs_t>(_buf,_id,aRoute,aError);
+	return (unsigned)serialize<custom_filters_dg2_t,demand_dgs_t>(_buf,_id,aRoute,aError);
 }
 template<>
 inline unsigned CLocalLink::MFill<program_id_t>(data_t* _buf,
 		const program_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
-	return serialize<requiest_info2_t,program_id_t>(_buf,_id,aRoute,aError);
+	return (unsigned)serialize<requiest_info2_t,program_id_t>(_buf,_id,aRoute,aError);
 
 }
 

@@ -267,7 +267,7 @@ void CSmMainChannel::MHandleServiceDG(main_channel_error_param_t const* aP)
 						main_channel_error_param_t::E_NOT_OPENED);
 	}
 }
-NSHARE::CBuffer CSmMainChannel::MGetNewBuf(unsigned aSize) const
+NSHARE::CBuffer CSmMainChannel::MGetNewBuf(size_t aSize) const
 {
 	if (FSm.MIsOpen())
 		return FSm.MAllocate(aSize,0);
@@ -288,7 +288,7 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 
 	NSHARE::CBuffer::pointer const _p_size = _data_buf.ptr() + _before + _size;
 	uint32_t *_p = (uint32_t *) _p_size;
-	*_p = _size;
+	*_p = static_cast<uint32_t>(_size);
 
 	for (;;)
 	{

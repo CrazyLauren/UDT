@@ -101,6 +101,7 @@ if(NOT Boost_FOUND)
 	message(FATAL "Failed to find boost.")	
 	return()
 endif()
+add_definitions(-DBOOST_ALL_NO_LIB)
 
 FIND_PACKAGE(rapidjson REQUIRED)
 if(NOT RAPIDJSON_FOUND)
@@ -131,7 +132,7 @@ ENDIF ()
 IF (WIN32)
    if (MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4200") #disabling of 4200 warning
-		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX )
+		add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX)
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
         OPTION(BUILD_BY_MP "Set to ON to build SHARE with the /MP option (Visual Studio 2005 and above)." OFF)
         MARK_AS_ADVANCED(BUILD_BY_MP)

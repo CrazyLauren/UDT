@@ -460,14 +460,14 @@ size_t CPacketDivisor::MSplit(user_datas_t& aData, user_datas_t& aTo,
 						<< " raw data size=" << _data_size;
 
 	unsigned i = 0;
-	unsigned const _first_num = _h_data.FDataId.FSplit.FCounter
+	size_t const _first_num = _h_data.FDataId.FSplit.FCounter
 			* _valid_num_part - _valid_num_part + 1;
-	for (unsigned _last_but_one = _valid_num_part - 1; i < _last_but_one; ++i)
+	for (size_t _last_but_one = _valid_num_part - 1; i < _last_but_one; ++i)
 	{
 		user_data_t _data;
 		_data.FDataId = _h_data.FDataId;
-		_data.FDataId.FSplit.FCoefficient = _new_coef;
-		_data.FDataId.FSplit.FCounter = _first_num + i;
+		_data.FDataId.FSplit.FCoefficient = static_cast<uint16_t>(_new_coef);
+		_data.FDataId.FSplit.FCounter = static_cast<uint16_t>(_first_num + i);
 		_data.FDataId.FSplit.FIsLast = false;
 
 		NSHARE::CBuffer::const_iterator const _b_it = _h_data.FData.begin()
@@ -481,8 +481,8 @@ size_t CPacketDivisor::MSplit(user_datas_t& aData, user_datas_t& aTo,
 	{
 		user_data_t _data;
 		_data.FDataId = _h_data.FDataId;
-		_data.FDataId.FSplit.FCoefficient = _new_coef;
-		_data.FDataId.FSplit.FCounter = _first_num + i;
+		_data.FDataId.FSplit.FCoefficient = static_cast<uint16_t>(_new_coef);
+		_data.FDataId.FSplit.FCounter = static_cast<uint16_t>(_first_num + i);
 
 		VLOG_IF(1,_h_data.FDataId.FSplit.FIsLast) << "It's the last block.";
 

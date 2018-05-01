@@ -93,7 +93,7 @@ bool CBuffering::MTry(data_list_t & aTo)
 
 
 	FHandlingBuffer=FBuffer;
-	FCurrentSMBuffer-=FSMBuffer;//todo atomic
+	FCurrentSMBuffer-=(uint32_t)FSMBuffer;//todo atomic
 	FSMBuffer=0;
 
 	CHECK_EQ(FDoingThread,0);
@@ -174,7 +174,7 @@ bool CBuffering::MPut(user_datas_t & aData)
 					VLOG(2) << "Handle by SM";
 					if ((FCurrentSMBuffer + _b_size) < FMaxSMBufferSize)
 					{
-						FCurrentSMBuffer += _b_size;
+						FCurrentSMBuffer += (uint32_t)_b_size;
 						FSMBuffer += _b_size;
 
 						VLOG(2) << "Increment sm buffer "

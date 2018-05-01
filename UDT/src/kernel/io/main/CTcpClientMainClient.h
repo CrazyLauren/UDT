@@ -61,7 +61,7 @@ public:
 	bool MSend(user_data_t const& aData);
 
 
-	int MSendMainChannelError(unsigned aError);
+	bool MSendMainChannelError(unsigned aError);
 	void MAddToSelect();
 	void MRemoveFromSelect();
 	void MSerialize(NSHARE::CConfig &) const;

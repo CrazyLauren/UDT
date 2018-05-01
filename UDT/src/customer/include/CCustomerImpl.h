@@ -61,7 +61,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MRemoveDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber);
 	customers_t MCustomers() const;
 	program_id_t MCustomer(NSHARE::uuid_t const&) const;
-	NSHARE::CBuffer MGetNewBuf(unsigned aSize) const;
+	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;
 //	static void sMReceiver(id_t const& aFrom, data_t::value_type const* aData,
 //			unsigned aSize);
 

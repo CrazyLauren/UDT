@@ -359,7 +359,7 @@ void CKernelIOByTCP::MCleanUpNewLinkages()
 		VLOG(2) << "CleanUp";
 		for (; _it != FNewChannels.end(); ++_it)
 		{
-			unsigned _delta = NSHARE::get_unix_time() - _it->second->FTime;
+			unsigned _delta = static_cast<unsigned>(NSHARE::get_unix_time() - _it->second->FTime);
 			VLOG(2) << NSHARE::get_unix_time() << " - "
 								<< _it->second->FTime;
 			if (_delta > FTimeout)
