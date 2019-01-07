@@ -1,0 +1,31 @@
+UDT SHARE 0.5
+-------------------
+  - Fixed virtual method called bug for static variables
+  - Reflactoring CBuffer
+  - Fixed some small bugs
+  - Fixed incorrect aligment of atomic value
+  
+UDT SHARE 0.4
+-------------------
+  - Reduced number of warnings
+  - Added CBarrier
+  - Fixed some compile problem
+  - Now max size of SM server can be more than 2 GB
+
+UDT SHARE 0.3
+-------------------
+  - Disbale warning 4200 for msvc
+  - Refactoring deftype.h
+  - Now type of epsilon has not to be equal of value type in floating compare function
+  - Fixed bug: Export uint_test function, TCLAP class for msvc
+  - Rename CIntrusived to IIntrusived
+  - Fixed bug:lost "public" access labels in CNoMutex
+  - New methods in CThreadPool
+  - Fixed bug: disbale c++11 atomic operation
+  - Added support MINGW64
+
+UDT SHARE 0.2
+-------------------
+
+  - Fixed bug: incorrect double to string convertion
+  - Added several unit tests
