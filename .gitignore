@@ -7,3 +7,7 @@ revision.c
 /UDT/src/kernel/revision.c
 /UDT/src/udt_share/src/revision.c
 /UDT/src/kernel/gui/.idea
+*.kdev4
+.kdev4/
+.project
+/doc
