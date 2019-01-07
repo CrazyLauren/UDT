@@ -108,6 +108,8 @@ SHARED_PACKED(struct CSharedAllocator::pid_offset_t
 		FNextNode = aVal ? FNextNode | _bit : FNextNode&(~_bit);
 	}
 });
+COMPILE_ASSERT(sizeof(CSharedAllocator::pid_offset_t) == sizeof(CSharedAllocator::offset_t),
+		IVALID_SIZEOF_PID_OFFSET);
 
 COMPILE_ASSERT(sizeof(CSharedAllocator::free_index_t) == sizeof(uint32_t),
 		IVALID_SIZEOF_FREE_INDEX);
@@ -200,18 +202,27 @@ struct CSharedAllocator::process_node_t
 	atomic_t FAlloactionCount; //is used to hold the number of the memory blocks was allocated by process
 	pid_offset_t FOffsets[0]; //array of allocated memory addresses
 });
+COMPILE_ASSERT(sizeof(CSharedAllocator::process_node_t) == (1*sizeof(CSharedAllocator::free_index_t)//
+		+sizeof(CSharedAllocator::offset_t)*1//
+		+sizeof(atomic_t)*2//
+		+sizeof(CSharedAllocator::pid_type)*1//
+		+sizeof(CSharedAllocator::process_node_t::array_size_t)*1//
+		+sizeof(CSharedAllocator::reserve_t)*2//
+		+sizeof(CSharedAllocator::pid_offset_t)*0),
+		IVALID_SIZEOF_PROCESS_NODE);
+
 CSharedAllocator::process_node_t::process_node_t(pid_type aPid,
 		block_size_t aMemorySize,size_t aReserv) :
 		FNextNode(NULL_OFFSET), //
 		FPid(aPid), //
-		FMinFreeIndex(0),//
-		FCount(0), //
+		FMinFreeIndex(0),//		
 		FArraySize((array_size_t)
 				(aMemorySize - sizeof(process_node_t)) / sizeof(FOffsets[0])), //
 		FSizeOfReserv(static_cast<reserve_t>(aReserv)),//
-		FUsedUpReserv(RESERV_IS_NOT_ALLOCATED),//
-		FAlloactionCount(0) //
+		FUsedUpReserv(RESERV_IS_NOT_ALLOCATED)		
 {
+	FAlloactionCount = 0;
+	FCount = 0;
 	CHECK_GT(aMemorySize, sizeof(process_node_t));
 	LOG_IF(FATAL,FArraySize>=NULL_INDEX)<<"Cannot allocate the process node for storing "<<FArraySize<<" offsets as "
 			" the max number of offsets which can be stored  is  "<<NULL_INDEX<<" The value limitation is related of "
@@ -268,7 +279,7 @@ bool CSharedAllocator::process_node_t::MIsOffset(offset_t aOffsetInArray,
 CSharedAllocator::offset_t CSharedAllocator::process_node_t::MPutOffset(offset_t aOffset)
 {
 	CHECK_NE((array_size_t)FAlloactionCount, FArraySize);
-	CHECK_LE(aOffset, (((offset_t)NULL_INDEX) << (sizeof(offset_t)/sizeof(index_type)-1)*sizeof(index_type)*8));
+	CHECK_LE(aOffset, ((offset_t)NULL_INDEX) << (sizeof(offset_t)/sizeof(index_type)-1)*sizeof(index_type)*8);
 //	free_index_t _min=atomic_read32(&FMinFreeIndex.FVal);
 //	unsigned i = _min.FIndex;
 	free_index_t _min=FMinFreeIndex;
@@ -413,11 +424,11 @@ struct CSharedAllocator::heap_head_t
 		FTIDOfLockedMutex(0),//
 		FWacthDogPid(0),//
 		FWacthDogTid(0),//
-		FNumberOfWaitingFor(0),//
-		FPostCount(0),//
-		FControlingTypeSize(contoling_type_size()),
-		FNumUserAllocation(0)
+		FControlingTypeSize(contoling_type_size())		
 	{
+		FNumberOfWaitingFor = 0;
+		FPostCount=0;
+		FNumUserAllocation = 0;
 		memset(FSharedMutex,0,sizeof(FSharedMutex));
 		memset(FFreeSem,0,sizeof(FFreeSem));
 		memset(FWatchDogSem,0,sizeof(FWatchDogSem));

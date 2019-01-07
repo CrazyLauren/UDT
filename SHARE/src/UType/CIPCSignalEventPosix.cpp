@@ -104,7 +104,7 @@ bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, eOpenType aHasToBeNew)
 
 	CHECK_NOTNULL(aBuf);
 	CHECK_EQ(FPImpl->FSignalEvent,NULL);
-	FPImpl->FSignalEvent=(_sem_t*)(((uintptr_t)aBuf+__alignof(sem_t))& ~(__alignof(sem_t)-1));
+	FPImpl->FSignalEvent=(_sem_t*)get_alignment_address<sem_t>(aBuf);
 	CHECK_LE((void*)(FPImpl->FSignalEvent+1),(void*)(aBuf+aSize));
 	switch (aHasToBeNew)
 	{

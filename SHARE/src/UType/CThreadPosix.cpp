@@ -394,7 +394,8 @@ bool CThread::MJoin(uint64_t aTime)
 void CThread::MRun(void)
 {
 	CHECK(MIsRunning());
-	MCall(NULL);
+	int const _number=MCall(NULL);
+	DCHECK_GT(_number,0);
 }
 
 bool CThread::MSignal(int signal)

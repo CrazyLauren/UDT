@@ -70,7 +70,7 @@ void CSmMainChannel::MClose()
 NSHARE::eCBRval CSmMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CSmMainChannel*>(aData)->MReceiver();
-	return E_CB_REMOVE;
+	return E_CB_SAFE_IT;
 }
 void CSmMainChannel::MCheckPacketSequence(const unsigned aPacket,
 		unsigned & aLast)const

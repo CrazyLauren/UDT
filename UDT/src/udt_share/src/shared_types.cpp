@@ -21,6 +21,31 @@ namespace NUDT
 {
 extern UDT_SHARE_EXPORT error_type const USER_ERROR_MASK = std::numeric_limits<
 		error_type>::max() << eUserErrorStartBits;
+
+error_type code_inner_error(error_type const& aError)
+{
+	return aError;
+}
+
+error_type encode_inner_error(error_type const& aError)
+{
+	return aError & (~USER_ERROR_MASK);
+}
+user_error_type encode_user_error(error_type const& aError)
+{
+	error_type const _error = ( aError& USER_ERROR_MASK)
+			>> eUserErrorStartBits;
+	CHECK_LE(_error, std::numeric_limits<user_error_type>::max());
+	return static_cast<user_error_type>(_error);
+}
+error_type code_user_error(user_error_type const& aError)
+{
+	const error_type _user = aError;
+	error_type const _error = (_user << eUserErrorStartBits)
+			| E_USER_ERROR_BEGIN;
+	return _error;
+}
+
 //---------------------------------------
 const NSHARE::CText id_t::NAME = "id";
 const NSHARE::CText id_t::KEY_NAME = "n";
@@ -117,23 +142,22 @@ const NSHARE::CText user_data_info_t::KEY_PACKET_TO = "to";
 const NSHARE::CText user_data_info_t::KEY_REGISTRATORS = "reg";
 
 const NSHARE::CText user_data_info_t::KEY_PACKET_PROTOCOL = "pl";
-const NSHARE::CText user_data_info_t::KEY_RAW_PROTOCOL_NUM = "nr";
+const NSHARE::CText user_data_info_t::KEY_DATA_OFFSET = "nr";
 const NSHARE::CText user_data_info_t::KEY_DATA_ENDIAN = "endian";
 
 user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		//FFrom(aConf.MChild(KEY_PACKET_FROM)),//
-		FRawProtocolNumber(0), //
+		FDataOffset(0), //
 		FSplit(aConf.MChild(split_packet_t::NAME)), //
 		FDestination(aConf.MChild(uuids_t::NAME)), //
 		FRegistrators(aConf.MChild(KEY_REGISTRATORS)), //
 		FRouting(aConf.MChild(routing_t::NAME)), //
-		FVersion(aConf.MChild(NSHARE::version_t::NAME)), //
 		FEndian(NSHARE::E_SHARE_ENDIAN)
 {
 	VLOG(2) << "Create user_data_info_t from " << aConf;
 	aConf.MGetIfSet(KEY_PACKET_NUMBER, FPacketNumber);
 	aConf.MGetIfSet(KEY_PACKET_PROTOCOL, FProtocol);
-	aConf.MGetIfSet(KEY_RAW_PROTOCOL_NUM, FRawProtocolNumber);
+	aConf.MGetIfSet(KEY_DATA_OFFSET, FDataOffset);
 	unsigned _val=0;
 	if(aConf.MGetIfSet<unsigned>(KEY_DATA_ENDIAN, _val))
 		FEndian=(NSHARE::eEndian)_val;
@@ -147,6 +171,13 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 				_it->MValue(
 						demand_dg_t::event_handler_t(demand_dg_t::NO_HANDLER)));
 	}
+
+	std::pair<required_header_t, bool> const _val2 = parse_head(aConf,
+			FProtocol);
+	if (_val2.second)
+	{
+		FWhat = _val2.first;
+	}
 }
 NSHARE::CConfig user_data_info_t::MSerialize() const
 {
@@ -155,7 +186,8 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	_conf.MSet(KEY_PACKET_PROTOCOL, FProtocol);
 	//_conf.MAdd(KEY_PACKET_FROM, FFrom.MSerialize());
 	_conf.MAdd(FSplit.MSerialize());
-	_conf.MAdd(FVersion.MSerialize());
+
+	_conf.MAdd(serialize_head(FWhat, ""));
 
 	if (!FDestination.empty())
 	{
@@ -176,7 +208,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	}
 	_conf.MAdd(routing_t::NAME, FRouting.MSerialize());
 
-	_conf.MSet(KEY_RAW_PROTOCOL_NUM, FRawProtocolNumber);
+	_conf.MSet(KEY_DATA_OFFSET, FDataOffset);
 	_conf.MSet<unsigned>(KEY_DATA_ENDIAN, FEndian);
 
 	return _conf;
@@ -331,6 +363,7 @@ extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
 				}
 			} catch (...)
 			{
+				LOG(DFATAL) << "Unknown error";
 			}
 		}
 		LOG(DFATAL)<<"Cannot serialize head by custom protocol: "<<_proto;
@@ -340,7 +373,7 @@ extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)), //
 		FHandler(NO_HANDLER), //
-		FFlags(E_NO_DEMAND_FLAGS)
+		FFlags(aConf.MValue < flags_t > (KEY_FLAGS, E_DEMAND_DEFAULT_FLAGS))
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
 	if (aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol))
@@ -356,7 +389,6 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 	{
 		FWhat = _val.first;
 		aConf.MGetIfSet(HANDLER, FHandler);
-		aConf.MGetIfSet(KEY_FLAGS, FFlags);
 
 		NSHARE::CConfig const & _set = aConf.MChild(NSHARE::uuid_t::NAME);
 		if (!_set.MIsEmpty())
@@ -376,7 +408,7 @@ NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 	_conf.MAdd(HANDLER, FHandler);
-	_conf.MAdd(KEY_FLAGS, FFlags);
+	_conf.MAdd(KEY_FLAGS, FFlags.MGetMask());
 
 	if (FUUIDFrom.MIs())
 	{
@@ -389,6 +421,21 @@ bool demand_dg_t::MIsValid() const
 {
 	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs())
 			&& FHandler != NO_HANDLER;
+}
+void demand_dg_t::MSwitchEndianFlag()
+{
+	if(FFlags.MGetFlag(E_IS_BIG_ENDIAN))
+		FFlags.MSetFlag(E_IS_BIG_ENDIAN,false);
+	else
+		FFlags.MSetFlag(E_IS_BIG_ENDIAN,true);
+
+}
+bool demand_dg_t::MIsValidEndian() const
+{
+	eEndian const _endian =
+			FFlags.MGetFlag(E_IS_BIG_ENDIAN) ?
+					E_SHARE_BIG_ENDIAN : E_SHARE_LITTLE_ENDIAN;
+	return _endian == E_SHARE_ENDIAN;
 }
 bool demand_dg_t::MIsEqual(demand_dg_t const& aRht) const
 {
@@ -703,7 +750,7 @@ bool fail_send_t::MIsValid() const
 }
 error_type fail_send_t::MGetInnerError() const
 {
-	return FError.MGetMask() & (~USER_ERROR_MASK);
+	return encode_inner_error(FError.MGetMask());
 }
 user_error_type fail_send_t::MGetUserError() const
 {
@@ -711,22 +758,16 @@ user_error_type fail_send_t::MGetUserError() const
 		return E_NO_ERROR;
 	else
 	{
-		error_type const _error = (FError.MGetMask() & USER_ERROR_MASK)
-				>> eUserErrorStartBits;
-		CHECK_LE(_error, std::numeric_limits<user_error_type>::max());
-		return _error;
+		return encode_user_error(FError.MGetMask());
 	}
 }
 void fail_send_t::MSetUserError(user_error_type aError)
 {
-	const error_type _user = aError;
-	error_type const _error = (_user << eUserErrorStartBits)
-			| E_USER_ERROR_BEGIN;
-	MSetError(_error);
+	FError.MSetFlag(code_user_error(aError), true);
 }
 void fail_send_t::MSetError(error_type aError)
 {
-	FError.MSetFlag(aError, true);
+	FError.MSetFlag(code_inner_error(aError), true);
 }
 const NSHARE::CText user_data_t::NAME = "udata";
 const NSHARE::CText user_data_t::DATA = "data";
@@ -754,33 +795,49 @@ IExtParser* aP) const
 
 	if (aP)
 	{
-		required_header_t _raw_head;
-		_raw_head.FVersion = FDataId.FVersion;
-		_raw_head.FNumber = FDataId.FRawProtocolNumber;
-		try
-		{
-			NSHARE::CConfig _data(
-					aP->MToConfig(
-							FDataId.MIsRaw() ? _raw_head : required_header_t(),
-							_begin, _begin + _size));
-			_data.MValue() = DATA;
-			if (_data.MIsOnlyKey())
+		size_t _data_offset=0;
+		if (!_is_base64)
+			try
 			{
-				LOG(ERROR)<<"Cannot serialize by "<<aP->MGetType();
+				if (FDataId.MIsRaw())
+				{
+					IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
+						RAW_PROTOCOL_NAME);
+					DCHECK_NOTNULL(_p);
+					_data_offset=_p->MDataOffset(FDataId.FWhat);
+				}
+				else
+				{
+					_data_offset=aP->MDataOffset(FDataId.FWhat);
+				}
+			} catch (...)
+			{
+				LOG(DFATAL)<<"Exception is occurred";
 				_is_base64 = true;
 			}
-			else
+		if (!_is_base64)
+			try
 			{
-				_conf.MAdd(_data);
-				_conf.MAdd(PARSER,aP->MGetType());
-			}
+				NSHARE::CConfig _data(
+						aP->MToConfig(FDataId.FWhat, _begin+_data_offset, _begin + _size-_data_offset));
+				_data.MKey() = DATA;
+				if (_data.MIsOnlyKey())
+				{
+					LOG(ERROR)<<"Cannot serialize by "<<aP->MGetType();
+					_is_base64 = true;
+				}
+				else
+				{
+					_conf.MAdd(_data);
+					_conf.MAdd(PARSER,aP->MGetType());
+				}
 
-		}
-		catch (...)
-		{
-			LOG(DFATAL)<<"Exception is occurred";
-			_is_base64 = true;
-		}
+			}
+			catch (...)
+			{
+				LOG(DFATAL)<<"Exception is occurred";
+				_is_base64 = true;
+			}
 
 	}
 	else
@@ -797,6 +854,11 @@ IExtParser* aP) const
 bool user_data_t::MIsValid() const
 {
 	return FDataId.MIsValid() && !FData.empty();
+}
+void user_data_t::MMoveTo(user_data_t & aTo)
+{
+	aTo.FDataId=FDataId;
+	FData.MMoveTo(aTo.FData);
 }
 const NSHARE::CText main_ch_param_t::NAME = "main";
 const NSHARE::CText main_ch_param_t::CHANNEL = "channel";

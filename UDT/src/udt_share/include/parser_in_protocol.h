@@ -321,8 +321,8 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 	LOG_IF(WARNING,
 			(_head->FVersion.FMajor == KD_T::MAJOR)
 					&& (_head->FVersion.FMinor > KD_T::MINOR))
-			<< "The Minor version  of received the " << _head->FType << " DG "
-					" is greater than internal. (" << _head->FVersion.FMinor
+			<< "The Minor version  of received the " << (unsigned)_head->FType << " DG "
+					" is greater than internal. (" <<(unsigned) _head->FVersion.FMinor
 			<< ">" << (unsigned)KD_T::MINOR << ")";
 	bool _need_handled = true;
 	if (!_kd_ver.MIsCompatibleWith(_head->FVersion))
@@ -330,7 +330,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 		_need_handled = false;
 		LOG(DFATAL) << "Internal version of protocol is out-of-date.("
 				<< _head->FVersion << "!=" << _kd_ver << ") for "
-				<< _head->FType << " DG which will ignored.";
+				<< (unsigned)_head->FType << " DG which will ignored.";
 	}
 	std::size_t const _data_size = _head->MGetDataSize();
 	std::size_t const _size_kd = _head->FHeadSize + _data_size;
@@ -353,7 +353,7 @@ inline typename CInParser<T, UserData>::e_error_t CInParser<T, UserData>::MCheck
 			if (_crc16 != _head->MGetDataCRC())
 			{
 				LOG(ERROR) << "Invalid DATA CRC:" << _crc16 << ", in DG "
-						<< _head->FType << " DataCrc:" << _head->MGetDataCRC()
+						<< (unsigned)_head->FType << " DataCrc:" << _head->MGetDataCRC()
 						<< ".It which will ignored.";
 				_need_handled = false;
 			}

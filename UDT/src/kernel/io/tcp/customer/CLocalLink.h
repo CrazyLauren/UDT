@@ -39,7 +39,7 @@ public:
 	bool MReceivedData(data_t::const_iterator aBegin,
 			data_t::const_iterator aEnd);
 
-	bool MReceivedData(user_data_t const&);
+	bool MReceivedData(user_data_t&);
 	bool MReceivedData(program_id_t const&, const routing_t&,error_info_t const&);
 	bool MReceivedData(demand_dgs_t const&, const routing_t&,error_info_t const&);
 	bool MReceivedData(demand_dgs_for_t const&, const routing_t&,error_info_t const&);

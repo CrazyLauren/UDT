@@ -37,8 +37,8 @@ using namespace NUDT;
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	args_t const* _recv_arg=(args_t const*)aWHAT;
-	const uint8_t* _it=_recv_arg->FBegin;
-	_it+=sizeof(test_msg_t);
+	const uint8_t* _it=_recv_arg->FHeaderBegin;
+	_it+=sizeof(msg_head_t);
 	for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
 	{
 		if (i%255 != *_it)
@@ -174,10 +174,10 @@ extern void doing_something()
 		}
 
 		//filing the head of msg
-		test_msg_t *_msg = (test_msg_t*) _buf.ptr();
-		_msg->FHead.FType = E_MSG_TEST;
-		_msg->FHead.FSize = PACKET_SIZE;
-		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(test_msg_t),_it_end=_buf.end();
+		msg_head_t *_msg = (msg_head_t*) _buf.ptr();
+		_msg->FType = E_MSG_TEST;
+		_msg->FSize = PACKET_SIZE;
+		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(msg_head_t),_it_end=_buf.end();
 		for(int i=0;_it!=_it_end;++i,++_it)
 		{
 			*_it=i%255;

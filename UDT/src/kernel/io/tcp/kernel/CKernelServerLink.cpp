@@ -136,7 +136,7 @@ void CKernelServerLink::MSendOpenedIfNeed()
 		FIsAccepted= MSend(_buf);
 	}
 }
-bool CKernelServerLink::MReceivedData(user_data_t const& _user)
+bool CKernelServerLink::MReceivedData(user_data_t& _user)
 {
 	LOG_IF(DFATAL,!MIsOpened()) << "Receiving data by closed link.";
 	if (MIsOpened())

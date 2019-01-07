@@ -184,6 +184,14 @@ void CDescriptors::MGetAll(d_list_t& aTo) const
 	CRAII<CMutex> _block(FBLock);
 	aTo = FDescriptors;
 }
+bool CDescriptors::MIsCustomer(descriptor_t const& aVal) const
+{
+	CRAII<CMutex> _block(FBLock);
+	d_list_t::const_iterator _it = FDescriptors.find(aVal);
+	if (_it != FDescriptors.end() && _it->second.MIs())
+		return _it->second.MGetConst().FProgramm.FType == E_CONSUMER;
+	return false;
+}
 CDescriptors::d_list_t CDescriptors::MGetAll(eType aType) const
 {
 	CRAII<CMutex> _block(FBLock);

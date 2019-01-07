@@ -113,7 +113,7 @@ bool CIPCSem::MInit(uint8_t* aBuf, size_t aSize, unsigned int value,
 	CHECK_NOTNULL(FImpl);
 	CHECK_NOTNULL(aBuf);
 	CHECK_EQ(FImpl->FSem, NULL);
-	FImpl->FSem=(_sem_t*)(((uintptr_t)aBuf+__alignof(sem_t))& ~(__alignof(sem_t)-1));
+	FImpl->FSem=(_sem_t*)get_alignment_address<sem_t>(aBuf);
 	CHECK_LE((void*)(FImpl->FSem+1),(void*)(aBuf+aSize));
 
 	CHECK_LE(value, SEM_VALUE_MAX);

@@ -38,7 +38,7 @@ public:
 	{
 	}
 
-	CConfig(const CText& key) :
+	explicit CConfig(const CText& key) :
 			FData(data_t(key))
 	{
 	}

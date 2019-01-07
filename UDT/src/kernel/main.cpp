@@ -183,9 +183,17 @@ void initialize_core(int argc, char* argv[])
 	CmdLine _cmd("Kernel of UDT...", ' ', _ver.str(), true);
 	CShareLogArgsParser _logging("v", "verbose");
 	_cmd.add(_logging);
+	
+	char const * _pname = argv[0];
+	char const * const _ps = strrchr(_pname, '/');
+	_pname = _ps ? (_ps + 1) : _pname;
+	char const * const _pbs = strrchr(_pname, '\\');
+	_pname = _pbs ? (_pbs + 1) : _pname;
+	char const* _def_name = "?";
+	_pname = _pname ? _pname : _def_name;
 
 	ValueArg<std::string> _name("n", "name",
-			"id name of kernel (by default program name)", false, argv[0],
+			"id name of kernel (by default program name)", false, _pname,
 			"string", _cmd);
 
 	ValueArg<std::string> _config("c", "config",
@@ -247,6 +255,7 @@ void initialize_core(int argc, char* argv[])
 		new NUDT::CResources(_text,_ext_path);
 	}
 }
+
 void perpetual_loop()
 {
 	for (;; NSHARE::sleep(10000))

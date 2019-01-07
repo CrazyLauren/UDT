@@ -4,6 +4,7 @@
 using namespace NUDT;
 
 #define INDITIFICATION_NAME "uex_v_fail@guex"
+#define MESSAGE_NUMBER 1
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_new_receiver(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -21,11 +22,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number 0 version 1.3
+	{	//!< I want to receive msg number MESSAGE_NUMBER version 1.3
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, 0, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,3));
+				"@guex", MESSAGE_NUMBER, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,3));
 	}
 	{
 		//!< When some consumers will start receiving data from me. The function

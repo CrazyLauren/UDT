@@ -46,13 +46,13 @@ template<class TSender_type, class TEvent_t, class TEventArg_type,template<class
 inline CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::CEvent() :
 		FSender(NULL)
 {
-	;
+	FNumberOfArrayChange=0;
 }
 template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
 inline CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::CEvent(sender_t aSender) :
 		FSender(aSender)
 {
-	;
+	FNumberOfArrayChange=0;
 }
 template<class TSender_type, class TEvent_t, class TEventArg_type,template<class > class TIEvent, class TMutexType>
 inline bool CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MAdd(
@@ -114,7 +114,7 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MC
 	for (iterator _it(FCBs.begin()); _it != FCBs.end();)
 	{
 		eCBRval const _rval=(*_it)(FSender, aCallbackArgs);
-
+		++_count;//раньше возвращалось количество оствашхися CB теперь количество вызванных
 		switch(_rval)
 		{
 			case E_CB_REMOVE:
@@ -123,7 +123,7 @@ inline int CEvent<TSender_type, TEvent_t, TEventArg_type,TIEvent,TMutexType>::MC
 				break;
 
 			case E_CB_SAFE_IT:
-				++_count;
+				//++_count;
 				++_it;
 			break;
 

@@ -64,9 +64,8 @@ CBuffer CSharedMemoryBase::MAllocate(size_t aSize,int aBeginSize,eAllocatorType 
 }
 const CSocket& CSharedMemoryBase::MGetSocket(void) const
 {
-	static CSocket _fix_sock;
 	LOG(DFATAL)<<"The CSocket is not used by Shared memory ";
-	return _fix_sock;
+	return CSocket::sMNullSocket();
 }
 
 /*

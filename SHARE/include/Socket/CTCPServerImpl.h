@@ -87,6 +87,7 @@ struct CTCPServer::CImpl:public CTcpImplBase, IIntrusived
 	NSHARE::intrusive_ptr<loop_back_t> FLoopBack;
 	CTCPServer *FThis;
 	CSelectSocket::socks_t FTo;
+	const NSHARE::CBuffer FTestMsg;
 };
 }
 

@@ -131,6 +131,20 @@
 #	define DCHECK_STREQ(str1, str2) CHECK_STREQ(str1, str2)
 #	define DCHECK_STRCASEEQ(str1, str2) CHECK_STRCASEEQ(str1, str2)
 
+namespace NSHARE
+{
+namespace impl
+{
+template<typename T>
+inline bool check_pointer_align(T const * aVal)
+{
+	return (uintptr_t)aVal % __alignof(T) == 0;
+}
+}
+}
+#	define DCHECK_POINTER_ALIGN(val) \
+		LOG_IF(FATAL, !NSHARE::impl::check_pointer_align(val))<<"'"<< #val<< "' invalid align "<<((uintptr_t)val)
+
 #else  // NDEBUG
 namespace NSHARE
 {
@@ -203,6 +217,8 @@ namespace NSHARE
 		DLOG(INFO)
 
 #	define DCHECK_STRCASENE(str1, str2) \
+		DLOG(INFO)
+#	define DCHECK_POINTER_ALIGN(val) \
 		DLOG(INFO)
 #endif  // NDEBUG
 

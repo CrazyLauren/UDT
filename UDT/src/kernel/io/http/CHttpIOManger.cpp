@@ -205,7 +205,7 @@ void CHttpIOManger::MReceivedImpl(const NSHARE::ISocket::data_t& aData,
 
 				if (!_was_streamed)
 				{
-					ISocket::data_t _data(NULL, _it->FBufBegin,
+					ISocket::data_t _data(_it->FBufBegin,
 							_it->FBufBegin + _it->FSize);
 					FStreamedData[_it->FClient.FAddr] = _data;
 				}
@@ -449,12 +449,14 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 		NSHARE::CConfig _data(SNIFFER_STATE);
 		bool _is_partial_state=false;
 
-		if((_pos = _req.find(demand_dgs_t::NAME)) != CText::npos && ((_is_partial_state=true)))
+		if((_pos = _req.find(demand_dgs_t::NAME)) != CText::npos)
 		{
+			_is_partial_state = true;
 			_data.MAdd(FDemands.MSerialize(false));
 		}
-		if((_pos = _req.find(SNIFFED_DATA)) != CText::npos && ((_is_partial_state=true)))
+		if((_pos = _req.find(SNIFFED_DATA)) != CText::npos)
 		{
+			_is_partial_state = true;
 			MPutSniffedDataFrom(_number, _data);
 		}
 
@@ -634,7 +636,7 @@ bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 		LOG(INFO)<< "Add additional parser for channel '" << _val.FNameFrom << "' by "<< aParser<<"'";
 
 		_val.FHandler=++FUniqueNumber;
-		_val.FFlags = demand_dg_t::E_REGISTRATOR;
+		_val.FFlags.MSetFlag( demand_dg_t::E_REGISTRATOR,true);
 		FSerializators[_val.FHandler] = serializator_t(_val.FWhat, aParser);
 		FDemands.push_back(_val);
 		CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),

@@ -233,7 +233,7 @@ void IMPL::MReceivedData(NSHARE::CBuffer& aData)
 	aData.MMoveTo(_user.FData);
 	bool const _is_raw=FReceiveProtocol.empty() || (FReceiveProtocol==RAW_PROTOCOL_NAME);
 	if(_is_raw)
-		_user.FDataId.FRawProtocolNumber=1;
+		_user.FDataId.FWhat.FNumber=1;
 
 	CKernelIo::sMGetInstance().MReceivedData(_user,Fd);
 

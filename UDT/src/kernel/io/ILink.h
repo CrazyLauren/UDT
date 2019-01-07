@@ -47,7 +47,7 @@ public:
 	}
 
 	virtual bool MSend(const user_data_t& aVal)=0;
-	virtual bool MReceivedData(user_data_t const&)
+	virtual bool MReceivedData(user_data_t& )
 	{
 		return false;
 	}

@@ -59,27 +59,10 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 			<< " bytes received from " << _recv_arg->FFrom << " by "
 			<< _recv_arg->FProtocolName << std::endl;
 	STREAM_MUTEX_UNLOCK
-	
+
 	return 0;
 }
-extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
-{
-	args_t const* _recv_arg = (args_t const*)aWHAT;
-	//!<Now You can handle the received data.
 
-	STREAM_MUTEX_LOCK
-		if(NSHARE::E_SHARE_ENDIAN ==_recv_arg->FEndian)
-			std::cout << "Message #" << _recv_arg->FPacketNumber<<" ver "<<_recv_arg->FVersion << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
-		else
-		std::cerr << "The byte endian of Message #" << _recv_arg->FPacketNumber
-				<< " ver " << _recv_arg->FVersion << " size "
-				<< _recv_arg->FBuffer.size() << " bytes received from "
-				<< _recv_arg->FFrom << " by " << _recv_arg->FProtocolName
-				<< " is not match" << std::endl;
-
-	STREAM_MUTEX_UNLOCK
-		return 0;
-}
 extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 {
 	new_receiver_args_t* _recv_arg=(new_receiver_args_t*)aWHAT;
@@ -159,6 +142,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU
 }
 
 #define PACKET_SIZE 200000
+#define MESSAGE_NUMBER 1
 
 extern void doing_something()
 {
@@ -197,7 +181,7 @@ extern void doing_something()
 		//!< Send the message number 0 ver 1.2 (It's not necessary to specify the Receiver  
 		//as If Somebody want to receive the message number 0 from us, It call method MIWantReceivingMSG and
 		//specify receiving the message number 0 from us.)
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf,NSHARE::version_t(1,2));
+		int _num = CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf,NSHARE::version_t(1,2));
 		
 		if (_num > 0)	//!<Hurrah!!! The data has been sent
 		{

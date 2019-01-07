@@ -104,60 +104,11 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 
 extern void doing_something()
 {
-#ifdef _WIN32
-	::InitializeCriticalSection(&_stream_mutex);
-#else
-	pthread_mutex_init(&_stream_mutex, NULL);
-#endif
 
 	//!< Wait for connected to UDT
 	for (; !CCustomer::sMGetInstance().MIsConnected(); Sleep(1000))
 		;
 
-	for (;; Sleep(1000))
-	{
-
-		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				PACKET_SIZE);	//!< allocate the buffer for msg
-				
-		for (;_buf.empty();Sleep(1))	//!< may be 'malloc' return NULL, trying again
-		{
-			std::cerr << "Cannot allocate the buffer. " << std::endl;
-			_buf = CCustomer::sMGetInstance().MGetNewBuf(
-							PACKET_SIZE);
-		}
-
-		
-		{//!< Filling message
-			NSHARE::CBuffer::iterator _it=_buf.begin(),_it_end=_buf.end();
-			for(int i=0;_it!=_it_end;++i,++_it)
-			{
-				*_it=i%255;
-			}
-		}
-		
-		//!< Send the message number 0 ver 1.2 (It's not necessary to specify the Receiver  
-		//as If Somebody want to receive the message number 0 from us, It call method MIWantReceivingMSG and
-		//specify receiving the message number 0 from us.)
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf,NSHARE::version_t(1,2));
-		
-		if (_num > 0)	//!<Hurrah!!! The data has been sent
-		{
-			//!<Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
-			STREAM_MUTEX_LOCK
-			std::cout << "Send Packet#" << _num << " size of " << PACKET_SIZE
-					<< " bytes." << std::endl;
-			STREAM_MUTEX_UNLOCK
-
-		}
-		else //!<The buffer _buf is not freed as it's not sent.
-		{
-			STREAM_MUTEX_LOCK
-			std::cout << "Send error  " << _num << std::endl;
-			STREAM_MUTEX_UNLOCK
-		}
-
-	};
-
+	CCustomer::sMGetInstance().MJoin();
 }
 

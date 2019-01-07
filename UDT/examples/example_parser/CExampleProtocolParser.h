@@ -35,7 +35,10 @@ public:
 	virtual std::pair<NUDT::required_header_t,bool> MHeader(const NSHARE::CConfig& aFrom) const;
 	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t&) const;
 
-
+	virtual size_t MDataOffset(const NUDT::required_header_t& aHeader) const;
+	virtual bool MSwapEndian(const NUDT::required_header_t& aHeader,
+			uint8_t* aItBegin, uint8_t* aItEnd) const;
+	bool MSwapEndian(NUDT::required_header_t* aHeader) const;
 private:
 };
 #endif /* CEXAMPLEPROTOCOLPARSER_H_ */

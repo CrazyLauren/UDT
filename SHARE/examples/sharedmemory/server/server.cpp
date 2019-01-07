@@ -25,7 +25,13 @@ int main(int argc, char *argv[])
 
 	//CSharedMemoryServer::sMRemove("test");
 	CSharedMemoryServer _server;
-	size_t const _mem_size = 10*1024*1024;
+	size_t  _mem_size = 10*1024*1024;
+	if (argc > 1)
+	{
+		std::string const _str(argv[1]);
+		std::stringstream _ss(_str);
+		_ss >> _mem_size;
+	}
 	if (!_server.MOpen("test", _mem_size))
 	{
 		std::cerr << "Cannot open SM test" << std::endl;

@@ -57,7 +57,7 @@ public:
 
 
 	void MReceivedData(program_id_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
-	void MReceivedData(user_data_t const& aWhat, const descriptor_t& aFrom);
+	void MReceivedData(user_data_t& aWhat, const descriptor_t& aFrom);
 	void MReceivedData(demand_dgs_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
 	void MReceivedData(demand_dgs_for_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
 	void MReceivedData(kernel_infos_array_t const& aWhat, const descriptor_t& aFrom, const routing_t& aRoute,error_info_t const& aError);
@@ -78,7 +78,7 @@ private:
 		descriptor_t FDesc;
 		routing_t FTo;
 		void* FData;
-		void (CKernelIo::*FOperation)(void*,const routing_t&,descriptor_t const&);
+		void (CKernelIo::*FOperation)(void*,routing_t&,descriptor_t const&);
 	};
 	struct manager_t:NSHARE::IIntrusived
 	{
@@ -99,7 +99,7 @@ private:
 	bool MIsForMe(const routing_t& aRoute) const;
 
 	template<class T>
-	void MRouteOperation(void*,const routing_t& aTo,descriptor_t const&);
+	void MRouteOperation(void*,routing_t& aTo,descriptor_t const&);
 	static NSHARE::eCBRval sMRouteOperation(const NSHARE::CThread* WHO,
 			NSHARE::operation_t* WHAT, void* YOU_DATA);
 	void MRoute();

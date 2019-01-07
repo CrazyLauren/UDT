@@ -6,6 +6,7 @@ using namespace NUDT;
 #define INDITIFICATION_NAME "uex_fail5@guex"
 
 #define RECEIVE_MSG_TEST_FROM INDITIFICATION_NAME
+#define MESSAGE_NUMBER 1
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int sniffer_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -23,11 +24,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number 0 version 1.1
+	{	//!< I want to receive msg number MESSAGE_NUMBER version 1.1
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, 0, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
+				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
 	}
 	{	
 		callback_t _handler(sniffer_handler, NULL);

@@ -15,7 +15,7 @@ namespace NSHARE
 {
 	namespace logging_impl
 	{
-		static NSHARE::CMutex g_cout_mutex;
+		static NSHARE::CMutex g_cout_mutex;//fixme resource leak
 
 		SHARE_EXPORT void lock_cout_mutex() {
 			g_cout_mutex.MLock();

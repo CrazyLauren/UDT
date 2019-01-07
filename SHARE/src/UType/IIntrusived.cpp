@@ -17,16 +17,17 @@ namespace NSHARE
 struct IIntrusived::_w_counter_t
 {
 	_w_counter_t(IIntrusived* aPtr) :
-			FCount(0), FWPtr(aPtr)
+			FWPtr(aPtr)
 	{
-
+		FCount = 0;
 	}
 
-	_w_counter_t(_w_counter_t const& aRht):FWPtr(aRht.FWPtr)
+	/*_w_counter_t(_w_counter_t const& aRht):FWPtr(aRht.FWPtr)
 	{
+		FCount = 0;
 		//copy
 		MRef();
-	}
+	}*/
 
 	int MRef() 
 	{
@@ -99,13 +100,19 @@ IIntrusived::w_counter_t::~w_counter_t()
 }
 
 IIntrusived::IIntrusived() :
-		FCount(0), FReferedCount(0), FIsFirst(P_NOT_INITED), FWn(this)
+		 FWn(this)
 {
+	FCount=0;
+	FReferedCount = 0;
+	FIsFirst=P_NOT_INITED;
 	VLOG(2) << "Construct object " << this;
 }
 IIntrusived::IIntrusived(const IIntrusived& aRht) :
-		FCount(0), FReferedCount(0), FIsFirst(P_NOT_INITED), FWn(this)
+		FWn(this)
 {
+	FCount = 0;
+	FReferedCount = 0;
+	FIsFirst = P_NOT_INITED;
 	VLOG(2) << "Constract object " << this;
 	DCHECK(aRht.MCountRef() > 0);
 }

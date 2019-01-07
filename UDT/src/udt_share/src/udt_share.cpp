@@ -95,12 +95,14 @@ static std::pair<size_t,size_t> deserialize_dg_head(user_data_info_t &_user,NSHA
 	//user_data_t _data;
 	_user.FRouting.FFrom.FUuid = _from.FUUIDFrom;
 	_user.FPacketNumber = _from.FNumber;
-	_user.FRawProtocolNumber = _from.FRawNumber;
+	_user.FDataOffset = _from.FDataOffset;
 	_user.FSplit.FIsLast = _from.FFlags.FIsLast;
 	_user.FSplit.FCounter = _from.FSplitCounter;
 	_user.FSplit.FCoefficient = _from.FSplitCoefficient;
-	_user.FVersion.FMajor = _from.FMajor;
-	_user.FVersion.FMinor = _from.FMinor;
+	_user.FWhat.FVersion.FMajor = _from.FMajor;
+	_user.FWhat.FVersion.FMinor = _from.FMinor;
+	memcpy(_user.FWhat.FReserved,&_from.FType,sizeof(_user.FWhat.FReserved));
+
 	_user.FEndian = (NSHARE::eEndian) (_from.FFlags.FEndian);
 	size_t _offset = sizeof(user_data_header_t);
 	if (_events_size)
@@ -204,10 +206,14 @@ extern UDT_SHARE_EXPORT bool deserialize(user_data_t& _user,
 																		_begin+_offset,//
 																		_begin+_offset//
 																		+ _header.FDataSize);
-		NSHARE::CBuffer _data(
-				(!_user.FDataId.FSplit.MIsSplited()) ? aBufferAlloc : NULL,	//dead lock protection. using aBufferAlloc only for not split packet
+		const bool _use_allocator=!_user.FDataId.FSplit.MIsSplited();//dead lock protection. using aBufferAlloc only for not split packet
+		
+		NSHARE::CBuffer _data(				
 						_begin+_offset,	//
-						_begin+_offset + _header.FDataSize);
+						_begin+_offset + _header.FDataSize,
+			    (_use_allocator)?-1:0,
+			    (_use_allocator)? aBufferAlloc : NULL
+				     );
 		_data.MMoveTo(_user.FData);
 	}
 	_offset +=_sizes.second;
@@ -266,9 +272,11 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FSplitCounter = _id.FSplit.FCounter;
 	_user_data->FSplitCoefficient = _id.FSplit.FCoefficient;
 
-	_user_data->FRawNumber = static_cast<uint32_t>(_id.FRawProtocolNumber);
-	_user_data->FMajor=_id.FVersion.FMajor;
-	_user_data->FMinor=_id.FVersion.FMinor;
+	_user_data->FDataOffset = static_cast<uint32_t>(_id.FDataOffset);
+	_user_data->FMajor=_id.FWhat.FVersion.FMajor;
+	_user_data->FMinor=_id.FWhat.FVersion.FMinor;
+	memcpy(&_user_data->FType,_id.FWhat.FReserved,sizeof(_id.FWhat.FReserved));
+
 
 	_user_data->FFlags.FEndian=_id.FEndian;
 //	if (_name_from_len)

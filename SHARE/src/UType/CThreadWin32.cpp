@@ -315,7 +315,10 @@ void CThread::MRun(void)
 {
 	LOG_IF(DFATAL,!MIsRunning())<<"The thread is not running.";
 	if(MIsRunning())
-		MCall(NULL);
+	{
+		int const _number=MCall(NULL);
+		DCHECK_GT(_number,0);
+	}
 }
 
 bool CThread::MSignal(int signal)

@@ -66,7 +66,7 @@ void CTCPMainChannel::MCloseImpl()
 NSHARE::eCBRval CTCPMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CTCPMainChannel*>(aData)->MReceiver();
-	return NSHARE::E_CB_REMOVE;
+	return NSHARE::E_CB_SAFE_IT;
 }
 void CTCPMainChannel::MReceiver()
 {

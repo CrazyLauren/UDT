@@ -41,11 +41,19 @@ SHARED_PACKED(
 			uint8_t FAllocMutex[CIPCSem::eReguredBufSize];
 			CSharedAllocator::pid_type FPIDOfLockedMutex;
 			CSharedAllocator::pid_type FPIDOfLockedAllocMutex;
-			CSharedAllocator::block_size_t FSize;
-			const uint32_t FPidOffCreator;
+			CSharedAllocator::block_size_t FSize;//warning don't change order of FSize
+			const uint32_t FPidOffCreator;		// & FPidOffCreator fields
 			bool MUpdateCRC();
 			bool MCheckCRC()const;
 		});
+COMPILE_ASSERT(sizeof(CSharedMemory::mem_info_t) ==(sizeof(CSharedMemory::mem_info_t::crc_t::type_t)*1//
+		+sizeof(uint8_t)*(4-sizeof(CSharedMemory::mem_info_t::crc_t::type_t))//
+		+sizeof(uint8_t)*CIPCSem::eReguredBufSize//
+		+sizeof(uint8_t)*CIPCSem::eReguredBufSize//
+		+sizeof(CSharedAllocator::pid_type)*2//
+		+sizeof(CSharedAllocator::block_size_t)*1//
+		+sizeof(uint32_t)*1//
+		),IVALID_SIZEOF_MEM_INFO);
 bool CSharedMemory::mem_info_t::MUpdateCRC()
 {
 	/// \note crc берётся от двух переменных

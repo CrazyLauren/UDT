@@ -291,12 +291,12 @@ var data_info =
 
                 // if(_tmp["Protocol"]=="raw")
                 //     _tmp["#"]=aVal.nr;
-                _tmp["Packet Number"] = aVal.pn;
+                _tmp["Header offset"] = aVal.nr;
                 _tmp[data_info.pl.getName()] = data_info.pl.toRepresentation(_protocol);
 
                 let _ver = jQuery.to_representation_form(
                     {
-                        ver: aVal.ver
+                        ver: aVal.rh.ver
                     }, data_info);
                 $.extend(_tmp, _ver);
 

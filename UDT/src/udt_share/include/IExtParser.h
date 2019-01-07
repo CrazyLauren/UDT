@@ -15,56 +15,213 @@
 #include <udt_share_macros.h>
 #include <udt_types.h>
 
-
 namespace NUDT
 {
-class UDT_SHARE_EXPORT IExtParser:public NSHARE::IFactory
+/** \brief Interface for protocol's handler
+ *
+ */
+class UDT_SHARE_EXPORT IExtParser: public NSHARE::IFactory
 {
 public:
+
+	/** \brief Message information
+	 *
+	 */
 	struct obtained_dg_t
 	{
-		obtained_dg_t():
-			FErrorCode(0),//
-			FBegin(NULL),
-			FEnd(NULL)
-		{
-
-		}
-		required_header_t FType;
-		uint8_t FErrorCode;
-		const uint8_t* FBegin;
-		const uint8_t* FEnd;//equal vector::end()
+		required_header_t FType; //!< message type
+		uint8_t FErrorCode;//!< error code, if The error code isn't zero,
+						   //the address range from FBegin to FEnd isn't handled.
+		const uint8_t* FBegin;//!< begin of message into buffer,
+							  //It hasn't to be zero.
+		const uint8_t* FEnd; //!< end of message into buffer,
+							 // actually The address of next byte after
+							 // the last byte of messages (equal vector::end())
+		obtained_dg_t();
 	};
 	typedef std::vector<obtained_dg_t> result_t;
 
-	virtual result_t MParserData(const uint8_t* aItBegin,
-			const uint8_t* aItEnd,NSHARE::uuid_t aFrom=NSHARE::uuid_t(),uint8_t aMask=NSHARE::E_SHARE_ENDIAN)=0;
+	/** \brief  Inheritance messages info
+	 *
+	 *	The multiple inheritance is illegal.
+	 *	The parent message type is inherent from required_header_t.
+	 */
+	struct msg_inheritance_t: required_header_t
+	{
+		required_header_t FChildHeader;//!< The child message type
+		NSHARE::CText FChildProtcol;//!< The child message protocol,
+										  // if is null than the protocol of child and
+										  // parent is equal.
 
-	virtual std::pair<required_header_t,bool> MHeader(const NSHARE::CConfig& aFrom) const=0;
-	virtual NSHARE::CConfig MToConfig(const required_header_t&) const=0;
+		msg_inheritance_t();
+		explicit msg_inheritance_t(required_header_t const& aParent,		//parent message type
+				required_header_t const& aChild,							//child message type
+				NSHARE::CText const& aChildProtocol = NSHARE::CText()		//child message protocol
+						);
 
-	virtual NSHARE::CConfig MToConfig(const required_header_t& aHeader,//for parsing a raw protocol.
+	};
+	typedef std::vector<msg_inheritance_t> inheritances_info_t;
+
+	/** \brief Parsing th buffer
+	 *
+	 *	The splited to messages buffer has't to have skipped blocks and
+	 *	has to beginen from \a aItBegin.
+	 *	If The address of the last buffer's byte \a aItEnd is not
+	 *	equal \a FEnd, than the data from \a FEnd to the
+	 *	last buffer's byte \a aItEnd is buffered.
+	 *	if no message in the buffer (result_t is empty)
+	 *	the buffer is buffered.
+	 *
+	 * \param aItBegin buffer begin
+	 * \param aItEnd buffer end
+	 * \param aFrom the sender's buffer uuid (informational)
+	 * \param aMask buffer's byte order
+	 *
+	 * \return messages list into buffer
+	 */
+	virtual result_t MParserData(const uint8_t* aItBegin, const uint8_t* aItEnd,
+			NSHARE::uuid_t aFrom = NSHARE::uuid_t(), uint8_t aMask =
+					NSHARE::E_SHARE_ENDIAN)=0;
+
+	/** \brief Deserialize message type (e.g. for GUI)
+	 *
+	 *	\param  aFrom serialized data
+	 *
+	 *	\return first - message type
+	 *			second - true - if successful
+	 *	\note all exception is catch
+	 */
+	virtual std::pair<required_header_t, bool> MHeader(
+			const NSHARE::CConfig& aFrom) const=0;
+
+	/** \brief Serialize message type (e.g. for GUI, logging)
+	 *
+	 *	\param  aData message type
+	 *
+	 *	\return serialized message type
+	 *	\note all exception is catch
+	 */
+	virtual NSHARE::CConfig MToConfig(const required_header_t& aData) const=0;
+
+	/** \brief Serialize message (e.g. for GUI)
+	 *
+	 *	\param  aHeader message type
+	 *	\param  aItBegin begin data of message
+	 *	\param  aItEnd message end
+	 *
+	 *	\return serialized message
+	 *
+	 *	\note As then the using \a raw protocol
+	 *	the buffer doesn't contain message header,
+	 *	the message header is puted obviously.
+	 *
+	 */
+	virtual NSHARE::CConfig MToConfig(const required_header_t& aHeader,
 			const uint8_t* aItBegin, const uint8_t* aItEnd) const
 	{
 		return NSHARE::CConfig();
 	}
+
+	/** \brief Deserialize message (e.g. for GUI)
+	 *
+	 */
 	virtual NSHARE::CBuffer MFromConfig(const NSHARE::CConfig& aFrom) const
 	{
 		return NSHARE::CBuffer();
 	}
+
+	/** \brief Protocol description (e.g. for GUI)
+	 *
+	 */
 	virtual char const* MDescription() const
 	{
 		return "no description";
 	}
-	virtual bool MSwapEndian(const required_header_t& aHeader,//for optimization
-			uint8_t* aItBegin, uint8_t* aItEnd){
+
+	/** \brief Swap the message byte order
+	 *
+	 *	if The byte order of the message is
+	 *	illegal, than it will changed by
+	 *	using this method.
+	 *
+	 *	\param aHeader message type
+	 *	\param aItBegin message begin
+	 *	\param aItEnd message end
+	 *
+	 *	\return true - if swapped
+	 *
+	 *	\note Input message byte order
+	 *		  is E_SHARE_OTHER_ENDIAN
+	 *		  The header has to swapped too
+	 */
+	virtual bool MSwapEndian(const required_header_t& aHeader,
+			uint8_t* aItBegin, uint8_t* aItEnd) const
+	{
 		return false;
+	}
+
+	/** \brief Swap endian of the requested message's "header"
+	 *
+	 *	Because the byte orders of the requested message
+	 *	and return value of method MParserData (sent message)
+	 *	can be not equal, it's necessary method for
+	 *	swaping endian requested message's "header"/
+	 *	The method is called for valid data routing.
+	 *
+	 *	\param aHeader message type
+	 *
+	 *	\return true - if swapped
+	 *
+	 *	\note Input message byte order
+	 *		  is E_SHARE_OTHER_ENDIAN
+	 *		  The header has to swapped too
+	 */
+	virtual bool MSwapEndian(required_header_t* aHeader) const
+	{
+		return false;
+	}
+
+	/** \brief size of message header
+	 *
+	 */
+	virtual size_t MDataOffset(const required_header_t& aHeader) const
+	{
+		return sizeof(aHeader.FReserved);
+	}
+
+	/** \brief Return inheritance messages info
+	 *
+	 */
+	virtual inheritances_info_t MGetInheritances() const
+	{
+		return inheritances_info_t();
 	}
 protected:
 	IExtParser(const NSHARE::CText& type) :
-		NSHARE::IFactory(type)
+			NSHARE::IFactory(type)
 	{
 	}
 };
-}//
+inline IExtParser::obtained_dg_t::obtained_dg_t() :
+		FErrorCode(0),							//
+		FBegin(NULL), FEnd(NULL)
+{
+
+}
+inline IExtParser::msg_inheritance_t::msg_inheritance_t()
+{
+	;
+}
+inline IExtParser::msg_inheritance_t::msg_inheritance_t(
+		required_header_t const& aParent, //
+		required_header_t const& aChild, //
+		NSHARE::CText const& aChildProtocol //
+		) :
+		required_header_t(aParent), //
+		FChildHeader(aChild), //
+		FChildProtcol(aChildProtocol)
+{
+
+}
+} //
 #endif /* IEXTPARSER_H_ */

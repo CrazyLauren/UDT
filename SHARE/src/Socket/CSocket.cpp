@@ -43,7 +43,7 @@ CSocket& CSocket::operator=(CSocket const&aRht)
 CSocket::~CSocket()
 {
 	if (MIsValid() && FIsCloseOnDestructor)
-		MClose();
+		MCloseImpl();
 }
 
 bool CSocket::sMIsValid(socket_t aFd)
@@ -69,6 +69,10 @@ void CSocket::MSet(socket_t aFd, eSocketType aType)
 }
 void CSocket::MClose()
 {
+	MCloseImpl();
+}
+void CSocket::MCloseImpl()
+{
 	VLOG(2) << "Close socket " << FFd;
 	if (MIsValid())
 	{
@@ -82,5 +86,10 @@ void CSocket::MClose()
 		::closesocket(_tmp);
 #endif
 	}
+}
+CSocket const& CSocket::sMNullSocket()
+{
+	static CSocket _fix;
+	return _fix;
 }
 }

@@ -62,11 +62,12 @@ void CKernelIo::MRouting(const routing_t& aRoute, const T& aWhat,
 }
 
 template<class T>
-void CKernelIo::MRouteOperation(void* aP, const routing_t& aTo,
+void CKernelIo::MRouteOperation(void* aP, routing_t& aTo,
 		descriptor_t const& aFrom)
 {
 	T* _p = reinterpret_cast<T*>(aP);
-	uuids_t const _r(CRoutingService::sMGetInstance().MRoute(aTo, *_p));
+	routing_t  _r;
+	CRoutingService::sMGetInstance().MRoute(aTo, _r,*_p);
 
 	LOG_IF(ERROR,!_r.empty()) << "Cannot routing to " << _r << " from "
 										<< aTo.FFrom;
@@ -164,7 +165,7 @@ void CKernelIo::MReceivedData(demand_dgs_t const& aWhat,
 	//MRecvImpl(aRoute, aFrom, aWhat);
 	CDataObject::sMGetInstance().MPush(make_data_from(aFrom, aWhat));
 }
-void CKernelIo::MReceivedData(user_data_t const& aWhat,
+void CKernelIo::MReceivedData(user_data_t& aWhat,
 		const descriptor_t& aFrom)
 {
 	{
@@ -172,7 +173,8 @@ void CKernelIo::MReceivedData(user_data_t const& aWhat,
 		VLOG_IF(5,aWhat.FData.size()<100)<<aWhat.FData;
 		routing_user_data_t _data;
 		_data.FDesc=aFrom;
-		_data.FData.push_back(aWhat);
+		_data.FData.push_back(user_data_t());
+		aWhat.MMoveTo(_data.FData.back());
 		CDataObject::sMGetInstance().MPush(_data);
 	}
 }

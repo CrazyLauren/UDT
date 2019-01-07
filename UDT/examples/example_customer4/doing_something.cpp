@@ -112,6 +112,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 }
 
 #define PACKET_SIZE 200000
+#define MESSAGE_NUMBER 1
 
 extern void doing_something()
 {
@@ -150,7 +151,7 @@ extern void doing_something()
 		}
 		
 		//!< Send the message number 0 to uuid 
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf,g_sent_to);
+		int _num = CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf,g_sent_to);
 		
 		if (_num > 0)	//!<Hurrah!!! The data has been sent
 		{

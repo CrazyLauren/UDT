@@ -19,7 +19,7 @@
 enum  eMsgType
 {
 	E_MSG_TEST=1,//!< test message
-
+	E_MSG_SWAP_BYTE_TEST=2,
 };
 enum eParserError //!< uint8_t with error returned by fail_sent_args_t .FUserCode
 {
@@ -33,9 +33,30 @@ struct msg_head_t
 	uint32_t  FType           : 8;            //!< Type of msg E_MSG_*
 	uint32_t  FSize           : 24;           //!< Size of msg include header
 };
+struct msg_data
+{
+	uint8_t FNumber;
+	uint8_t FByte1;
+	uint8_t FByte2;
+	uint8_t FByte3;
+	//4 bytes
+
+	uint16_t FUint16;
+	int16_t FInt16;
+	//8 bytes
+
+	uint32_t  FUint32;
+	int32_t FInt32;
+	//16 bytes
+
+	float FFloat;
+	//20 bytes
+};
 struct test_msg_t
 {
-	msg_head_t FHead;//!< Header (E_MSG_TEST)
+	msg_head_t FHead;//!< Header (E_MSG_SWAP_BYTE_TEST)
+	//4 bytes
+	msg_data FData;
 };
 
 #endif /* UDT_EXAMPLE_PROTOCOL_H_ */

@@ -4,6 +4,7 @@
 using namespace NUDT;
 
 #define INDITIFICATION_NAME "uex4@guex"
+#define MESSAGE_NUMBER 1
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int group_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -22,11 +23,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number 0
+	{	//!< I want to receive msg number MESSAGE_NUMBER
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, 0, _handler);
+				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler);
 	}
 	{	
 		//!< I want to receive msg number 1

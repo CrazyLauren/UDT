@@ -54,6 +54,7 @@ struct __gag_t
 #	define CHECK_EQ(some,some1) true?(void)0: __gag_t()^ std::cout
 #	define CHECK_NOTNULL(aVal) true?(void)0: __gag_t()^ std::cout
 #	define CHECK(aVal) true?(void)0: __gag_t()^ std::cout
+#	define DCHECK_POINTER_ALIGN(aVal) true?(void)0: __gag_t()^ std::cout
 #	define DCHECK(aVal) CHECK(aVal)
 #	define DCHECK_NOTNULL(aVal) CHECK_NOTNULL(aVal)
 #	define DCHECK_NE(some,some1) true?(void)0: __gag_t()^ std::cout

@@ -29,12 +29,41 @@ public:
 	void MNoteFailSend(const fail_send_t&);
 	void MNoteFailSend(const fail_send_array_t&);
 
+	/** \brief see CRequiredDG::MFillMsgReceivers
+	 *
+	 */
 	void MFillMsgReceivers(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t&);
+
+	/** \brief see CRequiredDG::MFillMsgHandlersFor
+	 *
+	 */
 	void MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t & aError);
+
+	/** \brief Send data to uuids
+	 *
+	 *	\param [in] aFrom uuids to which the data must sent.
+	 *	The argument can be changed (for optimization).
+	 *
+	 *	\param [out] aTo uuids cannot to which the data cannot be sent
+	 *
+	 *	\param [in] aVal message
+	 *
+	 */
 	template<class T>
-	uuids_t MSendTo(routing_t const&, const T &);
+	void MSendTo(routing_t & aFrom,routing_t & aTo, const T & aVal);
+
+	/** \brief Send data further
+	 *
+	 *	\param [in] aFrom uuids to which the data must sent.
+	 *	The argument can be changed (for optimization).
+	 *
+	 *	\param [out] aTo uuids cannot to which the message cannot be sent
+	 *
+	 *	\param [in] aVal message
+	 *
+	 */
 	template<class T>
-	uuids_t MRoute(const routing_t& aRoute, const T& aDemands);
+	void MRoute(routing_t& aFrom,routing_t& aTo, const T& aDemands);
 private:
 	struct _route_t
 	{
@@ -76,19 +105,29 @@ private:
 
 	void MHandleNewDemands( descriptor_t aFrom, const demand_dgs_for_t&);
 
-	void MGetOutputDescriptors(const routing_t& aSendTo,
-			output_decriptors_for_t& _descr, uuids_t& _non_sent) const;
+	void MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
+			output_decriptors_for_t& _descr) const;
 	void MInformNewReceiver(demand_dgs_for_t &);
+	void MClassifyMessages(routing_user_data_t& aData,
+			user_datas_t& aCustomers, user_datas_t& aKernels) const;
+	void MDistributeMsgByDescriptors(user_datas_t& aHasRoute,
+			user_datas_t& aHasNotRoute,
+			output_user_data_t& _route_by_desc, fail_send_array_t& _errors_list) const;
+	inline void MRoutingMsgToDescriptor(user_data_t const & aMsg,output_decriptors_for_t const& aDesc, output_user_data_t *const aTo) const;
+	inline void MSortedSplice(output_user_data_t& aWhat,output_user_data_t& aTo) const;
+	inline void MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_datas_t & aTo) const;
+	inline void MSwapEndianIfNeed(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t& _errors_list) const;
+	void MSendMessages(user_datas_t& aFrom, user_datas_t& aTo,
+			fail_send_array_t& _errors_list);
 
 	route_data_t FRouteData;
 };
 template<class T>
-inline uuids_t CRoutingService::MSendTo(routing_t const& aTo, const T & aWhat)
+inline void CRoutingService::MSendTo(routing_t& aTo,routing_t & aNotSend, const T & aWhat)
 {
 	VLOG(2)<<"Routing to "<<aTo;
-	uuids_t _non_sent;
 	output_decriptors_for_t _descr;
-	MGetOutputDescriptors(aTo, _descr, _non_sent);
+	MGetOutputDescriptors(aTo, aNotSend, _descr);
 
 	LOG_IF(ERROR, _descr.empty()) << "There are not descriptors. WTF?";
 
@@ -105,45 +144,40 @@ inline uuids_t CRoutingService::MSendTo(routing_t const& aTo, const T & aWhat)
 			if (!CKernelIo::sMGetInstance().MSendTo(_it->first, aWhat,_it->second))
 			{
 				LOG(WARNING)<<"Cannot send  packet "<<aWhat<<" to " << _it->first;
-				_non_sent.insert(_non_sent.end(), _it->second.begin(),
+				aNotSend.insert(aNotSend.end(), _it->second.begin(),
 						_it->second.end());
-				CHECK(!_non_sent.empty());
+				CHECK(!aNotSend.empty());
 			}
 		}
 	}
-	return _non_sent;
-
 }
 template<class T>
-inline uuids_t CRoutingService::MRoute(const routing_t& aRoute, const T& aWhat)
+inline void CRoutingService::MRoute(routing_t& aRoute,routing_t& aTo, const T& aWhat)
 {
 	VLOG_IF(1,aRoute.empty()) << "No routing";
 	if (!aRoute.empty())
 	{
 		VLOG(2) << "Route " << aRoute;
-		routing_t _filtered(aRoute); //Loop check, maybe there is my uuid
-		routing_t::iterator _it = _filtered.begin(), _it_end = _filtered.end();
-		for (; _it != _it_end; ++_it)
+		//Loop check, maybe there is my uuid
+		for (routing_t::iterator _it = aRoute.begin(); _it != aRoute.end(); ++_it)
 		{
 			if (*_it == get_my_id().FId.FUuid)
 			{
-				_filtered.erase(_it);
+				aRoute.erase(_it);
 				break;
 			}
 		}
-		LOG_IF(INFO,_filtered.empty()) << "Finish sending ";
+		LOG_IF(INFO,aRoute.empty()) << "Finish sending ";
 
-		if (!_filtered.empty())
+		if (!aRoute.empty())
 		{
-			uuids_t _not_sent(MSendTo(_filtered, aWhat));
-			LOG_IF(ERROR,!_not_sent.empty()) << "Cannot sent " << aWhat
-														<< " to " << _not_sent;
-			LOG_IF(INFO,_not_sent.empty()) << "Sent " << aWhat << " to "
-													<< _filtered;
-			return _not_sent;
+			MSendTo(aRoute,aTo, aWhat);
+			LOG_IF(ERROR,!aTo.empty()) << "Cannot sent " << aWhat
+														<< " to " << aTo;
+			LOG_IF(INFO,aTo.empty()) << "Sent " << aWhat << " to "
+													<< aRoute;
 		}
 	}
-	return aRoute;
 }
 } /* namespace NUDT */
 #endif /* CROUTINGSERVICE_H_ */

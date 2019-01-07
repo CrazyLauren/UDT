@@ -25,8 +25,13 @@ int main(int argc, char *argv[])
 	if(!_is)
 		std::cerr << "testing error" << std::endl;
 
-	size_t _buf_size = (argc > 1) ? atoi(argv[1]) : SEND_BUF_SIZE;
-
+	size_t _buf_size = SEND_BUF_SIZE;
+	if (argc > 1)
+	{
+		std::string const _str(argv[1]);
+		std::stringstream _ss(_str);
+		_ss >> _buf_size;
+	}
 	CSharedMemoryClient _client;
 
 	for (; !_client.MOpen("test"); NSHARE::usleep(100000))

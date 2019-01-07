@@ -114,9 +114,11 @@ void CRoutingService::MHandleDiff(kernel_infos_diff_t const* aDiff)
 		}
 		if (!_demands.empty())
 		{
-			uuids_t _not_sent(
-					MSendTo(routing_t(get_my_id().FId, _inform_array),
-							_demands));
+			routing_t _to(get_my_id().FId, _inform_array);
+			routing_t _not_sent(get_my_id().FId,uuids_t());
+
+			MSendTo(_to, _not_sent, _demands);
+
 			LOG_IF(ERROR,!_not_sent.empty()) << "Cannot sent demands to "
 														<< _not_sent;
 			LOG_IF(INFO,_not_sent.empty()) << "Sent demands to "
@@ -292,8 +294,10 @@ void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 		demand_dgs_for_t _c;
 		_c.insert(demand_dgs_for_t::value_type(_info.first.FProgramm.FId, *aP));
 
-		uuids_t _not_sent(
-				MSendTo(routing_t(get_my_id().FId, _inform_array), _c));
+		routing_t _to(get_my_id().FId, _inform_array);
+		routing_t _not_sent(get_my_id().FId,uuids_t());
+		MSendTo(_to, _not_sent, _c);
+
 		LOG_IF(ERROR,!_not_sent.empty()) << "Cannot sent demands to "
 													<< _not_sent;
 		LOG_IF(INFO,_not_sent.empty()) << "Sent demands to " << _inform_array;
@@ -389,18 +393,39 @@ void CRoutingService::MNoteFailSend(const fail_send_array_t& aFail)
 void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 {
 	LOG(ERROR)<<"Cannot send  packet #"<<_sent.FPacketNumber<<" from " << _sent.FRouting.FFrom << " to " << _sent.FRouting;
+
+	//!< At least the error has to send to registrar and sender
 	routing_t _f_to;
 	_f_to.insert(_f_to.end(),_sent.FRegistrators.begin(),_sent.FRegistrators.end());
 	_f_to.push_back(_sent.FRouting.FFrom.FUuid);
 	_f_to.FFrom = get_my_id().FId;
-	MSendTo(_f_to, _sent);
+
+	//!< In addition the error has to be send:
+
+	if(_sent.FError.MGetFlag(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE)//
+			||_sent.FError.MGetFlag(E_CANNOT_SWAP_ENDIAN)//
+			||_sent.FError.MGetFlag(E_PARSER_IS_NOT_EXIST)//
+			||_sent.FError.MGetFlag(E_PACKET_LOST)//
+			||_sent.FError.MGetFlag(E_PACKET_LOST)//
+			|| true//All error !!!!!!!!!!!!!!!!!!!!!!!!
+			)
+		_f_to.insert(_f_to.end(),_sent.FRouting.begin(),_sent.FRouting.end());//receivers
+
+
+	routing_t _not_sent(get_my_id().FId,uuids_t());
+	MSendTo(_f_to, _not_sent,_sent);
+
+	LOG_IF(ERROR,!_not_sent.empty()) << "Cannot sent fails to "
+												<< _not_sent;
+	LOG_IF(INFO,_not_sent.empty()) << "Sent fails to "
+											<< _f_to;
 }
 void CRoutingService::MFillMsgReceivers(user_datas_t & aFrom, user_datas_t& aTo,
 		fail_send_array_t&aFail)
 {
 	r_route_access _access = FRouteData.MGetRAccess();
 	CRequiredDG const& _rdg = _access->FRequiredDG;
-	_rdg.MFillMsgReceivers(aFrom, aTo, aFail);
+	_rdg.MFillMsgReceivers(&aFrom, &aTo, &aFail);
 }
 void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,
 		user_datas_t& aTo, fail_send_array_t & aError)
@@ -410,50 +435,63 @@ void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,
 	_rdg.MFillMsgHandlersFor(aFrom, aTo, aError);
 
 }
-void CRoutingService::MHandleFrom(routing_user_data_t& aData)
+
+void CRoutingService::MClassifyMessages(routing_user_data_t& aData,
+		user_datas_t& aNotRouted, user_datas_t& aRouted) const
 {
-	CHECK(!aData.FData.empty());
-	VLOG(2) << "New  From: " << aData.FDesc;
-	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aData.FDesc))<<aData.FDesc<<" has been closed already. The msg is ignored...";
-
-	fail_send_array_t _non_sent;
-
-	user_datas_t _routed;
-	user_datas_t _not_routed;
+	//divide into two group from consumer and other.
+	//the sequence is not broken
+	for (user_datas_t& _recv_data = aData.FData; !_recv_data.empty();)
 	{
-		//divide into two group from consumer and other.
-		//the sequence is not broken
-		for (user_datas_t& _recv_data = aData.FData; !_recv_data.empty();)
+		if (_recv_data.front().FDataId.FRouting.empty())
 		{
-			if (_recv_data.front().FDataId.FRouting.empty())	//from consumer
-			{
-				VLOG(3) << " It's from consumer "
-									<< _recv_data.front().FDataId;
-				_not_routed.splice(_not_routed.end(), _recv_data,
-						_recv_data.begin());
-			}
-			else
-			{
-				VLOG(3) << " It's from kernel "
-									<< _recv_data.front().FDataId;
-				_routed.splice(_routed.end(), _recv_data, _recv_data.begin());
-			}
+			VLOG(3) << " It's from consumer " << _recv_data.front().FDataId;
+			aNotRouted.splice(aNotRouted.end(), _recv_data,
+					_recv_data.begin());
 		}
-		if (!_not_routed.empty())
-			MFillMsgReceivers(_not_routed, _routed, _non_sent);
+		else
+		{
+			VLOG(3) << " It's from kernel " << _recv_data.front().FDataId;
+			aRouted.splice(aRouted.end(), _recv_data, _recv_data.begin());
+		}
 	}
+}
 
-	output_user_data_t _route_by_desc;
-
-	user_datas_t::iterator _it = _routed.begin(), _it_end = _routed.end();
-
-	for (; _it != _it_end; ++_it)
+void CRoutingService::MSwapEndianIfNeed(user_datas_t & aFrom,user_datas_t& aTo,
+		fail_send_array_t& _errors_list) const
+{
+	user_datas_t::iterator _rit = aFrom.begin();
+	for (; _rit != aFrom.end();)
 	{
-		user_data_t &_data = *_it;
-		LOG_IF(INFO,_data.FDataId.FRouting.empty())
-															<< "There are no any receivers for "
-															<< _data.FDataId
-															<< ". Msg don't send. Ignoring...";
+		user_data_t& _data(*_rit);
+		_data.FData=_data.FData.MCreateCopy();
+
+		DCHECK_NE(_data.FDataId.FEndian, NSHARE::E_SHARE_ENDIAN);
+
+		unsigned const _error=CRequiredDG::sMSwapEndian(_data);
+
+		if(_error!=E_NO_ERROR)
+		{
+			fail_send_t _sent(_data.FDataId);
+			_sent.MSetError(_error);
+			_errors_list.push_back(_sent);
+
+			 ++_rit;
+		}
+		else
+			aTo.splice(aTo.end(),aFrom,_rit++);//only post increment!!!
+	}
+}
+
+void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
+		user_datas_t& aTo,
+		output_user_data_t& aSendToDescriptors,fail_send_array_t& _errors_list) const
+{
+	user_datas_t::iterator _it = aFrom.begin();
+	for (; _it != aFrom.end();)
+	{
+		user_data_t& _data = *_it;
+		unsigned _error = E_NO_ERROR;
 
 		if (!_data.FDataId.FRouting.empty())
 		{
@@ -461,98 +499,234 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 								<< " from " << _data.FDataId.FRouting.FFrom
 								<< " to " << _data.FDataId.FRouting;
 
-			//converting uuid to descriptor
-
 			output_decriptors_for_t _descr;
-			uuids_t _fail;
-			MGetOutputDescriptors(_data.FDataId.FRouting, _descr, _fail);
+			routing_t _has_not_route;
 
-			if (!_fail.empty())
+			MGetOutputDescriptors(_data.FDataId.FRouting, _has_not_route, _descr);
+
+			if (!_descr.empty())
 			{
-				fail_send_t _sent(_data.FDataId);
-				_sent.FRouting.swap(_fail);
-				_sent.MSetError(E_NO_ROUTE);
-				_non_sent.push_back(_sent);
-			}
-
-			LOG_IF(ERROR,_descr.empty()) << "There are not descriptors. WTF?";
-
-			VLOG_IF(1,_descr.size()<_data.FDataId.FRouting.size())
-																			<< "It has been reduced the number of packets for "
-																			<< (_descr.size())
-																			<< " from "
-																			<< _data.FDataId.FRouting.size();
-			output_decriptors_for_t::const_iterator _jt = _descr.begin(),
-					_jt_end = _descr.end();
-			for (; _jt != _jt_end; ++_jt)
-			{
-				_data.FDataId.FRouting = _jt->second;
-
-				output_user_data_t::iterator _kt = _route_by_desc.begin(),
-						_kt_end = _route_by_desc.end();
-
-				for (; _kt != _kt_end && _kt->FDesc != _jt->first; ++_kt)
-					//todo optimize
-					;
-
-				if (_kt == _kt_end)
+				if (!_has_not_route.empty())//it's not fatal error
 				{
-					_route_by_desc.push_back(routing_user_data_t());
-					_kt = --_route_by_desc.end();
-					_kt->FDesc = _jt->first;
+					aTo.push_back(_data);
+					aTo.back().FDataId.FRouting.swap(_has_not_route);
+
+					fail_send_t _sent(aTo.back().FDataId);
+					_sent.MSetError(E_NO_ROUTE);
+					_errors_list.push_back(_sent);
 				}
-				_kt->FData.push_back(_data);
-			}
 
-		}
+				VLOG_IF(1,_descr.size()<_data.FDataId.FRouting.size())
+																				<< "It has been reduced the number of packets for "
+																				<< (_descr.size())
+																				<< " from "
+																				<< _data.FDataId.FRouting.size();
+				output_user_data_t _ouput;
+				MRoutingMsgToDescriptor(_data, _descr, &_ouput);
 
-	}
-
-	//when for all send data
-	if (!_route_by_desc.empty())
-	{
-		CKernelIo::sMGetInstance().MSendTo(_route_by_desc, _non_sent,
-				_not_routed);
-	}
-
-	if (!_non_sent.empty())
-	{
-		MNoteFailSend(_non_sent);
-	}
-
-	if (!_not_routed.empty())
-	{
-		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
-		aData.FData.splice(aData.FData.end(),_not_routed);
-	}
-}
-
-void CRoutingService::MGetOutputDescriptors(const routing_t& aSendTo,
-		output_decriptors_for_t& _descr, uuids_t& aFail) const
-{
-	{
-		for (uuids_t::const_iterator _it = aSendTo.begin();
-				_it != aSendTo.end(); ++_it)
-		{
-			std::vector<descriptor_t> const _d =
-					CInfoService::sMGetInstance().MNextDestinations(*_it);
-			//todo several destination
-			if (!_d.empty() && CDescriptors::sMIsValid(_d.front()))
-			{
-				output_decriptors_for_t::iterator _jt = _descr.find(_d.front());
-				if (_jt == _descr.end())
+				if (!_ouput.empty())
 				{
-					_jt = _descr.insert(
-							output_decriptors_for_t::value_type(_d.front(),
-									routing_t(aSendTo.FFrom, uuids_t()))).first;
+					MSortedSplice(_ouput, aSendToDescriptors);
 				}
-				_jt->second.push_back(*_it);
+				else
+				{
+					LOG(ERROR)<< " WTF?";
+					_error = E_NO_ROUTE;
+				}
 			}
 			else
 			{
-				LOG(ERROR)<<"No route to "<<(*_it);
-				aFail.push_back(*_it);
+				LOG(ERROR)<< "There are not descriptors. WTF?";
+				_error = E_NO_ROUTE;
 			}
+
+		}
+		else
+		{
+			_error = E_UNKNOWN_ERROR;
+			LOG(DFATAL) << "There are no any receivers for "<< _data.FDataId<< ". Msg don't send. Ignoring...";
+		}
+
+		if (_error != E_NO_ERROR)
+		{
+			fail_send_t _sent(_data.FDataId);
+			_sent.MSetError(_error);
+			_errors_list.push_back(_sent);
+
+			++_it;
+		}
+		else
+			aTo.splice(aTo.end(), aFrom, _it++);//only post increment!!!
+	}
+}
+inline void CRoutingService::MRoutingMsgToDescriptor(user_data_t const & aMsg,
+		output_decriptors_for_t const& aDesc,
+		output_user_data_t * const aTo) const
+{
+	output_user_data_t& _ouput=*aTo;
+	output_decriptors_for_t::const_iterator _jt = aDesc.begin(),
+			_jt_end = aDesc.end();
+	for (; _jt != _jt_end; ++_jt)
+	{
+		_ouput.push_back(routing_user_data_t());
+		_ouput.back().FDesc=_jt->first;
+		_ouput.back().FData.push_back(aMsg);
+		_ouput.back().FData.back().FDataId.FRouting = _jt->second;
+	}
+}
+void CRoutingService::MSortedSplice(output_user_data_t& aWhat, output_user_data_t& aTo) const
+{
+	output_user_data_t::iterator _from=aWhat.begin();
+	output_user_data_t::iterator _to=aTo.begin();
+	while (_from != aWhat.end() && _to != aTo.end())
+	{
+		if (_to->FDesc < _from->FDesc)
+		{
+			++_to;
+		}
+		else if(_to->FDesc==_from->FDesc)
+		{
+			_to->FData.splice(_to->FData.end(),_from->FData);
+			_from=aWhat.erase(_from);
+			++_to;
+		}else
+		{
+			aTo.splice(_to,aWhat,_from++);//only post increment!!!
+		}
+	}
+	if(_from!=aWhat.end())
+		aTo.splice(aTo.end(),aWhat);
+
+	CHECK(aWhat.empty());
+}
+void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_datas_t & aTo) const
+{
+	user_datas_t::iterator _rit = aFrom.begin();
+	for (; _rit != aFrom.end();)
+	{
+		user_data_t& _data = *_rit;
+
+		routing_t& _routing_to = _data.FDataId.FRouting;
+		routing_t _has_to_swaped_for;
+
+		if (_data.FDataId.FEndian != NSHARE::E_SHARE_ENDIAN)
+		{
+			DVLOG(2)<<"The data endian is not valid ";
+
+			routing_t::iterator _it = _routing_to.begin();
+			for (; _it != _routing_to.end();)
+			{
+				if (CDescriptors::sMGetInstance().MIs(*_it))
+				{
+					_has_to_swaped_for.push_back(*_it);
+					_it=_routing_to.erase(_it);
+				}
+				else
+					++_it;
+			}
+		}
+
+		if(!_has_to_swaped_for.empty())
+		{
+			VLOG(1)<<"The byte endian for "<<_has_to_swaped_for<< " has to swapped." ;
+
+			if(_routing_to.empty())
+				aTo.splice(aTo.end(),aFrom,_rit++); //only post increment!!!
+			else
+			{
+				aTo.push_back(_data);
+				 ++_rit;
+			}
+
+			aTo.back().FDataId.FRouting.swap(_has_to_swaped_for);
+		}else
+			 ++_rit;
+	}
+}
+
+void CRoutingService::MSendMessages(user_datas_t& aFrom,
+		user_datas_t& _has_not_route, fail_send_array_t& _errors_list)
+{
+	output_user_data_t _send_to_descriptors;
+	MDistributeMsgByDescriptors(aFrom, _has_not_route,
+			_send_to_descriptors, _errors_list);
+	//when for all send data
+	if (!_send_to_descriptors.empty())
+	{
+		CKernelIo::sMGetInstance().MSendTo(_send_to_descriptors, _errors_list,
+				_has_not_route);
+	}
+	DCHECK(aFrom.empty());
+}
+
+void CRoutingService::MHandleFrom(routing_user_data_t& aData)
+{
+	DCHECK(!aData.FData.empty());
+	VLOG(2) << "New  From: " << aData.FDesc;
+	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aData.FDesc))<<aData.FDesc<<" has been closed already. The msg is ignored...";
+
+	fail_send_array_t _errors_list;
+	user_datas_t _has_not_route;
+	user_datas_t _has_route;
+	user_datas_t _has_to_swaped;
+
+	MClassifyMessages(aData, _has_not_route, _has_route);
+
+	if (!_has_not_route.empty())
+			MFillMsgReceivers(_has_not_route, _has_route, _errors_list);
+
+	MExtractMsgThatHasToBeSwaped(_has_route,_has_to_swaped);
+
+	if (!_has_route.empty())
+		MSendMessages(_has_route, _has_not_route, _errors_list);
+
+	if (!_has_to_swaped.empty())
+	{
+		MSwapEndianIfNeed(_has_to_swaped,_has_route,_errors_list);
+		MSendMessages(_has_route, _has_not_route, _errors_list);
+	}
+
+	if (!_errors_list.empty())
+	{
+		MNoteFailSend(_errors_list);
+	}
+
+	DCHECK(aData.FData.empty());
+	if (!_has_not_route.empty())
+	{
+		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
+		aData.FData.swap(_has_not_route);
+	}
+}
+
+void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
+		output_decriptors_for_t& _descr) const
+{
+	for (uuids_t::iterator _it = aFrom.begin(); _it != aFrom.end();
+			)
+	{
+		std::vector<descriptor_t> const _d =
+				CInfoService::sMGetInstance().MNextDestinations(*_it);
+		//todo several destination
+		if (!_d.empty() && CDescriptors::sMIsValid(_d.front()))
+		{
+			output_decriptors_for_t::iterator _jt = _descr.find(_d.front());
+			if (_jt == _descr.end())
+			{
+				_jt = _descr.insert(
+						output_decriptors_for_t::value_type(_d.front(),
+								routing_t(aFrom.FFrom, uuids_t()))).first;
+			}
+			_jt->second.push_back(*_it);
+
+			++_it;
+		}
+		else
+		{
+			LOG(ERROR)<<"No route to "<<(*_it);
+			aTo.push_back(*_it);
+
+			_it=aFrom.erase(_it);
 		}
 	}
 }

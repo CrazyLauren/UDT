@@ -28,10 +28,12 @@ extern CMutex&  get_common_allocator_mutex()
 	static CMutex _mutex;
 	return _mutex;
 }
+static uint8_t g_buffer[sizeof(CCommonAllocater<>)+__alignof(CCommonAllocater<>)];
 extern IAllocater* get_default_allocator_common_allocate()
 {
-	static CCommonAllocater<> g_common_allocater;
-	return &g_common_allocater;
+	static IAllocater* g_common_allocater =
+			new (get_alignment_address<CCommonAllocater<> >(g_buffer)) CCommonAllocater<>;//!< allocate to static memory
+	return g_common_allocater;
 }
 }
 }

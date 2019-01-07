@@ -154,8 +154,7 @@ ssize_t CSocketFile::MReceiveData(data_t* aBuf, const float aTime)
 }
 const CSocket& CSocketFile::MGetSocket(void) const
 {
-	static CSocket _fix;
-	return _fix;
+	return CSocket::sMNullSocket();
 }
 CSocketFile::sent_state_t CSocketFile::MSend(const void*  aData, std::size_t aSize)
 {

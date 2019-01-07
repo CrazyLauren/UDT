@@ -37,18 +37,26 @@ using namespace NUDT;
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	args_t const* _recv_arg=(args_t const*)aWHAT;
-	const uint8_t* _it=_recv_arg->FBegin;
-	_it+=sizeof(test_msg_t);
-	for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
+	const uint8_t* _it = _recv_arg->FHeaderBegin;
+	_it += sizeof(msg_head_t);
+	if (_it != _recv_arg->FBegin)
 	{
-		if (i%255 != *_it)
-		{
-			STREAM_MUTEX_LOCK
-			std::cerr << "Fail data:"<<i<<"!="<<(*_it) << std::endl;
-			STREAM_MUTEX_UNLOCK
-			std::abort();
-		}
+		STREAM_MUTEX_LOCK
+		std::cerr << "Incorrect header size" << std::endl;
+		STREAM_MUTEX_UNLOCK
+		std::abort();
 	}
+	else
+		for (int i = 0; _it != _recv_arg->FEnd; ++i, ++_it)
+		{
+			if (i % 255 != *_it)
+			{
+				STREAM_MUTEX_LOCK
+				std::cerr << "Fail data:" << i << "!=" << (*_it) << std::endl;
+				STREAM_MUTEX_UNLOCK
+				std::abort();
+			}
+		}
 	//for optimization (decrease the number of operation 'copy') You can change the FBuffer field.
 	//Warning!!! The FBegin and FEnd fields always point to the received data
 	//but sometimes The buffer FBuffer can be empty.
@@ -92,7 +100,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	std::cerr << " by UDT kernel as ";
 	
 	//checking if "user's code"
-	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIT)
+	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIST)
 		std::cerr<<(unsigned)_recv_arg->FUserCode; //user's code from udt_example_protocol.h
 	else
 		CCustomer::sMPrintError(std::cerr,_recv_arg->FErrorCode); //inner code. 
@@ -126,10 +134,10 @@ extern void doing_something()
 		}
 
 		//filing the head of msg
-		test_msg_t *_msg = (test_msg_t*) _buf.ptr();
-		_msg->FHead.FType = E_MSG_TEST;
-		_msg->FHead.FSize = PACKET_SIZE+1/*Imitation error in example_parser_error*/;
-		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(test_msg_t),_it_end=_buf.end();
+		msg_head_t *_msg = (msg_head_t*) _buf.ptr();
+		_msg->FType = E_MSG_TEST;
+		_msg->FSize = PACKET_SIZE+1/*Imitation error. see example_parser_error*/;
+		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(msg_head_t),_it_end=_buf.end();
 		for(int i=0;_it!=_it_end;++i,++_it)
 		{
 			*_it=i%255;

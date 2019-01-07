@@ -128,7 +128,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT,
 
 	return 0;
 }
-
+#define MESSAGE_NUMBER 1
 extern void doing_something()
 {
 
@@ -149,10 +149,10 @@ extern void doing_something()
 			//!< allocate the buffer for msg
 			;
 
-		//!< Send the message number 0 (It's not necessary to specify the Receiver  
-		//as If Somebody want to receive the message number 0 from us, It call method MIWantReceivingMSG and
-		//specify receiving the message number 0 from us.)
-		CCustomer::sMGetInstance().MSend(0, _buf);
+		//!< Send the message number MESSAGE_NUMBER (It's not necessary to specify the Receiver  
+		//as If Somebody want to receive the message number MESSAGE_NUMBER from us, It call method MIWantReceivingMSG and
+		//specify receiving the message number MESSAGE_NUMBER from us.)
+		CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf);
 	};
 
 }

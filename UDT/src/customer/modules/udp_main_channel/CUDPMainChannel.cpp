@@ -66,7 +66,7 @@ void CUDPMainChannel::MClose()
 NSHARE::eCBRval CUDPMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
 	reinterpret_cast<CUDPMainChannel*>(aData)->MReceiver();
-	return E_CB_REMOVE;
+	return E_CB_SAFE_IT;
 }
 void CUDPMainChannel::MReceiver()
 {

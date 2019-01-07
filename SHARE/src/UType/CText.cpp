@@ -2697,9 +2697,11 @@ bool CText::sMUnitTest()
 	}
 	return true;
 }
-static CText g_empty;
+static uint8_t g_buffer[sizeof(CText)+__alignof(CText)];
 CText const& CText::sMEmpty()
 {
+	static CText& g_empty=
+			*new (get_alignment_address<CText >(g_buffer)) CText;//!< allocate to static memory
 	return g_empty;
 }
 } // NSHARE

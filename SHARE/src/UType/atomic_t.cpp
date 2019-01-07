@@ -14,13 +14,16 @@
 COMPILE_ASSERT(sizeof(NSHARE::atomic_t) == sizeof(uint32_t),
 		InvalidSizeofAtomic);
 
+COMPILE_ASSERT(__alignof(NSHARE::atomic_t) <= 4,
+		InvalidAligofAtomic);
+
 #if __cplusplus >= 201103L && 0//todo for c++11, copy operation of atomic_t
 namespace NSHARE
 {
-	atomic_t::atomic_t(value_type const& aVal):FCount(0)
-	{
-		MWrite(aVal);
-	}
+//	atomic_t::atomic_t(value_type const& aVal):FCount(0)
+//	{
+//		MWrite(aVal);
+//	}
 	void atomic_t::MWrite(value_type const& aVal)
 	{
 		FCount=aVal;
@@ -51,11 +54,11 @@ namespace NSHARE
 namespace NSHARE
 {
 	static NSHARE::CMutex g_lock;
-	atomic_t::atomic_t(value_type const& aVal) :
-		FCount(0)
-	{
-		MWrite(aVal);
-	}
+//	atomic_t::atomic_t(value_type const& aVal) :
+//		FCount(0)
+//	{
+//		MWrite(aVal);
+//	}
 	void atomic_t::MWrite(value_type const& aVal)
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _block(g_lock);
@@ -90,17 +93,19 @@ namespace NSHARE
 #	include <pthread.h>
 namespace NSHARE
 {
-	atomic_t::atomic_t(value_type const& aVal):FCount(0)
-	{
-		MWrite(aVal);
-	}
+//	atomic_t::atomic_t(value_type const& aVal):FCount(0)
+//	{
+//		MWrite(aVal);
+//	}
 	void atomic_t::MWrite(value_type const& aVal)
 	{
+		DCHECK_POINTER_ALIGN(&FCount);
 		volatile value_type _val=aVal;//will be change
 		_smp_xchg(&FCount,_val);
 	}
 	atomic_t::value_type atomic_t::MIncrement()
 	{
+		DCHECK_POINTER_ALIGN(&FCount);
 		for (;;)
 		{
 			volatile const value_type old_value = MValue();
@@ -115,6 +120,7 @@ namespace NSHARE
 	}
 	atomic_t::value_type atomic_t::MDecrement()
 	{
+		DCHECK_POINTER_ALIGN(&FCount);
 		for (;;)
 		{
 			volatile const value_type old_value = MValue();
@@ -129,6 +135,7 @@ namespace NSHARE
 	}
 	void atomic_t::MAdd(int const& aVal)
 	{
+		DCHECK_POINTER_ALIGN(&FCount);
 		for (;;)
 		{
 			volatile const value_type old_value = MValue();
@@ -164,6 +171,8 @@ namespace NSHARE
 {
 inline void atomic_add(volatile boost::uint32_t *mem, int val)
 {
+	DCHECK_POINTER_ALIGN(mem);
+
 #	ifdef _WIN32
 	boost::uint32_t _nval;
 	boost::uint32_t _old;
@@ -177,33 +186,39 @@ inline void atomic_add(volatile boost::uint32_t *mem, int val)
 	atomic_add32(mem,val);
 #	endif
 }
-atomic_t::atomic_t(value_type const& aVal) :
-		FCount(0)
-{
-	MWrite(aVal);
-}
+//atomic_t::atomic_t(value_type const& aVal) :
+//		FCount(0)
+//{
+//	MWrite(aVal);
+//}
 void atomic_t::MWrite(value_type const& aVal)
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	atomic_write32(&FCount, aVal);
 }
 atomic_t::value_type atomic_t::MIncrement()
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_inc32(&FCount);
 }
 atomic_t::value_type atomic_t::MDecrement()
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_dec32(&FCount);
 }
 void atomic_t::MAdd(int const& aVal)
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	atomic_add(&FCount, aVal);
 }
 bool atomic_t::MIsOne() const
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	return MValue() == value_type(1);
 }
 atomic_t::value_type atomic_t::MValue() const
 {
+	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_read32(&FCount);
 }
 }

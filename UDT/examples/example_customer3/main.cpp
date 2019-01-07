@@ -4,6 +4,7 @@ using namespace NUDT;
 
 #define PACKET_SIZE 100000
 #define INDITIFICATION_NAME "uex3@guex"
+#define MESSAGE_NUMBER 1
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int event_new_receiver(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, 0, _handler);
+				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler);
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function

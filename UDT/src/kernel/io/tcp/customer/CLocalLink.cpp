@@ -146,7 +146,7 @@ bool CLocalLink::MReceivedData(data_t::const_iterator aBegin,
 	FServiceParser.MReceivedData(aBegin, aEnd);
 	return true;
 }
-bool CLocalLink::MReceivedData(user_data_t const& _user)
+bool CLocalLink::MReceivedData(user_data_t& _user)
 {
 	FDisgnostic.MInput(_user);
 	if (E_OPEN == FState)

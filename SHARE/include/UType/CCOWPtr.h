@@ -26,6 +26,7 @@ class CCOWPtr
 		explicit implementation_t(T const& aVal) :
 				FVal(aVal)
 		{
+			FCounter=1;
 		}
 
 		atomic_t FCounter;

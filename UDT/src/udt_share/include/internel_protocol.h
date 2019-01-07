@@ -384,37 +384,42 @@ SHARED_PACKED(struct user_data_header_t
 	user_data_header_t();
 
 	uint64_t FUUIDFrom;
+	//8
+	uint64_t FType;
+	//16
 
 
 	user_data_flags FFlags;
 	uint8_t FEventList;
-
 	uint16_t FSplitCounter;
+	//20
 
-	uint32_t FRawNumber;
-
+	uint32_t FDataOffset;
+	//24
 
 	uint16_t FSplitCoefficient;
-
 	uint8_t FDestination;
 	uint8_t FRouting;
-
+	//28
 
 	uint8_t FRegistrators;
 	uint8_t FProtocolName; //(+ '\0')
 	uint8_t FMinor;
 	uint8_t FMajor;
+	//32
 
 	uint32_t FNumber;
+	//36
 
 	uint32_t FDataSize;
+	//40
 });
-COMPILE_ASSERT(sizeof(user_data_header_t) == (8*4), InvalidSizeOfUserData);
+COMPILE_ASSERT(sizeof(user_data_header_t) == (8*5), InvalidSizeOfUserData);
 inline user_data_header_t::user_data_header_t()
 {
 	memset(this,0,sizeof (*this));
 }
-SHARED_PACKED(struct user_data_dg_t: dg_base_t<user_data_dg_t, 0, 1, E_USER_DATA>
+SHARED_PACKED(struct user_data_dg_t: dg_base_t<user_data_dg_t, 0, 2, E_USER_DATA>
 {
 private:
 	user_data_header_t FUserHeader;
@@ -425,14 +430,14 @@ public:
 	inline void  MSetUserDataHeader(user_data_header_t const&);
 });
 COMPILE_ASSERT(sizeof(user_data_dg_t) == (sizeof(head_t)
-		+ 8*4), InvalidSizeOfDGUserData);
+		+ sizeof(user_data_header_t)), InvalidSizeOfDGUserData);
 
 inline user_data_header_t user_data_dg_t::MGetUserDataHeader() const
 {
 	user_data_header_t _copy(FUserHeader);
 	_copy.FUUIDFrom=MEndianCorrectValue(_copy.FUUIDFrom);
 	_copy.FSplitCounter=MEndianCorrectValue(_copy.FSplitCounter);
-	_copy.FRawNumber=MEndianCorrectValue(_copy.FRawNumber);
+	_copy.FDataOffset=MEndianCorrectValue(_copy.FDataOffset);
 	_copy.FSplitCoefficient=MEndianCorrectValue(_copy.FSplitCoefficient);
 	_copy.FNumber=MEndianCorrectValue(_copy.FNumber);
 	_copy.FDataSize=MEndianCorrectValue(_copy.FDataSize);
@@ -685,7 +690,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::user_data_header_t const& aVal)
 {
 	using namespace NUDT;
-	return aStream << "Number:"<<aVal.FNumber<<" Data size:" << aVal.FDataSize << std::endl  << "RawNumber:" << aVal.FRawNumber<< std::endl//"Name:" << aVal.FName<< std::endl
+	return aStream << "Number:"<<aVal.FNumber<<" Data size:" << aVal.FDataSize << std::endl  << "RawNumber:" << aVal.FDataOffset<< std::endl//"Name:" << aVal.FName<< std::endl
 			<< "UUID From:" << aVal.FUUIDFrom << std::endl << " Destination len:"
 			<< (int)aVal.FDestination<<", Routing:"<<(int)aVal.FRouting<<", Events:"<<(int)aVal.FEventList<< std::endl <<"ProtocolLen:"
 			<< aVal.FProtocolName<<" Packet:"<<aVal.FSplitCounter<<" Coefficient:"<<aVal.FSplitCoefficient<<" IsLast"<<(bool)aVal.FFlags.FIsLast<<" Minor:"<<aVal.FMinor<<" Major:"<<aVal.FMajor<<" FRegistrators:"<<aVal.FRegistrators;

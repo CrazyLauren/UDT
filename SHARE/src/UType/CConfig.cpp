@@ -126,7 +126,6 @@ CConfig& CConfig::operator=(const CConfig& rhs)
 }
 CConfig::~CConfig()
 {
-	VLOG(5) << "destructing config";
 }
 const char UNIX_PATH_SEPARATOR = '/';
 const char WINDOWS_PATH_SEPARATOR = '\\';
@@ -259,9 +258,10 @@ CConfig const& CConfig::MChild(const CText& childName) const
 
 	return sMGetEmpty();
 }
+static uint8_t g_buffer[sizeof(CConfig)+__alignof(CConfig)];
 CConfig const& CConfig::sMGetEmpty()
 {
-	static CConfig const emptyConf;
+	static CConfig const& emptyConf=*new (get_alignment_address<CConfig>(g_buffer)) CConfig;//!< allocate to static memory
 	return emptyConf;
 }
 const CConfig* CConfig::MChildPtr(const CText& childName) const
@@ -704,7 +704,7 @@ void write_json_to(NSHARE::CConfig const& aFrom, NSHARE::CBuffer& aTo)
 	writer.StartObject();
 	write_json_impl(writer, aFrom, false);
 	writer.EndObject();
-	aTo=NSHARE::CBuffer(NULL, _vec.begin(), _vec.end());
+	aTo=NSHARE::CBuffer( _vec.begin(), _vec.end());
 }
 void write_json_to(NSHARE::CConfig const& aFrom, NSHARE::CText* aTo)
 {

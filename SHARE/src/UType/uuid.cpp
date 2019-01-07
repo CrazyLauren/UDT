@@ -71,11 +71,19 @@ CText uuid_t::MToString() const
 {
 	CText _text;
 	uint8_t const *_this = reinterpret_cast<uint8_t const *>(&FVal);
+#ifdef	SHARE_LITTLEENDIAN
 	_text.MPrintf("%02x-%02x-"
 			"%02x-%02x-"
 			"%02x-%02x-"
 			"%02x-%02x", _this[7], _this[6], _this[5], _this[4], _this[3],
 			_this[2], _this[1], _this[0]);
+#else
+	_text.MPrintf("%02x-%02x-"
+			"%02x-%02x-"
+			"%02x-%02x-"
+			"%02x-%02x", _this[0], _this[1], _this[2], _this[3], _this[4],
+			_this[5], _this[6], _this[7]);
+#endif
 	return _text;
 }
 bool uuid_t::MIsValid() const
@@ -100,8 +108,13 @@ bool uuid_t::MFromString(CText const& aText)
 			&_data[1], &_data[0]);
 	if (count == 8)
 	{
+
 		for (int i = 0; i < 8; ++i)
+#ifdef	SHARE_LITTLEENDIAN
 			_this[i] = _data[i];
+#else
+			_this[7-i] = _data[i];
+#endif
 	}
 	return count == 8;
 }

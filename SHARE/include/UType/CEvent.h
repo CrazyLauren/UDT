@@ -112,6 +112,7 @@ public:
 	 *
 	 * Сложность O(n)
 	 * \param aCallbackArgs - параметры события
+	 * \retunr количество вызванных CB
 	 */
 	int MCall(value_arg_t const& aCallbackArgs);
 

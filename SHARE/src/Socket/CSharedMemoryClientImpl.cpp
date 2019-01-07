@@ -52,8 +52,7 @@ void IMPL_CLASS::MCreateClient(IAllocater* _alloc,int aUserId)
 	FMyInfo = new (_ptr) client_info_t(NSHARE::CThread::sMPid(),_client_size);
 	CHECK_NOTNULL(FMyInfo);
 	CHECK_LT(aUserId, std::numeric_limits<uint16_t>::max());
-	if(aUserId>=0)
-	FMyInfo->FInfo.FId.FUserID = aUserId;
+	if(aUserId>=0) FMyInfo->FInfo.FId.FUserID = aUserId;
 	FEv.FEvents= &FMyInfo->FInfo;
 	VLOG(2) << "Events ptr =" << FEv.FEvents;
 	MCreateSignalEvent(FEv);

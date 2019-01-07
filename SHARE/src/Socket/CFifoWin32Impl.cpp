@@ -337,8 +337,7 @@ ssize_t CFifo::CImpl::MReceiveData(data_t* aBuf, const float aTime)
 
 const CSocket& CFifo::CImpl::MGetSocket(void) const
 {
-	static CSocket _fix;
-	return _fix;
+	return CSocket::sMNullSocket();
 }
 void CFifo::CImpl::MFlush(eFlush const&)
 {

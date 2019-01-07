@@ -51,7 +51,7 @@ inline CEvents<key_type, event_type, TIEvents, mutex_type>::CEvents(
 		sender_t const& aSender) :
 		FSender(aSender)
 {
-	;
+	FNumberOfArrayChange=0;
 }
 template<class key_type, class event_type,
 		template<class, class > class TIEvents, class mutex_type>
@@ -59,14 +59,14 @@ inline CEvents<key_type, event_type, TIEvents, mutex_type>::CEvents(
 		CEvents const& aRht, sender_t const& aSender) :
 		FCBs(aRht.FCBs), FSender(aSender)
 {
-	;
+	FNumberOfArrayChange=0;
 }
 template<class key_type, class event_type,
 		template<class, class > class TIEvents, class mutex_type>
 inline CEvents<key_type, event_type, TIEvents, mutex_type>::CEvents() :
 		FSender(NULL)
 {
-	;
+	FNumberOfArrayChange=0;
 }
 template<class key_type, class event_type,
 		template<class, class > class TIEvents, class mutex_type>

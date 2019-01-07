@@ -33,12 +33,15 @@ namespace NSHARE
 		typedef uint32_t atomic_value_type;
 #endif
 	}
-SHARED_PACKED(struct SHARE_EXPORT atomic_t
+/*SHARED_PACKED(*/struct SHARE_EXPORT atomic_t
 		{
 		public:
 			typedef impl::atomic_value_type value_type;
 
-			explicit atomic_t(value_type const& aVal=value_type(1));
+			//The c++ standard (c++03 8.5.1) says that The POD
+			//type has't to have user-declared constructor
+			//explicit atomic_t(value_type const& aVal=value_type(1));
+
 
 			void MAdd(int const& aVal) ;
 			value_type MIncrement() ;
@@ -56,9 +59,10 @@ SHARED_PACKED(struct SHARE_EXPORT atomic_t
 			inline value_type operator++();
 			inline value_type operator--();
 			inline value_type operator=(const value_type&);
-		private:
-			mutable volatile value_type FCount;
-		});
+
+			mutable value_type FCount;//The c++ standard (c++03 8.5.1) says that The POD
+									  //type has't to use private or protected member
+		}/*)*/;
 inline atomic_t::value_type atomic_t::operator=(const value_type& aVal)
 {
 	MWrite(aVal);

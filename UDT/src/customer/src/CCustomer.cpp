@@ -85,7 +85,7 @@ const CCustomer::error_t CCustomer::E_NAME_IS_INVALID= E_NAME_IS_INVALID;
 const CCustomer::error_t CCustomer::E_NOT_CONNECTED_TO_KERNEL= E_NOT_CONNECTED_TO_KERNEL;
 const CCustomer::error_t CCustomer::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;
 
-const CCustomer::error_t CCustomer::E_USER_ERROR_EXIT=E_USER_ERROR_BEGIN;
+const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=E_USER_ERROR_BEGIN;
 const unsigned CCustomer::FIRST_USER_ERROR_BIT=eUserErrorStartBits;
 
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
@@ -375,12 +375,13 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	_fail.FFrom=_prog.FRouting.FFrom.FUuid;
 	_fail.FProtocolName = _prog.FProtocol;
 	_fail.FPacketNumber = _prog.FPacketNumber&std::numeric_limits<uint16_t>::max();
-	_fail.FRawProtocolNumber=_prog.FRawProtocolNumber;
+	_fail.FRawProtocolNumber=_prog.FWhat.FNumber;//fixme check is raw
+	_fail.FVersion = _prog.FWhat.FVersion;
 	_fail.FTo = _prog.FDestination;
 	_fail.FFails = _prog.FRouting;
 	_fail.FUserCode=_prog.MGetUserError();
 	_fail.FErrorCode=_prog.MGetInnerError();
-	_fail.FVersion = _prog.FVersion;
+	
 	_impl->MCall(EVENT_FAILED_SEND, &_fail);
 	VLOG(2) << "Fail sent";
 	return 0;
@@ -478,29 +479,35 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 
 		_raw_args.FFrom = aFrom.FData.FDataId.FRouting.FFrom.FUuid; //may be remove?
 		_raw_args.FProtocolName =
-				aFrom.FData.FDataId.FProtocol.empty() ?
+				aFrom.FData.FDataId.MIsRaw() ?
 						RAW_PROTOCOL_NAME : aFrom.FData.FDataId.FProtocol;
-		_raw_args.FRawProtocolNumber = aFrom.FData.FDataId.FRawProtocolNumber;
+		_raw_args.FRawProtocolNumber =
+				aFrom.FData.FDataId.MIsRaw() ?
+						aFrom.FData.FDataId.FWhat.FNumber : 0;
 		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
-		_raw_args.FVersion=aFrom.FData.FDataId.FVersion;
+		_raw_args.FVersion=aFrom.FData.FDataId.FWhat.FVersion;//fixme
 		_raw_args.FOccurUserError=0;
 		_raw_args.FEndian=aFrom.FData.FDataId.FEndian;
 
 
 		aFrom.FData.FData.MMoveTo(_raw_args.FBuffer);
 
+		size_t const _data_offset =
+				aFrom.FData.FDataId.MIsRaw() ? 0 : aFrom.FData.FDataId.FDataOffset;
+
 		LOG_IF(ERROR, _raw_args.FBuffer.empty()) << "Empty data";
 
 		if (!_raw_args.FBuffer.empty())
 		{
-			_raw_args.FBegin =
+			_raw_args.FHeaderBegin =
 					reinterpret_cast<const uint8_t*>(&_raw_args.FBuffer.front());
+			_raw_args.FBegin=_raw_args.FHeaderBegin+_data_offset;
 			_raw_args.FEnd =
 					reinterpret_cast<const uint8_t*>(&_raw_args.FBuffer.back());
 			++_raw_args.FEnd; //last equal end
 		}
 		else
-			_raw_args.FBegin = _raw_args.FEnd = NULL;
+			_raw_args.FHeaderBegin=_raw_args.FBegin = _raw_args.FEnd = NULL;
 	}
 	{ //handle _raw_args
 		CRAII<CMutex> _block(FParserMutex);
@@ -618,7 +625,7 @@ int CCustomer::_pimpl::MSettingDgParserFor(const NSHARE::CText& aReq,
 	_val.FNameFrom = NSHARE::CRegistration(aReq);
 	_val.FProtocol = aNumber.FProtocolName;
 	_val.FWhat = aNumber.FRequired;
-	_val.FFlags = aNumber.FFlags;
+	_val.FFlags.MSetFlag(aNumber.FFlags,true);
 
 	VLOG(2)<<"New demand:"<<_val;
 	CRAII<CMutex> _block(FParserMutex);
@@ -749,8 +756,8 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData = aBuf;
-	_data.FDataId.FRawProtocolNumber = aNumber;
-	_data.FDataId.FVersion=aVer;
+	_data.FDataId.FWhat.FNumber = aNumber;
+	_data.FDataId.FWhat.FVersion=aVer;
 	_data.FDataId.FDestination.push_back(aTo);
 
 	return MSendImpl(aBuf,_data);
@@ -767,8 +774,8 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData=aBuf;
-	_data.FDataId.FRawProtocolNumber=aNumber;
-	_data.FDataId.FVersion=aVer;
+	_data.FDataId.FWhat.FNumber=aNumber;
+	_data.FDataId.FWhat.FVersion=aVer;
 
 	return MSendImpl(aBuf,_data);
 }
@@ -1129,6 +1136,6 @@ void CCustomer::MJoin()
 }
 std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
 {
-	return aStream<<static_cast<eError>(aVal);
+	return aStream<<static_cast<eError>(encode_inner_error(aVal));
 }
 } //

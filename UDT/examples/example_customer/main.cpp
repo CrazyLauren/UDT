@@ -4,6 +4,7 @@
 using namespace NUDT;
 
 #define INDITIFICATION_NAME "uex2@guex"
+#define MESSAGE_NUMBER 1
 
 extern int msg_test_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern int group_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
@@ -23,18 +24,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number 0 version 1.1
+	{	//!< I want to receive msg number MESSAGE_NUMBER version 1.1
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, 0, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
-	}
-	{	
-		//!< I want to receive msg number 0 of any version
-		// from any customer of "guex" group  and it will be  handled  by function group_handler
-		callback_t _handler(group_handler, NULL);
-		CCustomer::sMGetInstance().MIWantReceivingMSG(
-			"@guex", 0, _handler);
+				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function

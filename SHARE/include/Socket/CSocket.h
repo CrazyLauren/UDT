@@ -61,11 +61,13 @@ public:
 	{
 		return FFd;
 	}
+	static CSocket const& sMNullSocket();
 	bool FIsCloseOnDestructor;
 	unsigned const FOrderNumber;
 private:
-	socket_t FFd;
+	void MCloseImpl();
 
+	socket_t FFd;
 	static unsigned g_counter;
 };
 }

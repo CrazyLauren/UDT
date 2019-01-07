@@ -228,7 +228,7 @@ void IMPL::MEventHandler()
 	for (; !FEventDone;)
 	{
 		event_info_t _event;
-		if (MWaitForEvent(FEv,&_event, -1))
+		if (MWaitForEvent(FEv,&_event, -1) && !FEventDone)
 		{
 			VLOG(2) << "Handle event " << _event.FEventType;
 			MEventHandler(&_event);
@@ -756,7 +756,7 @@ void IMPL::MStopEventHandlerForce()
 	VLOG(2) << "Stopping event handler...";
 	FEventDone = true;
 	FEv.FSignalEvent.MSignal();
-	FSignalHandler.MCancel();
+	//FSignalHandler.MCancel();
 	VLOG(2) << "Wait for cancel";
 	FSignalHandler.MJoin();
 	CHECK(!FSignalHandler.MIsRunning());
@@ -769,6 +769,7 @@ bool IMPL::MFreeBase()
 	if (!FEventDone)
 		MStopEventHandlerForce();
 	MUnlockReceivingForce();
+	CHECK(FEventDone);
 	VLOG(2) << "Signal event handler was canceled.";
 	bool _is = false;
 	{
@@ -781,8 +782,8 @@ bool IMPL::MFreeBase()
 		FEv.FSignalSem.MUnlink();//fixme maybe error!!!!!!!!!!!!!!
 
 		FBuffers.clear();
-		_is = FSharedMemory.MFree();
 		FSharedSem.MFree();
+		_is = FSharedMemory.MFree();
 	}
 	FServerInfo = NULL;
 	if (_is)

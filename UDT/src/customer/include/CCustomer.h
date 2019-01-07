@@ -41,9 +41,10 @@ struct args_t
 {
 	NSHARE::uuid_t FFrom;
 	NSHARE::CText FProtocolName;
+	const uint8_t* FHeaderBegin;//pointer to the header or NULL
 	const uint8_t* FBegin;//pointer to the data
 	const uint8_t* FEnd;//equal vector::end()
-	NSHARE::CBuffer FBuffer;//If buffer is exist The fields FBegin,FEnd
+	NSHARE::CBuffer FBuffer;//If buffer is exist The fields FHeaderBegin,FEnd
 							//are equal to FBuffer.begin(),FBuffer.end().
 	unsigned FPacketNumber;
 	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
@@ -181,7 +182,7 @@ public:
 	static std::ostream& sMPrintError(std::ostream&,error_t const&);
 	//reserve
 
-	static const error_t E_USER_ERROR_EXIT;//if user's error is exit then the bit is set
+	static const error_t E_USER_ERROR_EXIST;//if user's error is exit then the bit is set
 	static const unsigned FIRST_USER_ERROR_BIT;	//Number of the first bit of user's error
 	//then 8 bit for user's code
 

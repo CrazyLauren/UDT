@@ -41,6 +41,7 @@ public:
 	descriptor_t MGet(const descriptor_info_t&) const;
 	descriptor_t MGet(const NSHARE::uuid_t&) const;
 	std::pair<descriptor_info_t,bool> MGet(descriptor_t const&) const;
+	bool MIsCustomer(descriptor_t const&) const;
 
 
 	static bool  sMIsValid(descriptor_t);

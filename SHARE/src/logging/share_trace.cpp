@@ -353,3 +353,4 @@ extern "C" void install_failure_signal_handler()
 }
 #endif//#elif defined(__MINGW32__)//_POSIX_VERSION
 #endif//#ifndef NOLOG
+

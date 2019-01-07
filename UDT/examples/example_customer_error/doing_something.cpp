@@ -116,7 +116,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	std::cerr << " by UDT kernel as ";
 	CCustomer::sMPrintError(std::cerr,_recv_arg->FErrorCode);
 
-	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIT)
+	if(_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIST)
 			std::cerr<<" user's code="<<(unsigned)_recv_arg->FUserCode;//user's code from udt_example_protocol.h
 	std::cerr<< std::endl;
 
@@ -124,6 +124,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	return 0;
 }
 #define PACKET_SIZE 100000
+#define MESSAGE_NUMBER 1
 extern void doing_something()
 {
 #ifdef _WIN32
@@ -156,7 +157,7 @@ extern void doing_something()
 		}
 		
 		//!< Send the message number 0 to uuid 
-		int _num = CCustomer::sMGetInstance().MSend(0, _buf,g_sent_to);
+		int _num = CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf,g_sent_to);
 		if (_num > 0)	//Hurrah!!! The data has been sent
 		{
 			//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.

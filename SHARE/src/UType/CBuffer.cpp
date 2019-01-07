@@ -27,7 +27,8 @@
 
 namespace NSHARE
 {
-
+COMPILE_ASSERT(sizeof(IAllocater::offset_pointer_t)==sizeof(CBuffer::offset_pointer_t) ,
+		INVALID_SIZEOF_BUF_OFFSET);
 //static CMutex g_mutex;
 #define BUF_FACTOR 1.5//fixme
 const size_t CBuffer::DEF_BUF_RESERVE = 256; //fixme
@@ -112,10 +113,11 @@ public:
 	void MSetFlag(eBufFlags const& aFlag, bool aVal) const;
 
 });
-
+COMPILE_ASSERT(sizeof(CBuffer::buf_info) ==4*sizeof(atomic_t),
+		IVALID_SIZEOF_BUF_INFO);
 CBuffer::buf_info::buf_info(size_t const& aSize)
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	FRawOffsetField = 0;
 	FSize = 0;
 	FBufSize = 0;
@@ -125,43 +127,43 @@ CBuffer::buf_info::buf_info(size_t const& aSize)
 }
 size_t CBuffer::buf_info::MSize() const
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	return FSize;
 }
 void CBuffer::buf_info::MSetSize(size_t const& aVal)
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
 	FSize.MWrite((atomic_t::value_type)aVal);
 	MSetCrc();
 }
 size_t CBuffer::buf_info::MBufSize()
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	return FBufSize;
 }
 void CBuffer::buf_info::MSetBufSize(size_t const& aVal)
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	CHECK_LE(aVal, std::numeric_limits<uint32_t>::max());
 	FBufSize.MWrite((atomic_t::value_type)aVal);
 	MSetCrc();
 }
 uint32_t CBuffer::buf_info::use_count() const
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	return FCount;
 }
 void CBuffer::buf_info::add_ref_copy()
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	++FCount;
 	//MSetCrc();
 }
 
 uint32_t CBuffer::buf_info::release()
 {
-	CHECK_NOTNULL(this);
+//	CHECK_NOTNULL(this);
 	CHECK_GT(use_count(), 0);
 	return FCount--;
 	//MSetCrc();
@@ -543,7 +545,7 @@ bool CBuffer::_buffer_t::MIsRestored() const
 {
 	return FBeginOfStorage && MGetBuff().MIs(E_BUF_RESORED);
 }
-CBuffer::CBuffer(size_t aSize, int aBeginSize, IAllocater* aAlloc,
+CBuffer::CBuffer(size_type aSize, int  aBeginSize, IAllocater* aAlloc,
 		eAllocatorType aType) :
 		BEGIN_SIZE(aBeginSize < 0 ? DEF_BUF_RESERVE : aBeginSize), //
 		FBuffer(aAlloc ? aAlloc : sMDefAllaocter(), aType), //
@@ -1121,6 +1123,16 @@ CBuffer::allocator_type & CBuffer::get_allocator() const
 bool CBuffer::MIsNeedDetach() const
 {
 	return !(FBuffer.empty() || FBuffer.unique());
+}
+CBuffer CBuffer::MCreateCopy(eAllocatorType aType)
+{
+	return MCreateCopy(FBuffer.FAllocator,aType);
+}
+CBuffer CBuffer::MCreateCopy(IAllocater* aAlloc,eAllocatorType aType)
+{
+	CBuffer _rval(aAlloc, aType);
+	_rval.deep_copy(*this);
+	return _rval;
 }
 void CBuffer::MDetach()
 {

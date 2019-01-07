@@ -41,8 +41,10 @@ static inline char const* print_error()
 	return print_socket_error().c_str();
 }
 CTCPServer::CImpl::CImpl(CTCPServer * aThis) :
-		FMutex(CMutex::MUTEX_NORMAL), FLoopBack(new loop_back_t/*(this)*/), FThis(
-				aThis)
+		FMutex(CMutex::MUTEX_NORMAL),//
+		FLoopBack(new loop_back_t/*(this)*/),//
+		FThis(aThis), //
+		FTestMsg(4u, 0)
 {
 	VLOG(2) << "Create impl for " << aThis;
 	FThread += NSHARE::CB_t(sMConnect, this);
@@ -430,8 +432,7 @@ IMPL::cl_t IMPL::MAddNewClient(CSocket& _sock,
 
 void IMPL::MUnLockSelect()
 {
-	static const NSHARE::CBuffer _test(4,0);
-	sent_state_t _val = FLoopBack->FLoop.MSend(_test);
+	sent_state_t const _val = FLoopBack->FLoop.MSend(FTestMsg);
 
 	VLOG_IF(1,_val.MIs()) << "Select unlocked successfully. ";
 	LOG_IF(WARNING,!_val.MIs()) << "Cannot unlock select. ";

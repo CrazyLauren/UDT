@@ -309,10 +309,10 @@ void CUdpMainChannel::MReceiver()
 				if (_is)
 					_param = _it->second;
 
-				CHECK_NOTNULL(_param.get());
-				CHECK_NOTNULL(_param->FParser.FUserData);
+				CHECK_NOTNULL(_param.get());				
 				if(!_param.get())
 					continue;
+				CHECK_NOTNULL(_param->FParser.FUserData);
 				_param->FParser.MReceivedData(_data.cbegin(), _data.cend());
 			}
 

@@ -535,8 +535,7 @@ CFIFOServer::sent_state_t CFIFOServer::CImpl::MSendImpl(void const* const aData,
 
 const CSocket& CFIFOServer::CImpl::MGetSocket() const
 {
-	static CSocket _fix;
-	return _fix;
+	return CSocket::sMNullSocket();
 }
 void CFIFOServer::CImpl::MFlush(const eFlush&)
 {

@@ -65,7 +65,7 @@ bool CRS485::MIsSendingDataCorrectly(const void* const aPData,
 		LOG(ERROR)<< "***ERROR***:Port RS485:" << print_socket_error();
 		return false;
 	}
-	data_t _sended(NULL, (const uint8_t*) (aPData),
+	data_t _sended((const uint8_t*) (aPData),
 			(const uint8_t*) (aPData) + aSize);
 	if (_received != _sended)
 	{

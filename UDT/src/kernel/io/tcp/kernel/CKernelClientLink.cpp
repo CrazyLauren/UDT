@@ -141,7 +141,7 @@ bool CKernelClientLink::MReceivedData(data_t::const_iterator aBegin,
 	 }*/
 	return true;
 }
-bool CKernelClientLink::MReceivedData(user_data_t const& _user)
+bool CKernelClientLink::MReceivedData(user_data_t& _user)
 {
 	LOG_IF(DFATAL,!MIsOpened()) << "Receiving data by closed link.";
 	FDiagnostic.MInput(_user);

@@ -50,9 +50,14 @@ enum eError
 	E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=0x1<<20,
 	E_INCORRECT_USING_OF_UDT_1 = 0x1<<21,
 //	Resreved = 0x1<<22,
+	E_MAX_ERROR_CODE = 0x1<<23,
 	E_USER_ERROR_BEGIN=(0x1)<<(eUserErrorStartBits-1)
 };
 extern UDT_SHARE_EXPORT  error_type const USER_ERROR_MASK;
+extern UDT_SHARE_EXPORT  error_type code_inner_error(error_type const& aError);
+extern UDT_SHARE_EXPORT  error_type encode_inner_error(error_type const& aError);
+extern UDT_SHARE_EXPORT  user_error_type encode_user_error(error_type const& aError);
+extern UDT_SHARE_EXPORT  error_type code_user_error(user_error_type const& aError);
 
 extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME;
 typedef std::vector<NSHARE::CText> customers_names_t;
@@ -105,28 +110,34 @@ struct UDT_SHARE_EXPORT split_packet_t
 struct UDT_SHARE_EXPORT demand_dg_t
 {
 	typedef uint32_t event_handler_t;
+	typedef uint32_t flags_t;
 
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText HANDLER;
 	static const NSHARE::CText KEY_FLAGS;
 	static const uint32_t NO_HANDLER;
 
-	enum
+	enum eFlags
 	{
-		E_NO_DEMAND_FLAGS=0,
-		E_REGISTRATOR=0x1<<0
+		E_REGISTRATOR=0x1<<0,
+		E_IS_BIG_ENDIAN=0x1<<1,
+#ifdef SHARE_LITTLEENDIAN
+		E_DEMAND_DEFAULT_FLAGS=0,
+#else
+		E_DEMAND_DEFAULT_FLAGS=E_IS_BIG_ENDIAN,
+#endif
 	};
 	required_header_t FWhat;
 	//NSHARE::CText FNameRegExp;	//from
 	NSHARE::CRegistration FNameFrom;
 	NSHARE::smart_field_t<NSHARE::uuid_t> FUUIDFrom;
 	NSHARE::CText FProtocol;
-	uint32_t FHandler;
-	uint32_t FFlags;
+	event_handler_t FHandler;
+	NSHARE::CFlags<eFlags,flags_t> FFlags;
 
 	demand_dg_t():
 		FHandler(NO_HANDLER),//
-		FFlags(E_NO_DEMAND_FLAGS)//
+		FFlags(E_DEMAND_DEFAULT_FLAGS)//
 	{
 		;
 	}
@@ -135,6 +146,10 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	bool MIsValid()const;
 	bool MIsEqual(demand_dg_t const& aRht) const;
 	bool operator==(demand_dg_t const& aRht) const;
+	bool MIsValidEndian() const;
+	void MSwitchEndianFlag();
+
+
 };
 //
 //-------------------------
@@ -171,11 +186,11 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	static const NSHARE::CText KEY_PACKET_TO;
 	static const NSHARE::CText KEY_REGISTRATORS;
 	static const NSHARE::CText KEY_PACKET_PROTOCOL;
-	static const NSHARE::CText KEY_RAW_PROTOCOL_NUM;
+	static const NSHARE::CText KEY_DATA_OFFSET;
 	static const NSHARE::CText KEY_DATA_ENDIAN;
 	user_data_info_t() :
 			FPacketNumber(0),//
-			FRawProtocolNumber(0),//
+			FDataOffset(0),//
 			FEndian(NSHARE::E_SHARE_ENDIAN)
 	{
 
@@ -187,18 +202,23 @@ struct UDT_SHARE_EXPORT user_data_info_t
 
 	//id_t FFrom;//from.FName - Depreciated
 	uint32_t FPacketNumber;
-	NSHARE::version_t FVersion;
 
 	NSHARE::CText FProtocol;
-	unsigned FRawProtocolNumber;//it's optimization
+	unsigned FDataOffset;
 
 	std::vector<demand_dg_t::event_handler_t> FEventsList;
-	uuids_t FDestination;
-	uuids_t FRegistrators;
-	routing_t FRouting;
+	uuids_t FDestination;//!< List of all uuids of customers
+						//which are to be received message. (must be sorted)
+	uuids_t FRegistrators;//!< List of all uuids of message's
+						//registrar. (must be sorted)
+	routing_t FRouting;//!<	Remain receiver's (need for message routing)
+					   // at the beginning of routing
+					   //FRouting=FDestination+FRegistrators
+					   //(must be sorted)
 
 	split_packet_t FSplit;
 	NSHARE::eEndian FEndian;
+	required_header_t FWhat;//todo
 };
 class IExtParser;
 struct UDT_SHARE_EXPORT user_data_t
@@ -214,6 +234,7 @@ struct UDT_SHARE_EXPORT user_data_t
 	NSHARE::CConfig MSerialize(/*required_header_t const& =required_header_t(),*/IExtParser* =NULL) const;
 	NSHARE::CConfig MSerialize(NSHARE::CText const & aName) const;
 	bool MIsValid()const;
+	void MMoveTo(user_data_t & aTo);
 };
 
 struct UDT_SHARE_EXPORT demand_dgs_t:std::vector<demand_dg_t>
@@ -512,9 +533,21 @@ inline std::ostream& operator<<(std::ostream & aStream,
 {
 
 	aStream <<"#" <<aVal.FPacketNumber;
-	if (aVal.FVersion.MIsExist())
+	if (aVal.FWhat.FVersion.MIsExist())
 	{
-		aStream << " v" << aVal.FVersion;
+		aStream << " v" << aVal.FWhat.FVersion;
+		aStream << " Number: ";
+		int _i = 0;
+
+		aStream.setf(ios::hex, ios::basefield);
+		uint8_t* aBegin=(uint8_t*)aVal.FWhat.FReserved;
+		uint8_t* aEnd=aBegin+ sizeof(aVal.FWhat.FReserved);
+		for (; aBegin != aEnd; ++aBegin)
+		{
+			aStream << "0x" << static_cast<unsigned const&>(*aBegin) << " ";
+			if (!(++_i % 8))
+				aStream << "\n";
+		}
 	}
 	aStream<<" From:" << aVal.FRouting.FFrom << ";";
 	//aStream << "To:" << aVal.FDestName;
@@ -554,7 +587,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	if(aVal.FSplit.MIsSplited())
 			aStream << aVal.FSplit<<";";
 	aStream << "Protocol :" << aVal.FProtocol;
-	aStream << "RawNum :" << aVal.FRawProtocolNumber;
+	aStream << "RawNum :" << aVal.FDataOffset;
 
 	//aStream <<  aVal.FData;
 
@@ -667,6 +700,8 @@ inline std::ostream& operator<<(std::ostream & aStream,
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::eError const& aVal)
 {
+	DCHECK_EQ(aVal,NUDT::encode_inner_error(aVal));
+
 	NSHARE::CFlags<NUDT::eError,NUDT::error_type> const _val(aVal);
 	if (_val.MGetFlag(NUDT::E_CANNOT_READ_CONFIGURE))
 	{
@@ -754,12 +789,8 @@ inline std::ostream& operator<<(std::ostream & aStream,
 
 	if (_val.MGetFlag(NUDT::E_USER_ERROR_BEGIN))
 	{
-		aStream << " User error code="
-				<< ((_val.MGetMask() & NUDT::USER_ERROR_MASK)
-						>> NUDT::eUserErrorStartBits) << ",";
+		aStream << " exist user's error, ";
 	}
-
-
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream, NUDT::main_ch_param_t const& aVal)

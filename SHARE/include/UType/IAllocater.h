@@ -24,6 +24,12 @@ template<typename T>
 inline IAllocater* get_default_allocator();
 extern SHARE_EXPORT IAllocater* get_default_allocator();
 
+/** \brief should evaluate to the alignment address for type T
+ *
+ */
+template<typename T>
+inline T* get_alignment_address(void*);
+
 /** \brief Interface for allocate memory
  *
  *	There are two different type of allocators. The first is allocating memory
@@ -273,5 +279,11 @@ private:
 	void* FBuf;
 	volatile bool FIsLock;
 };
+template<typename T>
+inline T* get_alignment_address(void* aBuf)
+{
+	size_t const _align_addr= __alignof(T)-1;
+	return (T*)(((uintptr_t)aBuf +_align_addr)&~(_align_addr));
+}
 } /* namespace NSHARE */
 #endif /* IALLOCATER_H_ */
