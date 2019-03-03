@@ -169,10 +169,14 @@ void IMPL::MCloseImpl()
 {
 	CRAII < CMutex > _mutex(FMutex);
 	VLOG(2) << "Closing the socket";
-	FTcp.FIsConnected = false;
-	net_address _addr = MGetInitParam();
-	FTcp.MCall(EVENT_DISCONNECTED, &_addr);
+
 	FSock.MClose();
+	if(FTcp.FIsConnected)
+	{
+		FTcp.FIsConnected = false;
+		net_address _addr = MGetInitParam();
+		FTcp.MCall(EVENT_DISCONNECTED, &_addr);
+	}
 }
 
 void IMPL::MClose()

@@ -606,13 +606,19 @@ CSharedMemory::~CSharedMemory()
 }
 bool CSharedMemory::MOpen(const NSHARE::CText& aName,bool aIsCleanUp,size_t aReserv)
 {
+	using namespace boost::interprocess;
 	VLOG(2) << "Open shared memory " << aName;
 	CHECK(!FImpl);
 	try
 	{
 		FImpl=NULL;
 		FImpl = new CImpl(aName,aIsCleanUp,aReserv);
-	} catch (...)
+	} catch (interprocess_exception const&  aEx)
+	{
+		LOG(ERROR) << "Cannot open " << aName << " shared memory. as "<<aEx.what();
+		CHECK(!FImpl);
+	}
+	catch (...)
 	{
 		LOG(ERROR) << "Cannot open " << aName << " shared memory.";
 		CHECK(!FImpl);
@@ -637,6 +643,7 @@ bool CSharedMemory::MCheckSize(size_t aVal)const
 
 bool CSharedMemory::MOpenOrCreate(const NSHARE::CText& aName, size_t aSize,size_t aReserv)
 {
+	using namespace boost::interprocess;
 	VLOG(2) << "Open shared memory " << aName<<" Size = "<<aSize;
 	if(!MCheckSize(aSize))
 	{
@@ -648,7 +655,12 @@ bool CSharedMemory::MOpenOrCreate(const NSHARE::CText& aName, size_t aSize,size_
 	{
 		FImpl=NULL;
 		FImpl = new CImpl(aName, aSize,aReserv);
-	} catch (...)
+	} catch (interprocess_exception const&  aEx)
+	{
+		LOG(ERROR) << "Cannot open " << aName << " shared memory. as "<<aEx.what();
+		CHECK(!FImpl);
+	}
+	catch (...)
 	{
 		LOG(ERROR) << "Cannot open " << aName << " shared memory.";
 		CHECK(!FImpl);

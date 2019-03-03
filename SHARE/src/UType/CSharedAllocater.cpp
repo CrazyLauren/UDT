@@ -354,7 +354,9 @@ void CSharedAllocator::process_node_t::MPopOffsetById(offset_t aOffset)
 	VLOG(5)<<"Prev index = "<<_min<<" new = "<<aOffset;
 	pid_offset_t _offset;
 	_offset.MSetIndexOfOffset(_min);
-	_min=aOffset;
+
+	DCHECK_GE(std::numeric_limits<free_index_t>::max(), aOffset);
+	_min=static_cast<free_index_t>(aOffset);
 
 	FOffsets[aOffset].FNextNode=_offset.FNextNode;
 	FMinFreeIndex= _min;
@@ -858,7 +860,11 @@ CSharedAllocator::block_node_t * const CSharedAllocator::MCreateReservForProcess
 	VLOG(2) << "Pid of reserv Offset=" << sMOffsetFromBase(_new_p, FBase);
 	//		_process->MPutOffset(_offset);
 	block_node_t* _node = sMGetBlockNode(_new_p);
-	_node->MSetIndexOfOffset( aProc->MPutOffset(_offset));
+	
+	offset_t const _index = aProc->MPutOffset(_offset);
+	DCHECK_GE(std::numeric_limits<index_type>::max(), _index);
+
+	_node->MSetIndexOfOffset( static_cast<index_type>(_index));
 	_node->MSetReservedFlag(true);
 	_node->MSetReserveFree(true);
 	return _node;
@@ -1152,7 +1158,10 @@ void CSharedAllocator::MKeepBlock(block_node_t * _node, process_node_t*const  _p
 {
 	offset_t const _offset = sMOffsetFromBase(sMGetPointerOfBlockNode(_node),
 			FBase);
-	_node->MSetIndexOfOffset( _process->MPutOffset(_offset));
+	offset_t const _index = _process->MPutOffset(_offset);
+	DCHECK_GE(std::numeric_limits<index_type>::max(), _index);
+
+	_node->MSetIndexOfOffset(static_cast<index_type>(_index));
 }
 void* CSharedAllocator::MMallocImpl(heap_head_t* const _p_head,
 		block_size_t const xWantedSize, offset_t aOffset, bool aUseReserv)
@@ -1316,8 +1325,9 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	VLOG(2) << "Cur reserv=" << _p->FUsedUpReserv << " add "
 						<< _p_node->FBlockSize << " prev=" << _prev << " next="
 						<< _next;
-
-	_p->FUsedUpReserv-= _p_node->FBlockSize;
+	
+	DCHECK_GE(std::numeric_limits<reserve_t>::max(), _p_node->FBlockSize);
+	_p->FUsedUpReserv-= static_cast<reserve_t>(_p_node->FBlockSize);
 	//merge
 	if (_prev
 			&& (((uint8_t *) _prev + sizeof(block_node_t) + _prev->FBlockSize)
@@ -1646,14 +1656,16 @@ void * CSharedAllocator::MMallocBlockFromReserv(
 	}
 	_free_node->FBlockSize &= (~BLOCK_ALLOCATED_BIT);	//for safety reset flags
 
-	aProc->FUsedUpReserv+= _free_node->FBlockSize;
+	DCHECK_GE(std::numeric_limits<reserve_t>::max(), _free_node->FBlockSize);
+	aProc->FUsedUpReserv+= static_cast<reserve_t>(_free_node->FBlockSize);
 
 	block_node_t* _new_block = MSplitInto2Block(_free_node, _alligment_size,
 			false, _p_head);
 	if (_new_block)
 	{
 		VLOG(2) << "The reserved block has been split.";
-		aProc->FUsedUpReserv-= _new_block->FBlockSize;
+		DCHECK_GE(std::numeric_limits<reserve_t>::max(), _new_block->FBlockSize);
+		aProc->FUsedUpReserv-= static_cast<reserve_t>(_new_block->FBlockSize);
 
 		_new_block->MSetReservedFlag( true);
 		_new_block->MSetReserveFree( true);
@@ -1920,7 +1932,9 @@ void CSharedAllocator::MCleaunUpBlock(heap_head_t* const _p_head,
 		aNode = MGetOrRealocateProcessNode(aNode, _p_head, 1);
 		CHECK_NOTNULL(aNode);
 
-		_node->MSetIndexOfOffset( aNode->MPutOffset(_base_offset));
+		offset_t const _index = aNode->MPutOffset(_base_offset);
+		DCHECK_GE(std::numeric_limits<index_type>::max(), _index);
+		_node->MSetIndexOfOffset( static_cast<index_type>(_index));
 	}
 }
 void CSharedAllocator::MRemoveWatchDog(heap_head_t* const _p_head)

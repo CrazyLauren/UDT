@@ -48,7 +48,9 @@ struct  smart_field_t
 
 	inline bool operator ==(const my_t& aRhs) const
 	{
-		return MIs() && aRhs.MIs() && sMValueEqualeCompare(MGetConst() , aRhs.MGetConst());
+		return MIs() == aRhs.MIs() //
+				&& ( MIs()==false//
+						||sMValueEqualeCompare(MGetConst() , aRhs.MGetConst()));
 	}
 	inline bool operator !=(const my_t& aRhs) const
 	{
