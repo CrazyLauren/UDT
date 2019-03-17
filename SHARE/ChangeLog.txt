@@ -1,3 +1,17 @@
+<<<<<<< HEAD
+=======
+UDT SHARE 0.6
+-------------------
+  - Change names of CAddress to CProgramGroup and  CRegistration to CProgramName
+  - Added a new method MUpdateIfSet to CConfig
+  - Now CFlags without mutex is POD type
+  - Add random value generator by RNG
+  - Change arguments type of init_trace
+  - Fix fatal error in debug mode: failed clean up of locked IPC mutex by shared memory server.
+  - Fix double calling event EVENT_DISCONNECTED from TCPClient
+  - Fix operator == of smart_field_t
+  
+>>>>>>> 3a2b21d... see changelog
 UDT SHARE 0.5
 -------------------
   - Fixed virtual method called bug for static variables

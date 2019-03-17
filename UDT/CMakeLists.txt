@@ -113,4 +113,9 @@ ENDIF()
 ################################################################################
 add_subdirectory(src)
 add_subdirectory(tools)
+<<<<<<< HEAD
 add_subdirectory(examples)
+=======
+#add_subdirectory(examples)
+add_subdirectory(tests)
+>>>>>>> 3a2b21d... see changelog

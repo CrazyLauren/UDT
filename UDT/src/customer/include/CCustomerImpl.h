@@ -13,7 +13,11 @@
 #ifndef CCUSTOMERIMPL_H_
 #define CCUSTOMERIMPL_H_
 
-#include "ICustomer.h"
+#include <CResources.h>
+#include <CConfigure.h>
+#include <CIOFactory.h>
+#include <CDataObject.h>
+#include <ICustomer.h>
 namespace NUDT
 {
 typedef NSHARE::CEvent<CCustomer*, callback_t, void*> event_t;
@@ -30,11 +34,9 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	typedef NSHARE::CSafeData<customers_t> safety_customers_t;
 	typedef HASH_MAP<uint32_t,callback_t> cb_event_t;
 
-//	typedef std::map<NSHARE::CRegistration, callback_t> customer_handlers_t;
-//	typedef std::map<required_header_t, customer_handlers_t, CReqHeaderFastLessCompare> header_for_protocol_t;
-//	typedef std::map<NSHARE::CText, header_for_protocol_t, NSHARE::CStringFastLessCompare> protocol_parser_t;
 
 	_pimpl(CCustomer& aThis);
+
 	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const& aVersion);
 	~_pimpl();
 
@@ -55,10 +57,10 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSendTo(unsigned aNumber,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags);
 	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer, eSendToFlags);
 
-
-	int MSettingDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber,
+	void MGetMyWishForMSG(std::vector<request_info_t>& aTo) const;
+	int MSettingDgParserFor(msg_parser_t  aNumber,
 			const callback_t& aHandler);
-	int MRemoveDgParserFor(const NSHARE::CText& aTo, msg_parser_t aNumber);
+	int MRemoveDgParserFor( msg_parser_t  aNumber);
 	customers_t MCustomers() const;
 	program_id_t MCustomer(NSHARE::uuid_t const&) const;
 	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;

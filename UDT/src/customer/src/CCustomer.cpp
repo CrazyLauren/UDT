@@ -19,13 +19,9 @@
 #include <revision.h>
 #include <programm_id.h>
 
-#include "CResources.h"
-#include "CConfigure.h"
-#include "CCustomer.h"
-#include "CIOFactory.h"
-#include "CDataObject.h"
-#include "CCustomerImpl.h"
-#include "CLocalChannelFactory.h"
+#include <CCustomer.h>
+
+#include <CCustomerImpl.h>
 
 DECLARATION_VERSION_FOR(customer)
 
@@ -61,6 +57,7 @@ const NSHARE::CText CCustomer::EVENT_NEW_RECEIVER = "event_receiver";
 
 //kernel's error
 COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SIZE);
+COMPILE_ASSERT(sizeof(fail_sent_args_t::error_t)==sizeof(error_type),E_INVALID_FAIL_ERROR_SIZE);
 
 
 const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=(E_HANDLER_IS_NOT_EXIST);
@@ -88,6 +85,7 @@ const CCustomer::error_t CCustomer::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE
 const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=E_USER_ERROR_BEGIN;
 const unsigned CCustomer::FIRST_USER_ERROR_BIT=eUserErrorStartBits;
 
+<<<<<<< HEAD
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
 				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0),FMainPacketNumber(0)
@@ -838,6 +836,8 @@ uint16_t CCustomer::_pimpl::MNextUserPacketNumber()
  *
  *
  */
+=======
+>>>>>>> 3a2b21d... see changelog
 CCustomer::CCustomer() :
 		FImpl(new _pimpl(*this))
 {
@@ -981,7 +981,13 @@ CCustomer::modules_t CCustomer::MModules() const
 	return FImpl->MAllAvailable();
 }
 
-int CCustomer::MSettingDgParserFor(const NSHARE::CText& aFrom,
+std::vector<request_info_t> CCustomer::MGetMyWishForMSG() const
+{
+	std::vector<request_info_t> _wish;
+	FImpl->MGetMyWishForMSG(_wish);
+	return _wish;
+}
+int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
 		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVer,msg_parser_t::eFLags const& aFlags)
 {
 	msg_parser_t _msg;
@@ -989,28 +995,30 @@ int CCustomer::MSettingDgParserFor(const NSHARE::CText& aFrom,
 	_msg.FRequired.FNumber = aHeader;
 	_msg.FProtocolName = "";
 	_msg.FFlags=aFlags;
+	_msg.FFrom=aFrom;
 	//It's not need
 
-	return MSettingDgParserFor(aFrom, _msg, aCB);
+	return MIWantReceivingMSG( _msg, aCB);
 }
-int CCustomer::MSettingDgParserFor(const NSHARE::CText& aTo,
-		const msg_parser_t& aNumber, const callback_t& aHandler)
+int CCustomer::MIWantReceivingMSG(const msg_parser_t& aHeader, const callback_t& aCB)
 {
-	return FImpl->MSettingDgParserFor(aTo, aNumber, aHandler);
+	return FImpl->MSettingDgParserFor( aHeader, aCB);
 }
-int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aFrom,
+
+int CCustomer::MDoNotReceiveMSG(const msg_parser_t& aNumber)
+{
+	return FImpl->MRemoveDgParserFor(aNumber);
+}
+int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
 {
 	msg_parser_t _msg;
 	_msg.FRequired.FVersion = MGetID().FKernelVersion;
 	_msg.FRequired.FNumber = aNumber;
-	return MRemoveDgParserFor(aFrom, _msg);
+	_msg.FFrom=aFrom;
+	return FImpl->MRemoveDgParserFor( _msg);
 }
-int CCustomer::MRemoveDgParserFor(const NSHARE::CText& aTo,
-		const msg_parser_t& aNumber)
-{
-	return FImpl->MRemoveDgParserFor(aTo, aNumber);
-}
+
 int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 		eSendToFlags aFlag)
 {

@@ -36,9 +36,14 @@ using namespace NUDT;
 
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
+<<<<<<< HEAD
 	args_t const* _recv_arg=(args_t const*)aWHAT;
 	const uint8_t* _it=_recv_arg->FHeaderBegin;
 	_it+=sizeof(msg_head_t);
+=======
+	received_message_args_t const* _recv_arg=(received_message_args_t const*)aWHAT;
+	const uint8_t* _it=_recv_arg->FBegin;
+>>>>>>> 3a2b21d... see changelog
 	for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
 	{
 		if (i%255 != *_it)
@@ -59,7 +64,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 }
 extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	args_t const* _recv_arg = (args_t const*)aWHAT;
+	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
 	//!<Now You can handle the received data.
 
 	STREAM_MUTEX_LOCK

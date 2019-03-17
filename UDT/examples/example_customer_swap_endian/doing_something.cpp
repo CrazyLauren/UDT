@@ -47,7 +47,7 @@ inline bool double_equal(float a, float b, float epsilon =
 
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	args_t const* _recv_arg = (args_t const*) aWHAT;
+	received_message_args_t const* _recv_arg = (received_message_args_t const*) aWHAT;
 
 	msg_data const *_msg = (msg_data const*) _recv_arg->FBegin;
 

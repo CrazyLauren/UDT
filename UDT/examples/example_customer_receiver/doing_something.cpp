@@ -35,7 +35,7 @@ using namespace NUDT;
 
 extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	args_t const* _recv_arg = (args_t const*) aWHAT;
+	received_message_args_t const* _recv_arg = (received_message_args_t const*) aWHAT;
 	//!<Now You can handle the received data.
 
 	if (NSHARE::E_SHARE_ENDIAN == _recv_arg->FEndian)

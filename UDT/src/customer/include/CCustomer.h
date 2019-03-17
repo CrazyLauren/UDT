@@ -18,107 +18,221 @@
 #include <udt_types.h>
 
 #ifdef uuid_t
-#error "Fucking programmer"
+#	error "Fucking programmer"
+
 #endif
 namespace NUDT
 {
 class CCustomer;
+
+/*! \brief Information about requirement message
+ *
+ *\note
+ * Non-POD type.
+ */
 struct msg_parser_t
 {
+<<<<<<< HEAD
 	NSHARE::CText FProtocolName; //Name of protocol
 	required_header_t FRequired;
 	enum eFLags{
 		E_NO_FLAGS=0,
 		E_REGISTRATOR=0x1<<0
 	} FFlags;
-
-	msg_parser_t():FFlags(E_NO_FLAGS)
+=======
+	/*! \brief Collection of bitwise flags for change
+	 * subscription behaviour
+	 *
+	 */
+	enum eFLags
 	{
+		E_NO_FLAGS=0,
+		E_REGISTRATOR=0x1<<0,//!< if it's set then message will be delivered to you
+							 //only if there is at least one "non-registrator" (real)
+							 //subscribed to the message
+		E_INVERT_GROUP=0x1<<3,//<! if it's set then the order@com.ru.putin is not enter
+							 //into the order@com.ru, but is enter into the order@com.ru.putin.vv
+		E_NEAREST=0x1<<4,//<! if it's set then 	if there are next programs:
+						 //order@com.ru.people,
+						 //order@com.ru.putin.vv,
+						 //order@com.ru.kremlin,
+						 //than the order@com is included only order@com.ru.people
+						 //and order@com.ru.kremlin
+	};
+>>>>>>> 3a2b21d... see changelog
 
-	}
+	NSHARE::CText FProtocolName; //!<Type of message protocol
+	required_header_t FRequired;//!< Header of requirement message
+	unsigned FFlags;//!< subscription flags
+	NSHARE::CText FFrom;//!< Name of program
+
+	msg_parser_t();
+	bool operator==(msg_parser_t const& aRht) const;
 };
-struct args_t
+
+/*! \brief Storage of received data
+ * which is contained the requirement message
+ *
+ *	The Pointers of type are pointed into FBuffer.
+ *	The data from FHeaderBegin to FBegin is
+ *	header. The message header can not exist or not equal of
+ *	expected if:
+ *	- it's message of child type;
+ *	- the message header and data sent separately (see send API)
+ *	(usually do that).
+ *
+ * \note
+ *  FBuffer.end() can be not equal FEnd
+ *  FBuffer.begin() can be not equal FBegin
+ *  Non-POD type.
+ */
+struct received_data_t
 {
-	NSHARE::uuid_t FFrom;
-	NSHARE::CText FProtocolName;
-	const uint8_t* FHeaderBegin;//pointer to the header or NULL
-	const uint8_t* FBegin;//pointer to the data
-	const uint8_t* FEnd;//equal vector::end()
-	NSHARE::CBuffer FBuffer;//If buffer is exist The fields FHeaderBegin,FEnd
-							//are equal to FBuffer.begin(),FBuffer.end().
-	unsigned FPacketNumber;
-	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
-	std::vector<NSHARE::uuid_t> FTo;
-	NSHARE::version_t FVersion;
-	mutable uint8_t FOccurUserError;//if the field will changed , when
-	//the error with code  FOccurUserError is sent to FFrom
-	unsigned FEndian;// see eEndian(endian_type.h)
+	NSHARE::CBuffer FBuffer;//!< Contained received data
+
+	const uint8_t* FHeaderBegin;//!< pointer to the message header
+								//or NULL if message header is not exist
+	const uint8_t* FBegin;//pointer to the message begin
+	const uint8_t* FEnd;//pointer to end of message (equal std::vector::end())
+
+	received_data_t();
 };
 
+/*! \brief information contained in aWHAT argument
+ * of function which is handle received data ( see Receive API)
+ *
+ * You can send error to sender by
+ * changing field FOccurUserError.
+ *
+ * \note
+ *  Non-POD type.
+ */
+struct received_message_args_t
+{
+	NSHARE::uuid_t FFrom;//!<UUID of message sender
+	NSHARE::CText FProtocolName;//!<Type of message protocol
+	received_data_t FMessage;//!< Received message
+	uint16_t FPacketNumber;//!<The packet (message) sequence number (continuous numbering
+							//for all packets from sender)
+							//two message can identical number only
+							//if is sent in one packet (buffer), usually that two
+							//messages in one buffer isn't sent (see send buffer method).
+	required_header_t FHeader;//!< The message header
+	std::vector<NSHARE::uuid_t> FTo;//!< List uuids of message receiver (sorted)
+	mutable uint8_t FOccurUserError;//if the field will changed by you, when
+	//the error with code  FOccurUserError is sent to message sender (FFrom)
+	unsigned FEndian;// Message byte order (see eEndian in endian_type.h)
+};
+
+/*! \brief Information about connected
+ * (disconnected) program to kernel
+ *
+ * It's argument (aWHAT) of event: EVENT_CUSTOMERS_UPDATED
+ *
+ * \note
+ *  Non-POD type.
+ */
 struct customers_updated_args_t
 {
-	std::set<program_id_t> FDisconnected;
-	std::set<program_id_t> FConnected;
+	std::set<program_id_t> FDisconnected;//!< list of connected program
+	std::set<program_id_t> FConnected;//!< list of disconnected program
 };
+<<<<<<< HEAD
 struct new_receiver_args_t
+=======
+
+/*! \brief Information about requirement message for
+ *
+ * It's argument (aWHAT) of event: EVENT_RECEIVER_SUBSCRIBE and
+ * EVENT_RECEIVER_UNSUBSCRIBE
+ *
+ * \note
+ *  Non-POD type.
+ */
+struct subcribe_receiver_args_t
+>>>>>>> 3a2b21d... see changelog
 {
 	struct what_t
 	{
-		msg_parser_t FWhat;
-		NSHARE::uuid_t FWho;
-		NSHARE::CText FRegExp;//see the first argument of MSettingDgParserFor
+		msg_parser_t FWhat;//!< The request
+		NSHARE::uuid_t FWho;//!< Who want to receive message
 	};
 	typedef std::vector<what_t> receivers_t;
 
-	receivers_t FReceivers;
+	receivers_t FReceivers;//!< list of requirement messages
 };
+
+/*! \brief Information about not delivered message
+ *
+ */
+struct fail_sent_args_t
+{
+	typedef uint32_t error_t;
+
+	NSHARE::uuid_t FFrom;//!<see received_message_args_t
+	NSHARE::CText FProtocolName;//!<see received_message_args_t
+	uint16_t FPacketNumber;//!< see received_message_args_t
+
+	required_header_t FHeader;//!< see received_message_args_t
+
+	error_t FErrorCode;//!<A bitwise error code, see CCustomer structure
+					// field E_*
+
+	uint8_t FUserCode;//!<A user error or 0 (see FOccurUserError field of received_message_args_t)
+
+	std::vector<NSHARE::uuid_t> FSentTo;//!< Where the data was sent
+	std::vector<NSHARE::uuid_t> FFails;//!< Where the data was not delivered
+};
+
+/*! \brief type of callback function which used by customer
+ *
+ *	\param WHO - pointer to structure Customer
+ *	\param WHAT - A pointer to a structure that describes
+ *				 the event that caused the callback to be
+ *				 invoked, or NULL if there isn't an event.
+ *				 (see *_args_t structures)
+ *	\param YOU_DATA -A pointer to data that you wanted to pass
+ *					 as the second parameter(FYouData) callback_t structure.
+ *
+ *	\return by default Callback functions must return 0
+ *			for detail see NSHARE::eCBRval
+ */
 typedef int (*signal_t)(CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+/*! \brief Regular callback structure used in "Customer" structure
+ *
+ */
 struct callback_t
 {
-	typedef signal_t TSignal ;
+	typedef signal_t TSignal;
 	typedef TSignal pM;
 	typedef void* arg_t;
-	callback_t() :
-			FSignal(NULL), FYouData(NULL)
-	{
-		;
-	}
-	callback_t(TSignal const& aSignal, void * const aData) :
-			FSignal(aSignal), FYouData(aData)
-	{
-		;
-	}
-	callback_t(callback_t const& aCB) :
-			FSignal(aCB.FSignal), FYouData(aCB.FYouData)
-	{
-		;
-	}
-	callback_t& operator=(callback_t const& aCB)
-	{
-		FSignal=aCB.FSignal;
-		FYouData=aCB.FYouData;
-		return *this;
-	}
 
-	TSignal FSignal;
-	void* FYouData;
-	bool MIs()const
-	{
-		return FSignal!=NULL;
-	}
-	int operator ()(CCustomer* aWho, void * const aArgs) const
-	{
-		if (FSignal)
-			return (*FSignal)(aWho, aArgs, FYouData);
-		return -1;
-	}
+	TSignal FSignal; //!< A pointer to the callback function
+	void* FYouData;//!< A pointer to data that you
+					//want to pass as the second parameter
+					//to the callback function when it's invoked.
 
-	bool operator ==(callback_t const& rihgt) const
-	{
-		return FSignal == rihgt.FSignal && FYouData == rihgt.FYouData;
-	}
+	callback_t();
+	callback_t(TSignal const& aSignal, void * const aData);
+	callback_t(callback_t const& aCB);
+	callback_t& operator=(callback_t const& aCB);
+
+	bool MIs() const;
+	int operator ()(CCustomer* aWho, void * const aArgs) const;
+
+	bool operator ==(callback_t const& rihgt) const;
 };
 
+/*! \brief Information about requested message and
+ * it callback function
+ *
+ */
+struct request_info_t
+{
+	msg_parser_t FWhat;//!<A requested message
+	callback_t FHandler;//!<A callback function
+};
 class CUSTOMER_EXPORT CCustomer: public NSHARE::CSingleton<CCustomer>
 {
 public:
@@ -261,7 +375,16 @@ public:
 	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 			const NSHARE::uuid_t& aTo, eSendToFlags = E_NO_SEND_FLAGS);
 
+<<<<<<< HEAD
 	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
+=======
+	///@brief Send message to customer
+	///@param aNumber The number off sending buffer.
+	///@param aPacket Pointer to the packet
+	///@param aTo Name of customer
+	///@return  <0 if error, 0 -if loopback, else ID of sent packet
+	int MSend(unsigned aNumber, NSHARE::CBuffer & aPacket,
+>>>>>>> 3a2b21d... see changelog
 			NSHARE::version_t const& = NSHARE::version_t(), eSendToFlags =
 					E_NO_SEND_FLAGS);
 	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
@@ -273,18 +396,18 @@ public:
 	///@param aHeader Parsing a header type
 	///@param aCB Callback handler
 	///@return  <0 if error, else handler ID
-	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
-			const unsigned& aMSGNumber, const callback_t& aHandler,
-			msg_parser_t::eFLags const& = msg_parser_t::E_NO_FLAGS,
-			NSHARE::version_t const& = NSHARE::version_t());
-	int MIWantReceivingMSG(const NSHARE::CText& aFrom,
-			const msg_parser_t& aMSGHeader, const callback_t& aHandler);
+	int MIWantReceivingMSG(const msg_parser_t& aMSGHeader,
+			const callback_t& aHandler);
+	int MIWantReceivingMSG(const NSHARE::CText& aFrom, const unsigned& aHeader,
+			const callback_t& aCB, NSHARE::version_t const& =
+					NSHARE::version_t(), msg_parser_t::eFLags const& =
+					msg_parser_t::E_NO_FLAGS);
 
 	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 			const unsigned& aNumber);
-	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-			const msg_parser_t& aNumber);
+	int MDoNotReceiveMSG(const msg_parser_t& aNumber);
 
+	std::vector<request_info_t> MGetMyWishForMSG() const;
 
 
 	bool operator+=(value_t const & aVal);
@@ -300,15 +423,7 @@ public:
 	bool MEmpty  ()const;
 	NSHARE::CBuffer MGetNewBuf(std::size_t aSize) const;
 
-	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const msg_parser_t& aHeader, const callback_t& aCB);
-	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
-			const msg_parser_t& aNumber);
 
-	int MSettingDgParserFor(const NSHARE::CText& aFrom,
-			const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& =NSHARE::version_t(),msg_parser_t::eFLags const& =msg_parser_t::E_NO_FLAGS);
-	int MRemoveDgParserFor(const NSHARE::CText& aFrom,
-			const unsigned& aNumber);
 	void MJoin();
 private:
 
@@ -320,37 +435,60 @@ private:
 	struct _pimpl;
 	_pimpl* FImpl;
 };
-struct fail_sent_args_t
+
+inline msg_parser_t::msg_parser_t():FFlags(E_NO_FLAGS)
 {
-	NSHARE::uuid_t FFrom;
-	NSHARE::CText FProtocolName;
-	unsigned FPacketNumber;
-	unsigned FRawProtocolNumber;//If using Raw protocol The field is the number of packet
-	NSHARE::version_t FVersion;
 
-	CCustomer::error_t FErrorCode;//see CCustomer
-	uint8_t FUserCode;
-	std::vector<NSHARE::uuid_t> FTo;
-	std::vector<NSHARE::uuid_t> FFails;
-};
-inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const msg_parser_t& aHeader, const callback_t& aCB){
-	return MSettingDgParserFor(aFrom,aHeader,aCB);
 }
-inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-		const msg_parser_t& aNumber){
-	return MRemoveDgParserFor(aFrom,aNumber);
+inline bool msg_parser_t::operator==(msg_parser_t const& aRht) const
+{
+	return FProtocolName==aRht.FProtocolName//
+			&& FFlags==aRht.FFlags//
+			&& FRequired==aRht.FRequired//
+			;
 }
-
-inline int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const unsigned& aHeader, const callback_t& aCB,msg_parser_t::eFLags const& aFlags,NSHARE::version_t const& aVal){
-	return MSettingDgParserFor(aFrom,aHeader,aCB,aVal,aFlags);
+inline received_data_t::received_data_t():
+		FHeaderBegin(NULL),//
+		FBegin(NULL),//
+		FEnd(NULL)
+{
+	;
 }
-inline int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-		const unsigned& aNumber){
-	return MRemoveDgParserFor(aFrom,aNumber);
+inline callback_t::callback_t() :
+		FSignal(NULL), FYouData(NULL)
+{
+	;
 }
-
+inline callback_t::callback_t(TSignal const& aSignal, void * const aData) :
+		FSignal(aSignal), FYouData(aData)
+{
+	;
+}
+inline callback_t::callback_t(callback_t const& aCB) :
+		FSignal(aCB.FSignal), FYouData(aCB.FYouData)
+{
+	;
+}
+inline callback_t& callback_t::operator=(callback_t const& aCB)
+{
+	FSignal = aCB.FSignal;
+	FYouData = aCB.FYouData;
+	return *this;
+}
+inline bool callback_t::MIs()const
+{
+	return FSignal!=NULL;
+}
+inline int callback_t::operator ()(CCustomer* aWho, void * const aArgs) const
+{
+	if (FSignal)
+		return (*FSignal)(aWho, aArgs, FYouData);
+	return -1;
+}
+inline bool callback_t::operator ==(callback_t const& rihgt) const
+{
+	return FSignal == rihgt.FSignal && FYouData == rihgt.FYouData;
+}
 } //
 namespace std
 {

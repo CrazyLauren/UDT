@@ -30,6 +30,7 @@ struct required_header_t
 		};
 		uint8_t FReserved[8];
 	};
+	bool operator==(required_header_t const& aRht) const;
 
 #ifdef SHARE_CONFIG_DEFINED
 	required_header_t(NSHARE::CConfig const& aConf):
@@ -62,6 +63,12 @@ inline required_header_t::required_header_t()
 		FReserved[i]=0x0;
 }
 ;
+inline bool required_header_t::operator==(required_header_t const& aRht) const
+{
+	return memcmp(FReserved, aRht.FReserved, sizeof(aRht.FReserved))==0//
+			&& FVersion==aRht.FVersion//
+			;
+}
 struct CReqHeaderFastLessCompare
 {
 	bool operator()(const required_header_t& a,

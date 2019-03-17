@@ -23,7 +23,7 @@ unsigned long long g_recv_count = 0;
 unsigned g_i = 0;
 extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	args_t const* _recv_arg = (args_t const*) aWHAT;
+	received_message_args_t const* _recv_arg = (received_message_args_t const*) aWHAT;
 
 	//!<Now You can handle the received data.
 	NSHARE::CBuffer::size_type const _data_size = _recv_arg->FBuffer.size();
