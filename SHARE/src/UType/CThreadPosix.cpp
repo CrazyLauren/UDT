@@ -483,7 +483,7 @@ unsigned CThread::sMNumberOfProcessor()
 	return 1;
 #endif
 }
-unsigned CThread::MThreadId() const
+CThread::process_id_t CThread::MThreadId() const
 {
 	MASSERT(MIsRunning(), true);
 #if defined(__QNX__)
@@ -503,7 +503,7 @@ bool CThread::sMYield()
 {
 	return !sched_yield();
 }
-unsigned CThread::sMThreadId()
+CThread::process_id_t CThread::sMThreadId()
 {
 #if defined(__QNX__)
 	return pthread_self();
@@ -517,7 +517,7 @@ unsigned CThread::sMThreadId()
 	return (unsigned) pthread_self();
 #endif
 }
-unsigned CThread::sProcessId()
+CThread::process_id_t CThread::sProcessId()
 {
 #if defined(__QNX__)
 	return getpid();

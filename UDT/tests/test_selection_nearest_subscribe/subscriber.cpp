@@ -31,7 +31,7 @@ static unsigned g_amount_of_publisher=0;
 
 extern std::vector<std::pair<ptrdiff_t,std::string> >g_child_pid;
 
-static msg_parser_t g_receive_what;
+static requirement_msg_info_t g_receive_what;
 static std::set<NSHARE::uuid_t> g_current_publishers;
 
 static int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA);
@@ -135,13 +135,13 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When the UDT library will be connected to UDT kernel. The function
 		//event_connect_handler is called.
 		callback_t _handler_event_connect(event_connect_handler, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_CONNECTED,
+		event_handler_info_t _event_connect(CCustomer::EVENT_CONNECTED,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
 		callback_t _handler_event_connect(event_disconnect_handler, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_DISCONNECTED,
+		event_handler_info_t _event_connect(CCustomer::EVENT_DISCONNECTED,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
@@ -150,7 +150,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
+		event_handler_info_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
@@ -158,7 +158,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When some consumers will start receiving data from me. The function
 		//event_remove_receiver is called.
 		callback_t _handler_event_disconnect(event_remove_receiver, NULL);
-		CCustomer::value_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
+		event_handler_info_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
 				_handler_event_disconnect);
 		CCustomer::sMGetInstance() += _event_disconnect;
 	}
@@ -167,7 +167,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//event_customers_update_handler is called.
 
 		callback_t _handler_cus_update(event_customers_update_handler, NULL);
-		CCustomer::value_t _event_cust(CCustomer::EVENT_CUSTOMERS_UPDATED,
+		event_handler_info_t _event_cust(CCustomer::EVENT_CUSTOMERS_UPDATED,
 				_handler_cus_update);
 		CCustomer::sMGetInstance() += _event_cust;
 	}
@@ -187,7 +187,7 @@ void direct_test()
 
 	((msg_head_t*) (g_receive_what.FRequired.FReserved))->FType = E_TEST_MSG;
 	g_receive_what.FProtocolName = PROTOCOL_NAME;
-	g_receive_what.FFlags = msg_parser_t::E_NEAREST;
+	g_receive_what.FFlags = requirement_msg_info_t::E_NEAREST;
 	g_receive_what.FFrom=g_child_pid.front().second;
 
 	callback_t _handler(msg_test_handler, NULL);
@@ -209,8 +209,8 @@ void reverse_test()
 	callback_t _handler(msg_test_handler, NULL);
 	((msg_head_t*) (g_receive_what.FRequired.FReserved))->FType = E_TEST_MSG;
 	g_receive_what.FProtocolName = PROTOCOL_NAME;
-	g_receive_what.FFlags = msg_parser_t::E_NEAREST
-			| msg_parser_t::E_INVERT_GROUP;
+	g_receive_what.FFlags = requirement_msg_info_t::E_NEAREST
+			| requirement_msg_info_t::E_INVERT_GROUP;
 	g_receive_what.FFrom=g_child_pid.front().second;
 
 
@@ -225,21 +225,26 @@ void reverse_test()
 void wait_for_process_finished()
 {
 	NSHARE::CText const _name=NSHARE::process_name(NSHARE::CThread::sMPid());
-	std::list<unsigned long long> _list;
+	id_of_all_process_t _list;
 	NSHARE::pid_list(&_list);
 
-	_list.remove_if( [&](auto aVal)
-	{
-		return NSHARE::process_name(aVal)!=_name;
-	});
+	_list.erase(
+			std::remove_if(_list.begin(), _list.end(),
+					[&](CThread::process_id_t aVal)
+					{
+						return NSHARE::process_name(aVal)!=_name;
+					}), _list.end());
 
 	do
 	{
-		_list.remove_if( [&](auto aVal)
-			{
-				return !NSHARE::is_process_exist(aVal);
-			});
-	}while(_list.size()!=1 && NSHARE::sleep(1));
+		_list.erase(
+				std::remove_if(_list.begin(), _list.end(),
+						[&](CThread::process_id_t aVal)
+						{
+							return !NSHARE::is_process_exist(aVal);
+						}), _list.end());
+
+	} while (_list.size() != 1 && NSHARE::sleep(1));
 
 
 }

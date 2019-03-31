@@ -82,7 +82,8 @@
 #			include<tr1/shared_ptr.h>
 #			define SHARED_PTR std::tr1::shared_ptr
 #		else
-#			include<shared_ptr.h>
+//#			include<shared_ptr.h>
+#			include<memory>
 #			define SHARED_PTR std::shared_ptr
 #		endif
 #	else //#if (__cplusplus>= 201103L)

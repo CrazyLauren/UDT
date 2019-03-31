@@ -37,6 +37,7 @@ namespace NSHARE
 class SHARE_EXPORT CThread:public CEvent<>,CDenyCopying
 {
 public:
+	typedef unsigned process_id_t;//!<type of process id
 
 	/// \name Keys using for serialize
 	/// \{
@@ -196,17 +197,17 @@ public:
 	/** \brief return current thread id
 	 *
 	 */
-	static unsigned sMThreadId();
+	static process_id_t sMThreadId();
 
 
 	/** \brief return process id
 	 *
 	 */
-	static unsigned sMPid()
+	static process_id_t sMPid()
 	{
 		return sProcessId();
 	}
-	static unsigned sProcessId();
+	static process_id_t sProcessId();
 
 
 	/** \brief return number of available CPU
@@ -217,7 +218,7 @@ public:
 	/** \brief return thread id
 	 *
 	 */
-	unsigned MThreadId()const;
+	process_id_t MThreadId()const;
 
 	param_t const& MGetSetting() const;
 

@@ -19,15 +19,15 @@
 
 namespace NSHARE
 {
-	void process_name_list(std::list<NSHARE::CText> *aOut)
+	void process_name_list(Strings *aOut)
 	{
-		std::list<unsigned long long> _to;
+		id_of_all_process_t _to;
 		pid_list(&_to);
-		for (std::list<unsigned long long>::iterator _it = _to.begin();
+		for (id_of_all_process_t::iterator _it = _to.begin();
 				_it != _to.end(); ++_it)
 		aOut->push_back(process_name(*_it));
 	}
-	void pid_list(std::list<unsigned long long>* aOut)
+	void pid_list(id_of_all_process_t* aOut)
 	{
 		std::list<std::string> _to;
 		NSHARE::get_name_of_files_of_dir(&_to, "/proc");
@@ -46,7 +46,7 @@ namespace NSHARE
 		}
 	}
 
-	NSHARE::CText process_name(int pid)
+	NSHARE::CText process_name(CThread::process_id_t pid)
 	{
 
 		char _paths[PATH_MAX];
@@ -94,7 +94,7 @@ namespace NSHARE
 //#pragma comment(lib,"Psapi.lib")
 namespace NSHARE
 {
-	void pid_list(std::list<unsigned long long>* aOut)
+	void pid_list(id_of_all_process_t* aOut)
 	{
 		// Get the list of process identifiers.
 		DWORD aProcesses[2048], cbNeeded = 0;
@@ -109,16 +109,16 @@ namespace NSHARE
 		if (aProcesses[i] != 0)
 		aOut->push_back(aProcesses[i]);
 	}
-	void process_name_list(std::list<NSHARE::CText> *aOut)
+	void process_name_list(Strings *aOut)
 	{
-		std::list<unsigned long long> _to;
+		id_of_all_process_t _to;
 		pid_list(&_to);
-		for (std::list<unsigned long long>::iterator _it = _to.begin();
+		for (id_of_all_process_t::iterator _it = _to.begin();
 				_it != _to.end(); ++_it)
 		aOut->push_back(process_name((int)*_it));
 	}
 
-	NSHARE::CText process_name(int processID)
+	NSHARE::CText process_name(CThread::process_id_t processID)
 	{
 		TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
 
@@ -172,7 +172,7 @@ namespace NSHARE
 namespace NSHARE
 {
 
-void pid_list(std::list<unsigned long long>* aOut)
+void pid_list(id_of_all_process_t* aOut)
 {
 	std::list<std::string> _to;
 	NSHARE::get_name_of_files_of_dir(&_to, PROC_DIRECTORY);
@@ -190,15 +190,15 @@ void pid_list(std::list<unsigned long long>* aOut)
 		}
 	}
 }
-void process_name_list(std::list<NSHARE::CText> *aOut)
+void process_name_list(Strings *aOut)
 {
-	std::list<unsigned long long> _to;
+	id_of_all_process_t _to;
 	pid_list(&_to);
-	for (std::list<unsigned long long>::iterator _it = _to.begin();
+	for (id_of_all_process_t::iterator _it = _to.begin();
 			_it != _to.end(); ++_it)
 	aOut->push_back(process_name(*_it));
 }
-NSHARE::CText process_name(int pid)
+NSHARE::CText process_name(CThread::process_id_t pid)
 {
 
 	char _paths[PATH_MAX];
@@ -230,7 +230,7 @@ NSHARE::CText process_name(int pid)
 
 namespace NSHARE
 {
-bool is_process_exist(int pID)
+bool is_process_exist(CThread::process_id_t pID)
 {
 	VLOG(2) << "Checking  process " << pID << " exist.";
 #if defined(_WIN32)

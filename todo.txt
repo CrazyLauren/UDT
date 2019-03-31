@@ -28,5 +28,6 @@
 		.1 Добавить отдельный тип data_t содержащий FBuffer, FHeaderBegin, FBegin, FEnd
 		.2 FEnd Должен указывать на конец сообщения, а не буфера.  Выражение не верно: _raw_args.FMessage.FEnd =	reinterpret_cast<const uint8_t*>(&_raw_args.FMessage.FBuffer.back());
 	.4 Добавить stream"ы
+	.5 MWaitForEvent проверить
 	
 5. В SHARE Socket добавить событь closed и opened

@@ -35,6 +35,7 @@ SHARED_PACKED(struct SHARE_EXPORT version_t
 	version_t(uint8_t aMajor=0,uint8_t aMinor=0,uint16_t aRelease=0);
 
 	inline bool MIsExist() const;
+
 	/** \brief Проверяет совместимость версии aVer с текущей
 	 *
 	 *	\param aVer - проверяемая версия

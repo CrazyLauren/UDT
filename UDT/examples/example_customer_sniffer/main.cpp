@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		//and it will be  handled  by function sniffer_handler
 		callback_t _handler(sniffer_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-			"@guex", MESSAGE_NUMBER, _handler,msg_parser_t::E_REGISTRATOR);
+			"@guex", MESSAGE_NUMBER, _handler,requirement_msg_info_t::E_REGISTRATOR);
 	}
 	{
 		//!< When the sniffed packet is not delivered by UDT (usually It's happened when The UDT system

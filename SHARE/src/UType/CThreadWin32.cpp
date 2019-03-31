@@ -385,18 +385,18 @@ bool CThread::sMYield()
 #endif
 	return true;
 }
-unsigned CThread::MThreadId()const
+CThread::process_id_t CThread::MThreadId()const
 {
 	LOG_IF(DFATAL,!MIsRunning())<<"The thread is not running.";
 	if (MIsRunning())
 		return FImpl->FID;
 	return 0;
 }
-unsigned CThread::sMThreadId()
+CThread::process_id_t CThread::sMThreadId()
 {
 	return GetCurrentThreadId();
 }
-unsigned CThread::sProcessId()
+CThread::process_id_t CThread::sProcessId()
 {
 	return GetCurrentProcessId();
 }

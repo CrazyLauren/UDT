@@ -37,7 +37,7 @@ namespace NUDT
 const NSHARE::CText CCustomer::DEFAULT_IO_MANAGER = "tcp_client_io_manager";
 const NSHARE::CText CCustomer::RAW_PROTOCOL = RAW_PROTOCOL_NAME;
 const NSHARE::CText CCustomer::ENV_CONFIG_PATH = "UDT_CUSTOMER_CONFIG_PATH";
-const NSHARE::CText CCustomer::CONFIG_PATH = "path";
+//const NSHARE::CText CCustomer::CONFIG_PATH = "path";
 const NSHARE::CText CCustomer::MODULES = "modules";
 const NSHARE::CText CCustomer::MODULES_PATH = "modules_path";
 const NSHARE::CText CCustomer::DOING_MODULE = "worker";
@@ -83,7 +83,7 @@ const CCustomer::error_t CCustomer::E_NOT_CONNECTED_TO_KERNEL= E_NOT_CONNECTED_T
 const CCustomer::error_t CCustomer::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;
 
 const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=E_USER_ERROR_BEGIN;
-const unsigned CCustomer::FIRST_USER_ERROR_BIT=eUserErrorStartBits;
+const unsigned CCustomer::MAX_SIZE_USER_ERROR=sizeof(error_type)*8-eUserErrorStartBits;
 
 <<<<<<< HEAD
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
@@ -925,6 +925,8 @@ int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_
 		else
 		_rval=-static_cast<int>(E_CANNOT_READ_CONFIGURE);
 	}
+	else
+		_rval=-static_cast<int>(E_CANNOT_READ_CONFIGURE);
 
 	if(_rval==0)
 		_rval= sMInit(argc, argv, aName,aVersion, _conf);
@@ -988,9 +990,9 @@ std::vector<request_info_t> CCustomer::MGetMyWishForMSG() const
 	return _wish;
 }
 int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
-		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVer,msg_parser_t::eFLags const& aFlags)
+		const unsigned& aHeader, const callback_t& aCB,NSHARE::version_t const& aVer,requirement_msg_info_t::eFLags const& aFlags)
 {
-	msg_parser_t _msg;
+	requirement_msg_info_t _msg;
 	_msg.FRequired.FVersion = aVer;
 	_msg.FRequired.FNumber = aHeader;
 	_msg.FProtocolName = "";
@@ -1000,19 +1002,19 @@ int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
 
 	return MIWantReceivingMSG( _msg, aCB);
 }
-int CCustomer::MIWantReceivingMSG(const msg_parser_t& aHeader, const callback_t& aCB)
+int CCustomer::MIWantReceivingMSG(const requirement_msg_info_t& aHeader, const callback_t& aCB)
 {
 	return FImpl->MSettingDgParserFor( aHeader, aCB);
 }
 
-int CCustomer::MDoNotReceiveMSG(const msg_parser_t& aNumber)
+int CCustomer::MDoNotReceiveMSG(const requirement_msg_info_t& aNumber)
 {
 	return FImpl->MRemoveDgParserFor(aNumber);
 }
 int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
 {
-	msg_parser_t _msg;
+	requirement_msg_info_t _msg;
 	_msg.FRequired.FVersion = MGetID().FKernelVersion;
 	_msg.FRequired.FNumber = aNumber;
 	_msg.FFrom=aFrom;
@@ -1085,28 +1087,28 @@ CCustomer::customers_t CCustomer::MCustomers() const
 	return FImpl->MCustomers();
 }
 
-bool CCustomer::operator+=(value_t const & aVal)
+bool CCustomer::operator+=(event_handler_info_t const & aVal)
 {
 	return FImpl->operator +=(aVal);
 }
-bool CCustomer::operator-=(value_t const & aVal)
+bool CCustomer::operator-=(event_handler_info_t const & aVal)
 {
 	return FImpl->operator -=(aVal);
 }
-bool CCustomer::MAdd(value_t const & aVal, unsigned int aPrior)
+bool CCustomer::MAdd(event_handler_info_t const & aVal, unsigned int aPrior)
 {
 	return FImpl->MAdd(aVal, aPrior);
 }
-bool CCustomer::MErase(value_t const& aVal)
+bool CCustomer::MErase(event_handler_info_t const& aVal)
 {
 	return FImpl->MErase(aVal);
 }
 
-bool CCustomer::MChangePrior(value_t const&aVal, unsigned int aPrior)
+bool CCustomer::MChangePrior(event_handler_info_t const&aVal, unsigned int aPrior)
 {
 	return FImpl->MChangePrior(aVal, aPrior);
 }
-bool CCustomer::MIs(value_t const& aVal) const
+bool CCustomer::MIs(event_handler_info_t const& aVal) const
 {
 	return FImpl->MIs(aVal);
 }
@@ -1132,10 +1134,10 @@ const NSHARE::version_t& CCustomer::sMVersion()
 {
 	return g_cutomer_version;
 }
-void CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
+int CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
 {
 	CHECK_NOTNULL(FImpl);
-	return FImpl->MWaitForReady(aSec);
+	return FImpl->MWaitForEvent(aEvent,aSec);
 }
 void CCustomer::MJoin()
 {
@@ -1147,3 +1149,40 @@ std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal
 	return aStream<<static_cast<eError>(encode_inner_error(aVal));
 }
 } //
+
+namespace std
+{
+std::ostream& operator<<(std::ostream & aStream,
+		NUDT::requirement_msg_info_t::eFLags const& aFlags)
+{
+	using namespace NUDT;
+	NSHARE::CFlags<NUDT::requirement_msg_info_t::eFLags,uint32_t> const _flags(aFlags);
+
+	unsigned i=0;
+	if(_flags.MGetFlag(requirement_msg_info_t::E_REGISTRATOR))
+	{
+		aStream<<"registrator";
+		++i;
+	}
+	if(_flags.MGetFlag(requirement_msg_info_t::E_INVERT_GROUP))
+	{
+		if(i!=0)
+			aStream<<", ";
+
+		aStream<<"invert group";
+		++i;
+	}
+	if(_flags.MGetFlag(requirement_msg_info_t::E_NEAREST))
+	{
+		if(i!=0)
+			aStream<<", ";
+
+		aStream<<"nearest";
+		++i;
+	}
+	if(i==0)
+		aStream<<"no flags";
+
+	return aStream;
+}
+}

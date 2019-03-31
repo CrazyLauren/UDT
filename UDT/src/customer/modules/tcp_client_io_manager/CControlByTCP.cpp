@@ -643,7 +643,7 @@ int CControlByTCP::MWaitForSend(unsigned aNumber, unsigned aTime)//fixme depreci
 		{
 			LOG(WARNING)<< "The kernel is not received user data. Ignoring...";
 			MKernelReceived(aNumber);
-			return CCustomer::E_KERNEL_IS_NOT_ANSWER;
+			return -1;
 		}
 	}
 	return 0;

@@ -70,9 +70,9 @@ endif(ENABLE_VTUNE)
 ################################################################################
 # Create bin and lib directories if required
 ################################################################################
-IF("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+IF("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
    FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}/lib)
-ENDIF("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+ENDIF("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
@@ -143,18 +143,6 @@ IF (WIN32)
     endif(MSVC)
 ENDIF()
 
-FIND_PACKAGE(Doxygen)
-if(DOXYGEN_FOUND)	
-	
-	IF   (EXISTS "${CMAKE_SOURCE_DIR}/doc/doxygen.conf.in")		
-		CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen.conf)
-		SET(DOXY_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen.conf")
-	ENDIF()
-	
-	ADD_CUSTOM_TARGET(doc COMMAND ${DOXYGEN_EXECUTABLE}  ${DOXY_CONFIG} COMMENT "Generating documentation" VERBATIM)
-else()
-	MESSAGE(STATUS "WARNING: cannot create documentation as doxygen is not found.")	
-endif()
 
 ################################################################################
 # descend into subdirs
@@ -164,4 +152,18 @@ add_subdirectory(tools)
 add_subdirectory(examples)
 
 
+FIND_PACKAGE(Doxygen)
+if(DOXYGEN_FOUND)	
+	
+	IF   (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")		
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf)
+		SET(DOXY_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf")
+	else()
+		MESSAGE(WARNING "WARNING: cannot find file:" "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")	
+	ENDIF()
+	
+	ADD_CUSTOM_TARGET(doc_share_lib COMMAND ${DOXYGEN_EXECUTABLE}  ${DOXY_CONFIG} COMMENT "Generating documentation of UDT" VERBATIM)
+else()
+	MESSAGE(WARNING "WARNING: cannot create documentation as doxygen is not found.")	
+endif()
 

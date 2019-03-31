@@ -25,7 +25,7 @@ template<class T,class T1>
 class ievents_type
 {
 public:
-	typedef CCustomer::value_t value_t;
+	typedef event_handler_info_t value_t;
 };
 typedef NSHARE::CEvents<NSHARE::CText, event_t, ievents_type> events_t;
 
@@ -58,9 +58,9 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer, eSendToFlags);
 
 	void MGetMyWishForMSG(std::vector<request_info_t>& aTo) const;
-	int MSettingDgParserFor(msg_parser_t  aNumber,
+	int MSettingDgParserFor(requirement_msg_info_t  aNumber,
 			const callback_t& aHandler);
-	int MRemoveDgParserFor( msg_parser_t  aNumber);
+	int MRemoveDgParserFor( requirement_msg_info_t  aNumber);
 	customers_t MCustomers() const;
 	program_id_t MCustomer(NSHARE::uuid_t const&) const;
 	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;
@@ -70,10 +70,11 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int  MUdpateRecvList() const;
 	void MEventConnected();
 	void MEventDisconnected();
-	void MWaitForReady(double aSec);
+	int MWaitForEvent(NSHARE::CText const& aEvent, double aSec);
 	void MJoin();
 	uint16_t MNextUserPacketNumber();
 private:
+	typedef std::set<NSHARE::CText,NSHARE::CStringFastLessCompare> wait_for_t;
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMFailSents(CHardWorker* aWho, args_data_t* aWhat, void* aData);
@@ -86,16 +87,16 @@ private:
 	int MLoadLibraries();
 	int MInitFactorys();
 	int MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data);
-
+	inline int MCallImpl(key_t const& aKey, value_arg_t const& aCallbackArgs);
 	//-----------------
 	CCustomer& FThis;
 
 	program_id_t FMyId; //todo const
 
 	IIOConsumer* FWorker;
-	bool FIsReady;
 	mutable NSHARE::CCondvar FCondvarWaitFor;
 	mutable NSHARE::CMutex FMutexWaitFor;
+	mutable wait_for_t FWaitFor;
 //	NSHARE::CThread FThread;
 //	NSHARE::CWaitingQueue<data_from_t> FData;
 //	CDataObject FData;

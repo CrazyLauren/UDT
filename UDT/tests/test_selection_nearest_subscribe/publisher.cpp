@@ -71,18 +71,18 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When the UDT library will be connected to UDT kernel. The function
 		//event_connect_handler is called.
 		callback_t _handler_event_connect(event_connect_handler, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_CONNECTED,
+		event_handler_info_t _event_connect(CCustomer::EVENT_CONNECTED,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
 		callback_t _handler_event_connect(event_disconnect_handler, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_DISCONNECTED,
+		event_handler_info_t _event_connect(CCustomer::EVENT_DISCONNECTED,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
-		msg_parser_t _msg;
+		requirement_msg_info_t _msg;
 		((msg_head_t*)_msg.FRequired.FReserved)->FType = E_MSG_CONTROL;
 		_msg.FProtocolName = PROTOCOL_NAME;
 		_msg.FFrom=g_subscriber_name;
@@ -95,7 +95,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
-		CCustomer::value_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
+		event_handler_info_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
 				_handler_event_connect);
 		CCustomer::sMGetInstance() += _event_connect;
 	}
@@ -103,7 +103,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		//!< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_disconnect(event_remove_receiver, NULL);
-		CCustomer::value_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
+		event_handler_info_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
 				_handler_event_disconnect);
 		CCustomer::sMGetInstance() += _event_disconnect;
 	}

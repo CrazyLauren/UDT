@@ -11,6 +11,8 @@
  */
 #include <deftype>
 #include <stdio.h>
+#include <limits>
+#include <stdexcept>
 #include <random_value.h>
 #include <get_cpuid.h>
 
@@ -88,7 +90,7 @@ retry:
 
 #	endif//#if _MSC_VER >= 1700
 #endif //#ifdef _MSC_VER
-
+}
 
 
 #if defined (__APPLE__) || defined(__unix__) || defined(__linux__) || defined(__FreeBSD__)|| defined(__QNX__)
@@ -100,7 +102,8 @@ retry:
 #include <sys/stat.h>
 
 #define HAVE_DEV_RANDOM 1
-
+namespace NSHARE
+{
 static const char *dev_random_file = "/dev/urandom";
 
 static bool has_dev_urandom(void)
@@ -136,7 +139,7 @@ static uint32_t get_dev_random_seed(void)
 		 close(fd);
 	 return std::numeric_limits<uint32_t>::max();
 }
-
+}
 #endif
 
 
@@ -146,7 +149,8 @@ static uint32_t get_dev_random_seed(void)
 
 #	include <windows.h>
 #	include <wincrypt.h>
-
+namespace NSHARE
+{
 static uint32_t get_cryptgenrandom_seed(void)
 {
     HCRYPTPROV hProvider = 0;
@@ -170,11 +174,12 @@ error:
 
 	return std::numeric_limits<uint32_t>::max();
 }
-
+}
 #endif
 #endif// HAVE_RDRAND
 
-
+namespace NSHARE
+{
 bool is_RNG_available()
 {
 	bool _is=false;

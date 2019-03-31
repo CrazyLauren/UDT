@@ -26,7 +26,7 @@ namespace NUDT
 {
 using namespace NSHARE;
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
-		my_t(&aThis), FThis(aThis), FWorker(NULL), FIsReady(false), FMutexWaitFor(
+		my_t(&aThis), FThis(aThis), FWorker(NULL),  FMutexWaitFor(
 				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0), FMainPacketNumber(
 				0)
 {
@@ -319,8 +319,7 @@ int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 	_fail.FUserCode=_prog.MGetUserError();
 	_fail.FErrorCode=_prog.MGetInnerError();
 
-	_impl->MCall(EVENT_FAILED_SEND, &_fail);
-	VLOG(2) << "Fail sent";
+	_impl->MCallImpl(EVENT_FAILED_SEND, &_fail);
 	return 0;
 
 }
@@ -352,9 +351,9 @@ int CCustomer::_pimpl::sMDemands(CHardWorker* aWho, args_data_t* aWhat,
 
 	int _count=0;
 	if(!_new.FReceivers.empty())
-		_count+= _impl->MCall(EVENT_RECEIVER_SUBSCRIBE, &_new);
+		_count+= _impl->MCallImpl(EVENT_RECEIVER_SUBSCRIBE, &_new);
 	if(!_old.FReceivers.empty())
-		_count+=_impl->MCall(EVENT_RECEIVER_UNSUBSCRIBE, &_old);
+		_count+=_impl->MCallImpl(EVENT_RECEIVER_UNSUBSCRIBE, &_old);
 
 	VLOG(2) << "Event recv=" << _count << " num=" << _prog.size();
 	(void) _count;
@@ -384,21 +383,33 @@ int CCustomer::_pimpl::sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat,
 	std::set_difference(_prog.begin(), _prog.end(), _old.begin(), _old.end(),
 			std::inserter(_args.FConnected, _args.FConnected.end()));
 
-	_impl->MCall(EVENT_CUSTOMERS_UPDATED, &_args);
-	VLOG(2) << "New Customers array";
+	_impl->MCallImpl(EVENT_CUSTOMERS_UPDATED, &_args);
 	return 0;
+}
+int  CCustomer::_pimpl::MCallImpl(key_t const& aKey, value_arg_t const& aCallbackArgs)
+{
+	if (!FWaitFor.empty())
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
+		wait_for_t::size_type const _v = FWaitFor.erase(aKey);
+		if (_v != 0)
+		{
+			VLOG(2) << "At last event " << aKey;
+			FCondvarWaitFor.MBroadcast();
+		}
+	}
+	VLOG(2)<<"The event: "<<aKey<<" is called ";
+	int const _val = events_t::MCall(aKey, aCallbackArgs);
+	VLOG(2)<<"Result of calling event "<<aKey<<" is "<<_val;
+	return _val;
 }
 void CCustomer::_pimpl::MEventConnected()
 {
-	VLOG(2) << "Connected ";
-	int _val = MCall(EVENT_CONNECTED, NULL);
-	VLOG(2) << "Count " << _val;
+	MCallImpl(EVENT_CONNECTED, NULL);
 }
 void CCustomer::_pimpl::MEventDisconnected()
 {
-	VLOG(2) << "Disconnected";
-	int _val = MCall(EVENT_DISCONNECTED, NULL);
-	VLOG(2) << "Count " << _val;
+	MCallImpl(EVENT_DISCONNECTED, NULL);
 }
 
 int CCustomer::_pimpl::sMReceiver(CHardWorker* aWho, args_data_t* aWhat,
@@ -458,26 +469,7 @@ void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 							<< _raw_args.FPacketNumber;
 
 		int _count = 0;
-		_count += MCall(EVENT_RAW_DATA, &_raw_args);
-
-//deprecated
-		//_count += MCall(_raw_args.FFrom.FName, &_raw_args);
-
-//		NSHARE::CRegistration const _r(_raw_args.FFrom.FName);
-//		NSHARE::CAddress _addr(_r.MGetAddress());
-//
-//		if (!_addr.MIsEmpty())
-//		{
-//			//calling CB for subaddress
-//			NSHARE::CText const _name(_r.MGetName());
-//			for (; !_addr.MIsEmpty(); _addr.MRemoveLastPath())
-//			{
-//				_count += MCall(
-//						NSHARE::CRegistration(_name, _addr).MGetRawName(),
-//						&_raw_args);
-//			}
-//			_count += MCall(_name, &_raw_args);
-//		}
+		_count += MCallImpl(EVENT_RAW_DATA, &_raw_args);
 
 		if (!aFrom.FData.FDataId.FEventsList.empty() && !FEvents.empty())
 		{
@@ -555,7 +547,7 @@ program_id_t  CCustomer::_pimpl::MCustomer(NSHARE::uuid_t const& aUUID) const
 	return _it != _cus.end() ? *_it: program_id_t();
 }
 int CCustomer::_pimpl::MSettingDgParserFor(
-		msg_parser_t aNumber, const callback_t& aHandler)
+		requirement_msg_info_t aNumber, const callback_t& aHandler)
 {
 	const NSHARE::CText& aReq=aNumber.FFrom;
 	VLOG(2) << "Setting for " << aReq << " parser";
@@ -604,7 +596,7 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 	return _val.FHandler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor(
-		msg_parser_t aNumber)
+		requirement_msg_info_t aNumber)
 {
 	const NSHARE::CText& aReq=aNumber.FFrom;
 	VLOG(2) << "Remove parser for " << aReq;
@@ -797,7 +789,7 @@ NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(size_t aSize) const
 	if (FWorker)
 		return FWorker->MGetNewBuf(aSize);
 	else
-		return NSHARE::CBuffer();
+		return NSHARE::CBuffer(aSize);
 }
 CCustomer::customers_t CCustomer::_pimpl::MCustomers() const
 {
@@ -810,12 +802,27 @@ void CCustomer::_pimpl::MJoin()
 		NSHARE::sleep(1);
 	}
 }
-void CCustomer::_pimpl::MWaitForReady(double aSec)
+int CCustomer::_pimpl::MWaitForEvent(NSHARE::CText const& aEvent,double aSec)
 {
 	NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
-	for (HANG_INIT;!FIsReady;HANG_CHECK)
-	FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec);
+	bool const _is=FWaitFor.insert(aEvent).second;
+	if(!_is)
+		return -1;
 
+	if(aSec>0)
+	{
+		for (HANG_INIT;FWaitFor.find(aEvent)!=FWaitFor.end();HANG_CHECK)
+			FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec);
+	}else
+	{
+		double const _cur_time=NSHARE::get_time();
+		for (HANG_INIT;FWaitFor.find(aEvent)!=FWaitFor.end() &&//
+					  aSec>(NSHARE::get_time()-_cur_time);
+			HANG_CHECK)
+			FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec-(NSHARE::get_time()-_cur_time));
+	}
+
+	return 0;
 }
 uint16_t CCustomer::_pimpl::MNextUserPacketNumber()
 {

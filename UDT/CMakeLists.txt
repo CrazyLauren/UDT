@@ -118,4 +118,22 @@ add_subdirectory(examples)
 =======
 #add_subdirectory(examples)
 add_subdirectory(tests)
+<<<<<<< HEAD
 >>>>>>> 3a2b21d... see changelog
+=======
+
+FIND_PACKAGE(Doxygen)
+if(DOXYGEN_FOUND)	
+	
+	IF   (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")		
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf)
+		SET(DOXY_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf")
+	else()
+		MESSAGE(WARNING "WARNING: cannot find file:" "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")	
+	ENDIF()
+	
+	ADD_CUSTOM_TARGET(doc_udt COMMAND ${DOXYGEN_EXECUTABLE}  ${DOXY_CONFIG} COMMENT "Generating documentation of SHARE" VERBATIM)
+else()
+	MESSAGE(WARNING "WARNING: cannot create documentation as doxygen is not found.")	
+endif()
+>>>>>>> bd5a830... before fixing

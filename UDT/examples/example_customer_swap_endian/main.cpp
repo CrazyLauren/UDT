@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
 	{	//!< I want to receive msg E_MSG_SWAP_BYTE_TEST of protocol PROTOCOL_NAME
 		// from RECEIVE_MSG_TEST_FROM and it will be  handled  by function msg_test_handler
-		msg_parser_t _msg;
+		requirement_msg_info_t _msg;
 		_msg.FRequired.FNumber = E_MSG_SWAP_BYTE_TEST;
 		_msg.FProtocolName = PROTOCOL_NAME;
 

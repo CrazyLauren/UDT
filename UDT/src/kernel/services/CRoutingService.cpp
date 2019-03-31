@@ -406,7 +406,6 @@ void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 			||_sent.FError.MGetFlag(E_CANNOT_SWAP_ENDIAN)//
 			||_sent.FError.MGetFlag(E_PARSER_IS_NOT_EXIST)//
 			||_sent.FError.MGetFlag(E_PACKET_LOST)//
-			||_sent.FError.MGetFlag(E_PACKET_LOST)//
 			|| true//All error !!!!!!!!!!!!!!!!!!!!!!!!
 			)
 		_f_to.insert(_f_to.end(),_sent.FRouting.begin(),_sent.FRouting.end());//receivers

@@ -1,6 +1,10 @@
 #include <deftype>
 #include <UType/CSharedMemory.h>
-#include <process.h>
+#ifdef __linux__
+#	include <spawn.h>
+#else
+#	include <process.h>
+#endif
 #include <tclap/CmdLine.h>
 #include <logging/CShareLogArgsParser.h>
 
@@ -30,6 +34,8 @@ extern std::vector<std::pair<ptrdiff_t,std::string> >g_child_pid=
 int g_argc;
 char const** g_argv;
 
+extern char **environ;//for linux
+
 extern  int start_child(char  const* aName)
 {
 	std::string _str_t("-t");
@@ -53,9 +59,13 @@ extern  int start_child(char  const* aName)
 	_p[_index_n]=_str_name.c_str();
 	_p[_index_of_null]=NULL;
 
-
+	NSHARE::CThread::process_id_t _id=0;
+#ifdef __linux__
+	int  const exit_val=posix_spawn((pid_t*)&_id, g_argv[0],NULL,NULL,(char *const*)_p,(char* const*)environ);
+#else
 	int const exit_val = spawnv(P_NOWAIT, g_argv[0], _p);
-
+	_id=exit_val;
+#endif
 	if (exit_val < 0)
 	{
 		std::cerr << "Cannot start process " << std::endl;
@@ -64,7 +74,7 @@ extern  int start_child(char  const* aName)
 
 	delete[] _p;
 
-	return exit_val;
+	return _id;
 }
 void parse_cmd(int argc, char const* argv[])
 {

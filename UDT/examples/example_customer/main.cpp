@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
-				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler,msg_parser_t::E_NO_FLAGS,NSHARE::version_t(1,1));
+				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler,requirement_msg_info_t::E_NO_FLAGS,NSHARE::version_t(1,1));
 	}
 	{
 		//!< When the UDT library will be connected to UDT kernel. The function
