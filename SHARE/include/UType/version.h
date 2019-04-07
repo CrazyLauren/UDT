@@ -19,26 +19,26 @@ namespace NSHARE
 #else
 #define	SHARED_CONFIG_MSVC_FIX int
 #endif
-/** \brief Класс для хранения версии в формате
+/**\brief Класс для хранения версии в формате
  * (Страшая версия.Младшая версия.Номер ревизии или хэш репозит.)
  *
  */
 SHARED_PACKED(struct SHARE_EXPORT version_t
 {
-	static const NSHARE::CText NAME;
+	static const NSHARE::CText NAME;///< A serializing key
 
-	uint8_t FMajor;//<! - Major version
-	uint8_t FMinor;//<! - Minor version
-	mutable uint16_t FRelease;//<! - Revision(SVN)  or repository Hash(Git)
+	uint8_t FMajor;///< - Major version
+	uint8_t FMinor;///< - Minor version
+	mutable uint16_t FRelease;///< - Revision(SVN)  or repository Hash(Git)
 
 
 	version_t(uint8_t aMajor=0,uint8_t aMinor=0,uint16_t aRelease=0);
 
 	inline bool MIsExist() const;
 
-	/** \brief Проверяет совместимость версии aVer с текущей
+	/**\brief Проверяет совместимость версии aVer с текущей
 	 *
-	 *	\param aVer - проверяемая версия
+	 *\param aVer - проверяемая версия
 	 */
 	inline bool MIsCompatibleWith(version_t const& aVer) const;
 	inline bool operator==(version_t const& aRht) const;

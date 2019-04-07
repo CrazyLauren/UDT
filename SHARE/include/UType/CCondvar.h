@@ -17,7 +17,7 @@ namespace NSHARE
 #ifdef _MSC_VER
 	struct timespec;
 #endif
-/** \brief condition variable
+/**\brief condition variable
  *
  */
 class SHARE_EXPORT CCondvar:CDenyCopying

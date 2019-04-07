@@ -40,7 +40,7 @@ private:
 	bool MSetting();
 	bool MSendProtocolType();
 	inline unsigned MFillProtocol(data_t* aTo,
-			const eType& _id);
+			const eProgramType& _id);
 	bool MSendImpl(const data_t& _buf);
 
 	NSHARE::intrusive_ptr<CKernelClientLink> FLink;
@@ -52,7 +52,7 @@ private:
 	bool FIsSent;
 
 	NSHARE::smart_field_t<program_id_t> FKernel;
-	const eType FPType;
+	const eProgramType FPType;
 };
 
 

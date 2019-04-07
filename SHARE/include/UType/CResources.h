@@ -16,7 +16,7 @@
 
 namespace NSHARE
 {
-/** \brief Класс для динамической загрузки фабрик из библиотек
+/**\brief Класс для динамической загрузки фабрик из библиотек
  *
  * В библиотеках должна быть определена функция с сигнатурой factory_registry_func_t (по умолчанию,  её
  * индетфикатор в библиотеке должен быть  FACTORY_REGISTRY_FUNC_NAME) . Если
@@ -29,18 +29,18 @@ class SHARE_EXPORT CResources: public NSHARE::CSingleton<CResources>
 public:
 	static const NSHARE::CText NAME;
 
-	/** \brief инициализирующие параметры
+	/**\brief инициализирующие параметры
 	 *
 	 */
 	struct SHARE_EXPORT param_t
 	{
-		/** \brief параметры необх. для динам. загрузки
+		/**\brief параметры необх. для динам. загрузки
 		 */
 		struct SHARE_EXPORT reg_t
 		{
-			NSHARE::CText library;//!<имя библиотеки без префиксов и суфиксов
-			NSHARE::CText reg_func;//!<идентификатор функции регистратора, по умолчнанию он равен FACTORY_REGISTRY_FUNC_NAME
-			NSHARE::CConfig config;//!<настройки передаваемые при вызове reg_func
+			NSHARE::CText library;///<имя библиотеки без префиксов и суфиксов
+			NSHARE::CText reg_func;///<идентификатор функции регистратора, по умолчнанию он равен FACTORY_REGISTRY_FUNC_NAME
+			NSHARE::CConfig config;///<настройки передаваемые при вызове reg_func
 		};
 		typedef std::vector<reg_t> libraries_registrators_t;
 
@@ -50,8 +50,8 @@ public:
 		static const NSHARE::CText REGISTRY_FUNC_NAME;
 		static const NSHARE::CText REG_CONFIG;
 
-		libraries_registrators_t libraries;//!< Library registator function name
-		NSHARE::CText search_path;//!< library's search path
+		libraries_registrators_t libraries;///< Library registator function name
+		NSHARE::CText search_path;///< library's search path
 
 		param_t();
 
@@ -93,7 +93,7 @@ inline bool CResources::MIsLoaded() const
 {
 	return FIsLoad;
 }
-/** \brief функция используется для статического добавления фабрик
+/**\brief функция используется для статического добавления фабрик
  *
  */
 extern "C" SHARE_EXPORT  NSHARE::factory_registry_t* static_factory_registry(

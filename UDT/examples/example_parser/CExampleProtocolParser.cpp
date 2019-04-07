@@ -18,7 +18,7 @@
 
 using namespace NUDT;
 NSHARE::CText const CExampleProtocolParser::NAME = PROTOCOL_NAME;
-NSHARE::CText const CExampleRegister::NAME = "ExampleRegister";//!< The name must be unique
+NSHARE::CText const CExampleRegister::NAME = "ExampleRegister";///< The name must be unique
 
 CExampleProtocolParser::CExampleProtocolParser() :
 		IExtParser(NAME)
@@ -64,7 +64,11 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
+<<<<<<< HEAD
 					_founded_dg.FType.FNumber = _phead->FType;
+=======
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));					
+>>>>>>> f3da2cc... see changelog.txt
 				}
 				break;
 			case E_MSG_SWAP_BYTE_TEST:

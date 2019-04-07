@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/*! \brief convenient template for 
+/*!\brief convenient template for 
  * wrapping standard types
  * 
  * It's used to streams (and another templates)
@@ -75,13 +75,13 @@ inline std::ostream& print_b_value(std::ostream& aStream, T const& aVal)
 }
 };
 
-/*! \brief Printing data buffer
+/*!\brief Printing data buffer
  * 
  * The data buffer is printed 
  * in \a NCollums collums in hex format.
  * 
- *  \tparam T iterator or pointer
- *  \tparam NCollums Number of collums (default 8).
+ *\tparam T iterator or pointer
+ *\tparam NCollums Number of collums (default 8).
  */
 template<class T, unsigned NCollums>
 inline std::ostream& print_buffer(std::ostream& aStream, T aBegin, T aEnd)
@@ -102,15 +102,15 @@ inline std::ostream& print_buffer(std::ostream& aStream, T aBegin, T aEnd)
   return print_buffer<T,8u>(aStream,aBegin,aEnd);
 }
 
-/*! \brief class is used for printing
+/*!\brief class is used for printing
  * data buffer to stream
  * 
  * For example
- * \code
+ *\code
  * std::cout<< print_buffer_t<char*>(_data_begin, _data_end) <<std:;endl;
- * \endcode
+ *\endcode
  * 
- *  \tparam T iterator or pointer
+ *\tparam T iterator or pointer
  */ 
 template<class T>
 struct print_buffer_t
@@ -118,10 +118,10 @@ struct print_buffer_t
 	const T& FBegin;
 	const T& FEnd;
 	
-	/*! \brief printing data from aBegin to aEnd
+	/*!\brief printing data from aBegin to aEnd
 	 * 
-	 * \param aBegin buffer begin
-	 * \param aEnd buffer end
+	 *\param aBegin buffer begin
+	 *\param aEnd buffer end
 	 */ 
 	print_buffer_t(const T& aBegin, const T& aEnd) :
 			FBegin(aBegin), FEnd(aEnd)

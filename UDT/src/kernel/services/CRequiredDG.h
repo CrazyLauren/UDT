@@ -77,9 +77,16 @@ public:
 	 *
 	 *	It adds a new client and generate the subscriber's
 	 *	list on published client's messages.
+<<<<<<< HEAD
 	 *
 	 *	\return list of subscribers on published client's
 	 *	 messages
+=======
+
+	*\return first - list of subscribers on messages
+	 *					which client is published
+	 *			second - list of unsubscribed messages
+>>>>>>> f3da2cc... see changelog.txt
 	 */
 	demand_dgs_for_t MAddClient(id_t const& aId );
 
@@ -89,7 +96,13 @@ public:
 	 *	It removes the client and unsubscribe the other
 	 *	clients to the published client's messages
 	 *
+<<<<<<< HEAD
 	 *	\return list of unsubscribed messages
+=======
+	*\return first - lis of a new subscribers
+	 *			second - list of unsubscribers on messages
+	 *					which client has been published
+>>>>>>> f3da2cc... see changelog.txt
 	 */
 	demand_dgs_for_t MRemoveClient(NSHARE::uuid_t const& aUUID);
 
@@ -100,14 +113,14 @@ public:
 	 *	The "message info" is filled uuids of message's
 	 *	receivers including registrars
 	 *
-	 *  \param [In, out] aFrom handling packets.
+	 *\param [In, out] aFrom handling packets.
 	 *  If some messages hasn't receivers, it hasn't
 	 *  removed from the argument.
 	 *
-	 * \param [out] aTo List of packets
+	 *\param [out] aTo List of packets
 	 *  that has at the least one receiver.
 	 *
-	 *	\param [out] aFail List of error's
+	*\param [out] aFail List of error's
 	 *
 	 */
 	void MFillMsgReceivers(user_datas_t* const aFrom, user_datas_t* const aTo,fail_send_array_t* const aFail) const;
@@ -119,9 +132,22 @@ public:
 	/* !< \brief get uuids that satisfy the
 	 * Identification name
 	 *
+<<<<<<< HEAD
 	 * 	\param aName Identification name
 	 *
 	 * 	\return Uuids
+=======
+	 *\param aName Identification name
+	 *\param isInvertGroup if the value (isInvertGroup) is true then the program order@com.ru.putin
+	 * 						 is not enter into the order@com.ru(aName),
+	 * 						 but is enter into the order@com.ru.putin.vv(aName)
+	 * 	\return pair uuid - depth
+	 *
+	 */
+	unique_uuids_t  MGetUUIDFor(NSHARE::CProgramName const& aName,bool isInvertGroup=false) const;
+
+	/*!\brief Gets info about the requirement messages
+>>>>>>> f3da2cc... see changelog.txt
 	 *
 	 */
 	unique_uuids_t  MGetUUIDFor(NSHARE::CRegistration const& aName) const;
@@ -129,15 +155,122 @@ public:
 
 	/*!< \brief Make valid the message's byte order
 	 *
-	 *	\param aData Message
+	*\param aData Message
 	 *
-	 *	\return 0 - no error
-	 *	\note Make valid only body of message that is
+	*\return 0 - no error
+	*\note Make valid only body of message that is
 	 *		  The message header  stay not valid.
 	 */
 	static unsigned sMSwapEndian( user_data_t& aData);
+<<<<<<< HEAD
 	NSHARE::CConfig MSerialize() const;
 private:
+=======
+
+	/*!\brief serializes object
+	 *
+	 *\return serialized object, base key is equal the NAME field.
+	 */
+	NSHARE::CConfig MSerialize() const;
+
+	/*!\brief gets list of identifier
+	 *
+	 */
+	unique_id_t const& MGetUniquieID() const;
+
+	/*!\brief Returns demands for
+	 *
+	 *\param aUUID - looking for
+	 *\return demand or empty array
+	 */
+	demand_dgs_t const& MGetDemandFor(NSHARE::uuid_t const& aUUID) const;
+
+
+	/*!\brief Returns the request info
+	 * by which the message will be sent from
+	 *
+	 *\param aFrom - the message is sent from
+	 *\param [out] aTo - where the result is saved
+	 *
+	 *\return The amount of demands which  has been added
+	 *
+	 */
+	unsigned MGetWhatMsgSentFrom(NSHARE::uuid_t const & aFrom,
+				demand_dgs_for_t * aTo) const;
+
+	/*!\brief Returns ID info by UUID
+	 *
+	 *\param aUUID looked for UUID
+	 *
+	 *\return ID or invalid (!MIsValid()) id_t if uuid not found
+	 */
+	id_t const& MGetIdBy(NSHARE::uuid_t const & aUUID) const;
+private:
+	struct msg_handlers_t: std::vector<demand_dg_t::event_handler_t> //todo sort by messages inherent priority
+	{
+		msg_handlers_t():FNumberOfRealHandlers(0)
+		{
+
+		}
+		bool MIsRegistrarExist() const;
+
+
+		NSHARE::version_t FVersion;
+		int FNumberOfRealHandlers;
+		//see demands_dg_t::FFlags.
+		//If At least one handler is not registrator than The consumer is not registator.
+	};
+	struct uuids_of_receiver_t:std::map<NSHARE::uuid_t,msg_handlers_t >
+	{
+		uuids_of_receiver_t():
+			FNumberOfRealReceivers(0u)//
+			//,FCurrentUUIDLevel(std::numeric_limits<unsigned>::max())
+		{
+
+		}
+		unsigned FNumberOfRealReceivers;///< the amount of registrar is size()-FNumberOfRealReceivers
+	};
+	//typedef std::map<NSHARE::CText,unique_uuids_t> uuids_of_t;
+	typedef std::map<required_header_t, uuids_of_receiver_t, CReqHeaderFastLessCompare> uuids_of_expecting_dg_t;
+	struct data_routing_t
+	{
+		NSHARE::CBuffer FBufferedData;
+		uuids_of_expecting_dg_t FExpected;
+	};
+	typedef std::map<NSHARE::CText, data_routing_t,
+			NSHARE::CStringFastLessCompare> protocols_t;
+
+	typedef std::map<NSHARE::uuid_t, protocols_t> protocol_of_uuid_t;
+
+	typedef std::pair<NSHARE::CText, required_header_t> msg_header_t;
+	typedef std::vector<msg_header_t> msg_heritance_t;
+
+	struct msg_family_t
+	{
+		msg_heritance_t FChildren;
+		msg_heritance_t FParents;
+	};
+	typedef std::map<required_header_t, msg_family_t, CReqHeaderFastLessCompare> msg_inheritance_tree_t;///< key - message type, value - its hierarchy
+	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;	///< key message protocol ,
+																				//value -  genealogy tree of this tree
+
+	typedef std::map<demand_dg_t::event_handler_t, unsigned> current_nearest_t;
+	typedef std::map<NSHARE::uuid_t, current_nearest_t> nearest_info_t;
+
+	struct demand_for_info_t
+	{
+		NSHARE::uuid_t FFor;
+		demand_dg_t FWhat;
+		unsigned FDistance;
+	};
+	struct way_info_t
+	{
+		NSHARE::uuid_t FFrom;
+		demand_for_info_t FTo;
+	};
+	typedef std::vector<way_info_t> array_of_demand_for_t;
+	struct unique_compare_t;
+>>>>>>> f3da2cc... see changelog.txt
 
 	void MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,user_data_info_t* const aInfo,fail_send_array_t*const aFail) const;
 
@@ -208,9 +341,18 @@ private:
 
 
 	mutable protocol_of_uuid_t FWhatIsSendingBy;
+<<<<<<< HEAD
 	demand_dgs_for_t FDGs;
 	std::set<id_t> FIds;
 	mutable uint16_t FMsgID;
+=======
+	demand_dgs_for_t FDGs;///< list of the requirement messages for uuid
+	unique_id_t FIds;
+	mutable uint16_t FMsgID;
+	msg_inheritances_t FMsgsGenealogy;
+	unsigned FMaxInheritanceDepth;
+	nearest_info_t FNearestInfo;///< contains current "group depth" of demand
+>>>>>>> f3da2cc... see changelog.txt
 };
 inline bool CRequiredDG::msg_handlers_t::MIsRegistrarExist() const
 {

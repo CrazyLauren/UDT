@@ -192,7 +192,7 @@ bool CDescriptors::MIsCustomer(descriptor_t const& aVal) const
 		return _it->second.MGetConst().FProgramm.FType == E_CONSUMER;
 	return false;
 }
-CDescriptors::d_list_t CDescriptors::MGetAll(eType aType) const
+CDescriptors::d_list_t CDescriptors::MGetAll(eProgramType aType) const
 {
 	CRAII<CMutex> _block(FBLock);
 	d_list_t _list;

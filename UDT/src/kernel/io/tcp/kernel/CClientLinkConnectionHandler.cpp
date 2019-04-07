@@ -133,7 +133,7 @@ bool IMPL::MSendIDInfo()
 	return _is;
 }
 inline unsigned IMPL::MFillProtocol(data_t* aTo,
-		const eType& aType)
+		const eProgramType& aType)
 {
 	const size_t full_size = sizeof(protocol_type_dg_t);
 

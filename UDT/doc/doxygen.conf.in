@@ -16,6 +16,7 @@ FULL_PATH_NAMES        = NO
 STRIP_FROM_PATH        =
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = NO
+AUTOLINK_SUPPORT 	   =YES
 MULTILINE_CPP_IS_BRIEF = YES
 INHERIT_DOCS           = YES
 DISTRIBUTE_GROUP_DOC   = NO
@@ -28,7 +29,7 @@ SEPARATE_MEMBER_PAGES  = NO
 #---------------------------------------------------------------------------
 # Build related configuration options
 #---------------------------------------------------------------------------
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
 EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = NO
@@ -164,12 +165,17 @@ PERLMOD_MAKEVAR_PREFIX =
 # Configuration options related to the preprocessor
 #---------------------------------------------------------------------------
 ENABLE_PREPROCESSING   = YES
-MACRO_EXPANSION        = NO
+MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = NO
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED             =
+PREDEFINED             = SHARED_PACKED \
+						 SHARE_CONFIG_DEFINED \
+						 _WIN32 \						 
+						 NUM_TO_STRING_EXIST \
+						 FROM_STRING_EXIST \
+						 SMART_FIELD_EXIST
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------

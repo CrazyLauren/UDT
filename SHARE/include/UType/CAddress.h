@@ -17,7 +17,7 @@ namespace NSHARE
 class  CRegistration;
 
 
-/** \brief имя домена записанного слева направо (ru.kremlin)
+/**\brief имя домена записанного слева направо (ru.kremlin)
  *
  */
 class SHARE_EXPORT CAddress
@@ -27,21 +27,21 @@ public:
 	static const char SEPERATOR;
 	CAddress();
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aAddress address in format: a.b.c
+	 *\param aAddress address in format: a.b.c
 	 */
 	explicit CAddress(const char* aAddress);
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aAddress address in format: a.b.c
+	 *\param aAddress address in format: a.b.c
 	 */
 	explicit CAddress(NSHARE::CText const& aAddress);
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aGroups list of domain
+	 *\param aGroups list of domain
 	 */
 	explicit CAddress(std::vector<NSHARE::CText> const& aGroups);
 
@@ -57,6 +57,7 @@ public:
 	std::vector<NSHARE::CText>  MGetPath() const;
 
 
+<<<<<<< HEAD
 	bool MIsSubpathOf(CRegistration const&) const;
 	bool MIsSubpathOfForRegistration(CText const&) const;
 
@@ -68,18 +69,162 @@ public:
 	bool MIsPathOf(CRegistration const&) const;
 	bool MIsPathOfForRegistration(CText const&) const;
 
+=======
+	/*!\brief Returns if The name is in my group
+	 *
+	 * Returns 2 if aName==q.w and my group is q.w.r
+	 *
+	 *
+	 *\param aName - the program name or group
+	 *
+	 *\note if the group empty then returns unsigned max
+	 *
+	 *\return 0 - if no
+	 *         > 0 the group of aName is a part of my group,
+	 * 		   		 the return value is equal
+	 * 		   		 the level of aName subgroup in
+	 * 		   		 my group.
+	 * 		   		 for detail see sMIsSubGroupOf
+	 *
+	 */
+	unsigned MIsSubGroupOf(CText const& aName) const;
+
+	/*!\brief Returns if The name is in my group
+	 *
+	 * Returns 2 if aName==q.w and my group is q.w.r.
+	 *
+	 *\param aName - the program name
+	 *\note if the group empty then returns unsigned max
+	 *
+	 *\return 0 - if no
+	 *         > 0 the group of aName is a part of my group,
+	 * 		   		 the return value is equal
+	 * 		   		 the level of aName subgroup in
+	 * 		   		 my group.
+	 * 		   		 for detail see sMIsSubGroupOf
+	 *
+	 */
+	unsigned MIsSubGroupOf(CProgramName const& aName) const;
+
+	/*!\brief Returns if The my group is subgroup of aGroup
+	 *
+	 * Returns 2 if aName==q.w and my group is q.w.r
+	 *
+	 *\param aGroup - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 the group of aGroup is a part of my group,
+	 * 		   		 the return value is equal
+	 * 		   		 the level of aGroup subgroup in
+	 * 		   		 my group.
+	 * 		   		 for detail see sMIsSubGroupOf
+	 */
+	unsigned MIsSubGroupOf(CProgramGroup const& aGroup)const;
+
+	/*!\brief Check for is in group
+	 *
+	 * Returns 2 if aGroup==q.w.r and my group is q.w
+	 *
+	 *\param aGroup - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 if in, for detail see sMIsSubGroupOf
+	 */
+	unsigned MIsInGroup(NSHARE::CText const& aGroup)const;
+
+	/*!\brief Check for is in group
+	 *
+	 * Returns 2 if aGroup==q.w.r and my group is q.w
+	 *
+	 *\param aGroup - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 if in, for detail see sMIsSubGroupOf
+	 */
+	unsigned MIsInGroup(CProgramGroup const& aGroup)const;
+
+	/*!\brief Check for is in group
+	 *
+	 * Returns 2 if aGroup==q.w.r and my group is q.w
+	 *
+	 *\param aName - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 if in, for detail see sMIsSubGroupOf
+	 */
+	unsigned MIsInGroup(CProgramName const& aName) const;
+
+	/*!\brief Returns if group is exist
+	 *
+	 *\return true if group is exist.
+	 */
+>>>>>>> f3da2cc... see changelog.txt
 	bool MIsEmpty()const;
 	static bool sMIsValid(NSHARE::CText const&);
 	static bool sMIsNameValid(NSHARE::CText const&);
 
+<<<<<<< HEAD
 	bool operator<(const CAddress&) const;
 	bool operator==(const CAddress&) const;
 
 private:
+=======
+	/*!\brief Checks for the group validity
+	 *
+	 *\param aGroup the group
+	 *
+	 *\return true if valid
+	 */
+	static bool sMIsValid(NSHARE::CText const& aGroup);
+
+	/*!\brief Checks for group name validity
+	 *
+	 * The group name does not have characters  CProgramName::SEPERATOR and
+	 * CProgramGroup::SEPERATOR.
+	 *
+	 *\param aGroup group
+	 *
+	 *\return true if valid
+	 */
+	static bool sMIsGroupNameValid(NSHARE::CText const&);
+
+	/*!\brief Fast group compare
+	 *
+	 *\return true if less
+	 */
+	bool operator<(const CProgramGroup&) const;
+
+	/*!\brief Fast group compare
+	 *
+	 *\return true if equal
+	 */
+	bool operator==(const CProgramGroup&) const;
+
+private:
+
+	/*!\brief Check for subgroup
+	 *
+	 * Return > 0 if aWhat==q.w.r and aWith==q.w
+	 *
+	 *\param aWith - the group with which is compared
+	 *\param aName - the program name or group which is checked
+	 *
+	 *\note if the aWith is empty then returns unsigned max
+	 *
+	 *\return 0 - if is not subgroup
+	 *         > 0 the group of aWhat is a part of aWith group,
+	 * 		   		 the return value is equal
+	 * 		   		 the level of aWhat subgroup in
+	 * 		   		 aWith.
+	 * 		   		 for detail see CRegistration::sMCompare
+	 *
+	 */
+	static unsigned sMIsSubGroupOf(CText const& aWhat,CText const& aWith);
+>>>>>>> f3da2cc... see changelog.txt
 	NSHARE::CText FAddress;
 };
 
-/** \brief идентификатор ПО наподобие почты (program@ru.kremlin)
+/**\brief идентификатор ПО наподобие почты (program@ru.kremlin)
  *
  */
 class  SHARE_EXPORT CRegistration
@@ -91,22 +236,22 @@ public:
 
 	CRegistration();
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aAddress address in format: xz@a.b.c
+	 *\param aAddress address in format: xz@a.b.c
 	 */
 	explicit CRegistration(const char*);
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aAddress address in format: xz@a.b.c
+	 *\param aAddress address in format: xz@a.b.c
 	 */
 	explicit CRegistration(NSHARE::CText const&);
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
-	 *	\param aName name
-	 *	\param aGroup domains
+	 *\param aName name
+	 *\param aGroup domains
 	 */
 	explicit CRegistration(NSHARE::CText const& aName,CAddress const&aGroup);
 	explicit CRegistration(NSHARE::CConfig const& aConf);
@@ -122,6 +267,7 @@ public:
 	NSHARE::CText MGetName()const;
 	NSHARE::CText const& MGetRawName()const;
 	NSHARE::CText MGetAddressText()const;
+<<<<<<< HEAD
 	CAddress MGetAddress() const;
 
 	bool MIsFrom(CAddress const&) const;
@@ -130,6 +276,64 @@ public:
 	bool MIsMe(CRegistration const&) const;
 	bool MIsMe(NSHARE::CText const&) const;
 	bool MIsForMe(NSHARE::CText const&) const;
+=======
+	CProgramGroup MGetAddress() const;
+
+	/*!\brief Check for is in group
+	 *
+	 *\param aGroup - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 if in, for detail see CProgramGroup::sMIsSubGroupOf
+	 */
+	unsigned MIsFrom(CProgramGroup const& aGroup) const;
+
+	/*!\brief Check for is in group
+	 *
+	 *\param aName - the group
+	 *
+	 *\return 0 - if no
+	 *         > 0 if in, for detail see CProgramGroup::sMIsSubGroupOf
+	 */
+	unsigned MIsFrom(NSHARE::CText const& aGroup) const;
+
+	/*!\brief Checks for my Address is a part of the other address
+	 *
+	 *\param aWith the Address with which is compared
+	 *
+	 *
+	 *\return see sMCompare
+	 */
+	unsigned MIsMe(CProgramName const& aWith) const;
+
+	/*!\brief Checks for my Address is a part of the other address
+	 *
+	 *\param aWith the Address with which is compared
+	 *
+	 *
+	 *\return see sMCompare
+	 */
+	unsigned MIsMe(NSHARE::CText const& aWith) const;
+
+
+	/*!\brief Checks for the Address is a part of my address
+	 *
+	 *\param aWhat the compared Address
+	 *
+	 *
+	 *\return see sMCompare
+	 */
+	unsigned MIsForMe(NSHARE::CText const& aWhat) const;
+
+	/*!\brief Checks for the Address is a part of my address
+	 *
+	 *\param aWhat the compared Address
+	 *
+	 *
+	 *\return see sMCompare
+	 */
+	unsigned MIsForMe(CProgramName const& aWhat) const;
+>>>>>>> f3da2cc... see changelog.txt
 
 
 	bool MIsName()const;
@@ -146,7 +350,27 @@ public:
 	bool operator==(const CRegistration&) const;
 
 private:
+<<<<<<< HEAD
 	static bool sMIsMeImpl(NSHARE::CText const&,NSHARE::CText const&) ;
+=======
+	/*!\brief Checks for the Address is a part of the other address
+	 *
+	 *\param aWhat - the compared Address
+	 *\param aWith - the Address with which aWhat is compared
+	 *\return 0 - if no
+	 * 		   > 0 - aWhat is a part of aWith,
+	 * 		   		 the return value is equal
+	 * 		   		 the level of aWhat subgroup in
+	 * 		   		 aWith.
+	 * 		   1 - if the addresses are equal
+	 * 		   2 - if for example aWhat == a@x
+	 * 		   		  aWith == a@x.y
+	 * 		   etc.
+	 * 		   unsigned max - if aWith does not have group
+	 * 		   				  aWhat have group
+	 */
+	static unsigned sMCompare(NSHARE::CText const& aWhat,NSHARE::CText const& aWith) ;
+>>>>>>> f3da2cc... see changelog.txt
 	NSHARE::CText FName;
 };
 }

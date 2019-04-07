@@ -87,11 +87,11 @@ static int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 static void send_cmd(msg_control_t::eCMD aCmd,NSHARE::uuid_t const & aTo =NSHARE::uuid_t())
 {
 	required_header_t _header;
-	msg_head_t *_msg = (msg_head_t*)_header.FReserved;
+	msg_head_t *_msg = (msg_head_t*)_header.FMessageHeader;
 	_msg->FType = E_MSG_CONTROL;
 
 	NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-			sizeof(msg_control_t));	//!< allocate the buffer for message without header
+			sizeof(msg_control_t));	///< allocate the buffer for message without header
 
 	if(_buf.empty())
 	{
@@ -124,7 +124,7 @@ static bool test_stage_4();
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./example_customer.xml"); //!< initialize UDT library
+			NSHARE::version_t(1, 0), "./example_customer.xml"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
@@ -132,7 +132,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		exit(EXIT_FAILURE);
 	}
 	{
-		//!< When the UDT library will be connected to UDT kernel. The function
+		///< When the UDT library will be connected to UDT kernel. The function
 		//event_connect_handler is called.
 		callback_t _handler_event_connect(event_connect_handler, NULL);
 		event_handler_info_t _event_connect(CCustomer::EVENT_CONNECTED,
@@ -147,7 +147,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
 		event_handler_info_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
@@ -155,7 +155,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_remove_receiver is called.
 		callback_t _handler_event_disconnect(event_remove_receiver, NULL);
 		event_handler_info_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
@@ -163,7 +163,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		CCustomer::sMGetInstance() += _event_disconnect;
 	}
 	{
-		//!< When the customer's list has been updated. The function
+		///< When the customer's list has been updated. The function
 		//event_customers_update_handler is called.
 
 		callback_t _handler_cus_update(event_customers_update_handler, NULL);
@@ -178,6 +178,11 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		LOCK_STREAM
 		std::cout<<"Wait for connect ..."<<std::endl;
 	}
+	CCustomer::sMGetInstance().MWaitForEvent(CCustomer::EVENT_CONNECTED);
+	{
+		LOCK_STREAM
+		std::cout<<"Connected ..."<<std::endl;
+	}
 }
 
 void direct_test()
@@ -185,7 +190,7 @@ void direct_test()
 	CHECK_EQ(g_amount_of_publisher,0);
 	CHECK_EQ(CCustomer::sMGetInstance().MGetMyWishForMSG().size(),0);
 
-	((msg_head_t*) (g_receive_what.FRequired.FReserved))->FType = E_TEST_MSG;
+	((msg_head_t*) (g_receive_what.FRequired.FMessageHeader))->FType = E_TEST_MSG;
 	g_receive_what.FProtocolName = PROTOCOL_NAME;
 	g_receive_what.FFlags = requirement_msg_info_t::E_NEAREST;
 	g_receive_what.FFrom=g_child_pid.front().second;
@@ -207,7 +212,7 @@ void reverse_test()
 	std::reverse(g_child_pid.begin(), g_child_pid.end());
 
 	callback_t _handler(msg_test_handler, NULL);
-	((msg_head_t*) (g_receive_what.FRequired.FReserved))->FType = E_TEST_MSG;
+	((msg_head_t*) (g_receive_what.FRequired.FMessageHeader))->FType = E_TEST_MSG;
 	g_receive_what.FProtocolName = PROTOCOL_NAME;
 	g_receive_what.FFlags = requirement_msg_info_t::E_NEAREST
 			| requirement_msg_info_t::E_INVERT_GROUP;

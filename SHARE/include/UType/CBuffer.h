@@ -24,45 +24,45 @@ class  iterator_type;
 template<typename TPod>
 class  CPODBuffer;
 
-/** \brief Class equal of Copy on write wrapper of std::vector<char>
+/**\brief Class equal of Copy on write wrapper of std::vector<char>
  * specialization for storing data of buffer's.
  *
  */
 class SHARE_EXPORT CBuffer
 {
 public:
-	typedef uintptr_t offset_pointer_t;//!< is used for storing pointer diff
-	typedef buf_val_t<uint8_t> value_type;//!< buffer value type (Similarly std::vector), 
+	typedef uintptr_t offset_pointer_t;///< is used for storing pointer diff
+	typedef buf_val_t<uint8_t> value_type;///< buffer value type (Similarly std::vector), 
 					      //uint8_t is not used to avoid 
 					      //problems with the template specialization,
 					      //for example in stream.
-	typedef value_type* pointer;		//!< pointer to type (Similarly std::vector)
-	typedef const value_type* const_pointer;//!< pointer to const type (Similarly std::vector)
-	typedef value_type& reference;		//!< reference of type (Similarly std::vector)
-	typedef const value_type& const_reference;//!< reference of const type (Similarly std::vector)
-	typedef size_t size_type;		//!<buffer size type (similarly std::vector)
-	typedef std::ptrdiff_t difference_type;//!<pointer siff type (similarly std::vector)
-	typedef iterator_type<pointer, reference, difference_type> iterator; //!<iterator to type (similarly std::vector)
-	typedef iterator_type<const_pointer, const_reference, difference_type> const_iterator; //!<iterator to const type (similarly std::vector)
-	typedef IAllocater allocator_type;//!< Which allocator type is used, while its only one.
+	typedef value_type* pointer;		///< pointer to type (Similarly std::vector)
+	typedef const value_type* const_pointer;///< pointer to const type (Similarly std::vector)
+	typedef value_type& reference;		///< reference of type (Similarly std::vector)
+	typedef const value_type& const_reference;///< reference of const type (Similarly std::vector)
+	typedef size_t size_type;		///<buffer size type (similarly std::vector)
+	typedef std::ptrdiff_t difference_type;///<pointer siff type (similarly std::vector)
+	typedef iterator_type<pointer, reference, difference_type> iterator; ///<iterator to type (similarly std::vector)
+	typedef iterator_type<const_pointer, const_reference, difference_type> const_iterator; ///<iterator to const type (similarly std::vector)
+	typedef IAllocater allocator_type;///< Which allocator type is used, while its only one.
 
-	const size_t BEGIN_SIZE;//!< Number of bytes reserved
+	const size_t BEGIN_SIZE;///< Number of bytes reserved
 				//from begining of buffer
 				//(usually usefully when need insert data 
 				//into beginning of buffer without moving)
-	static const size_t DEF_BUF_RESERVE;//!< default number of bytes reserved
+	static const size_t DEF_BUF_RESERVE;///< default number of bytes reserved
 					    //from begining of buffer
 	
-	/*! \brief create empty buffer and use specified allocator
+	/*!\brief create empty buffer and use specified allocator
 	 * 
-	 * \param aAlloc pointer to allocator or null
-	 * \param aType can allocate memory from?
+	 *\param aAlloc pointer to allocator or null
+	 *\param aType can allocate memory from?
 	 * 
-	 * \note BEGIN_SIZE is equal DEF_BUF_RESERVE
+	 *\note BEGIN_SIZE is equal DEF_BUF_RESERVE
 	 */ 
 	explicit CBuffer(IAllocater* aAlloc,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 	
-	/*! \brief create a buffer
+	/*!\brief create a buffer
 	 *
 	 * Create buffer of aSize bytes with
 	 * reserved aBeginSize bytes from beginning of buffer 
@@ -70,37 +70,37 @@ public:
 	 * by specified allocator
 	 * in the reserved or common memory
 	 * 
-	 * \param aSize buffer size
-	 * \param aBeginSize how much to reserve from beginning of buffer
+	 *\param aSize buffer size
+	 *\param aBeginSize how much to reserve from beginning of buffer
 	 * (if value less than zero than is  used DEF_BUF_RESERVE)
-	 * \param aAlloc pointer to allocator or null
-	 * \param aType can allocate memory from?
+	 *\param aAlloc pointer to allocator or null
+	 *\param aType can allocate memory from?
 	 */
 	explicit CBuffer(size_type aSize=0,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 
-	/*! \brief create buffer and copy data
+	/*!\brief create buffer and copy data
 	 * 
 	 * Create buffer by specified allocator
 	 * and copy data from aBegin to aEnd into buffer.
 	 * 
-	 * \tparam ItT type of iterator
+	 *\tparam ItT type of iterator
 	 * 
-	 * \param aBegin iterator to the beginning of data
-	 * \param aEnd iterator to the end of data
-	 * \param aBeginSize how much to reserve from beginning of buffer
+	 *\param aBegin iterator to the beginning of data
+	 *\param aEnd iterator to the end of data
+	 *\param aBeginSize how much to reserve from beginning of buffer
 	 * (if value less than zero than is  used DEF_BUF_RESERVE)
-	 * \param aAlloc pointer to allocator or null
-	 * \param aType can allocate memory from?
+	 *\param aAlloc pointer to allocator or null
+	 *\param aType can allocate memory from?
 	 * 
-	 * \note magic temaplate 
-	 * \code
+	 *\note magic temaplate 
+	 *\code
 	 * typename ItT::reference (ItT::*op)() const =&ItT::operator* 
-	 * \endcode
+	 *\endcode
 	 * is used to avoid calling the constructor for a non iterator type.
 	 * For instance in this case:
-	 * \code
+	 *\code
 	 * CBuffer _buffer(6,0);
-	 * \endcode
+	 *\endcode
 	 */
 #if __cplusplus >= 201103L
 	template<class ItT,typename ItT::reference (ItT::*op)() const =&ItT::operator*>
@@ -110,144 +110,144 @@ public:
 	CBuffer(ItT aBegin, ItT aEnd,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType aType=ALLOCATE_FROM_COMMON,
 	  typename ItT::reference (ItT::*op)() const =&ItT::operator*);
 #endif
-	/*! \brief create buffer and copy data
+	/*!\brief create buffer and copy data
 	 * 
 	 * Create buffer by specified allocator
 	 * and copy data from aBegin to aEnd into buffer.
 	 * 
-	 * \tparam TPointer type of data
+	 *\tparam TPointer type of data
 	 * 
-	 * \param aBegin pointer to the beginning of data
-	 * \param aEnd pointer to the end of data
-	 * \param aBeginSize how much to reserve from beginning of buffer
+	 *\param aBegin pointer to the beginning of data
+	 *\param aEnd pointer to the end of data
+	 *\param aBeginSize how much to reserve from beginning of buffer
 	 * (if value less than zero than is  used DEF_BUF_RESERVE)
-	 * \param aAlloc pointer to allocator or null
-	 * \param aType can allocate memory from?
+	 *\param aAlloc pointer to allocator or null
+	 *\param aType can allocate memory from?
 	 */
 	template<class TPointer>
 	CBuffer(TPointer* aBegin, TPointer* aEnd,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 
-	/*! \brief create buffer and copy data
+	/*!\brief create buffer and copy data
 	 * 
 	 * Create buffer by specified allocator
 	 * and copy data from aBegin to aEnd into buffer.
 	 * 
-	 * \param aBegin pointer to the beginning of data
-	 * \param aEnd pointer to the end of data
-	 * \param aBeginSize how much to reserve from beginning of buffer
+	 *\param aBegin pointer to the beginning of data
+	 *\param aEnd pointer to the end of data
+	 *\param aBeginSize how much to reserve from beginning of buffer
 	 * (if value less than zero than is  used DEF_BUF_RESERVE)
-	 * \param aAlloc pointer to allocator or null
-	 * \param aType can allocate memory from?
+	 *\param aAlloc pointer to allocator or null
+	 *\param aType can allocate memory from?
 	 */
 	CBuffer(void const* aBegin, void const* aEnd,int aBeginSize=0,IAllocater* aAlloc=NULL,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 	
-	/*! \brief "recovery" buffer from memory
+	/*!\brief "recovery" buffer from memory
 	 * 
 	 * The buffer can be initialized from the specified address,
 	 * by which is contained previously allocated buffer.
 	 * As a pointer, the offset is used.
 	 * The offset can be got by calling offset() method.
 	 * 
-	 * \param aAlloc reference to allocator by which buffer is allocated.
-	 * \param Offset buffer offset.
-	 * \param aCheckCrc if true The buffer will be checked for validity.
-	 * \param aType What type of memory has to be used when need allocate memory 
+	 *\param aAlloc reference to allocator by which buffer is allocated.
+	 *\param Offset buffer offset.
+	 *\param aCheckCrc if true The buffer will be checked for validity.
+	 *\param aType What type of memory has to be used when need allocate memory 
 	 */ 
 	CBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc=true,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 
 	~CBuffer();
 	
-	/*! \brief Copy constructor, reality the data is not copied.
+	/*!\brief Copy constructor, reality the data is not copied.
 	 * 
 	 */ 
 	CBuffer(const CBuffer&);
 	
-	/*! \brief Assignment operator, reality the data is not copied.
+	/*!\brief Assignment operator, reality the data is not copied.
 	 * 
 	 */ 
 	CBuffer const& operator=(const CBuffer&);
 	
-	/*! \brief deep copy (reality) buffer from
+	/*!\brief deep copy (reality) buffer from
 	 *
-	 * \param  aFrom copy from
-	 * \return *this 	
+	 *\param  aFrom copy from
+	 *\return *this 	
 	 */ 
 	CBuffer const& deep_copy(const CBuffer& aFrom);
 	
-	/*! \brief moving buffer to the other buffer
+	/*!\brief moving buffer to the other buffer
 	 * This buffer becomes empty. 
 	 * 
-	 * \param aTo where to move
+	 *\param aTo where to move
 	 * 
 	 */ 
 	void MMoveTo(CBuffer& aTo);
 
 
-	/*! \brief create buffer copy by the same allocator
+	/*!\brief create buffer copy by the same allocator
 	 *
-	 * \param aType can allocate memory from?
-	 * \return copy of buffer
+	 *\param aType can allocate memory from?
+	 *\return copy of buffer
 	 */ 
 	CBuffer MCreateCopy(eAllocatorType aType=ALLOCATE_FROM_COMMON);
 	
-	/*! \brief create buffer copy by specified allocator
+	/*!\brief create buffer copy by specified allocator
 	 *
-	 * \param aAlloc pointer to allocator or null	  
-	 * \param aType can allocate memory from?
-	 * \return copy of buffer
+	 *\param aAlloc pointer to allocator or null	  
+	 *\param aType can allocate memory from?
+	 *\return copy of buffer
 	 */
 	CBuffer MCreateCopy(IAllocater* aAlloc,eAllocatorType aType=ALLOCATE_FROM_COMMON);
 
-	/*! \brief check for equals of the allocators
+	/*!\brief check for equals of the allocators
 	 * 
-	 * \param aAlloc comapared allocator
-	 * \return true if alocators are equal or one of the allocator is null
+	 *\param aAlloc comapared allocator
+	 *\return true if alocators are equal or one of the allocator is null
 	 */ 
 	bool MIsAllocatorEqual(IAllocater* aAlloc) const;
 	
-	/*! \brief check for equals of the buffer's allocators
+	/*!\brief check for equals of the buffer's allocators
 	 * 
-	 * \param aAlloc comapared allocator
-	 * \return true if alocators are equal or one of the allocator is null
+	 *\param aAlloc comapared allocator
+	 *\return true if alocators are equal or one of the allocator is null
 	 */
 	bool MIsAllocatorEqual(CBuffer const& aBuffer) const;
 	
-	/*! \brief check for equals of reference to buffer
+	/*!\brief check for equals of reference to buffer
 	 */
 	bool MReferenceEqual(CBuffer const& aBuffer) const;
 	
-	/*! \brief returns true if buffer alloacted
+	/*!\brief returns true if buffer alloacted
 	 */ 
 	bool MIsNull() const;
 	
-	/*! \brief return pointer to allocator
+	/*!\brief return pointer to allocator
 	 * 
-	 * \return pointer to allocator
+	 *\return pointer to allocator
 	 */ 
 	IAllocater* MAllocator() const;
 	
-	/*! \brief check for correcting initialize buffer by pointer
+	/*!\brief check for correcting initialize buffer by pointer
 	 * 
 	 * For detail see "recovery" constuctor.
 	 * 
-	 * \return true if initialized successfully
+	 *\return true if initialized successfully
 	 * 
 	 */ 
 	bool MIsRestored() const;
 	
-	/*! \brief check for object has been automatically copied
+	/*!\brief check for object has been automatically copied
 	 * 
 	 * If you use non const methods and you is not unique 
 	 * buffer owner the buffer will automatically copied,
 	 * 
-	 * \return true if has been automatically copied
+	 *\return true if has been automatically copied
 	 * 
 	 */
 	bool MIsDetached() const;
 	
-	/*! \brief functions similar functions of std vector 
+	/*!\brief functions similar functions of std vector 
 	 * 
-	 * \{
+	 *\{
 	 */
 	
 	/// \note for safety non const version is not exist
@@ -296,21 +296,21 @@ public:
 	void swap(CBuffer& aBuf);
 	///\}
 
-	/*! \brief returns the number of bytes that the buffer 
+	/*!\brief returns the number of bytes that the buffer 
 	 * has allocated from beginning
 	 * 
 	 * For detail see parameter aBeginSize of constuctors.
 	 * 
-	 * \return number of bytes
+	 *\return number of bytes
 	 */	
 	size_type begin_capacity() const;
 
-	/*! \brief resize buffer
+	/*!\brief resize buffer
 	 * 
-	 * \param aSize new size
-	 * \param fromBegin if false increase(decrease) from end (equal std::vector::resize)
+	 *\param aSize new size
+	 *\param fromBegin if false increase(decrease) from end (equal std::vector::resize)
 	 * if true increase(decrease) from begin
-	 * \param aCanDetach It was the result of bug fix.
+	 *\param aCanDetach It was the result of bug fix.
 	 * If the parameter is false than the buffer will not automatically copied
 	 * when the buffer has not the only owner.
 	 * In the other case if the buffer has more than one owner
@@ -318,20 +318,20 @@ public:
 	 */ 
 	void resize(size_type aSize, bool fromBegin = false,bool aCanDetach=true);
 	
-	/*! \brief returns pointer to the buffer
+	/*!\brief returns pointer to the buffer
 	 */ 
 	pointer ptr();
 	
-	/*! \brief returns pointer to the buffer
+	/*!\brief returns pointer to the buffer
 	 */ 
 	const_pointer ptr_const() const;
 	
-	/*! \brief returns offset of buffer or 
+	/*!\brief returns offset of buffer or 
 	 * IAllocater::NULL_OFFSET if buffer is not allocated
 	 */ 
 	offset_pointer_t offset() const;
 		
-	/*! \brief Warning do not confuse the method with release()
+	/*!\brief Warning do not confuse the method with release()
 	 * The object becomes only unreferenced with the allocated buffer.
 	 * The ownership isn't released.(A number of buffer's owner 
 	 * does not change)
@@ -342,40 +342,40 @@ public:
 	 * "recovered"  constructor,
 	 * the memory leak will ocurred.
 	 * 
-	 * \return returns offset of the buffer or 
+	 *\return returns offset of the buffer or 
 	 * IAllocater::NULL_OFFSET if the buffer is not allocated
 	 * 
-	 * \warning if you do not understand what you are doing, 
+	 *\warning if you do not understand what you are doing, 
 	 * do not call this method
 	 */	
 	offset_pointer_t refuse();
 	
-	/*! \brief releases the ownership 
+	/*!\brief releases the ownership 
 	 */ 
 	void release();
 	
-	/*! \brief Returns a number of owners
+	/*!\brief Returns a number of owners
 	 */ 
 	unsigned use_count() const;
 	
-	/*! \brief functions similar functions of std list 
+	/*!\brief functions similar functions of std list 
 	 * 
-	 * \{
+	 *\{
 	 */
 	void push_front(const value_type& aVal);
 	void pop_front();
 	///\}
 	
-	/*! \brief helper functions for insert data of any types
+	/*!\brief helper functions for insert data of any types
 	 * to the buffer
-	 * \{
+	 *\{
 	 */
 
 	///\}
 	
 	//void release_force() const; //todo
 
-	/*! \brief returns pointer to default allocator
+	/*!\brief returns pointer to default allocator
 	 */
 	static allocator_type * sMDefAllaocter();
 	
@@ -444,7 +444,7 @@ private:
 	bool FIsDetached;
 
 };
-/*! \brief iterator for CBuffer
+/*!\brief iterator for CBuffer
  */ 
 template<class Pointer, class Refer, class diff_type>
 class  iterator_type
@@ -459,7 +459,7 @@ public:
 			_M_current(NULL)
 	{
 	}
-	/** \note using only for const_iterator -> iterator convertion
+	/**\note using only for const_iterator -> iterator convertion
 	 *
 	 */
 	template<class Rdiff_type>
@@ -467,7 +467,7 @@ public:
 			_M_current(aRht._M_current)
 	{
 	}
-	/** \note using only for const_iterator -> iterator convertion
+	/**\note using only for const_iterator -> iterator convertion
 	 *
 	 */
 	template<class Rdiff_type>

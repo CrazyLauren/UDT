@@ -247,27 +247,36 @@
 // timestamps from different machines.
 
 
-/** \brief инициализация логирования
+/**\brief инициализация логирования
  *
  * При инциализации логирования считывается имя ПО и настройки логирования
  * заддаными в опции default_logging_option_name или default_logging_short_option_name
  *
- *	\param argv -argv ф-ии main
- *	\param argc argc ф-ии main
+ *\param argv -argv ф-ии main
+ *\param argc argc ф-ии main
  */
+<<<<<<< HEAD
 extern SHARE_EXPORT void init_trace(int argc, char *argv[]);
 
 /** \brief инициализация логирования
+=======
+extern SHARE_EXPORT void init_trace(int argc, char const *argv[]);
+inline void init_trace(int argc, char *argv[])
+{
+	init_trace (argc, (char const**)argv);
+}
+/**\brief инициализация логирования
+>>>>>>> f3da2cc... see changelog.txt
  *
  *	Инициализация логирования без использования коммандной строки.
  *	Для "разбора" коммандной строки в части логирования
  *	см. CShareLogArgsParser
  *
- *	\param aFileName имя программы
+ *\param aFileName имя программы
  */
 extern SHARE_EXPORT void init_share_trace(char const *aFileName);
 
-/** \brief полное название опции используемой при настройки логирования
+/**\brief полное название опции используемой при настройки логирования
  * через коммандную строку
  *
  * По умолчанию, опция называется "verbose". Название опции
@@ -275,7 +284,7 @@ extern SHARE_EXPORT void init_share_trace(char const *aFileName);
  */
 extern SHARE_EXPORT char default_logging_option_name[];
 
-/** \brief короткое название опции используемой при настройки логирования
+/**\brief короткое название опции используемой при настройки логирования
  * через коммандную строку
  *
  * По умолчанию, опция называется "v". Название опции
@@ -284,9 +293,9 @@ extern SHARE_EXPORT char default_logging_option_name[];
 extern SHARE_EXPORT char default_logging_short_option_name;
 
 
-/** \name implementation function
- * \internal
- * \{
+/**\name implementation function
+ *\internal
+ *\{
  */
 extern SHARE_EXPORT void init_trace_cplus(int argc, char *argv[]);
 extern SHARE_EXPORT void init_trace_glog(int argc, char *argv[]);
@@ -294,7 +303,7 @@ extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();
 //\}
 
-/** \name selection logging system
+/**\name selection logging system
  *\{
  */
 #ifndef REMOVE_LOG
@@ -317,7 +326,7 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 //\}
 
 /**\def LOG_IF_EVERY_TIME
- * \brief convenient macro for logging if condition is true and the last logging time
+ *\brief convenient macro for logging if condition is true and the last logging time
  * is more than "period".
  *
  */
@@ -331,7 +340,7 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 #	define	LOG_IF_EVERY_TIME(severity, condition,period) LOG(severity)<<"***ERROR***: LOG_IF_EVERY_TIME isn't available."
 #endif
 
-/** \name define using logging system name
+/**\name define using logging system name
  *\{
  */
 #ifdef GLOG

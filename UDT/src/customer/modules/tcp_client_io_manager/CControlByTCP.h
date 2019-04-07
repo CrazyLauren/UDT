@@ -42,6 +42,7 @@ public:
 	bool MIsConnected() const;
 	bool MIsOpened() const;
 	void MClose();
+	void MJoin();
 	int MSend(data_t & aData);
 	int MSend(user_data_t & aData);
 

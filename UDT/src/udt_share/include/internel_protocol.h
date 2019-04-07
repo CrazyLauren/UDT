@@ -270,10 +270,10 @@ struct protocol_type_dg_t : dg_base_t<protocol_type_dg_t, 0, 1, E_PROTOCOL_MSG>
 
 	uint32_t FProtocol;//eType
 
-	inline eType MGetProtocol()const {
-		return  (eType)MEndianCorrectValue(static_cast<uint32_t>(FProtocol));
+	inline eProgramType MGetProtocol()const {
+		return  (eProgramType)MEndianCorrectValue(static_cast<uint32_t>(FProtocol));
 	}
-	inline void MSetProtocol(eType aVal) {
+	inline void MSetProtocol(eProgramType aVal) {
 		FProtocol = aVal;
 	}
 };

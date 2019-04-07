@@ -22,7 +22,7 @@ class SHARE_EXPORT CConfig;
 class CBuffer;
 typedef std::vector<CConfig> ConfigSet;
 
-/** \brief Config - это класс для сериализации данных в формат JSON или XML
+/**\brief Config - это класс для сериализации данных в формат JSON или XML
  *
  * В начале обэект конвертируется в Config, далее Config конвертируется требуемый формат.
  * CConfig реализован с использованием COW
@@ -322,6 +322,36 @@ public:
 		}		
 	}
 
+<<<<<<< HEAD
+=======
+	/*!\brief Update the Value if key is exist
+	 *
+	 *\return true if updated
+	 */
+	template<typename T>
+	bool MUpdateIfSet(const CText& key, const T& value)
+	{
+		CConfig* _child = MMutableChild(key);
+		if (_child==NULL ||_child->MValue().empty())
+			return false;
+		else
+		{
+			CConfig const _new(key,value);
+			*_child=_new;
+			return true;
+		}
+	}
+#ifdef SMART_FIELD_EXIST
+	template<typename T>
+	bool MUpdateIfSet(const CText& key, const smart_field_t<T>& opt)
+	{
+		if (opt.MIs())
+			return MUpdateIfSet(key,opt.MGetConst());
+		else
+			return false;
+	}
+#endif
+>>>>>>> f3da2cc... see changelog.txt
 	// remove everything from (this) that also appears in rhs
 	CConfig operator -(const CConfig& rhs) const;
 	std::ostream& MPrint(std::ostream & aStream) const;

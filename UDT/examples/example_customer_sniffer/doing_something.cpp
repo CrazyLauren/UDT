@@ -16,7 +16,7 @@ using namespace NUDT;
 extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	std::cout<< std::endl << "Message #" << _recv_arg->FPacketNumber<<" by " << _recv_arg->FProtocolName << " size "
 			<< _recv_arg->FBuffer.size() << " bytes sniffed from "
 			<< _recv_arg->FFrom <<" to ";

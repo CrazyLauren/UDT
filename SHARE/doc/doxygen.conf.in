@@ -28,7 +28,7 @@ SEPARATE_MEMBER_PAGES  = NO
 #---------------------------------------------------------------------------
 # Build related configuration options
 #---------------------------------------------------------------------------
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
 EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = NO
@@ -171,7 +171,6 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = SHARED_PACKED \
 						 SHARE_CONFIG_DEFINED \
 						 _WIN32 \
-						 _MSC_VER \
 						 NUM_TO_STRING_EXIST \
 						 FROM_STRING_EXIST \
 						 SMART_FIELD_EXIST

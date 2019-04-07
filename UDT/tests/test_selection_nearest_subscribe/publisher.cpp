@@ -60,7 +60,7 @@ static int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./example_customer.xml"); //!< initialize UDT library
+			NSHARE::version_t(1, 0), "./example_customer.xml"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
@@ -68,7 +68,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		exit(EXIT_FAILURE);
 	}
 	{
-		//!< When the UDT library will be connected to UDT kernel. The function
+		///< When the UDT library will be connected to UDT kernel. The function
 		//event_connect_handler is called.
 		callback_t _handler_event_connect(event_connect_handler, NULL);
 		event_handler_info_t _event_connect(CCustomer::EVENT_CONNECTED,
@@ -83,7 +83,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 	{
 		requirement_msg_info_t _msg;
-		((msg_head_t*)_msg.FRequired.FReserved)->FType = E_MSG_CONTROL;
+		((msg_head_t*)_msg.FRequired.FMessageHeader)->FType = E_MSG_CONTROL;
 		_msg.FProtocolName = PROTOCOL_NAME;
 		_msg.FFrom=g_subscriber_name;
 
@@ -92,7 +92,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		CCustomer::sMGetInstance().MIWantReceivingMSG(_msg, _handler);
 	}
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
 		event_handler_info_t _event_connect(CCustomer::EVENT_RECEIVER_SUBSCRIBE,
@@ -100,7 +100,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_disconnect(event_remove_receiver, NULL);
 		event_handler_info_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
@@ -111,12 +111,14 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	//Starting the 'main loop' of UDT library
 	CCustomer::sMGetInstance().MOpen();
 	{
-		CRAII<CMutex> _block(g_mutex);
-		for (; !g_is_working;)
-			g_convar.MTimedwait(&g_mutex);
+		LOCK_STREAM
+		std::cout<<"Wait for connect ..."<<std::endl;
 	}
-
-
+	CCustomer::sMGetInstance().MWaitForEvent(CCustomer::EVENT_CONNECTED);
+	{
+		LOCK_STREAM
+		std::cout<<"Connected ..."<<std::endl;
+	}
 }
 
 extern void start_publisher(int argc, char const *argv[],char const * aName)
@@ -154,11 +156,11 @@ static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 		if (_control->FCommand.MGetFlag(msg_control_t::eSEND))
 		{
 			required_header_t _header;
-			msg_head_t *_msg = (msg_head_t*) _header.FReserved;
+			msg_head_t *_msg = (msg_head_t*) _header.FMessageHeader;
 			_msg->FType = E_TEST_MSG;
 
 			NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-					sizeof(msg_test_t));//!< allocate the buffer for message without header
+					sizeof(msg_test_t));///< allocate the buffer for message without header
 
 			int _num = CCustomer::sMGetInstance().MSend(_header, PROTOCOL_NAME,
 					_buf);

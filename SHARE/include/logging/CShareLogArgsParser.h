@@ -38,20 +38,20 @@ public:
 	 * This re-implements the Arg version of this method to set the
 	 * _value of the argument appropriately.  It knows the difference
 	 * between labeled and unlabeled.
-	 * \param i - Pointer the the current argument in the list.
-	 * \param args - Mutable list of strings. Passed from main().
+	 *\param i - Pointer the the current argument in the list.
+	 *\param args - Mutable list of strings. Passed from main().
 	 */
 	virtual bool processArg(int* i, std::vector<std::string>& args);
 
 	 /**
 	 * Returns the a short id string.  Used in the usage.
-	 * \param val - value to be used.
+	 *\param val - value to be used.
 	 */
 	virtual std::string shortID(const std::string& val="val") const;
 
 	/**
 	 * Returns the a long id string.  Used in the usage.
-	 * \param val - value to be used.
+	 *\param val - value to be used.
 	 */
 	virtual std::string longID(const std::string& val = "val") const;
 

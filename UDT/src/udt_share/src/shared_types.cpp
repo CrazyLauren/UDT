@@ -47,6 +47,9 @@ error_type code_user_error(user_error_type const& aError)
 }
 
 //---------------------------------------
+const NSHARE::CText required_header_t::NAME = "rh";
+const NSHARE::CText required_header_t::KEY_HEADER = "buf";
+//---------------------------------------
 const NSHARE::CText id_t::NAME = "id";
 const NSHARE::CText id_t::KEY_NAME = "n";
 
@@ -56,7 +59,6 @@ const NSHARE::CText program_id_t::KEY_PID = "pid";
 const NSHARE::CText program_id_t::KEY_PATH = "path";
 const NSHARE::CText program_id_t::KEY_TYPE = "type";
 const NSHARE::CText program_id_t::KEY_ENDIAN = "edn";
-
 //---------------------------
 const NSHARE::CText uuids_t::NAME = "uuids";
 uuids_t::uuids_t(NSHARE::CConfig const& aConf)
@@ -213,6 +215,15 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 
 	return _conf;
 }
+<<<<<<< HEAD
+=======
+bool user_data_info_t::MIsMsgExist() const
+{
+	static const uint8_t _fix_buf[sizeof(FWhat.FMessageHeader)]={};
+
+	return memcmp(FWhat.FMessageHeader,_fix_buf,sizeof(FWhat.FMessageHeader))!=0;
+}
+>>>>>>> f3da2cc... see changelog.txt
 bool user_data_info_t::MIsRaw() const
 {
 	return FProtocol.empty() || FProtocol == RAW_PROTOCOL_NAME;
@@ -441,8 +452,8 @@ bool demand_dg_t::MIsEqual(demand_dg_t const& aRht) const
 {
 	return FProtocol == aRht.FProtocol && //
 			FNameFrom == aRht.FNameFrom && //
-			memcmp(FWhat.FReserved, aRht.FWhat.FReserved,
-					sizeof(FWhat.FReserved)) == 0;
+			memcmp(FWhat.FMessageHeader, aRht.FWhat.FMessageHeader,
+					sizeof(FWhat.FMessageHeader)) == 0;
 }
 bool demand_dg_t::operator==(demand_dg_t const& aRht) const
 {

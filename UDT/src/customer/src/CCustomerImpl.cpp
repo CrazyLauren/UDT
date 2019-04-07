@@ -103,7 +103,7 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 		}
 		if(_name.empty())
 		{
-			_rval = -static_cast<int>(E_NO_NAME);
+			_rval = static_cast<int>(ERROR_NO_NAME);
 			LOG(ERROR)<<"Invalid customer name";
 		}
 	}
@@ -111,7 +111,7 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 	{
 		if (init_id((char*) _name.c_str(), E_CONSUMER, aVersion) != 0)
 		{
-			_rval = -static_cast<int>(E_NAME_IS_INVALID);
+			_rval = static_cast<int>(ERROR_NAME_IS_INVALID);
 		}
 		else
 			FMyId = get_my_id();
@@ -268,6 +268,7 @@ void CCustomer::_pimpl::MClose()
 	{
 		VLOG(2) << "Close worker";
 		FWorker->MClose();
+		delete FWorker;
 //		FThread.MCancel();
 		VLOG(2) << "EOK";
 	}
@@ -388,6 +389,9 @@ int CCustomer::_pimpl::sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat,
 }
 int  CCustomer::_pimpl::MCallImpl(key_t const& aKey, value_arg_t const& aCallbackArgs)
 {
+	VLOG(2)<<"The event: "<<aKey<<" is called ";
+	int const _val = events_t::MCall(aKey, aCallbackArgs);
+	VLOG(2)<<"Result of calling event "<<aKey<<" is "<<_val;
 	if (!FWaitFor.empty())
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
@@ -398,9 +402,6 @@ int  CCustomer::_pimpl::MCallImpl(key_t const& aKey, value_arg_t const& aCallbac
 			FCondvarWaitFor.MBroadcast();
 		}
 	}
-	VLOG(2)<<"The event: "<<aKey<<" is called ";
-	int const _val = events_t::MCall(aKey, aCallbackArgs);
-	VLOG(2)<<"Result of calling event "<<aKey<<" is "<<_val;
 	return _val;
 }
 void CCustomer::_pimpl::MEventConnected()
@@ -595,6 +596,26 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 	CHECK_EQ(FDemands.size(), FEvents.size());
 	return _val.FHandler;
 }
+int CCustomer::_pimpl::MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber)
+{
+	size_t _i = 0;
+	size_t const _size = FDemands.size();
+	for (; _i != _size && !(FDemands[_i].FHandler == aNumber); ++_i)
+		;
+	if (_i == _size)
+	{
+		return ERROR_HANDLER_IS_NOT_EXIST;
+	}
+	const uint32_t _handler = FDemands[_i].FHandler;
+	FEvents.erase(_handler);
+	FDemands.erase(FDemands.begin() + _i);
+
+	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
+	MUdpateRecvList();
+
+	CHECK_EQ(FDemands.size(), FEvents.size());
+	return _handler;
+}
 int CCustomer::_pimpl::MRemoveDgParserFor(
 		requirement_msg_info_t aNumber)
 {
@@ -621,7 +642,7 @@ int CCustomer::_pimpl::MRemoveDgParserFor(
 		;
 	if (_i == _size)
 	{
-		return E_HANDLER_IS_NOT_EXIST;
+		return ERROR_HANDLER_IS_NOT_EXIST;
 	}
 	const uint32_t _handler = FDemands[_i].FHandler;
 	FEvents.erase(_handler);
@@ -666,7 +687,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 
 	CRAII<CMutex> _block(FCommonMutex);
@@ -683,7 +704,7 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 
 	CRAII<CMutex> _block(FCommonMutex);
@@ -702,7 +723,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -720,7 +741,7 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aNumber<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -737,7 +758,7 @@ int CCustomer::_pimpl::MSendTo(required_header_t const& aNumber,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aNumber<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -756,7 +777,7 @@ int CCustomer::_pimpl::MSendTo(required_header_t const& aNumber,
 	if (!FWorker)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
-		return -static_cast<int>(E_NOT_OPEN);
+		return static_cast<int>(ERROR_NOT_OPEN);
 	}
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
@@ -797,22 +818,24 @@ CCustomer::customers_t CCustomer::_pimpl::MCustomers() const
 }
 void CCustomer::_pimpl::MJoin()
 {
-	for (;FWorker;)
-	{
-		NSHARE::sleep(1);
-	}
+	if(FWorker)//!<\todo resource race (it can be removed before we call it)
+		FWorker->MJoin();
 }
 int CCustomer::_pimpl::MWaitForEvent(NSHARE::CText const& aEvent,double aSec)
 {
 	NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
 	bool const _is=FWaitFor.insert(aEvent).second;
 	if(!_is)
-		return -1;
-
-	if(aSec>0)
+		return static_cast<int>(ERROR_UNEXPECETED);
+	if(
+			(aEvent==EVENT_CONNECTED && MIsConnected()) ||
+			(aEvent==EVENT_DISCONNECTED && !MIsConnected())
+		)
+		return static_cast<int>(ERROR_NOT_CONNECTED_TO_KERNEL);
+	if(aSec<0)
 	{
 		for (HANG_INIT;FWaitFor.find(aEvent)!=FWaitFor.end();HANG_CHECK)
-			FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec);
+			FCondvarWaitFor.MTimedwait(&FMutexWaitFor);
 	}else
 	{
 		double const _cur_time=NSHARE::get_time();

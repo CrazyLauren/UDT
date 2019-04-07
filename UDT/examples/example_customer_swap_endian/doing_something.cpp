@@ -206,7 +206,7 @@ extern void doing_something()
 		}
 
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				sizeof(test_msg_t));	//!< allocate the buffer for msg
+				sizeof(test_msg_t));	///< allocate the buffer for msg
 
 		//filing the head of msg
 		test_msg_t *_msg = (test_msg_t*) _buf.ptr();

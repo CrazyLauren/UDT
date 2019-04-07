@@ -15,7 +15,7 @@
 
 namespace NSHARE
 {
-/** \brief template for Copy-On-Write idiom
+/**\brief template for Copy-On-Write idiom
  *
  */
 template<typename T>

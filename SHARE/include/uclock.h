@@ -19,25 +19,25 @@ namespace NSHARE
 #ifdef _MSC_VER
 struct timespec
 {
-  long long	tv_sec; 	//!< seconds
-  long  	tv_nsec;	//!< nanoseconds
+  long long	tv_sec; 	///< seconds
+  long  	tv_nsec;	///< nanoseconds
 };
 #endif
-/** \brief realization clock_gettime for windows
+/**\brief realization clock_gettime for windows
  *
  */
 extern SHARE_EXPORT int clock_gettime(int X, struct timeval *tv);
-/** \brief convert from time in second to struct timeval
+/**\brief convert from time in second to struct timeval
  */
 extern SHARE_EXPORT void convert(struct timeval* aTo, float const aFrom);
 
-/** \brief возвращет текущее время в секундах
- *  \return current time in seconds
+/**\brief возвращет текущее время в секундах
+ *\return current time in seconds
  */
 extern SHARE_EXPORT double get_time();
 
-/** \brief возвращет текущее время в timeval
- *  \param ts сюда сохраняется результат
+/**\brief возвращет текущее время в timeval
+ *\param ts сюда сохраняется результат
  */
 #if defined (__MINGW32__)
 extern SHARE_EXPORT void get_time(struct timeval *ts);
@@ -45,17 +45,17 @@ extern SHARE_EXPORT void get_time(struct timeval *ts);
 extern SHARE_EXPORT void get_time(struct timespec *ts);
 #endif
 
-/** \brief кросплатформенная реализация usleep
+/**\brief кросплатформенная реализация usleep
  */
 extern SHARE_EXPORT bool usleep(long unsigned aVal);
-/** \brief кросплатформенная реализация sleep
+/**\brief кросплатформенная реализация sleep
  */
 extern SHARE_EXPORT bool sleep(unsigned aVal);
-/** \brief возвращет текущее время в ms
- *  \return current time in ms
+/**\brief возвращет текущее время в ms
+ *\return current time in ms
  */
 extern SHARE_EXPORT uint64_t get_unix_time();
-/** \brief изменяет время на aTo
+/**\brief изменяет время на aTo
  */
 extern SHARE_EXPORT void add(struct timespec* aTo, double const& aFrom); //s
 }

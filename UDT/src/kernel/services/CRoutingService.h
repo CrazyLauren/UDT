@@ -29,37 +29,37 @@ public:
 	void MNoteFailSend(const fail_send_t&);
 	void MNoteFailSend(const fail_send_array_t&);
 
-	/** \brief see CRequiredDG::MFillMsgReceivers
+	/**\brief see CRequiredDG::MFillMsgReceivers
 	 *
 	 */
 	void MFillMsgReceivers(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t&);
 
-	/** \brief see CRequiredDG::MFillMsgHandlersFor
+	/**\brief see CRequiredDG::MFillMsgHandlersFor
 	 *
 	 */
 	void MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t & aError);
 
-	/** \brief Send data to uuids
+	/**\brief Send data to uuids
 	 *
-	 *	\param [in] aFrom uuids to which the data must sent.
+	*\param [in] aFrom uuids to which the data must sent.
 	 *	The argument can be changed (for optimization).
 	 *
-	 *	\param [out] aTo uuids cannot to which the data cannot be sent
+	*\param [out] aTo uuids cannot to which the data cannot be sent
 	 *
-	 *	\param [in] aVal message
+	*\param [in] aVal message
 	 *
 	 */
 	template<class T>
 	void MSendTo(routing_t & aFrom,routing_t & aTo, const T & aVal);
 
-	/** \brief Send data further
+	/**\brief Send data further
 	 *
-	 *	\param [in] aFrom uuids to which the data must sent.
+	*\param [in] aFrom uuids to which the data must sent.
 	 *	The argument can be changed (for optimization).
 	 *
-	 *	\param [out] aTo uuids cannot to which the message cannot be sent
+	*\param [out] aTo uuids cannot to which the message cannot be sent
 	 *
-	 *	\param [in] aVal message
+	*\param [in] aVal message
 	 *
 	 */
 	template<class T>

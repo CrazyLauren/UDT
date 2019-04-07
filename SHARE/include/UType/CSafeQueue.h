@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief Thread-safe queue
+/**\brief Thread-safe queue
  *
  */
 template<class DataType, typename _Sequence = std::deque<DataType>,
@@ -65,16 +65,16 @@ public:
 
 	bool empty() const;
 
-	/** \brief push value to queue to end
+	/**\brief push value to queue to end
 	 *
-	 *	\return false if queue was empty
+	 *\return false if queue was empty
 	 */
 	bool push(value_type const&);
 	bool push_back(value_type const&);
 
-	/** \brief push value to queue to begin
+	/**\brief push value to queue to begin
 	 *
-	 *	\return false if queue was empty
+	 *\return false if queue was empty
 	 */
 	bool push_front(value_type const&);
 

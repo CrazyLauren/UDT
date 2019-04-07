@@ -68,7 +68,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 
 	STREAM_MUTEX_LOCK
 	std::cout << "Message #" << _recv_arg->FPacketNumber<<" by " << _recv_arg->FProtocolName << " size "
@@ -172,8 +172,8 @@ extern void doing_something()
 	for (;; Sleep(1000))
 	{
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				PACKET_SIZE);	//!< allocate the buffer for msg
-		for (;_buf.empty();Sleep(1))	//!< may be 'malloc' return NULL
+				PACKET_SIZE);	///< allocate the buffer for msg
+		for (;_buf.empty();Sleep(1))	///< may be 'malloc' return NULL
 		{
 			std::cerr << "Cannot allocate the buffer. " << std::endl;
 			_buf = CCustomer::sMGetInstance().MGetNewBuf(

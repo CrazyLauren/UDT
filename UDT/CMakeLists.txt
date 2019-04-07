@@ -114,9 +114,13 @@ ENDIF()
 add_subdirectory(src)
 add_subdirectory(tools)
 <<<<<<< HEAD
+<<<<<<< HEAD
 add_subdirectory(examples)
 =======
 #add_subdirectory(examples)
+=======
+add_subdirectory(examples)
+>>>>>>> f3da2cc... see changelog.txt
 add_subdirectory(tests)
 <<<<<<< HEAD
 >>>>>>> 3a2b21d... see changelog
@@ -126,8 +130,8 @@ FIND_PACKAGE(Doxygen)
 if(DOXYGEN_FOUND)	
 	
 	IF   (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")		
-		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf)
-		SET(DOXY_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf")
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in 	${CMAKE_INSTALL_PREFIX}/doc/udt/doxygen.conf)
+		SET(DOXY_CONFIG "${CMAKE_INSTALL_PREFIX}/doc/udt/doxygen.conf")
 	else()
 		MESSAGE(WARNING "WARNING: cannot find file:" "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")	
 	ENDIF()

@@ -15,10 +15,10 @@ namespace NSHARE
 {
 class CThreadPool;
 struct operation_t;
-/** \brief сигнатура функции используемая в CThreadPool
+/**\brief сигнатура функции используемая в CThreadPool
  *
  *
- *	\note если ф-ция возвращает E_CB_REMOVE то функция будет удалена их пула
+ *\note если ф-ция возвращает E_CB_REMOVE то функция будет удалена их пула
  *		если ф-я возвращает иное значение, то останется
  */
 typedef eCBRval (*op_signal_t)(CThread const* WHO, operation_t * WHAT,
@@ -52,7 +52,7 @@ private:
 //	SHARED_PTR<bool> FKeep;
 };
 
-/** \brief Пул потоков
+/**\brief Пул потоков
  */
 class SHARE_EXPORT CThreadPool: NSHARE::CDenyCopying
 {
@@ -61,19 +61,19 @@ public:
 	static const NSHARE::CText NUMBER_OF_THREAD;
 	static const NSHARE::CText MAX_NUMBER_OF_IO_THREAD;
 
-	/** \brief construct and start pool
-	 * \param aNum - the number of threads to create, if value <=0 it will create a thread per core.
-	 * \param aMaxNumberOfIOThread - the maximal number of threads using for IO operation.
+	/**\brief construct and start pool
+	 *\param aNum - the number of threads to create, if value <=0 it will create a thread per core.
+	 *\param aMaxNumberOfIOThread - the maximal number of threads using for IO operation.
 	 */
 	CThreadPool(int aNum,unsigned aMaxNumberOfIOThread = std::numeric_limits<unsigned>::max());
 
-	/** \brief construct and start pool
+	/**\brief construct and start pool
 	 *
 	 */
 	CThreadPool(NSHARE::CConfig const& aConfig);
 	CThreadPool(int aNum, CThread::param_t const& aParam,unsigned aMaxNumberOfIOThread = std::numeric_limits<unsigned>::max());
 
-	/** \brief constructor
+	/**\brief constructor
 	 *
 	 */
 	CThreadPool();
@@ -82,7 +82,7 @@ public:
 	bool MIsRunning() const;
 
 	/**\brief Initializing the thread pool and starts it.
-	 * \param aNum - the number of threads to create, if value <=0 it will create a thread per core.
+	 *\param aNum - the number of threads to create, if value <=0 it will create a thread per core.
 	 */
 	bool MCreate(int aNum = -1, CThread::param_t const* aParam = NULL);
 	bool MCancel();
@@ -93,17 +93,17 @@ public:
 		return MAdd(task);
 	}
 
-	/** \brief добавляет новый поток в пул потоков
+	/**\brief добавляет новый поток в пул потоков
 	 *
-	 * \param aParam - параметры нового потока
-	 * \return true - в случае успеха
+	 *\param aParam - параметры нового потока
+	 *\return true - в случае успеха
 	 */
 	bool MAddThread(CThread::param_t const* aParam);
 
-	/** \brief удалить поток из пула потоков
+	/**\brief удалить поток из пула потоков
 	 *
-	 * \param aId - id потока, если id=0, то удаляется текущий поток
-	 * \return true - в случае успеха
+	 *\param aId - id потока, если id=0, то удаляется текущий поток
+	 *\return true - в случае успеха
 	 */
 	bool MRemoveThread(unsigned aId = 0);
 
@@ -113,15 +113,15 @@ public:
 	 */
 	void MExecuteOtherTasks(); //TODO
 
-	/** \brief the number of worker thread
+	/**\brief the number of worker thread
 	 */
 	unsigned MThreadNum() const;
 	unsigned MGetMaxNumberOfIOThread() const;
 
-	/** \brief ожидает окончания выполнения операций
+	/**\brief ожидает окончания выполнения операций
 	 *
-	 * \param aTime - время (если <=0.0 то ожидать заверешения до победного конца)
-	 * \return false - timeout
+	 *\param aTime - время (если <=0.0 то ожидать заверешения до победного конца)
+	 *\return false - timeout
 	 */
 	bool MWaitForTask(double aTime=-1.0) const;
 	bool MWaitForIO(double aTime=-1.0) const;

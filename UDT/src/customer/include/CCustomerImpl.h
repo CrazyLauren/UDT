@@ -61,6 +61,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSettingDgParserFor(requirement_msg_info_t  aNumber,
 			const callback_t& aHandler);
 	int MRemoveDgParserFor( requirement_msg_info_t  aNumber);
+	int MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber);
 	customers_t MCustomers() const;
 	program_id_t MCustomer(NSHARE::uuid_t const&) const;
 	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;

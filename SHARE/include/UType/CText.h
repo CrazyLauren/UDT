@@ -34,13 +34,13 @@ public:
 	/*************************************************************************
 	 Integral Types
 	 *************************************************************************/
-	typedef utf32 value_type; //!< Basic 'code point' type used for CText (utf32)
-	typedef size_t size_type; //!< Unsigned type used for size values and indices
-	typedef std::ptrdiff_t difference_type;	//!< Signed type used for differences
-	typedef utf32& reference;	//!< Type used for utf32 code point references
-	typedef const utf32& const_reference;//!< Type used for constant utf32 code point references
-	typedef utf32* pointer;			//!< Type used for utf32 code point pointers
-	typedef const utf32* const_pointer;	//!< Type used for constant utf32 code point pointers
+	typedef utf32 value_type; ///< Basic 'code point' type used for CText (utf32)
+	typedef size_t size_type; ///< Unsigned type used for size values and indices
+	typedef std::ptrdiff_t difference_type;	///< Signed type used for differences
+	typedef utf32& reference;	///< Type used for utf32 code point references
+	typedef const utf32& const_reference;///< Type used for constant utf32 code point references
+	typedef utf32* pointer;			///< Type used for utf32 code point pointers
+	typedef const utf32* const_pointer;	///< Type used for constant utf32 code point pointers
 	typedef IAllocater allocator_type;
 
 	class SHARE_EXPORT iterator;
@@ -49,7 +49,7 @@ public:
 	typedef std::reverse_iterator<iterator> reverse_iterator;
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-	static const size_type npos;//!< Value used to represent 'not found' conditions and 'all code points' etc.
+	static const size_type npos;///< Value used to represent 'not found' conditions and 'all code points' etc.
 //	static const size_type QUICKBUFF_SIZE = 32;
 	static const size_type S_MAX_SIZE;
 
@@ -294,7 +294,7 @@ public:
 	//!@brief  returns true if the string matches the pattern in 'aStr'.
 	//! The pattern consists of ordinary characters that must match exactly,
 	//! ? that match one character and * that match zero of more characters.
-	//! \ may be used to quite characters.
+	//!\ may be used to quite characters.
 	bool MIsMatch(CText const& aStr) const;
 	std::string MToStdString(ICodeConv const& aType = CCodeUTF8()) const;
 	//ToWString
@@ -341,21 +341,21 @@ private:
 		impl_t(allocator_type*);
 		impl_t(const impl_t&);
 		~impl_t();
-		/** \note Single buffer is used when:
+		/**\note Single buffer is used when:
 		 * called c_str() or data (for converting MultiByte to Single Byte)
 		 */
 
-		mutable utf8* FSingleByteBuffer;	//!< holds string data encoded as utf8 (generated only by calls to c_str() and data())
-		mutable size_type FSingleByteDatalen;//!< holds length of encoded data (in case it's smaller than buffer).
-		mutable size_type FSingleByteBufferLen;//!< length of above buffer (since buffer can be bigger then the data it holds to save re-allocations).
+		mutable utf8* FSingleByteBuffer;	///< holds string data encoded as utf8 (generated only by calls to c_str() and data())
+		mutable size_type FSingleByteDatalen;///< holds length of encoded data (in case it's smaller than buffer).
+		mutable size_type FSingleByteBufferLen;///< length of above buffer (since buffer can be bigger then the data it holds to save re-allocations).
 
-		/** \note MultiByte buffer is used when:
+		/**\note MultiByte buffer is used when:
 		 *  - FCodePointLength >= countof(FQuickUCS4)
 		 */
-		size_type FMultiByteBufferLen;	//!< code point reserve size (currently allocated buffer size in code points).
-		utf32* FMultiByteBuf; //!< Pointer the the main buffer memory.  This is only valid when quick-buffer is not being used
+		size_type FMultiByteBufferLen;	///< code point reserve size (currently allocated buffer size in code points).
+		utf32* FMultiByteBuf; ///< Pointer the the main buffer memory.  This is only valid when quick-buffer is not being used
 
-		allocator_type* FAllocator;//!<Allocator
+		allocator_type* FAllocator;///<Allocator
 	private:
 		impl_t& operator=(const impl_t&){
 			return *this;
@@ -411,18 +411,18 @@ private:
 
 	void MWillBeenChanged();
 
-	/** \brief return buffer length
+	/**\brief return buffer length
 	 *
 	 */
 	size_type MGetBufferLength() const;
 
-	/** \brief pointer to the buffer
+	/**\brief pointer to the buffer
 	 *
 	 */
 	utf32* ptr(void);
 
-	cow_impl_t FImpl;//!< Copy on write data
-	size_type FCodePointLength;//!< holds length of string in code points (not including null termination)
+	cow_impl_t FImpl;///< Copy on write data
+	size_type FCodePointLength;///< holds length of string in code points (not including null termination)
 };
 typedef std::deque<CText> Strings;
 

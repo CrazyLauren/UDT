@@ -11,6 +11,7 @@ UDT SHARE 0.6
   - Fix double calling event EVENT_DISCONNECTED from TCPClient
   - Fix operator == of smart_field_t
   - Fix problems with using different type of process id in CThread and task.h
+  - Fix some problems with alignof  shared memory
   
 >>>>>>> 3a2b21d... see changelog
 UDT SHARE 0.5

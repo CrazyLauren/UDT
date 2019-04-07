@@ -48,7 +48,7 @@ static inline bool is_null_offset( const CSharedAllocator::offset_t& aWhat)
 {
 	return CSharedAllocator::sMIsNullOffset(aWhat);
 }
-SHARED_PACKED(struct CSharedAllocator::pid_offset_t
+/*SHARED_PACKED(*/struct CSharedAllocator::pid_offset_t
 {
 	pid_offset_t():FNextNode(NULL_OFFSET)
 	{
@@ -107,7 +107,7 @@ SHARED_PACKED(struct CSharedAllocator::pid_offset_t
 		offset_t const _bit = (offset_t)0x1 << ((sizeof(FNextNode) * 8) - 3);
 		FNextNode = aVal ? FNextNode | _bit : FNextNode&(~_bit);
 	}
-});
+}/*)*/;
 COMPILE_ASSERT(sizeof(CSharedAllocator::pid_offset_t) == sizeof(CSharedAllocator::offset_t),
 		IVALID_SIZEOF_PID_OFFSET);
 
@@ -115,7 +115,7 @@ COMPILE_ASSERT(sizeof(CSharedAllocator::free_index_t) == sizeof(uint32_t),
 		IVALID_SIZEOF_FREE_INDEX);
 //Define the linked list structure.  This is used to link free blocks in order
 // of their memory address.
-SHARED_PACKED(
+/*SHARED_PACKED(*/
 struct CSharedAllocator::block_node_t:pid_offset_t
 {
 	block_node_t() :
@@ -133,7 +133,7 @@ struct CSharedAllocator::block_node_t:pid_offset_t
 	void MSerialize(NSHARE::CConfig& aConfig) const;
 
 	block_size_t FBlockSize; //The size of the free block //fixme 64 bit
-});
+}/*)*/;
 COMPILE_ASSERT(sizeof(CSharedAllocator::block_node_t) == (sizeof(CSharedAllocator::offset_t)+sizeof(CSharedAllocator::block_size_t)),
 		IVALID_SIZEOF_BLOCK_NODE);
 void CSharedAllocator::block_node_t::MSerialize(NSHARE::CConfig& aConfig) const
@@ -169,7 +169,7 @@ inline std::ostream& operator<<(std::ostream& aStream,
 static const CSharedAllocator::reserve_t RESERV_IS_NOT_ALLOCATED=(CSharedAllocator::reserve_t)-1;
 //Define the list structure.  This is used to link process allocated data  in order
 // of their pid.
-SHARED_PACKED(
+//SHARED_PACKED(
 struct CSharedAllocator::process_node_t
 {
 	typedef uint32_t array_size_t;
@@ -191,23 +191,36 @@ struct CSharedAllocator::process_node_t
 //	bool MIsReservAllocated() const;
 //	void MSetReservAllocated( bool aVal);
 	void MSerialize(NSHARE::CConfig& aConfig) const;
+<<<<<<< HEAD
 	offset_t FNextNode; //The next process node
 	pid_type const FPid; //Process id
+=======
+
+	pid_type FPid; //Process id
+>>>>>>> f3da2cc... see changelog.txt
 	volatile free_index_t FMinFreeIndex;//used to hold the index of array below which no a free number.
-	//FMinFreeIndex - is the first node of 'free index' linked list
+										//FMinFreeIndex - is the first node of 'free index' linked list
+
 	atomic_t FCount; //The number of Object being kept hold
 	array_size_t const FArraySize; // is used to hold the array size
+
 	reserve_t  FSizeOfReserv; // is used to hold the reserv size
 	reserve_t FUsedUpReserv; // is used to hold the size of used reserv if -1 when not allocated
+
 	atomic_t FAlloactionCount; //is used to hold the number of the memory blocks was allocated by process
+	uint32_t reserved:32;//reserve for alligment of data
+
+	offset_t FNextNode; //The next process node
 	pid_offset_t FOffsets[0]; //array of allocated memory addresses
-});
+}/*)*/;
+
 COMPILE_ASSERT(sizeof(CSharedAllocator::process_node_t) == (1*sizeof(CSharedAllocator::free_index_t)//
-		+sizeof(CSharedAllocator::offset_t)*1//
 		+sizeof(atomic_t)*2//
 		+sizeof(CSharedAllocator::pid_type)*1//
 		+sizeof(CSharedAllocator::process_node_t::array_size_t)*1//
 		+sizeof(CSharedAllocator::reserve_t)*2//
+		+sizeof(CSharedAllocator::offset_t)*1//
+		+sizeof(uint32_t)*1//
 		+sizeof(CSharedAllocator::pid_offset_t)*0),
 		IVALID_SIZEOF_PROCESS_NODE);
 
@@ -221,6 +234,9 @@ CSharedAllocator::process_node_t::process_node_t(pid_type aPid,
 		FSizeOfReserv(static_cast<reserve_t>(aReserv)),//
 		FUsedUpReserv(RESERV_IS_NOT_ALLOCATED)		
 {
+	DCHECK_POINTER_ALIGN(this);
+
+	reserved=0;
 	FAlloactionCount = 0;
 	FCount = 0;
 	CHECK_GT(aMemorySize, sizeof(process_node_t));
@@ -247,6 +263,7 @@ CSharedAllocator::process_node_t::process_node_t(process_node_t const* aRht,
 		FUsedUpReserv(aRht->FUsedUpReserv),//
 		FAlloactionCount(aRht->FAlloactionCount) //
 {
+	reserved=0;
 	LOG_IF(FATAL,FArraySize>=NULL_INDEX)<<"Cannot allocate the process node for storing "<<FArraySize<<" offsets as "
 			" the max number of offsets which can be stored  is  "<<NULL_INDEX<<" The value limitation is related of "
 			"the array index limitation.";
@@ -399,7 +416,7 @@ static inline unsigned contoling_type_size()
 			+ sizeof(CSharedAllocator::index_type);
 }
 //head of heap
-SHARED_PACKED(
+/*SHARED_PACKED(*/
 struct CSharedAllocator::heap_head_t
 {
 	enum
@@ -417,12 +434,12 @@ struct CSharedAllocator::heap_head_t
 	heap_head_t(block_size_t aSize) :
 		FMutexFlags(0),//
 		FCrc8(0x1),//
+		FLockedMutexCounter(0),//
 		FFreeBytesRemaining(0),//
 		FMaxSize(aSize),//
 		FOffsetToProcessNode(NULL_OFFSET),//
 		FFOffsetFirstNode(NULL_OFFSET),//
 		FPIDOfLockedMutex(0),//
-		FLockedMutexCounter(0),//
 		FTIDOfLockedMutex(0),//
 		FWacthDogPid(0),//
 		FWacthDogTid(0),//
@@ -440,12 +457,13 @@ struct CSharedAllocator::heap_head_t
 	uint8_t FMutexFlags;//
 	uint8_t FCrc8; //is used to control the head integrity
 	uint16_t :16;
+	uint32_t FLockedMutexCounter;//is used to realize recursive mutex
+
 	block_size_t FFreeBytesRemaining; //the number of free bytes remaining
 	block_size_t const FMaxSize; //size of allocated buffer
 	offset_t FOffsetToProcessNode; //is used to hold pointer to the first item in the pid list;
 	offset_t FFOffsetFirstNode; //is used to hold a pointer to the first item in the list of free blocks
 	pid_type FPIDOfLockedMutex;//is used to hold the process pid which keep on locking the mutex.
-	uint32_t FLockedMutexCounter;//is used to realize recursive mutex
 	pid_type FTIDOfLockedMutex;//It's used for paranoic checking
 	pid_type FWacthDogPid;//is used to hold the mutex name (hex value of pid and tid) which is started watch dog clean up function
 	pid_type FWacthDogTid;
@@ -473,7 +491,7 @@ struct CSharedAllocator::heap_head_t
 	void MDecUserAllocation();
 	bool MIsCanBeMAllocated() const;
 	//void MSetWaitFree(bool aVal);
-});
+}/*)*/;
 COMPILE_ASSERT(sizeof(CSharedAllocator::heap_head_t) == (3*CIPCSem::eReguredBufSize//
 		+sizeof(CSharedAllocator::offset_t)*2//
 		+sizeof(CSharedAllocator::block_size_t)*2//
@@ -2303,6 +2321,11 @@ bool CSharedAllocator::MReleaseHeap()
 			{
 				VLOG(2) << "Release heap  for " << _pid << " counter="
 									<< (unsigned) _p_process->FCount;
+<<<<<<< HEAD
+=======
+				_p_process->FPid=std::numeric_limits<pid_type>::max();///< Imitation of process killing.
+				//thus the resources of process were be cleaned up
+>>>>>>> f3da2cc... see changelog.txt
 				MCleanUpImpl();
 			}
 			else if (FCurentProcess)

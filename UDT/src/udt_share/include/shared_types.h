@@ -28,13 +28,13 @@ enum eError
 	E_NO_ERROR=0x0,
 	//Resreved=0x1<<0,
 	//Resreved=0x1<<1,
-	E_CANNOT_READ_CONFIGURE=0x1<<2,
-	E_CONFIGURE_IS_INVALID= 0x1<<3,
-	E_NO_NAME= 0x1<<4,
-	E_NOT_OPEN = 0x1<<5,
-	E_NAME_IS_INVALID= 0x1<<6,
-	E_NOT_CONNECTED_TO_KERNEL=0x1<<7,
-	E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= 0x1<<8,
+	//E_CANNOT_READ_CONFIGURE=0x1<<2,
+	//E_CONFIGURE_IS_INVALID= 0x1<<3,
+	//E_NO_NAME= 0x1<<4,
+	//E_NOT_OPEN = 0x1<<5,
+	//E_NAME_IS_INVALID= 0x1<<6,
+	//E_NOT_CONNECTED_TO_KERNEL=0x1<<7,
+	//E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= 0x1<<8,
 
 	E_CANNOT_SWAP_ENDIAN=0x1<<9,
 	E_HANDLER_IS_NOT_EXIST=0x1<<10,
@@ -119,8 +119,25 @@ struct UDT_SHARE_EXPORT demand_dg_t
 
 	enum eFlags
 	{
+<<<<<<< HEAD
 		E_REGISTRATOR=0x1<<0,
 		E_IS_BIG_ENDIAN=0x1<<1,
+=======
+		E_REGISTRATOR=0x1<<0,///< it's set if demands is from registrar
+		E_IS_BIG_ENDIAN=0x1<<1,///< it's set if the message is requirement in big endian byte order.
+		E_AS_INHERITANCE=0x1<<2,///< it's set if demands has been added as
+								// the message header is a parent for the other
+								// message header.
+		E_INVERT_GROUP=0x1<<3,///< if it's set then the order@com.ru.putin is not enter
+							 //into the order@com.ru, but is enter into the order@com.ru.putin.vv
+		E_NEAREST=0x1<<4,///< if it's set then 	if there are next programs:
+						 //order@com.ru.people,
+						 //order@com.ru.putin.vv,
+						 //order@com.ru.kremlin,
+						 //than the order@com is included only order@com.ru.people
+						 //and order@com.ru.kremlin
+		E_REMOVED=0x1<<5,///< set up if subscriber was removed
+>>>>>>> f3da2cc... see changelog.txt
 #ifdef SHARE_LITTLEENDIAN
 		E_DEMAND_DEFAULT_FLAGS=0,
 #else
@@ -207,11 +224,11 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	unsigned FDataOffset;
 
 	std::vector<demand_dg_t::event_handler_t> FEventsList;
-	uuids_t FDestination;//!< List of all uuids of customers
+	uuids_t FDestination;///< List of all uuids of customers
 						//which are to be received message. (must be sorted)
-	uuids_t FRegistrators;//!< List of all uuids of message's
+	uuids_t FRegistrators;///< List of all uuids of message's
 						//registrar. (must be sorted)
-	routing_t FRouting;//!<	Remain receiver's (need for message routing)
+	routing_t FRouting;///<	Remain receiver's (need for message routing)
 					   // at the beginning of routing
 					   //FRouting=FDestination+FRegistrators
 					   //(must be sorted)
@@ -540,8 +557,8 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		int _i = 0;
 
 		aStream.setf(ios::hex, ios::basefield);
-		uint8_t* aBegin=(uint8_t*)aVal.FWhat.FReserved;
-		uint8_t* aEnd=aBegin+ sizeof(aVal.FWhat.FReserved);
+		uint8_t* aBegin=(uint8_t*)aVal.FWhat.FMessageHeader;
+		uint8_t* aEnd=aBegin+ sizeof(aVal.FWhat.FMessageHeader);
 		for (; aBegin != aEnd; ++aBegin)
 		{
 			aStream << "0x" << static_cast<unsigned const&>(*aBegin) << " ";
@@ -703,7 +720,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	DCHECK_EQ(aVal,NUDT::encode_inner_error(aVal));
 
 	NSHARE::CFlags<NUDT::eError,NUDT::error_type> const _val(aVal);
-	if (_val.MGetFlag(NUDT::E_CANNOT_READ_CONFIGURE))
+/*	if (_val.MGetFlag(NUDT::E_CANNOT_READ_CONFIGURE))
 	{
 		aStream << " Cannot read configure,";
 	}
@@ -731,7 +748,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	if (_val.MGetFlag(NUDT::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE))
 	{
 		aStream << " Cannot allocate buffer of requrement size,";
-	}
+	}*/
 	if (_val.MGetFlag(NUDT::E_CANNOT_SWAP_ENDIAN))
 	{
 		aStream << " Cannot swap endian,";

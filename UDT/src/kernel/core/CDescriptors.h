@@ -36,7 +36,7 @@ public:
 	bool MIs(const NSHARE::uuid_t& )const;
 	bool MIsInfo(descriptor_t )const;
 	void  MGetAll(d_list_t& aTo) const;
-	d_list_t MGetAll(eType) const;
+	d_list_t MGetAll(eProgramType) const;
 
 	descriptor_t MGet(const descriptor_info_t&) const;
 	descriptor_t MGet(const NSHARE::uuid_t&) const;

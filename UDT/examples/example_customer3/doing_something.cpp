@@ -25,7 +25,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*) aWHAT;
 
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	NSHARE::CBuffer::size_type const _data_size = _recv_arg->FBuffer.size();
 	g_recv_count += _data_size;
 
@@ -132,7 +132,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT,
 extern void doing_something()
 {
 
-	//!< Wait for connected to UDT
+	///< Wait for connected to UDT
 	for (; !CCustomer::sMGetInstance().MIsConnected(); NSHARE::usleep(100000))
 		;
 
@@ -146,10 +146,10 @@ extern void doing_something()
 		for (;
 				(_buf = CCustomer::sMGetInstance().MGetNewBuf(g_buf_size)).empty();
 				)
-			//!< allocate the buffer for msg
+			///< allocate the buffer for msg
 			;
 
-		//!< Send the message number MESSAGE_NUMBER (It's not necessary to specify the Receiver  
+		///< Send the message number MESSAGE_NUMBER (It's not necessary to specify the Receiver  
 		//as If Somebody want to receive the message number MESSAGE_NUMBER from us, It call method MIWantReceivingMSG and
 		//specify receiving the message number MESSAGE_NUMBER from us.)
 		CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf);

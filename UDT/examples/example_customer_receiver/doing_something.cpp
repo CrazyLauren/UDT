@@ -12,7 +12,7 @@
 #include <customer.h>
 #include <map>
 
-//!<It's some defenition for cross-platform code 
+///<It's some defenition for cross-platform code 
 //of outputing to console.Do not take into account.
 #ifdef _WIN32
 #	include <windows.h>
@@ -36,7 +36,7 @@ using namespace NUDT;
 extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*) aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 
 	if (NSHARE::E_SHARE_ENDIAN == _recv_arg->FEndian)
 	{
@@ -168,7 +168,7 @@ extern void doing_something()
 	pthread_mutex_init(&_stream_mutex, NULL);
 #endif
 
-	//!< Wait for connected to UDT
+	///< Wait for connected to UDT
 	for (; !CCustomer::sMGetInstance().MIsConnected(); Sleep(1000))
 		;
 

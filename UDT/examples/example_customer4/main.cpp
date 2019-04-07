@@ -15,7 +15,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 extern void doing_something();
 int main(int argc, char *argv[])
 {
-	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);//!< initialize UDT library
+	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);///< initialize UDT library
 
 	if(_val!=0)
 	{
@@ -23,21 +23,21 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	{	//!< I want to receive msg number MESSAGE_NUMBER
+	{	///< I want to receive msg number MESSAGE_NUMBER
 		// from INDITIFICATION_NAME and it will be  handled  by function msg_test_handler
 		callback_t _handler(msg_test_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
 				INDITIFICATION_NAME, MESSAGE_NUMBER, _handler);
 	}
 	{	
-		//!< I want to receive msg number 1
+		///< I want to receive msg number 1
 		// from any customer of "guex" group  and it will be  handled  by function group_handler
 		callback_t _handler(group_handler, NULL);
 		CCustomer::sMGetInstance().MIWantReceivingMSG(
 			"@guex", 1, _handler);
 	}
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
 		CCustomer::value_t _event_connect(CCustomer::EVENT_NEW_RECEIVER,
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	}
 
 	{
-		//!< When the sent packet is not delivered by UDT (usually It's happened when The UDT system
+		///< When the sent packet is not delivered by UDT (usually It's happened when The UDT system
 		// is overloaded or The receiver has been disconnected). The function
 		//event_fail_sent_handler is called.
 		callback_t _handler_fail_sent(event_fail_sent_handler, NULL);

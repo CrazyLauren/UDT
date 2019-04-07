@@ -12,7 +12,7 @@
 #ifndef CSAFEDATA_H_
 #define CSAFEDATA_H_
 
-/** \brief Выбор типа используемой RW блокировки
+/**\brief Выбор типа используемой RW блокировки
 */
 #if !defined(USE_SHARE_RW) // This one can be defined by users, so it should go first
 #	ifdef _WIN32
@@ -29,7 +29,7 @@ namespace NSHARE
 {
 namespace _impl
 {
-/** \brief Определение данных для конкретной реализации
+/**\brief Определение данных для конкретной реализации
 */
 #ifdef USE_SHARE_RW
 struct safe_data_t
@@ -83,7 +83,7 @@ struct safe_data_t
 };
 #endif
 }
-/** \brief RW lock
+/**\brief RW lock
 *
 *   Фактически этот класс это реализация RAII для блокировки чтения записи. Использоватеь его очень легкою
 *
@@ -104,7 +104,7 @@ struct safe_data_t
 *				не зависит от типа ОС.
 *		SHARE_RW_USE_SRWLOCK - реализация RW блокировки SRWLOCK в windows. Для её работы требуется ОС Vista и выше.
 *		SHARE_RW_USE_PTHREAD - реализация RW блокировки SRWLOCK в pthread.
-* \warning Недопускается рекурсивный вызов RW блокировки. Т.е. если данные были заблокированы
+*\warning Недопускается рекурсивный вызов RW блокировки. Т.е. если данные были заблокированы
 * только для чтения, то для того чтобы захватить их для записи, нужно вначале "освободить" блокировку
 * чтения.
 */

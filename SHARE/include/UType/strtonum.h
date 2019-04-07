@@ -14,14 +14,14 @@
 #define FROM_STRING_EXIST
 namespace NSHARE
 {
-/** \brief преобразование строки в стандартные типы
+/**\brief преобразование строки в стандартные типы
  *
  * стандартный ostream определяет преобразование типов
  * с учётом локалей, чтобы этого избежать есть два варианта
  * либо установить "глобальный" локаль, либо написать свой
  * костыль.
  *
- * \todo заменить на boost lexical_cast
+ *\todo заменить на boost lexical_cast
  */
 template<class T,class TStr>
 inline  bool str_to_decimal(TStr const& aVal, T &aTo)

@@ -14,25 +14,25 @@
 
 namespace NSHARE
 {
-/** \brief Convenient class for working
+/**\brief Convenient class for working
  * with little endian data
  *
- * \note from habr post 121811
+ *\note from habr post 121811
  */
 template<typename T>
 struct little_endian_t;
 
-/** \brief Convenient class for working
+/**\brief Convenient class for working
  * with big endian data
  *
- * \note from habr post 121811
+ *\note from habr post 121811
  */
 template<typename T>
 struct big_endian_t;
 
-/** \brief definition endianness types
+/**\brief definition endianness types
  *
- *  \{
+ *\{
  */
 	typedef uint8_t uint8be_t;
 	typedef uint8_t uint8le_t;

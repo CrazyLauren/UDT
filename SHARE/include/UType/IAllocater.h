@@ -15,7 +15,7 @@
 namespace NSHARE
 {
 class IAllocater;
-/** \brief definition default allocator
+/**\brief definition default allocator
  *
  *	There is the same function without template. It's
  *	really default allocator. For more information  see class \see CCommonAllocater
@@ -24,18 +24,18 @@ template<typename T>
 inline IAllocater* get_default_allocator();
 extern SHARE_EXPORT IAllocater* get_default_allocator();
 
-/** \brief should evaluate to the alignment address for type T
+/**\brief should evaluate to the alignment address for type T
  *
  */
 template<typename T>
 inline T* get_alignment_address(void*);
 
-/** \brief Interface for allocate memory
+/**\brief Interface for allocate memory
  *
  *	There are two different type of allocators. The first is allocating memory
  *	in own process memory. The second is allocating in Shared Memory. The part
  *	of memory can be reserved see \see eAllocatorType.
- *	\warning As Shared memory using only offset instead of pointer,
+ *\warning As Shared memory using only offset instead of pointer,
  *	 recommendation don't use the pointer!
  */
 class IAllocater //fixme rename to IAllocator
@@ -44,7 +44,7 @@ public:
 	typedef size_t size_type;
 	typedef/*uint32_t*/uintptr_t offset_pointer_t; //fixme Maybe problem if using x64 and x86 programm with SM
 	//need using Small code model
-	static const offset_pointer_t NULL_OFFSET;//!< held in CCommonAllocater.cpp by historical reason
+	static const offset_pointer_t NULL_OFFSET;///< held in CCommonAllocater.cpp by historical reason
 
 	virtual ~IAllocater()
 	{
@@ -71,18 +71,18 @@ public:
 	}
 	virtual size_type MMaxSize() const=0;
 
-	/** \brief Lock change memory in P if possibly
+	/**\brief Lock change memory in P if possibly
 	 *
 	 *	The method is used for lock "atomic" operation.
-	 *	\warning Usually Allocators are definition only one mutex for
+	 *\warning Usually Allocators are definition only one mutex for
 	 *	all memory. Therefore be carefully!
-	 *	\todo rename to MAtomicLock
+	 *\todo rename to MAtomicLock
 	 */
 	virtual bool MLock(void* p) const
 	{
 		return false;
 	}
-	/** \brief Unlock change memory in P if possibly
+	/**\brief Unlock change memory in P if possibly
 	 *
 	 **	\todo rename to MAtomicUnlock
 	 */

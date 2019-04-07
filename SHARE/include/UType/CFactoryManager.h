@@ -19,14 +19,14 @@
 
 namespace NSHARE
 {
-/** \brief Класс работы с фабричными объектами
+/**\brief Класс работы с фабричными объектами
  *
  * Фабрики можно добавлять как после создания объекта, так и до
  * при помощи метода sMAddFactory. Фабрики храняться в SHARED_PTR и
  * автоматически уничтожаются после вызова деструктора.
  *
- * \tparam TFactory - тип фабрики
- * \warning Будьте внимательны шаблон, содержит статический метод,
+ *\tparam TFactory - тип фабрики
+ *\warning Будьте внимательны шаблон, содержит статический метод,
  * который вызывается при создании объектов.
  */
 template<class TFactory = IFactory>
@@ -48,12 +48,12 @@ public:
 	{
 		VLOG(2) << "FactoryManager destroyed:" << this;
 	}
-	/** \brief add factory
-	 * \warning don't remove factory as it will be removed automatically by SHARED_PTR
+	/**\brief add factory
+	 *\warning don't remove factory as it will be removed automatically by SHARED_PTR
 	*/
 	void MAddFactory(TFactory* factory);
 	
-	/** \brief Creates a factory T and adds it to the  manager
+	/**\brief Creates a factory T and adds it to the  manager
 	*/
 	template<typename T>
 	static T* sMAddFactory();

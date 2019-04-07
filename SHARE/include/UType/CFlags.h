@@ -17,13 +17,18 @@ namespace NSHARE
 {
 class CNoMutex;
 
-/** \brief класс для манипуляции с побитовыми флагами
+/**\brief класс для манипуляции с побитовыми флагами
  *
- *	\tparam TFlags - enum в котором определены флаги
- *	\tparam TVal - тип для хранения флагов
+ *\tparam TFlags - enum в котором определены флаги
+ *\tparam TVal - тип для хранения флагов
  */
+<<<<<<< HEAD
 template<typename TFlags = unsigned, typename TVal = unsigned,class TMutexType = CNoMutex>
 class  CFlags
+=======
+SHARED_PACKED(template<typename TFlags = unsigned, typename TVal = unsigned,class TMutexType = CNoMutex>
+class  CFlags:TMutexType///< Объект наследуется для того чтобы избежать проблем с размером при CNoMutex
+>>>>>>> f3da2cc... see changelog.txt
 {
 public:
 	typedef TFlags flags_t;

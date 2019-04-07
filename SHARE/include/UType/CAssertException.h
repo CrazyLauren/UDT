@@ -16,8 +16,18 @@
 #include <assert.h>
 #include <string.h>
 
-#define COMPILE_ASSERT(aVal,msg)  typedef NSHARE::compile_assert_t<(bool(aVal))> msg[bool(aVal) ? 1 : -1]
-
+#if (__cplusplus>= 201103L)
+#	define COMPILE_ASSERT(aVal,msg)  static_assert(aVal,  #msg)
+#else
+/*! \brief The macro can be used to verify
+ *that a compile time expression is true
+ *
+ *When the expression is false, COMPILE_ASSERT defines
+ *an array that has a negative size and thus is invalid.
+ *
+*/
+#	define COMPILE_ASSERT(aVal,msg)  typedef NSHARE::compile_assert_t<(bool(aVal))> msg[bool(aVal) ? 1 : -1]
+#endif
 namespace NSHARE
 {
 template <bool>

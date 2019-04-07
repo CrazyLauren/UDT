@@ -144,7 +144,7 @@ bool  CCondvar::MTimedwait(CMutex *aMutex, const struct timespec* aVal)
 }
 bool CCondvar::MTimedwait(CMutex *aMutex, double const aTime)
 {
-	LOG_IF(FATAL,aTime<0) << "Time is negative.";
+	LOG_IF(DFATAL,aTime<0) << "Time is negative.";
 	unsigned int const _time=(aTime<=0?INFINITE:(unsigned int)(aTime * 1000));
 	return FPImpl->MWait(aMutex, _time);
 }

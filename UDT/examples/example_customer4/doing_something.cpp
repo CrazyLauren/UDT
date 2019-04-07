@@ -12,7 +12,7 @@
 #include <customer.h>
 #include <map>
 
-//!<It's some defenition for cross-platform code 
+///<It's some defenition for cross-platform code 
 //of outputing to console.Do not take into account.
 #ifdef _WIN32
 #	include <windows.h>
@@ -37,7 +37,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg=(received_message_args_t const*)aWHAT;
 
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	{
 		const uint8_t* _it=_recv_arg->FBegin;
 		for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
@@ -51,7 +51,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 			}
 		}
 		
-		//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
+		///<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
 	}
 	STREAM_MUTEX_LOCK
 	std::cout << "Message #"<<_recv_arg->FPacketNumber<<" size "<<_recv_arg->FBuffer.size()<<" bytes received from "<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<< std::endl;
@@ -61,7 +61,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 extern int group_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	
 	STREAM_MUTEX_LOCK
 		std::cout << "Message #" << _recv_arg->FPacketNumber << " size " << _recv_arg->FBuffer.size() << " bytes received from " << _recv_arg->FFrom << " by " << _recv_arg->FProtocolName << std::endl;
@@ -122,7 +122,7 @@ extern void doing_something()
 	pthread_mutex_init(&_stream_mutex, NULL);
 #endif
 
-	//!< Wait for connected to UDT
+	///< Wait for connected to UDT
 	for (; !CCustomer::sMGetInstance().MIsConnected(); Sleep(1000))
 		;
 
@@ -132,9 +132,9 @@ extern void doing_something()
 			continue;
 
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				PACKET_SIZE);	//!< allocate the buffer for msg
+				PACKET_SIZE);	///< allocate the buffer for msg
 				
-		for (;_buf.empty();Sleep(1))	//!< may be 'malloc' return NULL, trying again
+		for (;_buf.empty();Sleep(1))	///< may be 'malloc' return NULL, trying again
 		{
 			std::cerr << "Cannot allocate the buffer. " << std::endl;
 			_buf = CCustomer::sMGetInstance().MGetNewBuf(
@@ -142,7 +142,7 @@ extern void doing_something()
 		}
 
 		
-		{//!< Filling message
+		{///< Filling message
 			NSHARE::CBuffer::iterator _it=_buf.begin(),_it_end=_buf.end();
 			for(int i=0;_it!=_it_end;++i,++_it)
 			{
@@ -150,19 +150,19 @@ extern void doing_something()
 			}
 		}
 		
-		//!< Send the message number 0 to uuid 
+		///< Send the message number 0 to uuid 
 		int _num = CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf,g_sent_to);
 		
-		if (_num > 0)	//!<Hurrah!!! The data has been sent
+		if (_num > 0)	///<Hurrah!!! The data has been sent
 		{
-			//!<Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
+			///<Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
 			STREAM_MUTEX_LOCK
 			std::cout << "Send Packet#" << _num << " size of " << PACKET_SIZE
 					<< " bytes to "<<g_sent_to << std::endl;
 			STREAM_MUTEX_UNLOCK
 
 		}
-		else //!<The buffer _buf is not freed as it's not sent.
+		else ///<The buffer _buf is not freed as it's not sent.
 		{
 			STREAM_MUTEX_LOCK
 			std::cout << "Send error  " << _num << std::endl;

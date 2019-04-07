@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief intrusive pointer
+/**\brief intrusive pointer
  *
  * Stores a pointer to an object with an embedded counter.
  */
@@ -68,7 +68,7 @@ public:
 		else
 			VLOG(1) << "Empty pointer in Constructor.";
 	}
-	/** \brief initialization by convertible object
+	/**\brief initialization by convertible object
 	 *
 	 */
 	template<class U>
@@ -256,7 +256,7 @@ private:
 	}
 	mutable T* FPtrBase;
 };
-/** \brief wake pointer for intrusive pointer
+/**\brief wake pointer for intrusive pointer
  *
  */
 template<class T>

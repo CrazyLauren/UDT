@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief класс для добавления фабрик при загрузки динамических библиотек
+/**\brief класс для добавления фабрик при загрузки динамических библиотек
  *
  * Принцип работы следующий:
  * 1) В каждой библиотеке создается функция с сигнатурой factory_registry_func_t, содержащая
@@ -63,12 +63,12 @@ protected:
 };
 typedef std::vector<CFactoryRegisterer*> factory_registry_t;
 
-/** \brief сигнатура ф-и регистратора
+/**\brief сигнатура ф-и регистратора
  *
  */
 typedef factory_registry_t* (*factory_registry_func_t)(NSHARE::CConfig const*);
 
-/** \brief идентификатор ф-ии регистратора по умолчанию
+/**\brief идентификатор ф-ии регистратора по умолчанию
  *
  */
 #define FACTORY_REGISTRY_FUNC_NAME "get_factory_registry"

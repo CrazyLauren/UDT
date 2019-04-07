@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief блокировка на запись
+/**\brief блокировка на запись
 */
 template<class _T>
 template<class _Y>
@@ -140,7 +140,7 @@ inline CSafeData<_T>::WAccess<_Y>::~WAccess()
 	MUnlock();
 }
 
-/** \brief блокировка на чтение
+/**\brief блокировка на чтение
 */
 template<class _T>
 template<class _Y>

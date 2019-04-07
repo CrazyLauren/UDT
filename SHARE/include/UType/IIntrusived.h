@@ -24,11 +24,11 @@ inline void intrusive_ptr_release(NSHARE::IIntrusived* p);
 
 namespace NSHARE
 {
-/** \brief base class for intrusive pointer to object
+/**\brief base class for intrusive pointer to object
  *
  * Stores an embedded counter.
  *
- *	\note rename to IIntrusived
+ *\note rename to IIntrusived
  */
 class  SHARE_EXPORT IIntrusived
 {

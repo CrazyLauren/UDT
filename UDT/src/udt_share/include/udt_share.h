@@ -22,7 +22,7 @@ struct user_data_info_t;
 
 extern UDT_SHARE_EXPORT program_id_t const& get_my_id();
 extern UDT_SHARE_EXPORT bool is_id_initialized();
-extern UDT_SHARE_EXPORT int init_id(char const *aName,eType aType,NSHARE::version_t const& aVer);
+extern UDT_SHARE_EXPORT int init_id(char const *aName,eProgramType aType,NSHARE::version_t const& aVer);
 
 extern UDT_SHARE_EXPORT bool fill_dg_head(void* aWhat,size_t aFullSize,const program_id_t& aFrom,bool aIsNeedCrc =false);
 extern UDT_SHARE_EXPORT bool deserialize(user_data_t& aTo,

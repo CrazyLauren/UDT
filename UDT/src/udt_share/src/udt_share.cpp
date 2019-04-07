@@ -101,7 +101,7 @@ static std::pair<size_t,size_t> deserialize_dg_head(user_data_info_t &_user,NSHA
 	_user.FSplit.FCoefficient = _from.FSplitCoefficient;
 	_user.FWhat.FVersion.FMajor = _from.FMajor;
 	_user.FWhat.FVersion.FMinor = _from.FMinor;
-	memcpy(_user.FWhat.FReserved,&_from.FType,sizeof(_user.FWhat.FReserved));
+	memcpy(_user.FWhat.FMessageHeader,&_from.FType,sizeof(_user.FWhat.FMessageHeader));
 
 	_user.FEndian = (NSHARE::eEndian) (_from.FFlags.FEndian);
 	size_t _offset = sizeof(user_data_header_t);
@@ -275,7 +275,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FDataOffset = static_cast<uint32_t>(_id.FDataOffset);
 	_user_data->FMajor=_id.FWhat.FVersion.FMajor;
 	_user_data->FMinor=_id.FWhat.FVersion.FMinor;
-	memcpy(&_user_data->FType,_id.FWhat.FReserved,sizeof(_id.FWhat.FReserved));
+	memcpy(&_user_data->FType,_id.FWhat.FMessageHeader,sizeof(_id.FWhat.FMessageHeader));
 
 
 	_user_data->FFlags.FEndian=_id.FEndian;
@@ -436,7 +436,7 @@ extern UDT_SHARE_EXPORT bool is_id_initialized()
 {
 	return g_is_inited;
 }
-extern UDT_SHARE_EXPORT int init_id(char const *aName, eType aType, const NSHARE::version_t& aVer)
+extern UDT_SHARE_EXPORT int init_id(char const *aName, eProgramType aType, const NSHARE::version_t& aVer)
 {
 	using namespace std;
 	if (g_is_inited)
@@ -449,7 +449,7 @@ extern UDT_SHARE_EXPORT int init_id(char const *aName, eType aType, const NSHARE
 	}
 
 	g_is_inited = true;
-	g_id.FKernelVersion = aVer;
+	g_id.FVersion = aVer;
 	g_id.FTime = static_cast<unsigned>(g_time);
 	g_id.FId.FUuid = NSHARE::get_programm_uuid(NSHARE::CText(aName));
 	g_id.FPid = NSHARE::CThread::sProcessId();

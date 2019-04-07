@@ -394,13 +394,13 @@ void CRoutingService::MNoteFailSend(const fail_send_t& _sent)
 {
 	LOG(ERROR)<<"Cannot send  packet #"<<_sent.FPacketNumber<<" from " << _sent.FRouting.FFrom << " to " << _sent.FRouting;
 
-	//!< At least the error has to send to registrar and sender
+	///< At least the error has to send to registrar and sender
 	routing_t _f_to;
 	_f_to.insert(_f_to.end(),_sent.FRegistrators.begin(),_sent.FRegistrators.end());
 	_f_to.push_back(_sent.FRouting.FFrom.FUuid);
 	_f_to.FFrom = get_my_id().FId;
 
-	//!< In addition the error has to be send:
+	///< In addition the error has to be send:
 
 	if(_sent.FError.MGetFlag(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE)//
 			||_sent.FError.MGetFlag(E_CANNOT_SWAP_ENDIAN)//
@@ -434,6 +434,27 @@ void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,
 	_rdg.MFillMsgHandlersFor(aFrom, aTo, aError);
 
 }
+<<<<<<< HEAD
+=======
+/*!\brief Devides the data into to group
+ * the data which have routing info
+ * the data which havn't routing info
+ *
+ *\parma [in] aData - the data, after deviding will empty
+ *\parma [out] aNotRouted - list of not routed data
+ *\parma [out] aRouted - list of routed data
+ */
+void CRoutingService::MClassifyMessages(user_datas_t* const aData,
+		user_datas_t* const aNotRouted, user_datas_t* const aRouted) const
+{
+	DCHECK_NOTNULL(aData);
+	DCHECK_NOTNULL(aNotRouted);
+	DCHECK_NOTNULL(aRouted);
+
+	user_datas_t& _recv_data(*aData);
+	user_datas_t& _to_not_routed(*aNotRouted);
+	user_datas_t& _to_routed(*aRouted);
+>>>>>>> f3da2cc... see changelog.txt
 
 void CRoutingService::MClassifyMessages(routing_user_data_t& aData,
 		user_datas_t& aNotRouted, user_datas_t& aRouted) const
@@ -481,6 +502,25 @@ void CRoutingService::MSwapEndianIfNeed(user_datas_t & aFrom,user_datas_t& aTo,
 			aTo.splice(aTo.end(),aFrom,_rit++);//only post increment!!!
 	}
 }
+<<<<<<< HEAD
+=======
+/*!\brief Distributes messages to output descriptors
+ * on basis of theirs routes
+ *
+ *\param [in] aWhat the data, after distribution will be empty
+ *\param [out] aHasNotRoute the data which has not route
+ *\param [out] aSendToDescriptors the result
+ *\param [out] aErrorList Where the error has to be putted
+ */
+void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
+		user_datas_t* const aHasNotRoute,
+		output_user_data_t* const aSendToDescriptors,fail_send_array_t* const aErrorList) const
+{
+	user_datas_t& _from(*aWhat);
+	user_datas_t& _to(*aHasNotRoute);
+	output_user_data_t& _send_to_desc(*aSendToDescriptors);
+	fail_send_array_t& _errors_list(*aErrorList);
+>>>>>>> f3da2cc... see changelog.txt
 
 void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
 		user_datas_t& aTo,
@@ -598,7 +638,17 @@ void CRoutingService::MSortedSplice(output_user_data_t& aWhat, output_user_data_
 
 	CHECK(aWhat.empty());
 }
+<<<<<<< HEAD
 void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_datas_t & aTo) const
+=======
+/*!\brief Moves the data that has to be swapped
+ *
+ *\param [in] aFrom - moved from
+ *\param [out] aTo - moved to
+ *
+ */
+void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t *const aFrom,user_datas_t *const aTo) const
+>>>>>>> f3da2cc... see changelog.txt
 {
 	user_datas_t::iterator _rit = aFrom.begin();
 	for (; _rit != aFrom.end();)
@@ -643,8 +693,20 @@ void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_dat
 	}
 }
 
+<<<<<<< HEAD
 void CRoutingService::MSendMessages(user_datas_t& aFrom,
 		user_datas_t& _has_not_route, fail_send_array_t& _errors_list)
+=======
+/*!\brief Sends the data
+ *
+ *\param [in] aFrom - the data which has to be sent
+ *\param [out] aHasNotRoute - the data which isn't sent
+ *\param [out] aErrorList - Where puts the errors
+ *
+ */
+void CRoutingService::MSendMessages(user_datas_t*const aFrom,
+		user_datas_t*const aHasNotRoute, fail_send_array_t*const aErrorList)
+>>>>>>> f3da2cc... see changelog.txt
 {
 	output_user_data_t _send_to_descriptors;
 	MDistributeMsgByDescriptors(aFrom, _has_not_route,
@@ -658,6 +720,13 @@ void CRoutingService::MSendMessages(user_datas_t& aFrom,
 	DCHECK(aFrom.empty());
 }
 
+<<<<<<< HEAD
+=======
+/*!\brief Filling routing info  and sending the received data
+ *
+ *
+ */
+>>>>>>> f3da2cc... see changelog.txt
 void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 {
 	DCHECK(!aData.FData.empty());
@@ -697,6 +766,23 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		aData.FData.swap(_has_not_route);
 	}
 }
+<<<<<<< HEAD
+=======
+/*!\brief Return whither the data has to be sent that
+ * it will be delivery to uuid
+ *
+ *\param [in] aTo - whither the data will sent, after return
+ * it contains only uuids that has output decriptors
+ *\param [out] aNotRoute - whither the data cannot be sent as no route
+ *\param [out] aOutput - result
+ */
+void CRoutingService::MGetOutputDescriptors(routing_t*const aTo, routing_t*const aNotRoute,
+		output_decriptors_for_t *const aOutput) const
+{
+	routing_t& _to(*aTo);
+	routing_t& _not_route(*aNotRoute);
+	output_decriptors_for_t& _descr(*aOutput);
+>>>>>>> f3da2cc... see changelog.txt
 
 void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
 		output_decriptors_for_t& _descr) const
@@ -792,4 +878,58 @@ void CRoutingService::MInformNewReceiver(demand_dgs_for_t & aNewRecveiver)
 		}
 	}
 }
+<<<<<<< HEAD
+=======
+int CRoutingService::sMHandleDiff(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(kernel_infos_diff_t::NAME, WHAT->FType);
+	kernel_infos_diff_t const* _p =
+			reinterpret_cast<kernel_infos_diff_t*>(WHAT->FPointToData);
+	CHECK_NOTNULL(_p);
+	_this->MHandleDiff(_p);
+	return 0;
+}
+int CRoutingService::sMHandleDemands(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(demand_dgs_for_by_id_t::NAME, WHAT->FType);
+	demand_dgs_for_by_id_t const* _p =
+			reinterpret_cast<demand_dgs_for_by_id_t*>(WHAT->FPointToData);
+	CHECK_NOTNULL(_p);
+	_this->MHandleNewDemands(_p->FId, _p->FVal);
+	return 0;
+}
+int CRoutingService::sMHandleDemandId(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(demands_id_t::NAME, WHAT->FType);
+	demands_id_t const* _p = reinterpret_cast<demands_id_t*>(WHAT->FPointToData);
+	CHECK_NOTNULL(_p);
+	_this->MHandleFrom(&_p->FVal, _p->FId);
+	return 0;
+}
+/*!\brief Callback for data handler
+ *
+ */
+int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(routing_user_data_t::NAME, WHAT->FType);
+	CHECK_NOTNULL(WHAT->FPointToData);
+	routing_user_data_t & _p =
+			*reinterpret_cast<routing_user_data_t*>(WHAT->FPointToData);
+
+	_this->MHandleFrom(_p);
+	return 0;
+}
+>>>>>>> f3da2cc... see changelog.txt
 } /* namespace NUDT */

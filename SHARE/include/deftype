@@ -22,8 +22,8 @@
 #	define PROFILE_RESUME()
 #endif
 
-/** \brief define standard headers
- * \{
+/**\brief define standard headers
+ *\{
  */
 #include <set>
 #include <map>
@@ -68,8 +68,8 @@
 #	define HASH_MULTIMAP boost::unordered_multimap
 #endif
 
-/** \brief define shared ptr
- * \{
+/**\brief define shared ptr
+ *\{
  */
 #if defined (__QNX__)
 #	include <boost/shared_ptr.hpp>
@@ -95,8 +95,8 @@
 #endif //#elif defined(_WIN32)
 //\}
 
-/** \brief define system headers
- * \{
+/**\brief define system headers
+ *\{
  */
 #ifdef _WIN32
 #	ifdef _MSC_VER

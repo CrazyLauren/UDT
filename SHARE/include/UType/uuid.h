@@ -21,7 +21,7 @@ typedef UUID uuid_t;
 
 namespace NSHARE
 {
-/** \brief класс для хранения уникального индификационного номера
+/**\brief класс для хранения уникального индификационного номера
  * равному 64 бит.
  *
  */
@@ -53,8 +53,8 @@ struct SHARE_EXPORT uuid_t
 
 	uint64_t FVal;
 };
-/** \brief При первом вызове создаёт уникальный UUID
- *	\param aVal - строка используемая для исключения одинаковых
+/**\brief При первом вызове создаёт уникальный UUID
+ *\param aVal - строка используемая для исключения одинаковых
  *	uuid для разных приложений
  */
 uuid_t SHARE_EXPORT get_programm_uuid(CText const& aVal= CText());

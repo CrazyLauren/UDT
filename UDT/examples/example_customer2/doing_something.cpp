@@ -65,7 +65,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 
 	STREAM_MUTEX_LOCK
 	std::cout << "Message #" << _recv_arg->FPacketNumber<<" by " << _recv_arg->FProtocolName << " size "
@@ -185,12 +185,45 @@ extern void doing_something()
 		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(msg_head_t),_it_end=_buf.end();
 		for(int i=0;_it!=_it_end;++i,++_it)
 		{
+<<<<<<< HEAD
 			*_it=i%255;
+=======
+			NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+							PACKET_SIZE);	///< allocate the buffer for full msg
+			//filing the head of msg
+			msg_head_t *_msg = (msg_head_t*) _buf.ptr();
+			_msg->FType = E_MSG_TEST;
+			_msg->FSize = PACKET_SIZE;
+			NSHARE::CBuffer::iterator _it = _buf.begin() + sizeof(msg_head_t),
+					_it_end = _buf.end();
+			for (int i = 0; _it != _it_end; ++i, ++_it)
+			{
+				*_it = i % 255;
+			}
+			//send the data
+			int _num = CCustomer::sMGetInstance().MSend(PROTOCOL_NAME, _buf);
+			if (_num > 0)	//Hurrah!!! The data has been sent
+			{
+				//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
+				STREAM_MUTEX_LOCK
+				std::cout << "Send Packet#" << _num << " size of "
+						<< PACKET_SIZE << " bytes." << std::endl;
+				STREAM_MUTEX_UNLOCK
+
+			}
+			else //The buffer _buf is not freed as it's not sent.
+			{
+				STREAM_MUTEX_LOCK
+				std::cout << "Send error  " << _num << std::endl;
+				STREAM_MUTEX_UNLOCK
+			}
+>>>>>>> f3da2cc... see changelog.txt
 		}
 		//send the data
 		int _num = CCustomer::sMGetInstance().MSend(PROTOCOL_NAME, _buf);
 		if (_num > 0)	//Hurrah!!! The data has been sent
 		{
+<<<<<<< HEAD
 			//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
 			STREAM_MUTEX_LOCK
 			std::cout << "Send Packet#" << _num << " size of " << PACKET_SIZE
@@ -203,6 +236,40 @@ extern void doing_something()
 			STREAM_MUTEX_LOCK
 			std::cout << "Send error  " << _num << std::endl;
 			STREAM_MUTEX_UNLOCK
+=======
+			//filing the head of msg
+			required_header_t _header;
+			msg_head_t *_msg = (msg_head_t*)_header.FMessageHeader;
+			_msg->FType = E_MSG_TEST;
+			_msg->FSize = PACKET_SIZE;
+
+			NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+							PACKET_SIZE);	///< allocate the buffer for message without header
+
+			NSHARE::CBuffer::iterator _it = _buf.begin(),
+					_it_end = _buf.end();
+			for (int i = 0; _it != _it_end; ++i, ++_it)
+			{
+				*_it = i % 255;
+			}
+			//send the data
+			int _num = CCustomer::sMGetInstance().MSend(_header,PROTOCOL_NAME, _buf);
+			if (_num > 0)	//Hurrah!!! The data has been sent
+			{
+				//Warning!!! As The buffer is sent, it's freed. Thus calling _buf.size() return 0.
+				STREAM_MUTEX_LOCK
+				std::cout << "Send Packet#" << _num << " size of "
+						<< PACKET_SIZE << " bytes." << std::endl;
+				STREAM_MUTEX_UNLOCK
+
+			}
+			else //The buffer _buf is not freed as it's not sent.
+			{
+				STREAM_MUTEX_LOCK
+				std::cout << "Send error  " << _num << std::endl;
+				STREAM_MUTEX_UNLOCK
+			}
+>>>>>>> f3da2cc... see changelog.txt
 		}
 
 	};

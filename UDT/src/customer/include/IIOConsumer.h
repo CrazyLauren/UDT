@@ -24,6 +24,7 @@ public:
 
 	virtual void MInit(ICustomer *)=0;
 	virtual bool MOpen(const NSHARE::CThread::param_t* = NULL)=0;
+	virtual void MJoin()=0;
 	virtual bool MIsAvailable() const=0;
 	virtual bool MIsConnected() const =0;
 	virtual bool MIsOpened() const =0;

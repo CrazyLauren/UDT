@@ -12,7 +12,7 @@
 #include <customer.h>
 #include <map>
 
-//!<It's some defenition for cross-platform code 
+///<It's some defenition for cross-platform code 
 //of outputing to console.Do not take into account.
 #ifdef _WIN32
 #	include <windows.h>
@@ -37,7 +37,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg=(received_message_args_t const*)aWHAT;
 
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	{
 		const uint8_t* _it=_recv_arg->FBegin;
 		for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
@@ -51,7 +51,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 			}
 		}
 		
-		//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
+		///<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
 	}
 	
 	STREAM_MUTEX_LOCK
@@ -105,7 +105,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 extern void doing_something()
 {
 
-	//!< Wait for connected to UDT
+	///< Wait for connected to UDT
 	for (; !CCustomer::sMGetInstance().MIsConnected(); Sleep(1000))
 		;
 

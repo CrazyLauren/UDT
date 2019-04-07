@@ -38,22 +38,22 @@ public:
 
 
 
-	/** \brief mutex unit test
+	/**\brief mutex unit test
 	 *
-	 * \note realization in test.cpp
+	 *\note realization in test.cpp
 	 */
 	static bool sMUnitTest();
 
-	/** \brief thread ID which locked mutex
+	/**\brief thread ID which locked mutex
 	 *
-	 *	\return thread id if locked otherwise 0
+	 *\return thread id if locked otherwise 0
 	 */
 	unsigned MThread()const;
 
 private:
 	struct CImpl;
 
-	/** \brief using in Condvar
+	/**\brief using in Condvar
 	 *
 	 */
 	void* MGetPtr() const;
@@ -106,9 +106,9 @@ private:
 	CRAII<CMutex> CRaii;
 };
 
-/** \brief Используется в шаблонах, для указания отсуствия mutex
+/**\brief Используется в шаблонах, для указания отсуствия mutex
  *
- * \note реализация находится в CWin32Mutex.cpp
+ *\note реализация находится в CWin32Mutex.cpp
  */
 struct SHARE_EXPORT CMutexEmpty: CDenyCopying
 {
@@ -127,15 +127,15 @@ struct SHARE_EXPORT CMutexEmpty: CDenyCopying
 		return FFlags;
 	}
 
-	/** \brief mutex unit test
+	/**\brief mutex unit test
 	 *
-	 * \todo
+	 *\todo
 	 */
 	static bool sMUnitTest();
 
-	/** \brief thread ID which locked mutex
+	/**\brief thread ID which locked mutex
 	 *
-	 *	\return thread id if locked otherwise 0
+	 *\return thread id if locked otherwise 0
 	 */
 	unsigned MThread()const;
 
@@ -160,7 +160,7 @@ public:
 	{
 	}
 };
-/** \brief Используется в шаблонах, для указания отсуствия mutex
+/**\brief Используется в шаблонах, для указания отсуствия mutex
  * в отличии от CMutexEmpty, этот класс можно копировать
  *
  */
@@ -188,9 +188,9 @@ public:
 		return CMutex::MUTEX_RECURSIVE;
 	}
 
-	/** \brief mutex unit test
+	/**\brief mutex unit test
 	 *
-	 * \todo
+	 *\todo
 	 */
 	static bool sMUnitTest();
 

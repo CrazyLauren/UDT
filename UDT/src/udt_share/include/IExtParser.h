@@ -17,39 +17,39 @@
 
 namespace NUDT
 {
-/** \brief Interface for protocol's handler
+/**\brief Interface for protocol's handler
  *
  */
 class UDT_SHARE_EXPORT IExtParser: public NSHARE::IFactory
 {
 public:
 
-	/** \brief Message information
+	/**\brief Message information
 	 *
 	 */
 	struct obtained_dg_t
 	{
-		required_header_t FType; //!< message type
-		uint8_t FErrorCode;//!< error code, if The error code isn't zero,
+		required_header_t FType; ///< message type
+		uint8_t FErrorCode;///< error code, if The error code isn't zero,
 						   //the address range from FBegin to FEnd isn't handled.
-		const uint8_t* FBegin;//!< begin of message into buffer,
+		const uint8_t* FBegin;///< begin of message into buffer,
 							  //It hasn't to be zero.
-		const uint8_t* FEnd; //!< end of message into buffer,
+		const uint8_t* FEnd; ///< end of message into buffer,
 							 // actually The address of next byte after
 							 // the last byte of messages (equal vector::end())
 		obtained_dg_t();
 	};
 	typedef std::vector<obtained_dg_t> result_t;
 
-	/** \brief  Inheritance messages info
+	/**\brief  Inheritance messages info
 	 *
 	 *	The multiple inheritance is illegal.
 	 *	The parent message type is inherent from required_header_t.
 	 */
 	struct msg_inheritance_t: required_header_t
 	{
-		required_header_t FChildHeader;//!< The child message type
-		NSHARE::CText FChildProtcol;//!< The child message protocol,
+		required_header_t FChildHeader;///< The child message type
+		NSHARE::CText FChildProtcol;///< The child message protocol,
 										  // if is null than the protocol of child and
 										  // parent is equal.
 
@@ -62,7 +62,7 @@ public:
 	};
 	typedef std::vector<msg_inheritance_t> inheritances_info_t;
 
-	/** \brief Parsing th buffer
+	/**\brief Parsing th buffer
 	 *
 	 *	The splited to messages buffer has't to have skipped blocks and
 	 *	has to beginen from \a aItBegin.
@@ -72,46 +72,46 @@ public:
 	 *	if no message in the buffer (result_t is empty)
 	 *	the buffer is buffered.
 	 *
-	 * \param aItBegin buffer begin
-	 * \param aItEnd buffer end
-	 * \param aFrom the sender's buffer uuid (informational)
-	 * \param aMask buffer's byte order
+	 *\param aItBegin buffer begin
+	 *\param aItEnd buffer end
+	 *\param aFrom the sender's buffer uuid (informational)
+	 *\param aMask buffer's byte order
 	 *
-	 * \return messages list into buffer
+	 *\return messages list into buffer
 	 */
 	virtual result_t MParserData(const uint8_t* aItBegin, const uint8_t* aItEnd,
 			NSHARE::uuid_t aFrom = NSHARE::uuid_t(), uint8_t aMask =
 					NSHARE::E_SHARE_ENDIAN)=0;
 
-	/** \brief Deserialize message type (e.g. for GUI)
+	/**\brief Deserialize message type (e.g. for GUI)
 	 *
-	 *	\param  aFrom serialized data
+	*\param  aFrom serialized data
 	 *
-	 *	\return first - message type
+	*\return first - message type
 	 *			second - true - if successful
-	 *	\note all exception is catch
+	*\note all exception is catch
 	 */
 	virtual std::pair<required_header_t, bool> MHeader(
 			const NSHARE::CConfig& aFrom) const=0;
 
-	/** \brief Serialize message type (e.g. for GUI, logging)
+	/**\brief Serialize message type (e.g. for GUI, logging)
 	 *
-	 *	\param  aData message type
+	*\param  aData message type
 	 *
-	 *	\return serialized message type
-	 *	\note all exception is catch
+	*\return serialized message type
+	*\note all exception is catch
 	 */
 	virtual NSHARE::CConfig MToConfig(const required_header_t& aData) const=0;
 
-	/** \brief Serialize message (e.g. for GUI)
+	/**\brief Serialize message (e.g. for GUI)
 	 *
-	 *	\param  aHeader message type
-	 *	\param  aItBegin begin data of message
-	 *	\param  aItEnd message end
+	*\param  aHeader message type
+	*\param  aItBegin begin data of message
+	*\param  aItEnd message end
 	 *
-	 *	\return serialized message
+	*\return serialized message
 	 *
-	 *	\note As then the using \a raw protocol
+	*\note As then the using \a raw protocol
 	 *	the buffer doesn't contain message header,
 	 *	the message header is puted obviously.
 	 *
@@ -122,7 +122,7 @@ public:
 		return NSHARE::CConfig();
 	}
 
-	/** \brief Deserialize message (e.g. for GUI)
+	/**\brief Deserialize message (e.g. for GUI)
 	 *
 	 */
 	virtual NSHARE::CBuffer MFromConfig(const NSHARE::CConfig& aFrom) const
@@ -130,7 +130,7 @@ public:
 		return NSHARE::CBuffer();
 	}
 
-	/** \brief Protocol description (e.g. for GUI)
+	/**\brief Protocol description (e.g. for GUI)
 	 *
 	 */
 	virtual char const* MDescription() const
@@ -138,19 +138,19 @@ public:
 		return "no description";
 	}
 
-	/** \brief Swap the message byte order
+	/**\brief Swap the message byte order
 	 *
 	 *	if The byte order of the message is
 	 *	illegal, than it will changed by
 	 *	using this method.
 	 *
-	 *	\param aHeader message type
-	 *	\param aItBegin message begin
-	 *	\param aItEnd message end
+	*\param aHeader message type
+	*\param aItBegin message begin
+	*\param aItEnd message end
 	 *
-	 *	\return true - if swapped
+	*\return true - if swapped
 	 *
-	 *	\note Input message byte order
+	*\note Input message byte order
 	 *		  is E_SHARE_OTHER_ENDIAN
 	 *		  The header has to swapped too
 	 */
@@ -160,7 +160,7 @@ public:
 		return false;
 	}
 
-	/** \brief Swap endian of the requested message's "header"
+	/**\brief Swap endian of the requested message's "header"
 	 *
 	 *	Because the byte orders of the requested message
 	 *	and return value of method MParserData (sent message)
@@ -168,11 +168,11 @@ public:
 	 *	swaping endian requested message's "header"/
 	 *	The method is called for valid data routing.
 	 *
-	 *	\param aHeader message type
+	*\param aHeader message type
 	 *
-	 *	\return true - if swapped
+	*\return true - if swapped
 	 *
-	 *	\note Input message byte order
+	*\note Input message byte order
 	 *		  is E_SHARE_OTHER_ENDIAN
 	 *		  The header has to swapped too
 	 */
@@ -181,15 +181,15 @@ public:
 		return false;
 	}
 
-	/** \brief size of message header
+	/**\brief size of message header
 	 *
 	 */
 	virtual size_t MDataOffset(const required_header_t& aHeader) const
 	{
-		return sizeof(aHeader.FReserved);
+		return sizeof(aHeader.FMessageHeader);
 	}
 
-	/** \brief Return inheritance messages info
+	/**\brief Return inheritance messages info
 	 *
 	 */
 	virtual inheritances_info_t MGetInheritances() const

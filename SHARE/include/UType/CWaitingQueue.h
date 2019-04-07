@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief Production-consumer realization
+/**\brief Production-consumer realization
  *
  */
 template<typename Tp, typename _Sequence = std::list<Tp> >
@@ -43,10 +43,10 @@ public:
 		return _Sequence_type::size();
 	}
 
-	/** \brief return the last element of queue, if it isn't exit
+	/**\brief return the last element of queue, if it isn't exit
 	 * then expect it
 	 *
-	 * \warning returning reference to element
+	 *\warning returning reference to element
 	 */
 	value_type const& back() const
 	{
@@ -55,7 +55,7 @@ public:
 		return _Sequence_type::back();
 	}
 
-	/** \brief copy the last element of queue, if it isn't exit
+	/**\brief copy the last element of queue, if it isn't exit
 	 * then expect it
 	 *
 	 */
@@ -66,10 +66,10 @@ public:
 		aTo=_Sequence_type::back();
 	}
 
-	/** \brief return the first element of queue, if it isn't exit
+	/**\brief return the first element of queue, if it isn't exit
 	 * then expect it
 	 *
-	 * \warning returning reference to element
+	 *\warning returning reference to element
 	 */
 	value_type const& front() const
 	{
@@ -78,7 +78,7 @@ public:
 		return _Sequence_type::front();
 	}
 
-	/** \brief copy the first element of queue, if it isn't exit
+	/**\brief copy the first element of queue, if it isn't exit
 	 * then expect it
 	 *
 	 */
@@ -89,10 +89,10 @@ public:
 		aTo = _Sequence_type::front();
 	}
 
-	/** \brief copy and remove the last element of queue,
+	/**\brief copy and remove the last element of queue,
 	 *  if it isn't exit then expect it.
 	 *
-	 *	\return true - EOK
+	 *\return true - EOK
 	 */
 	bool back_pop(value_type& aVal)
 	{
@@ -107,10 +107,10 @@ public:
 		return false;
 	}
 
-	/** \brief copy and remove the first element of queue,
+	/**\brief copy and remove the first element of queue,
 	 *  if it isn't exit then expect it.
 	 *
-	 *	\return true - EOK
+	 *\return true - EOK
 	 */
 	bool front_pop(value_type& aVal)
 	{
@@ -125,14 +125,14 @@ public:
 		return false;
 	}
 
-	/** \brief pop queue from end
+	/**\brief pop queue from end
 	 */
 	void pop()
 	{
 		pop_back();
 	}
 
-	/** \brief pop queue from end
+	/**\brief pop queue from end
 	 */
 	void pop_back()
 	{
@@ -140,7 +140,7 @@ public:
 		_Sequence_type::pop_back();
 	}
 
-	/** \brief pop queue from begin
+	/**\brief pop queue from begin
 	 */
 	void pop_front()
 	{
@@ -148,9 +148,9 @@ public:
 		_Sequence_type::pop_front();
 	}
 
-	/** \brief push value to queue to end
+	/**\brief push value to queue to end
 	 *
-	 *	\return false if queue was empty
+	 *\return false if queue was empty
 	 */
 	bool push_back(const value_type& aVal)
 	{
@@ -167,9 +167,9 @@ public:
 	}
 
 
-	/** \brief push value to queue to begin
+	/**\brief push value to queue to begin
 	 *
-	 *	\return false if queue was empty
+	 *\return false if queue was empty
 	 */
 	bool push_front(const value_type& aVal)
 	{

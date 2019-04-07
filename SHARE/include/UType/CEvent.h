@@ -17,7 +17,7 @@ namespace NSHARE
 template<class TEvent_t>
 class  IEventEmpty;
 
-/** \brief Класс содержит список обработчиков события
+/**\brief Класс содержит список обработчиков события
  *
  * Этот класс предназначен для хранения списка обработчиков события.
  * Вызов обработчиков события осуществляется путём вызова метода  MCall.
@@ -30,12 +30,12 @@ class  IEventEmpty;
  * 		- Второй аргумент -указатель на параметры события (если параметров нет - NULL)
  * 		- возвращаемое значение \see eCBRval
  *
- * \tparam TSender_type - тип объекта инициализирующего событие (тип первого аргумета CB)
- * \tparam TEvent_t - тип указателя на CB - сигнатура CB ()
- * \tparam TEventArg_type - тип аргумента события
- * \tparam TIEvent - тип интерфейса класса CEvent. Если нужно добавить возможность пергрузки методов класса то в качестве этого параметра укажите IEvent
- * \tparam TMutexType - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
- * \todo заменить  multiset на vector
+ *\tparam TSender_type - тип объекта инициализирующего событие (тип первого аргумета CB)
+ *\tparam TEvent_t - тип указателя на CB - сигнатура CB ()
+ *\tparam TEventArg_type - тип аргумента события
+ *\tparam TIEvent - тип интерфейса класса CEvent. Если нужно добавить возможность пергрузки методов класса то в качестве этого параметра укажите IEvent
+ *\tparam TMutexType - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
+ *\todo заменить  multiset на vector
  */
 template<class TSender_type = void*, class TEvent_t = CB_t,
 		class TEventArg_type =CB_t::arg_t,template<class > class TIEvent = IEventEmpty,
@@ -76,29 +76,29 @@ public:
 
 	bool operator+=(value_t const &);
 	bool operator-=(value_t const &);
-	/** \brief добавить CB
+	/**\brief добавить CB
 	 *
 	 * Если CB уже существует, то он заменяется
 	 *
 	 * Сложность O(n)
-	 *	\param aCB - СB
-	 *	\param aPrior - приоритет CB
+	 *\param aCB - СB
+	 *\param aPrior - приоритет CB
 	 */
 	bool MAdd(value_t const & aCB, unsigned int aPrior =
 			std::numeric_limits<unsigned int>::max());
 
-	/** \brief удалить CB
+	/**\brief удалить CB
 	 *
 	 * Сложность O(n)
-	 *	\param aCB - СB
+	 *\param aCB - СB
 	 */
 	bool MErase(value_t const& aCB);
 
-	/** \brief изменить приоритет CB
+	/**\brief изменить приоритет CB
 	 *
 	 * Сложность O(n)
-	 *	\param aCB - СB
-	 *	\param aPrior - новый приоритет
+	 *\param aCB - СB
+	 *\param aPrior - новый приоритет
 	 */
 	bool MChangePrior(value_t const&aM, unsigned int aPrior);
 
@@ -108,24 +108,24 @@ public:
 	inline std::ostream& MPrintEvent(std::ostream & aStream) const;
 //protected:
 
-	/** \brief  Вызов всех CB
+	/**\brief  Вызов всех CB
 	 *
 	 * Сложность O(n)
-	 * \param aCallbackArgs - параметры события
-	 * \retunr количество вызванных CB
+	 *\param aCallbackArgs - параметры события
+	 *\retunr количество вызванных CB
 	 */
 	int MCall(value_arg_t const& aCallbackArgs);
 
-	/** \brief возвращает кол-во изменение списка CB
+	/**\brief возвращает кол-во изменение списка CB
 	 *
-	 *	\return число изменений
+	 *\return число изменений
 	 */
 	inline atomic_t::value_type MGetNumberOfChange() const;
 
-	/** \brief Сравнивает счётчки кол-ва изменеий списка  CB
+	/**\brief Сравнивает счётчки кол-ва изменеий списка  CB
 	 *
-	 *	\param aVal -  предыдущее значение счётчика
-	 *	\return true - если список изменился
+	 *\param aVal -  предыдущее значение счётчика
+	 *\return true - если список изменился
 	 */
 	inline bool MWasChanged(atomic_t::value_type const& aVal) const;
 
@@ -135,12 +135,12 @@ public:
 	CEvent& operator=(CEvent const& aRht);
 protected:
 
-	/** \brief метод используется в CEvents::MCall для синхронизации
+	/**\brief метод используется в CEvents::MCall для синхронизации
 	 * независмых изменений списка CB
 	 *
-	 *	\param aOldValue - старый список
-	 *	\param aNewValue - новый старый список
-	 *	\note aOldValue - старый теккущий список из которого удалили события и получили список aNewValue
+	 *\param aOldValue - старый список
+	 *\param aNewValue - новый старый список
+	 *\note aOldValue - старый теккущий список из которого удалили события и получили список aNewValue
 	 */
 	void MSynchronizeChange(CEvent& aOldValue,CEvent& aNewValue);
 private:
@@ -156,14 +156,14 @@ private:
 	MapOfCallback_t FCBs;
 	sender_t  FSender;
 	mutable mutex_t	 FMutex;
-	NSHARE::atomic_t FNumberOfArrayChange;//<! Счётчик изменений FCBs, используется для оптимизации в методе MSynchronizeChange
+	NSHARE::atomic_t FNumberOfArrayChange;///< Счётчик изменений FCBs, используется для оптимизации в методе MSynchronizeChange
 
 	template<class key_type, class event_type,
 			template<class, class > class IEvents, class mutex_type>
 	friend class CEvents;
 };
 
-/** \brief Интерфейс CEvent
+/**\brief Интерфейс CEvent
  *
  * Если возникла необходимость перегружать методы в CEvent, то в качестве
  * аргумента шаблона нужно указать этот класс
@@ -183,7 +183,7 @@ public:
 	virtual bool MChangePrior(value_t const&aM, unsigned int aPrior)=0;
 };
 
-/** \brief Интерфейс CEvent без полиморфизма
+/**\brief Интерфейс CEvent без полиморфизма
  *
  */
 template<class TEvent_t>

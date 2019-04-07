@@ -122,8 +122,8 @@ extern void doing_something()
 	for (;; Sleep(1000))
 	{
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				2*PACKET_SIZE);	//!< allocate the buffer for 2 msg
-		for (;_buf.empty();Sleep(1))	//!< may be 'malloc' return NULL
+				2*PACKET_SIZE);	///< allocate the buffer for 2 msg
+		for (;_buf.empty();Sleep(1))	///< may be 'malloc' return NULL
 		{
 			std::cerr << "Cannot allocate the buffer. " << std::endl;
 			_buf = CCustomer::sMGetInstance().MGetNewBuf(

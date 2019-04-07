@@ -13,29 +13,29 @@
 #define CB_T_H_
 namespace NSHARE
 {
-/** \brief Значения, которые должен возврщать callback(CB) функция
+/**\brief Значения, которые должен возврщать callback(CB) функция
  *
  */
 enum eCBRval
 {
-	E_CB_REMOVE = -1, //!<удалить текущий CB из списка CB события
-	E_CB_SAFE_IT = 0, //!<Оставить текущий в списке CB события
-	E_CB_BLOCING_OTHER = 2 //!< Остановить вызов остальных  CB, этого события
+	E_CB_REMOVE = -1, ///<удалить текущий CB из списка CB события
+	E_CB_SAFE_IT = 0, ///<Оставить текущий в списке CB события
+	E_CB_BLOCING_OTHER = 2 ///< Остановить вызов остальных  CB, этого события
 };
 
-/** \brief Сигнатуры методов CB по умолчанию
- * \{
+/**\brief Сигнатуры методов CB по умолчанию
+ *\{
  */
 typedef eCBRval signal_t(void* WHO, void* WHAT, void* YOU_DATA);
 typedef eCBRval (*psignal_t)(void* WHO, void* WHAT, void* YOU_DATA);
 // \}
 
-/** \brief шаблон типовой реализации CB для CEvent
+/**\brief шаблон типовой реализации CB для CEvent
  *
  * Класс содержит два поля указатель на вызоваимый CB и указатель
  * на данные, передаваемые в CB третьим аргументом
  *
- * \tparam сигнатура CB метода
+ *\tparam сигнатура CB метода
  */
 template<typename TSignal,typename TArg=void>
 struct  Callback_t
@@ -57,8 +57,8 @@ struct  Callback_t
 	{
 		;
 	}
-	TSignal FSignal;//!< Указатель на метод CB
-	void* FYouData;//!< Указатель на данные
+	TSignal FSignal;///< Указатель на метод CB
+	void* FYouData;///< Указатель на данные
 #if __cplusplus >= 201103
 
 	explicit operator bool() const

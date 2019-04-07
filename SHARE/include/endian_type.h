@@ -78,7 +78,7 @@
 
 namespace NSHARE
 {
-/** \brief Platform endian
+/**\brief Platform endian
  */
 enum eEndian
 {
@@ -93,16 +93,16 @@ enum eEndian
 #endif
 };
 
-	/** \brief Convenient method for swapping byte endianness
+	/**\brief Convenient method for swapping byte endianness
 	 *
-	 * \param aVal - swapping value
-	 * \note using only for standard type
+	 *\param aVal - swapping value
+	 *\note using only for standard type
 	 */
 	template<class T>
 	inline T swap_endain(const T&aVal);
-	/** \brief method of quick swapping byte endianness
+	/**\brief method of quick swapping byte endianness
 	 *
-	 *  \{
+	 *\{
 	 */
 	inline uint8_t swap_endian(uint8_t const& aVal){
 		return aVal;

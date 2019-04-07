@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief Класс инкапсулирующий работу с потоками
+/**\brief Класс инкапсулирующий работу с потоками
  *
  *	Пример использования
  	\example
@@ -37,7 +37,7 @@ namespace NSHARE
 class SHARE_EXPORT CThread:public CEvent<>,CDenyCopying
 {
 public:
-	typedef unsigned process_id_t;//!<type of process id
+	typedef unsigned process_id_t;///<type of process id
 
 	/// \name Keys using for serialize
 	/// \{
@@ -48,38 +48,38 @@ public:
 	static const NSHARE::CText DETACHED;
 	/// \}
 
-	/** \brief sporadic scheduling parametrs
-	 *	\todo implement
+	/**\brief sporadic scheduling parametrs
+	 *\todo implement
 	 */
 	struct sporadic_t//TODO
 	{
 		;
 	};
-	/** \brief Thread priority level
+	/**\brief Thread priority level
 	 *
 	 */
 	enum eThreadPriority 
 	{
-        THREAD_PRIORITY_DEFAULT,//!< default priority
-        THREAD_PRIORITY_MAX=1,//!< maximal priority
-        THREAD_PRIORITY_HIGH,//!< medium between maximal and normal     priority
-        THREAD_PRIORITY_NOMINAL,//!< normal     priority
-        THREAD_PRIORITY_LOW,//!< medium between normal and minimal     priority
-        THREAD_PRIORITY_MIN,//!< minimal     priority
-		THREAD_PRIORITY_REAL_TIME,//!< setting thread for real time. todo linux
-		THREAD_PRIORITY_AS_IDLE//!< priority of idle (using in deserialization method as fail mark)
+        THREAD_PRIORITY_DEFAULT,///< default priority
+        THREAD_PRIORITY_MAX=1,///< maximal priority
+        THREAD_PRIORITY_HIGH,///< medium between maximal and normal     priority
+        THREAD_PRIORITY_NOMINAL,///< normal     priority
+        THREAD_PRIORITY_LOW,///< medium between normal and minimal     priority
+        THREAD_PRIORITY_MIN,///< minimal     priority
+		THREAD_PRIORITY_REAL_TIME,///< setting thread for real time. todo linux
+		THREAD_PRIORITY_AS_IDLE///< priority of idle (using in deserialization method as fail mark)
 	};
-	/** \brief scheduling type
+	/**\brief scheduling type
 	 *
 	 */
 	enum eSched
 	{
-		FIFO = 1,//!< FIFO scheduling
-		RR = 2,//!< round-robin scheduling
-		SPORADIC=3,//!< sporadic scheduling(for qnx only)
+		FIFO = 1,///< FIFO scheduling
+		RR = 2,///< round-robin scheduling
+		SPORADIC=3,///< sporadic scheduling(for qnx only)
 	};
 
-	/** \brief thread settings
+	/**\brief thread settings
 	 *
 	 */
 	struct SHARE_EXPORT param_t
@@ -89,10 +89,10 @@ public:
 		static const NSHARE::CText SCHEDULING;
 		static const NSHARE::CText CPU_NUMBER;
 
-		sporadic_t sporadic;//!< use only for SPORADIC scheduling \warning not implemented
-		eThreadPriority priority;//!< thread priority
-		eSched	scheduling;//!< scheduling type
-		int cpu_number;//!< Thread's CPU number, if FCPUNum<0 then using random CPU
+		sporadic_t sporadic;///< use only for SPORADIC scheduling \warning not implemented
+		eThreadPriority priority;///< thread priority
+		eSched	scheduling;///< scheduling type
+		int cpu_number;///< Thread's CPU number, if FCPUNum<0 then using random CPU
 
 		param_t();
 		param_t(NSHARE::CConfig const& aConf);
@@ -100,7 +100,7 @@ public:
 		NSHARE::CConfig MSerialize() const;
 	};
 
-/** \brief constructor
+/**\brief constructor
  */
 	CThread();
 	explicit CThread(const param_t& aParam);
@@ -110,65 +110,65 @@ public:
 
 	virtual ~CThread();
 
-	/** \brief create thread
-	 *	\param aParam -параметры потока, если NULL то используюся параметры указанные при инициализации
-	 *	\return true - если создан
+	/**\brief create thread
+	 *\param aParam -параметры потока, если NULL то используюся параметры указанные при инициализации
+	 *\return true - если создан
 	 */
 	bool MCreate(param_t const* aParam = NULL);
 
-	/** \brief check if thread running
-	 *	\return true - if running
+	/**\brief check if thread running
+	 *\return true - if running
 	 */
 	bool MIsRunning() const;
 
-	/** \brief send kill signal
+	/**\brief send kill signal
 	 *
-	 *	\warning Этот способ завершения потока не безопасен, лучше используйте MCancel
+	 *\warning Этот способ завершения потока не безопасен, лучше используйте MCancel
 	 */
 	void MKill();
 
-	/** \brief force stopping thread
+	/**\brief force stopping thread
 	*
 	*	\return true - if successfully
 	*/
 	bool MCancel(); 
 
 
-	/** \brief check if thread can be canceled
+	/**\brief check if thread can be canceled
 	*
 	*	\return true - if can
 	*/
 	bool MTestCancel();
 
-	/** \brief detach thread
+	/**\brief detach thread
 	*
 	*/
 	void MDetach();
 
-	/** \brief check if thred detached
+	/**\brief check if thred detached
 	 *
 	 */
 	bool MIsDetached()const;
 
-	/** \brief send signal to thread
+	/**\brief send signal to thread
 	 *
-	 *	\return true - if send
+	 *\return true - if send
 	 */
 	bool MSignal(int signal);
 
-	/** \brief join to thread
-	 * \param aTime - waiting time in ns
+	/**\brief join to thread
+	 *\param aTime - waiting time in ns
 	 */
 	bool MJoin(uint64_t aTime = 0);
 
-	/** \brief change thread priority
+	/**\brief change thread priority
 	 * 	\param priority - new priority
 	 * 	\return true - if successfully
 	 */
 	bool MSetPriority(eThreadPriority priority);
 	eThreadPriority MGetPriority()const;
 
-	/** \brief change thread scheduling
+	/**\brief change thread scheduling
 	 * 	\param aPolicy - new scheduling
 	 * 	\return true - if successfully
 	 * 	\note Realtime Setting Policy is not supported
@@ -183,24 +183,24 @@ public:
 	bool MPopCleanUp(const CB_t& );
 	void MRemoveAllCleanUp();
 
-	/** \brief change thread's CPU
+	/**\brief change thread's CPU
 	 * 	\param cpunum - cpu number
 	 * 	\return true - if successfully
 	 * 	\note Realtime Setting cpu number is not supported
 	 */
 	bool MSetProcessor( unsigned int cpunum );
 
-	/** \brief yield
+	/**\brief yield
 	 */
 	static bool sMYield();
 
-	/** \brief return current thread id
+	/**\brief return current thread id
 	 *
 	 */
 	static process_id_t sMThreadId();
 
 
-	/** \brief return process id
+	/**\brief return process id
 	 *
 	 */
 	static process_id_t sMPid()
@@ -210,12 +210,12 @@ public:
 	static process_id_t sProcessId();
 
 
-	/** \brief return number of available CPU
+	/**\brief return number of available CPU
 	 *
 	 */
 	static unsigned sMNumberOfProcessor();
 
-	/** \brief return thread id
+	/**\brief return thread id
 	 *
 	 */
 	process_id_t MThreadId()const;

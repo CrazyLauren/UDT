@@ -10,8 +10,8 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 
-#ifndef CCLIENT_H_
-#define CCLIENT_H_
+#ifndef CCUSTOMER_H_
+#define CCUSTOMER_H_
 
 
 #include "customer_export.h"
@@ -25,13 +25,14 @@ namespace NUDT
 {
 class CCustomer;
 
-/*! \brief Information about requirement message
+/*!\brief Information about requirement message
  *
  *\note
  * Non-POD type.
  */
 struct requirement_msg_info_t
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 	NSHARE::CText FProtocolName; //Name of protocol
 	required_header_t FRequired;
@@ -41,219 +42,278 @@ struct requirement_msg_info_t
 	} FFlags;
 =======
 	/*! \brief Collection of bitwise flags for change
+=======
+	/*!\brief Collection of bitwise flags for change
+>>>>>>> f3da2cc... see changelog.txt
 	 * subscription behavior
 	 *
 	 */
 	enum eFLags
 	{
-		E_NO_FLAGS=0,
-		E_REGISTRATOR=0x1<<0,//!< if it's set then message will be delivered to you
-							 //!<only if there is at least one "non-registrator" (real)
-							 //!<subscribed to the message
-		E_INVERT_GROUP=0x1<<3,//<! if it's set then the order@com.ru.putin is not enter
-							 //!<into the order@com.ru, but is enter into the order@com.ru.putin.vv
-		E_NEAREST=0x1<<4,//<! if it's set then 	if there are next programs:
-						 //!<order@com.ru.people,
-						 //!<order@com.ru.putin.vv,
-						 //!<order@com.ru.kremlin,
-						 //!<than the order@com is included only order@com.ru.people
-						 //!<and order@com.ru.kremlin
+		E_NO_FLAGS=0,///< The flags isn't set
+		E_REGISTRATOR=0x1<<0,/*!< if it's set then message will be delivered to you
+							  only if there is at least one "non-registrator" (real)
+							  subscribed to the message*/
+		E_INVERT_GROUP=0x1<<3,/*!< if it's set then the order@com.ru.putin is not enter
+							 into the order@com.ru, but is enter into the order@com.ru.putin.vv*/
+		E_NEAREST=0x1<<4,/*!< if it's set then 	if there are next programs:
+						 order@com.ru.people,
+						 order@com.ru.putin.vv,
+						 order@com.ru.kremlin,
+						 than the order@com is included only order@com.ru.people
+						 and order@com.ru.kremlin*/
 	};
 >>>>>>> 3a2b21d... see changelog
 
-	NSHARE::CText 		FProtocolName; //!<Type of message protocol
-	required_header_t 	FRequired;//!< Header of requirement message
-	unsigned 			FFlags;//!< subscription flags
-	NSHARE::CText 		FFrom;//!< Name of program
+	NSHARE::CText 		FProtocolName; ///<Type of message protocol
+	required_header_t 	FRequired;///< Header of requirement message
+	unsigned 			FFlags;///< subscription flags
+	NSHARE::CText 		FFrom;///< Name of program
 
+	/*!\brief The default constructor creates fields using their
+     *  respective default constructors.
+	 */
 	requirement_msg_info_t();
+
+	/*!\brief Two @c requirement_msg_info_t are equal if their members are equal.
+	 *
+	 *\param aRht What to compare object with
+	 *\return true if the objects are equal
+	 */
 	bool operator==(requirement_msg_info_t const& aRht) const;
 };
 
-/*! \brief Storage of received data
+/*!\brief Storage of received data
  * which is contained the requirement message
  *
- *	The Pointers of type are pointed into FBuffer.
- *	The data from FHeaderBegin to FBegin is
- *	header. The message header can not exist or not equal of
- *	expected if:
- *	- it's message of child type;
- *	- the message header and data sent separately (see send API)
- *	(usually do that).
+ * The Pointers of type are pointed into FBuffer.
+ * The data from FHeaderBegin to FBegin is
+ * header. The message header can not exist or not equal of
+ * expected if:\n
+ * - it's message of child type;\n
+ * - the message header and data sent separately (see send API)
+ * (usually do that).
  *
- * \note
+ *\note
  *  FBuffer.end() can be not equal FEnd
  *  FBuffer.begin() can be not equal FBegin
  *  Non-POD type.
  */
 struct received_data_t
 {
-	NSHARE::CBuffer FBuffer;//!< Contained received data
+	NSHARE::CBuffer FBuffer;///< Contained received data
 
-	const uint8_t* FHeaderBegin;//!< pointer to the message header
-								//!<or NULL if message header is not exist
-	const uint8_t* FBegin;//!<pointer to the message begin
-	const uint8_t* FEnd;//!<pointer to end of message (equal std::vector::end())
+	const uint8_t* FHeaderBegin;/*!< pointer to the message header
+								or NULL if message header is not exist*/
+	const uint8_t* FBegin;///<pointer to the message begin
+	const uint8_t* FEnd;///<pointer to end of message (equal std::vector::end())
 
+	/*!\brief The default constructor creates fields using their
+	 *  respective default constructors (For it's NULL).
+	 */
 	received_data_t();
 };
 
-/*! \brief information contained in aWHAT argument
+/*!\brief information contained in aWHAT argument
  * of function which is handle received data ( see Receive API)
  *
  * You can send error to sender by
  * changing field FOccurUserError.
  *
- * \note
+ *\note
  *  Non-POD type.
  */
 struct received_message_args_t
 {
-	typedef std::vector<NSHARE::uuid_t> uuids_t;
+	typedef std::vector<NSHARE::uuid_t> uuids_t;///< Information about programs uuid
 
-	NSHARE::uuid_t 		FFrom;//!<UUID of message sender
-	NSHARE::CText 		FProtocolName;//!<Type of message protocol
-	received_data_t 	FMessage;//!< Received message
-	uint16_t 			FPacketNumber;//!<The packet (message) sequence number (continuous numbering
-							//!<for all packets from sender)
-							//!<two message can identical number only
-							//!<if is sent in one packet (buffer), usually that two
-							//!<messages in one buffer isn't sent (see send buffer method).
-	required_header_t 	FHeader;//!< The message header
-	uuids_t 			FTo;//!< List uuids of message receiver (sorted)
-	mutable uint8_t 	FOccurUserError;//!<if the field will changed by you, when
-										//!<the error with code  FOccurUserError
-										//!<is sent to message sender (FFrom)
-	unsigned 			FEndian;//!< Message byte order (see eEndian in endian_type.h)
+	NSHARE::uuid_t 		FFrom;///<UUID of message sender
+	NSHARE::CText 		FProtocolName;///<Type of message protocol
+	uint16_t 			FPacketNumber;/*!<The packet (message) sequence number (continuous numbering
+							for all packets from sender)
+							two message can identical number only
+							if is sent in one packet (buffer), usually that two
+							messages in one buffer isn't sent (see send buffer method).*/
+	required_header_t 	FHeader;///< The message header
+	uuids_t 			FTo;///< List uuids of message receiver (sorted)
+	mutable uint8_t 	FOccurUserError;/*!<if the field will changed by you, when
+										the error with code  FOccurUserError
+										is sent to message sender (FFrom)*/
+	unsigned 			FEndian;///< Message byte order (see eEndian in endian_type.h)
+	received_data_t 	FMessage;///< Received message
 };
 
-/*! \brief Information about connected
+/*!\brief Information about connected
  * (disconnected) program to kernel
  *
  * It's argument (aWHAT) of event: EVENT_CUSTOMERS_UPDATED
  *
- * \note
+ *\note
  *  Non-POD type.
  */
 struct customers_updated_args_t
 {
-	std::set<program_id_t> FDisconnected;//!< list of connected program
-	std::set<program_id_t> FConnected;//!< list of disconnected program
+	std::set<program_id_t> FDisconnected;///< list of connected program
+	std::set<program_id_t> FConnected;///< list of disconnected program
 };
 <<<<<<< HEAD
 struct new_receiver_args_t
 =======
 
-/*! \brief Information about requirement message for
+/*!\brief Information about requirement message for
  *
  * It's argument (aWHAT) of event: EVENT_RECEIVER_SUBSCRIBE and
  * EVENT_RECEIVER_UNSUBSCRIBE
  *
- * \note
+ *\note
  *  Non-POD type.
  */
 struct subcribe_receiver_args_t
 >>>>>>> 3a2b21d... see changelog
 {
-	/*! \brief what requirement
+	/*!\brief what requirement
 	 *
 	 */
 	struct what_t
 	{
-		requirement_msg_info_t 	FWhat;//!< The request
-		NSHARE::uuid_t 	FWho;//!< Who want to receive message
+		requirement_msg_info_t 	FWhat;///< The request
+		NSHARE::uuid_t 	FWho;///< Who want to receive message
 	};
-	typedef std::vector<what_t> receivers_t;
+	typedef std::vector<what_t> receivers_t;///<list of requirement messages
 
-	receivers_t FReceivers;//!< list of requirement messages
+	receivers_t FReceivers;///< list of requirement messages
 };
 
-/*! \brief Information about not delivered message
+/*!\brief Information about not delivered message
  *
  */
 struct fail_sent_args_t
 {
-	typedef uint32_t error_t;
-	typedef std::vector<NSHARE::uuid_t> uuids_t;
+	typedef uint32_t error_t;///< A bitwise error type
+	typedef std::vector<NSHARE::uuid_t> uuids_t;///< Information about programs uuid
 
-	NSHARE::uuid_t 		FFrom;//!<see received_message_args_t
-	NSHARE::CText 		FProtocolName;//!<see received_message_args_t
-	uint16_t 			FPacketNumber;//!< see received_message_args_t
+	NSHARE::uuid_t 		FFrom;///<see received_message_args_t
+	NSHARE::CText 		FProtocolName;///<see received_message_args_t
+	uint16_t 			FPacketNumber;///< see received_message_args_t
 
-	required_header_t 	FHeader;//!< see received_message_args_t
+	required_header_t 	FHeader;///< see received_message_args_t
 
-	error_t 			FErrorCode;//!<A bitwise error code, see CCustomer structure
-									//!< field E_*
+	error_t 			FErrorCode;///<A bitwise error code, see CCustomer structure fields E_*
 
-	uint8_t 			FUserCode;//!<A user error or 0 (see FOccurUserError field of received_message_args_t)
+	uint8_t 			FUserCode;///<A user error or 0 (see received_message_args_t::FOccurUserError)
 
-	uuids_t 			FSentTo;//!< Where the data was sent
-	uuids_t 			FFails;//!< Where the data was not delivered
+	uuids_t 			FSentTo;///< Where the data was sent
+	uuids_t 			FFails;///< Where the data was not delivered
 };
 
-/*! \brief type of callback function which used by customer
+/*!\brief type of callback function which used in CCustomer
  *
- *	\param WHO - pointer to structure Customer
- *	\param WHAT - A pointer to a structure that describes
+ *
+ *\param WHO - pointer to structure Customer
+ *\param WHAT - A pointer to a structure that describes
  *				 the event that caused the callback to be
  *				 invoked, or NULL if there isn't an event.
+ *				 The format of the data varies with event type.
  *				 (see *_args_t structures)
- *	\param YOU_DATA -A pointer to data that you wanted to pass
+ *\param YOU_DATA -A pointer to data that you wanted to pass
  *					 as the second parameter(FYouData) callback_t structure.
  *
- *	\return by default Callback functions must return 0
+ *\return by default Callback functions must return 0
  *			for detail see NSHARE::eCBRval
+ *
+ *\see callback_t#operator()()
  */
 typedef int (*signal_t)(CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
-/*! \brief Regular callback structure used in "Customer" structure
+/*!\brief Regular callback structure used in "Customer" structure
  *
+ *\see signal_t
  */
 struct callback_t
 {
-	typedef signal_t TSignal;
-	typedef TSignal pM;
-	typedef void* arg_t;
+	signal_t FSignal; ///< A pointer to the callback function
+	void* 	FYouData;/*!<A pointer to data that you
+					 want to pass as the second parameter
+					 to the callback function when it's invoked.*/
 
-	TSignal FSignal; //!< A pointer to the callback function
-	void* 	FYouData;//!< A pointer to data that you
-					//!<want to pass as the second parameter
-					//!<to the callback function when it's invoked.
-
+	/*!\brief The default constructor initializes
+	 * @c FSignal and @c FYouData to NULL.
+	 */
 	callback_t();
-	callback_t(TSignal const& aSignal, void * const aData);
+
+	/*!\brief Two objects may be passed to a @c callback_t
+	 * constructor to be copied
+	 */
+	callback_t(signal_t const& aSignal, void * const aData);
+
+	/*!\brief There is also a copy constructor for
+	 * the @c callback_t class itself.
+	 */
 	callback_t(callback_t const& aCB);
+
+	/*!\brief callback_t assignment operator.
+	 *
+	 *\param  aCB  A callback_t of identical element.
+	 *
+	 *\return reference to this
+	 */
 	callback_t& operator=(callback_t const& aCB);
 
+	/*!\brief Return true if A pointer to the callback
+	 *function is exist
+	 *
+	 *\return true if @c FSignal is not NULL
+	 */
 	bool MIs() const;
+
+	/*!\brief Invoke the callback and pass to it
+	 *first argument aWho, second argument aArgs, third
+	 *argument FYouData.
+	 *
+	 *\param aWho Who is invoking the callback
+	 *\param aArgs a pointer to structure which provides information about related
+	 *to the event callback being invoked. The format of the data varies with event type.
+	 */
 	int operator ()(CCustomer* aWho, void * const aArgs) const;
 
-	bool operator ==(callback_t const& rihgt) const;
+	/*!\brief Two @c callback_t are equal if their members are equal.
+	 *
+	 *\param aRht What to compare object with
+	 *\return true if the objects are equal
+	 */
+	bool operator ==(callback_t const& aRht) const;
 };
 
-/*! \brief Information about event handler
+/*!\brief Information about event handler
  *
  */
 struct event_handler_info_t
 {
+    /*!\brief The default constructor creates fields using their
+     * respective default constructors.
+     */
 	event_handler_info_t();
+
+	/*!\brief Two objects may be passed to a constructor to be copied.
+	 *
+	 */
 	event_handler_info_t (NSHARE::CText const& aKey,callback_t const& aCb);
 
-	NSHARE::CText 	FKey;//!< A Name of Event
-	callback_t 		FCb;//!<A callback function that will handle
-					//!<the event when it occurs
+	NSHARE::CText 	FKey;///< A Name of Event
+	callback_t 		FCb;/*!<A callback function that will handle
+							the event when it occurs*/
 };
-/*! \brief Information about requested message and
+/*!\brief Information about requested message and
  * it callback function
  *
  */
 struct request_info_t
 {
-	requirement_msg_info_t 	FWhat;//!<A requested message
-	callback_t 		FHandler;//!<A callback function
+	requirement_msg_info_t 	FWhat;///<A requested message
+	callback_t 		FHandler;///<A callback function
 };
 
-/*! \brief A main class used for communication
+/*!\brief A main class used for communication
  *
  *		The data is exchanged asynchronously with callback
  *	function by publisher subscriber pattern. i.e
@@ -316,6 +376,7 @@ class CUSTOMER_EXPORT CCustomer: public NSHARE::CSingleton<CCustomer>
 {
 public:
 <<<<<<< HEAD
+<<<<<<< HEAD
 	static const NSHARE::CText DEFAULT_IO_MANAGER;
 	static const NSHARE::CText RAW_PROTOCOL;
 	static const NSHARE::CText ENV_CONFIG_PATH;
@@ -339,132 +400,148 @@ public:
 =======
 	static const NSHARE::CText ENV_CONFIG_PATH;//!< environment name used for specification
 												//!<path to the config file
+=======
+	static const NSHARE::CText ENV_CONFIG_PATH;/*!< environment name used for specification
+												path to the config file*/
+>>>>>>> f3da2cc... see changelog.txt
 
 	/// \name Keys using in configure file
 	/// \{
-	static const NSHARE::CText MODULES;//!< A name of key for specification
-										//!< list of the additional loaded libraries
-	static const NSHARE::CText MODULES_PATH;//!< A name of key for specification
-											//!< where looking for additional libraries
-	static const NSHARE::CText DOING_MODULE;//!< A name of key in the config file for specification
-											//!<used "manager" if not set is used manager from DEFAULT_IO_MANAGER
-	static const NSHARE::CText DEFAULT_IO_MANAGER;//!< A name of default "manager"
-	static const NSHARE::CText RRD_NAME;//!< A name of key  for specification
-										//!<the program name in the system if not set used from parameter aName of sMinit
-										//!<if it is not set too that used the real name of program
-	static const NSHARE::CText THREAD_PRIORITY;//!< A name of key  for specification
-												//!<a thread priority of event callback
-	static const NSHARE::CText NUMBER_OF_THREAD;//!< A name of key for specification
-												//!<amount of thread is used for event callback
+
+	static const NSHARE::CText MODULES;/*!< A name of key for specification
+										list of the additional loaded libraries*/
+	static const NSHARE::CText MODULES_PATH;/*!< A name of key for specification
+											where looking for additional libraries*/
+	static const NSHARE::CText DOING_MODULE;/*!< A name of key in the config file for specification
+											used "manager" if not set is used manager from DEFAULT_IO_MANAGER*/
+	static const NSHARE::CText DEFAULT_IO_MANAGER;///< A name of default "manager"
+	static const NSHARE::CText RRD_NAME;/*!< A name of key  for specification
+										the program name in the system if not set used from parameter aName of sMinit
+										if it is not set too that used the real name of program*/
+	static const NSHARE::CText THREAD_PRIORITY;/*!< A name of key  for specification
+												a thread priority of event callback*/
+	static const NSHARE::CText NUMBER_OF_THREAD;/*!< A name of key for specification
+												amount of thread is used for event callback*/
 	/// \}
 
-	static const NSHARE::CText RAW_PROTOCOL;//!< A name of predefined protocol
+	static const NSHARE::CText RAW_PROTOCOL;///< A name of predefined protocol
 
 	/// \name Keys of available events
 	/// \{
-	static const NSHARE::CText EVENT_RAW_DATA;//!< It's invoked when any data is received.
-												//!<Each callback is passed  received_message_args_t structure
-	static const NSHARE::CText EVENT_CONNECTED;//!< It's invoked when you connected to the kernel.
-												//!<The callback is called without additional arguments.
-	static const NSHARE::CText EVENT_DISCONNECTED;//!< It's invoked when you disconnected from the kernel.
-												 //!<The callback is called without additional arguments.
-	static const NSHARE::CText EVENT_CUSTOMERS_UPDATED;//!< It's invoked when some programs are connected
-														//or disconnected from the kernel.
-														//Each callback is passed  customers_updated_args_t structure.
-	static const NSHARE::CText EVENT_FAILED_SEND;//!< It's invoked when the message from you cannot be delivered
-												//!<to receiver (subscriber) or the message to you cannot be delivered
-												//!< from sender (publisher).
-												//!<Each callback is passed  fail_sent_args_t structure.
-	static const NSHARE::CText EVENT_RECEIVER_SUBSCRIBE;//!< It's invoked when a receiver (subscriber)
-														//!<wanted to receive the message from you (publisher).
-														//!<Each callback is passed  subcribe_receiver_args_t structure.
+	static const NSHARE::CText EVENT_RAW_DATA;/*!< It's invoked when any data is received.
+												Each callback is passed  received_message_args_t structure*/
+	static const NSHARE::CText EVENT_CONNECTED;/*!< It's invoked when you connected to the kernel.
+												 The callback is called without additional arguments.*/
+	static const NSHARE::CText EVENT_DISCONNECTED;/*!< It's invoked when you disconnected from the kernel.
+												  The callback is called without additional arguments.*/
+	static const NSHARE::CText EVENT_CUSTOMERS_UPDATED;/*!< It's invoked when some programs are connected
+														 or disconnected from the kernel.
+														 Each callback is passed  customers_updated_args_t structure.*/
+	static const NSHARE::CText EVENT_FAILED_SEND;/*!< It's invoked when the message from you cannot be delivered
+												 to receiver (subscriber) or the message to you cannot be delivered
+												 from sender (publisher).
+												 Each callback is passed  fail_sent_args_t structure.*/
+	static const NSHARE::CText EVENT_RECEIVER_SUBSCRIBE;/*!< It's invoked when a receiver (subscriber)
+														 wanted to receive the message from you (publisher).
+														 Each callback is passed  subcribe_receiver_args_t structure.*/
 
-	static const NSHARE::CText EVENT_RECEIVER_UNSUBSCRIBE;//!< It's invoked when a receiver (subscriber)
-														//!<did not want to receive the message from you (publisher).
-														//!<Each callback is passed  subcribe_receiver_args_t structure.
+	static const NSHARE::CText EVENT_RECEIVER_UNSUBSCRIBE;/*!<It's invoked when a receiver (subscriber)
+														 did not want to receive the message from you (publisher).
+														 Each callback is passed  subcribe_receiver_args_t structure.*/
 	/// \}
 >>>>>>> bd5a830... before fixing
 
-	typedef std::vector<NSHARE::CText> modules_t;
-	typedef std::set<program_id_t> customers_t;
+	typedef std::vector<NSHARE::CText> modules_t;///< An information about modules
+	typedef std::set<program_id_t> customers_t;///< An information about program
 
-	/*! \brief Collection of bitwise flags for change
+	/*!\brief Collection of bitwise flags for change
 	 * sending behavior
 	 *
 	 */
 	enum eSendToFlags
 	{
-		E_NO_SEND_FLAGS = 0
+		E_NO_SEND_FLAGS = 0,///< No send flags
 	};
 
-	/// \name The bitwise error number constants.
-	/// if some function return negative value less than -1.
-	/// The return value is contained bitwise error code.
-	/// For printing error calling sMPrintError Method
-	/// \{
-	typedef uint32_t error_t;
-	//reserved
-	static const error_t E_CANNOT_READ_CONFIGURE;//!< Cannot found (read) configuration file
-	static const error_t E_CONFIGURE_IS_INVALID;//!< Some value in configuration file is not valid
-	static const error_t E_NO_NAME;//!< The name of program is not set
-	static const error_t E_NOT_OPEN;//!< The library is not "opened".
-	static const error_t E_NAME_IS_INVALID;//!< The name of program is not valid
-	static const error_t E_NOT_CONNECTED_TO_KERNEL;//!< The library is not connected to the kernel
-	static const error_t E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;//!<Cannot allocate requirement size the buffer
-																	  //!< in the shared memory (to fix it change the size of
-																		//!< created by the kernel shared memory)
-	static const error_t E_HANDLER_IS_NOT_EXIST;//!< Cannot find a callback function for handling a message.
-												//!<Usually It occured during disconnecting of the message receiver.
-	static const error_t E_NO_ROUTE;//!< Not route to receiver (subscriber).
-									//!<Usually It occured during disconnect of the message receiver or problems with net.
-	static const error_t E_UNKNOWN_ERROR;//!< Wtf?
-	static const error_t E_PARSER_IS_NOT_EXIST;//!< The parser of the raw buffer for specified protocol
-												//!< is not loaded (exist) to kernel.
-												//!< For fix: load the parser of the raw buffer for specified protocol
-												//!<to the kernel.
-	static const error_t E_HANDLER_NO_MSG_OR_MORE_THAN_ONE;//!< No message in the buffer or the number of message is more than one (deprecated)
-	static const error_t E_SOCKET_CLOSED;//!<The receiver has been disconnected yet
-	static const error_t E_BUFFER_IS_FULL;//!<The block of memory which kernel has been allocated to receiver is full.
-											//!<For fix error: change size of memory that the allocated to receiver or
-											//!<increase the performance of the message receiver
-	static const error_t E_PACKET_LOST;//!< The packet has been lost during delivering of message.
-										//Sometimes it happens in the bad net
-	static const error_t E_DATA_TOO_LARGE;//!< In the kernel can be set the max message size which is transmitted by net (line)
-										  //!<The error is occured if sender is exceed the limit and the packet division mode of
-											//!<the kernel is not set.
-	static const error_t E_MERGE_ERROR;//!< The error is occured when if in the packet division mode of the kernel, it cannot
-										//!<merge the splitted message.
-	static const error_t E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;//!< The version of the sent message and the requirement
-																//!<message is not compatible
-	static const error_t E_USER_ERROR_EXIST;//!<If user's error is set ( see FOccurUserError of received_message_args_t)
-											//!<The error is occured
-	static const unsigned MAX_SIZE_USER_ERROR;//!< The amount of bits are used for save user's error
-
-
-	/*! \brief Printing bitwise error code to stream
+	/*!\name The bitwise error number constants of an argument
+	 *fail_sent_args_t::FErrorCode.
 	 *
-	 *	\param aStream where to print
-	 *	\param aError error bitwise code
-	 *	\return aStream
+	 *For printing error calling sMPrintError Method
+	 *\{
+	 */
+	typedef fail_sent_args_t::error_t error_t;///< Type of bitwise error
+
+	static const error_t E_HANDLER_IS_NOT_EXIST;/*!< Cannot find a callback function for handling a message.
+												Usually It occured during disconnecting of the message receiver.*/
+	static const error_t E_NO_ROUTE;/*!< Not route to receiver (subscriber).
+									Usually It occured during disconnect of the message receiver or problems with net.*/
+	static const error_t E_UNKNOWN_ERROR;///< Wtf?
+	static const error_t E_PARSER_IS_NOT_EXIST;/*!< The parser of the raw buffer for specified protocol
+												 is not loaded (exist) to kernel.
+												 For fix: load the parser of the raw buffer for specified protocol
+												to the kernel.*/
+	static const error_t E_HANDLER_NO_MSG_OR_MORE_THAN_ONE;///< No message in the buffer or the number of message is more than one (deprecated)
+	static const error_t E_SOCKET_CLOSED;///<The receiver has been disconnected yet
+	static const error_t E_BUFFER_IS_FULL;/*!<The block of memory which kernel has been allocated to receiver is full.
+											For fix error: change size of memory that the allocated to receiver or
+											increase the performance of the message receiver*/
+	static const error_t E_PACKET_LOST;/*!< The packet has been lost during delivering of message.
+										Sometimes it happens in the bad net*/
+	static const error_t E_DATA_TOO_LARGE;/*!< In the kernel can be set the max message size which is transmitted by net (line)
+										  The error is occured if sender is exceed the limit and the packet division mode of
+										  the kernel is not set.*/
+	static const error_t E_MERGE_ERROR;/*!< The error is occured when if in the packet division mode of the kernel, it cannot
+										merge the splitted message.*/
+	static const error_t E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;/*!< The version of the sent message and the requirement
+																message is not compatible*/
+	static const error_t E_USER_ERROR_EXIST;/*!<If user's error is set ( see FOccurUserError of received_message_args_t)
+											The error is occured*/
+	static const unsigned MAX_SIZE_USER_ERROR;///< The amount of bits are used for save user's error
+
+
+	/*!\brief Printing bitwise error code to stream
+	 *
+	*\param aStream where to print
+	*\param aError error bitwise code
+	*\return aStream
 	 */
 	static std::ostream& sMPrintError(std::ostream& aStream,error_t const& aError);
 	/// \}
 
-	/*! \brief Initialize library
+	/*!\brief An error code which is returned by function
+	 *
+	 */
+	enum eAPIError
+	{
+		ERROR_CANNOT_READ_CONFIGURE=-255,///< Cannot found (read) configuration file
+		ERROR_CONFIGURE_IS_INVALID,///< Some value in configuration file is not valid
+		ERROR_NO_NAME,///< The name of program is not set
+		ERROR_NOT_OPEN,///< The library is not "opened".
+		ERROR_NAME_IS_INVALID,///< The name of program is not valid
+		ERROR_NOT_CONNECTED_TO_KERNEL,///< The library is not connected to the kernel
+		ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE,/*!<Cannot allocate requirement size the buffer
+													 in the shared memory (to fix it change the size of
+													 created by the kernel shared memory)*/
+		ERROR_UNEXPECETED,///< Wtf?
+		ERROR_HANDLER_IS_NOT_EXIST,///< Cannot find a callback function for handling a message.
+	};
+
+	/*!\brief Initialize library
 	 *
 	 *	Initialize the library and create singleton for this type
 	 *
-	 *	\param argc The number of entries in the argv array
-	 *	\param argv An array of pointers to strings that contain the arguments to the program
-	 *	\param aName The desired name of program
-	 *	\param aVersion Version of program
-	 *	\param aConfPath Path to the configuration file if it not set
+	*\param argc The number of entries in the argv array
+	*\param argv An array of pointers to strings that contain the arguments to the program
+	*\param aName The desired name of program
+	*\param aVersion Version of program
+	*\param aConfPath Path to the configuration file if it not set
 	 *					The file is read from environment specificated in ENV_CONFIG_PATH.
-	 *	\return 0 - EOK
+	*\return 0 - EOK
 	 *			else bitwise error code
 	 */
 	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),const NSHARE::CText& aConfPath="");
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 		}
 		NSHARE::CText FKey;
@@ -479,96 +556,188 @@ public:
 	static int sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConf);
 =======
 	/*! \brief Initialize library
+=======
+	/*!\brief Initialize library
+>>>>>>> f3da2cc... see changelog.txt
 	 *
 	 *	Initialize the library and create singleton for this type
 	 *
-	 *	\param argc The number of entries in the argv array
-	 *	\param argv An array of pointers to strings that contain the arguments to the program
-	 *	\param aName The desired name of program
-	 *	\param aVersion Version of program
-	 *	\param aConfPath configuration
-	 *	\return 0 - EOK
+	*\param argc The number of entries in the argv array
+	*\param argv An array of pointers to strings that contain the arguments to the program
+	*\param aName The desired name of program
+	*\param aProgrammVersion Version of program
+	*\param aConfPath configuration
+	*\return 0 - EOK
 	 *			else bitwise error code
 	 */
+<<<<<<< HEAD
 	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConf);
 >>>>>>> bd5a830... before fixing
+=======
+	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConfPath);
+>>>>>>> f3da2cc... see changelog.txt
 
-	/*! \brief deinitialization library
+	/*!\brief deinitialization library
 	 *
-	 *	Remove sigelton and free all used resources.
+	 *	Remove singelton and free all used resources.
 	 */
 	static void sMFree();
 
-	/*! \brief Get information about library version
+	/*!\brief Get information about library version
 	 *
-	 *	\return Library version
+	 *\return Library version
 	 */
 	static const NSHARE::version_t& sMVersion();
 
-	/*! \brief Check for available module
+	/*!\brief Check for available module
 	 *
-	 *	\param aModule Name of module
-	 *	\return true if exist
+	*\param aModule Name of module
+	*\return true if exist
 	 */
 	bool MAvailable(const NSHARE::CText& aModule) const;
 
-	/*! \brief Check for available used module (DOING_MODULE)
+	/*!\brief Check for available used module (DOING_MODULE)
 	 *
-	 *	\return true if exist
+	*\return true if exist
 	 */
 	bool MAvailable() const;
 
-	/*! \brief Get list of available modules
+	/*!\brief Get list of available modules
 	 *
-	 *	\return modules
+	*\return modules
 	 */
 	modules_t MModules() const;
 
-	/* \brief Check if you connect to kernel
+	/*\brief Check if you connect to kernel
 	 *
-	 *	\return true if connected
+	*\return true if connected
 	 */
 	bool MIsConnected() const;
 
-	/* \brief Check if you create channel to library
+	/*\brief Check if you create channel to library
 	 *
-	 *	\return true if created
+	*\return true if created
 	 */
 	bool MIsOpened() const;
 
-	/* \brief Open channel to kernel
+	/*\brief Open channel to kernel
 	 *
 	 *	After the channel to kernel is opened, the
 	 *	connection to kernel begins. When the connection
 	 *	is established the event EVENT_CONNECTED is occured.
 	 *
-	 *	\return true if opened successfully
+	*\return true if opened successfully
 	 */
 	bool MOpen();
 
-	/* \brief Close channel to kernel
+	/*\brief Close channel to kernel
 	 *
 	 */
 	void MClose();
 
-	/*! \brief wait for some event is occured
+	/*!\brief wait for some event is occured (and handled)
 	 *
-	 *	\param aEvemt - waited for event
-	 *	\param aSec - time out if value < 0 than wait for infinitely
-	 *	\warning Non-recommended to use the method for any events
-	 *	with the exception of EVENT_CONNECTED, EVENT_DISCONNECTED
+	 * For events #EVENT_CONNECTED and #EVENT_DISCONNECTED
+	 * connection is checked. That is, if it's connected and the
+	 * MWaitForEvent method with #EVENT_CONNECTED is called
+	 * when returned error #ERROR_NOT_CONNECTED_TO_KERNEL.
 	 *
-	 *	\return -1 if error occured
+	 *\param aEvent - waited for event
+	 *\param aSec - time out if value < 0 than wait for infinitely
+	 *
+	 *\warning Non-recommended to use the method for any events
+	 *	with the exception of #EVENT_CONNECTED, #EVENT_DISCONNECTED
+	 *
+	 *\return < 0 if the error is occured:\n
+	 *		#ERROR_UNEXPECETED if the event has been registered early.
 	 */
 	int MWaitForEvent(NSHARE::CText const& aEvent,double aSec=-1);
 
-	///@brief Return current ID
+	/*!\brief Get information about you
+	 *
+	 * You uuid and name is contained in the field  of program_id_t::FId.
+	 *
+	 *\return Information about you
+	 */
 	const program_id_t& MGetID() const;
-	///@brief Return all registered ID
+
+	/*!\brief Get information about all program
+	 *
+	 *\return information about all program
+	 */
 	customers_t MCustomers() const;
+
+	/*!\brief Get information about program by uuid
+	 *
+	 *\param aUUID uuid of program
+	 *\return A program info if the program is exist\n
+	 *		  Invalid object of type program_id_t (see program_id_t::MIsValid())\n
+	 *		  if program is not exist
+	 */
 	program_id_t MCustomer(NSHARE::uuid_t const& aUUID) const;
 
+	/*!\brief Publication(Send) the buffer which is contained one or more
+	 * message
+	 *
+	 * When the kernel received the buffer, it try parses the buffer for
+	 * generate the message. For parsing the kernel  is used the outer library
+	 * which is loaded in concordance with the configuration file.
+	 * The message in the buffer has to be consist of the head and data,
+	 * following each other. If the library corresponded to the protocol
+	 * is not exist when the error #E_PARSER_IS_NOT_EXIST is occured
+	 *
+	 *
+	 *\param  aProtocolName A Type of the packet protocol
+	 *\param  aBuffer A pointer to the buffer that you want to parse and send
+	 *\param  aSize The size of the buffer, in bytes
+	 *\param  aFlags A combination of the send flag
+	 *\warning 	The method is non-recommended to use because some features
+	 *			can be not available for this method (e.g. inheritance)
+	 *			Usually it is used for compatibility with old version of program
+	 *\return >0 if the buffer is sent successfully. The value is equal the packet\n
+	 *			 number of received_message_args_t::FPacketNumber
+	 *		  0 if loopback mode (the data is sent to youself)\n
+	 *		  <0 if error is occured (see bitwise error codes E_*)
+	 */
+	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize, eSendToFlags aFlags= E_NO_SEND_FLAGS);
 
+	/*!\overload
+	 *
+	 *\param aBuffer A pointer to the buffer that you want to parse and send. (It will moved!)
+	 *\param  aProtocolName A Type of the packet protocol
+	 *\param  aFlags A combination of the send flag
+	 *\warning  aBuffer object will be empty if the buffer is sent to the kernel successfully
+	*/
+	int MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer, eSendToFlags aFlags= E_NO_SEND_FLAGS);
+
+	/*!\brief Send to the specified receiver the buffer
+	 * which is contained one or more message
+	 *
+	 * When the kernel received the buffer, it try parses the buffer for
+	 * generate the message. For parsing the kernel  is used the outer library
+	 * which is loaded in concordance with the configuration file.
+	 * The message in the buffer has to be consist of the head and data,
+	 * following each other. If the library corresponded to the protocol
+	 * is not exist when the error #E_PARSER_IS_NOT_EXIST is occured
+	 *
+	 *
+	 *\param  aProtocolName A Type of the packet protocol
+	 *\param  aBuffer A pointer to the buffer that you want to parse and send
+	 *\param  aSize The size of the buffer, in bytes
+	 *\param  aTo where to send
+	 *\param  aFlags A combination of the send flag
+	 *\warning 	The method is non-recommended to use because some features
+	 *			can be not available for this method (e.g. inheritance)
+	 *			Usually it is used for compatibility with old version of program
+	 *\return >0 if the buffer is sent successfully. The value is equal the packet
+	 *			 number of received_message_args_t::FPacketNumber; \n
+	 *		  0 if loopback mode (the data is sent to youself) \n
+	 *		  <0 if error is occured (see bitwise error codes E_*)
+	 */
+	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
+			const NSHARE::uuid_t& aTo, eSendToFlags aFlags= E_NO_SEND_FLAGS);
+
+<<<<<<< HEAD
 	///@brief Send data to customer
 	///@param aProtocolName The fixed protocol name that refers to the  sending buffer. there is default Protocol - raw
 	///@param aNumber The number off sending buffer.
@@ -607,34 +776,255 @@ public:
 	///@param aHeader Parsing a header type
 	///@param aCB Callback handler
 	///@return  <0 if error, else handler ID
+=======
+	/*!\overload
+	 *
+	 *\param aBuffer A pointer to the buffer that you want to parse and send. (It will moved!)
+	 *\param  aProtocolName A Type of the packet protocol
+	 *\param  aFlags A combination of the send flag
+	 *\param  aTo where to send
+	 *\warning  aBuffer object will be empty if the buffer is sent to the kernel successfully
+	*/
+	int MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
+			const NSHARE::uuid_t& aTo, eSendToFlags aFlags= E_NO_SEND_FLAGS);
+
+	/*!\brief Publication(Send) the message by inner protocol (#RAW_PROTOCOL)
+	 *
+	 * It's the easiest way to publication(send) message. For this
+	 * method of publication isn't required to develop the library
+	 * for parsing the buffer. But it has some limitation:\n
+	 * - in the raw protocol is not implemented auto swapping the byte order
+	 * of messages;\n
+	 * - for see data in the web GUI you has to be implemented method of
+	 * serialize data to json;\n
+	 * and of course, you cannot use inheritance.
+	 *
+	 *\param  aNumber A unique number of the message
+	 *\param  aMsg A pointer to the message
+	 *\param  aVersion A version of the message
+	 *\param  aFlags A combination of the send flag
+	 *
+	 *\return >0 if the buffer is sent successfully. The value is equal the packet
+	 *			 number of received_message_args_t::FPacketNumber \n
+	 *		  0 if loopback mode (the data is sent to youself)\n
+	 *		  <0 if error is occured (see bitwise error codes E_*)
+	 */
+	int MSend(unsigned aNumber, NSHARE::CBuffer & aMsg,
+			NSHARE::version_t const& aVersion= NSHARE::version_t(), eSendToFlags aFlags=
+					E_NO_SEND_FLAGS);
+	/*!\overload
+	 *
+	 * Send the message to the specified receiver
+	 *
+	 *\param  aNumber A unique number of the message
+	 *\param  aTo where to send
+	 *\param  aMsg A pointer to the message
+	 *\param  aVersion A version of the message
+	 *\param  aFlags A combination of the send flag
+	 *\warning  aBuffer object will be empty if the buffer is sent to the kernel successfully
+	*/
+	int MSend(unsigned aNumber, NSHARE::CBuffer & aMsg,
+			const NSHARE::uuid_t& aTo, NSHARE::version_t const& aVersion=
+					NSHARE::version_t(), eSendToFlags aFlags= E_NO_SEND_FLAGS);
+
+	/*!\brief Publication(Send) the message of the special protocol
+	 *
+	 * It's balance between easy of use, performance and
+	 * available features. For this method isn't required
+	 * to develop the library of parsing the buffer if you
+	 * don't want to use some features. But when you want
+	 * to use the features for which you need to develop
+	 * the library, you can do it without changing the existing
+	 * source code.
+	 * For which features are requirement the library you can see
+	 * in NUDT::IExtParser.
+	 *
+	 *\param  aNumber A unique header of the message
+	 *\param  aProtocolName A Type of the message protocol
+	 *\param  aMsg A pointer to the message
+	 *\param  aFlags A combination of the send flag
+	 *
+	 *\return >0 if the buffer is sent successfully. The value is equal the packet
+	 *			 number of received_message_args_t::FPacketNumber\n
+	 *		  0 if loopback mode (the data is sent to youself)\n
+	 *		  <0 if error is occured (see bitwise error codes E_*)
+	 *\warning It's the recommended way to send a message.
+	 *\warning aBuffer object will be empty if the buffer is sent to the kernel successfully
+	 */
+	int MSend(required_header_t const& aNumber, NSHARE::CText aProtocolName,
+			NSHARE::CBuffer & aMsg, eSendToFlags aFlags= E_NO_SEND_FLAGS);
+
+	/*!\overload
+	 *
+	 * Send the message to the specified receiver
+	 *
+	 *\param  aNumber A unique header of the message
+	 *\param  aProtocolName A Type of the message protocol
+	 *\param  aTo where to send
+	 *\param  aMsg A pointer to the message
+	 *\param  aFlags A combination of the send flag
+	 *\warning  aBuffer object will be empty if the buffer is sent to the kernel successfully
+	*/
+	int MSend(required_header_t const& aNumber, NSHARE::CText aProtocolName,
+			NSHARE::CBuffer & aMsg, const NSHARE::uuid_t& aTo, eSendToFlags aFlags=
+					E_NO_SEND_FLAGS);
+
+	/*!\brief Subscribe to the message (Registration the message handler)
+	 *
+	 * When the message will be received, the callback function
+	 * is called.
+	 *
+	 *\param aMSGHeader what is requirement to receive and from
+	 *\param aHandler A pointer to the function for handling message
+	 *
+	 *\return <0 if the error is occured \n
+	 *			else unique handler ID (can be used in #MDoNotReceiveMSG)
+	 *\see received_data_t
+	 *\see CCustomer
+	 *
+	 */
+>>>>>>> f3da2cc... see changelog.txt
 	int MIWantReceivingMSG(const requirement_msg_info_t& aMSGHeader,
 			const callback_t& aHandler);
-	int MIWantReceivingMSG(const NSHARE::CText& aFrom, const unsigned& aHeader,
-			const callback_t& aCB, NSHARE::version_t const& =
-					NSHARE::version_t(), requirement_msg_info_t::eFLags const& =
+
+	/*!\overload
+	 *\param aFrom From whom to receive the message
+	 *\param aNumber A what is requirement to receive
+	 *\param aHandler A pointer to the function for handling message
+	 *\param aVersion A requirement version of the message
+	 *\param aFlags A flags for change subscription behavior (requirement_msg_info_t::eFLags)
+	 */
+	int MIWantReceivingMSG(const NSHARE::CText& aFrom, const unsigned& aNumber,
+			const callback_t& aHandler, NSHARE::version_t const& aVersion=
+					NSHARE::version_t(), requirement_msg_info_t::eFLags const& aFlags =
 					requirement_msg_info_t::E_NO_FLAGS);
 
-	int MDoNotReceiveMSG(const NSHARE::CText& aFrom,
-			const unsigned& aNumber);
-	int MDoNotReceiveMSG(const requirement_msg_info_t& aNumber);
+	/*!\brief Unsubscribe to the message (Remove the message handler)
+	 *
+	 *
+	 *\param aFrom From whom to receive the message
+	 *\param aNumber A what is requirement to receive
+	 *
+	 *\return <0 if the error is occured \n
+	 *			else handler ID
+	 *\see MIWantReceivingMSG
+	 *
+	 */
+	int MDoNotReceiveMSG(const NSHARE::CText& aFrom, const unsigned& aNumber);
 
+	/*!\overload
+	 *
+	 *\param aHandlerId Handler ID which was returned by #MIWantReceivingMSG function
+	 *
+	 *\return <0 if the error is occured \n
+	 *			else handler ID
+	 *\see MIWantReceivingMSG
+	 */
+	int MDoNotReceiveMSG(unsigned aHandlerId);
+
+	/*!\overload
+	 *
+	 *\param aMSGHeader what is requirement to receive and from
+	 *
+	 *\return <0 if the error is occured \n
+	 *			else handler ID
+	 *\see MIWantReceivingMSG
+	 */
+	int MDoNotReceiveMSG(const requirement_msg_info_t& aMSGHeader);
+
+	/*!\brief Return information about all requested messages
+	 *
+	 *\return all requested messages
+	 */
 	std::vector<request_info_t> MGetMyWishForMSG() const;
 
 
+	/*!\brief Add event handler
+	 *
+	 *\param aVal Event handler and type
+	 *\return true if successfully
+	 */
 	bool operator+=(event_handler_info_t const & aVal);
+
+	/*!\brief Remove event handler
+	 *
+	 *\param aVal Event handler and type which is removed
+	 *\return true if successfully
+	 */
 	bool operator-=(event_handler_info_t const & aVal);
+
+	/*!\brief Add event handler
+	 *
+	 *\param aVal Event handler and type
+	 *\param aPrior Priority of event calling
+	 *(Than the value is less by that the event is called earlier)
+	 *\return true if successfully
+	 */
 	bool MAdd(event_handler_info_t const & aVal, unsigned int aPrior = std::numeric_limits<unsigned int>::max());
+
+
+	/*!\brief Remove event handler
+	 *
+	 *\param aVal Event handler and type which is removed
+	 *\return true if successfully
+	 */
 	bool MErase(event_handler_info_t const& aVal);
 
+	/*!\brief Change priority of event handler
+	 *
+	 *\param aVal Event handler and type
+	 *\param aPrior Priority of event calling
+	 *(Than the value is less by that the event is called earlier)
+	 *\return true if successfully
+	 */
 	bool MChangePrior(event_handler_info_t const&aVal, unsigned int aPrior);
+
+	/*!\brief Test the event handler to see it's exist
+	 *
+	 *\param aVal Event handler and type
+	 *\return true it's exist
+	 */
 	bool MIs(event_handler_info_t const& aVal) const;
+
+	/*!\brief Test the key event to
+	 * see there is at least handler of event
+	 *
+	 *\param aVal Event key
+	 *\return true it's exist
+	 */
 	bool MIsKey(NSHARE::CText const& aVal) const;
+
+	/*!\brief Print information about the events handler to stream
+	 *
+	 *\param aStream A output steam
+	 *\return A output steam
+	 */
 	std::ostream& MPrintEvents(std::ostream & aStream) const;
 
+	/*!\brief Return true if no event handler
+	 *
+	 *\return Return true if no event handler
+	 */
 	bool MEmpty  ()const;
+
+	/*!\brief Allocate a new buffer(block of memory)
+	 *
+	 *The function allocates a buffer of size bytes.
+	 *If shared memory is available then the buffer is
+	 *allocated from it, else the buffer is allocated
+	 *from the heap.
+	 *
+	 *\param aSize The number of bytes to allocate
+	 *
+	 *\return Return true if no event handler
+	 */
 	NSHARE::CBuffer MGetNewBuf(std::size_t aSize) const;
 
 
+	/*!\brief The function blocks the calling thread
+	 *until opened channel to kernel.
+	 *
+	 */
 	void MJoin();
 private:
 
@@ -656,6 +1046,7 @@ inline bool requirement_msg_info_t::operator==(requirement_msg_info_t const& aRh
 	return FProtocolName==aRht.FProtocolName//
 			&& FFlags==aRht.FFlags//
 			&& FRequired==aRht.FRequired//
+			&& FFrom==aRht.FFrom//
 			;
 }
 inline received_data_t::received_data_t():
@@ -670,7 +1061,7 @@ inline callback_t::callback_t() :
 {
 	;
 }
-inline callback_t::callback_t(TSignal const& aSignal, void * const aData) :
+inline callback_t::callback_t(signal_t const& aSignal, void * const aData) :
 		FSignal(aSignal), FYouData(aData)
 {
 	;
@@ -748,6 +1139,135 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::received_message_args_t const& aMSG)
+{
+	using namespace NUDT;
+
+	aStream << "Sender:  " << aMSG.FFrom << std::endl;
+	aStream << "The message protocol:  " << aMSG.FProtocolName << std::endl;
+	aStream << "The packet number:" << aMSG.FPacketNumber << std::endl;
+
+	if (!aMSG.FTo.empty())
+	{
+		received_message_args_t::uuids_t::const_iterator _it = aMSG.FTo.begin(),
+				_it_end(aMSG.FTo.end());
+		aStream << "Sent to:  ";
+		for (; _it != _it_end; ++_it)
+			aStream << (*_it) << " ";
+		aStream << std::endl;
+	}
+
+	if (aMSG.FEndian != NSHARE::E_SHARE_ENDIAN)
+		aStream << "The byte order is not valid" << std::endl;
+	else
+		aStream << "The byte order is valid" << std::endl;
+
+	aStream << "The message header:" << std::endl;
+
+	aStream << aMSG.FHeader << std::endl;
+
+	aStream << "The message data:" << std::endl;
+
+	aStream << aMSG.FMessage << std::endl;
+
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::customers_updated_args_t const& aUpdate)
+{
+	using namespace NUDT;
+
+	if(!aUpdate.FConnected.empty())
+	{
+		std::set<program_id_t>::const_iterator _it=aUpdate.FConnected.begin(),
+				_it_end(aUpdate.FConnected.end());
+
+		aStream << "New customers in UDT:";
+		for (; _it != _it_end; ++_it)
+		{
+			aStream<< (*_it) <<std::endl;
+		}
+		aStream <<std::endl;
+	}
+	if(!aUpdate.FDisconnected.empty())
+	{
+		aStream << "Some customers droped:";
+		std::set<program_id_t>::const_iterator _it =
+				aUpdate.FDisconnected.begin(), _it_end(
+						aUpdate.FDisconnected.end());
+		for (; _it != _it_end; ++_it)
+		{
+			aStream << (*_it)<< std::endl;
+		}
+		aStream<< std::endl;
+	}
+
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::subcribe_receiver_args_t::what_t const& aWhat)
+{
+	aStream <<"Requirement of " <<aWhat.FWhat << std::endl;
+	aStream <<"From " <<aWhat.FWho << std::endl;
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::subcribe_receiver_args_t const& aReceivers)
+{
+	using namespace NUDT;
+	if(!aReceivers.FReceivers.empty())
+	{
+		subcribe_receiver_args_t::receivers_t::const_iterator
+			_it = aReceivers.FReceivers.begin(),
+			_it_end(aReceivers.FReceivers.end());
+
+		for(;_it!=_it_end;++_it)
+			aStream <<(*_it);
+	}else
+		aStream <<"No requirements"<<std::endl;
+
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::fail_sent_args_t const& aMSG)
+{
+	using namespace NUDT;
+
+	aStream << "Sender:  " << aMSG.FFrom << std::endl;
+	aStream << "The message protocol:  " << aMSG.FProtocolName << std::endl;
+	aStream << "The packet number:" << aMSG.FPacketNumber << std::endl;
+	aStream << "Error:";
+
+	CCustomer::sMPrintError(aStream, aMSG.FErrorCode);
+
+	if(aMSG.FErrorCode!=0)
+		aStream << "User error:"<<aMSG.FErrorCode<<std::endl;
+
+	aStream << "The message header:" << std::endl;
+	aStream << aMSG.FHeader << std::endl;
+
+	if (!aMSG.FSentTo.empty())
+	{
+		received_message_args_t::uuids_t::const_iterator _it = aMSG.FSentTo.begin(),
+				_it_end(aMSG.FSentTo.end());
+		aStream << "Sent to:  ";
+		for (; _it != _it_end; ++_it)
+			aStream << (*_it) << " ";
+		aStream << std::endl;
+	}
+	if (!aMSG.FFails.empty())
+	{
+		received_message_args_t::uuids_t::const_iterator _it = aMSG.FSentTo.begin(),
+				_it_end(aMSG.FSentTo.end());
+		aStream << "Don't delivered to:  ";
+		for (; _it != _it_end; ++_it)
+			aStream << (*_it) << " ";
+		aStream << std::endl;
+	}
+
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::callback_t const& aCb)
 {
 	aStream.setf(ios::hex, ios::basefield);
@@ -756,5 +1276,68 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	aStream.unsetf(ios::hex);
 	return aStream;
 }
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::event_handler_info_t const& aCb)
+{
+	aStream <<"Key: " <<aCb.FKey << std::endl;
+	aStream <<"Callback: " <<aCb.FCb << std::endl;
+	return aStream;
 }
-#endif /* CCLIENT_H_ */
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::request_info_t const& aRequest)
+{
+	aStream <<"What : " <<aRequest.FWhat << std::endl;
+	aStream <<"Callback: " <<aRequest.FHandler << std::endl;
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::CCustomer::eAPIError const& aError)
+{
+	using namespace NUDT;
+	switch(aError)
+	{
+	case CCustomer::ERROR_CANNOT_READ_CONFIGURE:
+		aStream << " Cannot read configure";
+		break;
+
+	case CCustomer::ERROR_CONFIGURE_IS_INVALID:
+		aStream << " Configure is invalid";
+		break;
+
+	case CCustomer::ERROR_NO_NAME:
+		aStream << " Name is not exist";
+		break;
+
+	case CCustomer::ERROR_NOT_OPEN:
+		aStream << " Not Opened";
+		break;
+
+	case CCustomer::ERROR_NAME_IS_INVALID:
+		aStream << " Name is invalid";
+		break;
+
+	case CCustomer::ERROR_NOT_CONNECTED_TO_KERNEL:
+		aStream << " Not connected to kernel";
+		break;
+
+	case CCustomer::ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE:
+		aStream << " Cannot allocate buffer of requirement size";
+		break;
+
+	case CCustomer::ERROR_UNEXPECETED:
+		aStream << " unexpected error";
+		break;
+
+	case CCustomer::ERROR_HANDLER_IS_NOT_EXIST:
+		aStream << " handler is not exist";
+		break;
+
+	default:
+		aStream << " Unknown";
+		break;
+	};
+
+	return aStream;
+}
+}
+#endif /* CCUSTOMER_H_ */

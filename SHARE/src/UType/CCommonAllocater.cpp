@@ -32,7 +32,7 @@ static uint8_t g_buffer[sizeof(CCommonAllocater<>)+__alignof(CCommonAllocater<>)
 extern IAllocater* get_default_allocator_common_allocate()
 {
 	static IAllocater* g_common_allocater =
-			new (get_alignment_address<CCommonAllocater<> >(g_buffer)) CCommonAllocater<>;//!< allocate to static memory
+			new (get_alignment_address<CCommonAllocater<> >(g_buffer)) CCommonAllocater<>;///< allocate to static memory
 	return g_common_allocater;
 }
 }

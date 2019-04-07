@@ -49,6 +49,7 @@ CControlByTCP::CControlByTCP() :
 
 CControlByTCP::~CControlByTCP()
 {
+	//!<\todo remove object
 	//fixme remove cb
 	delete FTcpSocket;
 }
@@ -438,13 +439,13 @@ int CControlByTCP::MSend(data_t & aData)
 	NSHARE::CRAII<NSHARE::CMutex> _block(FControlLock);
 	LOG_IF(ERROR,!FKernelId.MIs()) << "Unknown kernel id. Ignoring ...";
 	if (!FKernelId.MIs())
-		return CCustomer::E_UNKNOWN_ERROR;
+		return CCustomer::ERROR_UNEXPECETED;
 
 	CHECK_NOTNULL(FTcpSocket);
 	if (!FTcpSocket->MIsConnected())
 	{
 		LOG(INFO)<< (*FTcpSocket);
-		return -static_cast<int>(CCustomer::E_NOT_CONNECTED_TO_KERNEL);
+		return static_cast<int>(CCustomer::ERROR_NOT_CONNECTED_TO_KERNEL);
 	}
 	return FTcpSocket->MSend(aData.ptr(), aData.size()).FError;
 }
@@ -463,7 +464,7 @@ int CControlByTCP::MSend(user_data_t & aData)
 	{
 		CRAII<CMutex> _block(FMainLock);
 		if (!FMain || !FMain->MSend(aData))
-		return CCustomer::E_UNKNOWN_ERROR;
+		return CCustomer::ERROR_UNEXPECETED;
 	}
 	return E_NO_ERROR;
 }
@@ -513,7 +514,10 @@ int CControlByTCP::MCloseMain()
 	FMain = NULL;	
 	return 0;
 }
-
+void CControlByTCP::MJoin()//!<\todo it
+{
+	NSHARE::CAsyncSocket::MJoin();
+}
 void CControlByTCP::MClose()
 {
 	VLOG(2) << "Close control.";
@@ -525,7 +529,7 @@ void CControlByTCP::MClose()
 	FTcpSocket->MClose();
 
 	FKernelId.MUnSet();
-//todo
+//!<\todo close idiom
 }
 bool CControlByTCP::MIsConnected() const
 {

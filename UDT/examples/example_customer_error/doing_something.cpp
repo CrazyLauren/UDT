@@ -37,7 +37,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg=(received_message_args_t const*)aWHAT;
 
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	{
 		const uint8_t* _it=_recv_arg->FBegin;
 		for(int i=0;_it!=_recv_arg->FEnd;++i,++_it)
@@ -51,7 +51,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 			}
 		}
 		
-		//!<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
+		///<for optimization (decrease the number of operation 'copy') You can change the FBuffer field directly
 	}
 	
 	STREAM_MUTEX_LOCK
@@ -62,7 +62,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 extern int sniffer_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
 	received_message_args_t const* _recv_arg = (received_message_args_t const*)aWHAT;
-	//!<Now You can handle the received data.
+	///<Now You can handle the received data.
 	std::cout<< std::endl << "Message #" << _recv_arg->FPacketNumber<<" by " << _recv_arg->FProtocolName << " size "
 			<< _recv_arg->FBuffer.size() << " bytes sniffed from "
 			<< _recv_arg->FFrom <<" to ";
@@ -138,9 +138,9 @@ extern void doing_something()
 	for (;; Sleep(1000))
 	{
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-				PACKET_SIZE);	//!< allocate the buffer for msg
+				PACKET_SIZE);	///< allocate the buffer for msg
 				
-		for (;_buf.empty();Sleep(1))	//!< may be 'malloc' return NULL, trying again
+		for (;_buf.empty();Sleep(1))	///< may be 'malloc' return NULL, trying again
 		{
 			std::cerr << "Cannot allocate the buffer. " << std::endl;
 			_buf = CCustomer::sMGetInstance().MGetNewBuf(
@@ -148,7 +148,7 @@ extern void doing_something()
 		}
 
 		
-		{//!< Filling message
+		{///< Filling message
 			NSHARE::CBuffer::iterator _it=_buf.begin(),_it_end=_buf.end();
 			for(int i=0;_it!=_it_end;++i,++_it)
 			{
@@ -156,7 +156,7 @@ extern void doing_something()
 			}
 		}
 		
-		//!< Send the message number 0 to uuid 
+		///< Send the message number 0 to uuid 
 		int _num = CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf,g_sent_to);
 		if (_num > 0)	//Hurrah!!! The data has been sent
 		{

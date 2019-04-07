@@ -39,9 +39,9 @@ namespace NSHARE
 class CIPCSignalEvent:CDenyCopying
 {
 public:
-	/** \brief размер буфера необходимого для хранения условной переменной
+	/**\brief размер буфера необходимого для хранения условной переменной
 	 *
-	 *	\note при использовании sem_open в буфере сохраняется имя условной переменной
+	 *\note при использовании sem_open в буфере сохраняется имя условной переменной
 	 */
 	enum{
 # ifdef _WIN32
@@ -54,26 +54,26 @@ public:
 	eReguredBufSize=16
 #endif	
 	};
-	/** \brief флаг управления созданием условной переменной
+	/**\brief флаг управления созданием условной переменной
 	 *
 	 */
 	enum eOpenType
 	{
-		E_UNDEF,//!< если УП существует то открыть, иначе создать
-		E_HAS_TO_BE_NEW,//!< если УП существует то возвращается ошибка,иначе создаётся
-		E_HAS_EXIST,//!< если УП существует то открыть, иначе создать
+		E_UNDEF,///< если УП существует то открыть, иначе создать
+		E_HAS_TO_BE_NEW,///< если УП существует то возвращается ошибка,иначе создаётся
+		E_HAS_EXIST,///< если УП существует то открыть, иначе создать
 	};
 	CIPCSignalEvent();
 
-	/** \brief Октрыть(создать) УП в буфере aBuf
-	 *	\param aBuf указатель на буфер, где будет храниться семафор
-	 *	\param aSize размер буфера (должен быть >=eReguredBufSize)
-	 *	\param aType \see eOpenType
+	/**\brief Октрыть(создать) УП в буфере aBuf
+	 *\param aBuf указатель на буфер, где будет храниться семафор
+	 *\param aSize размер буфера (должен быть >=eReguredBufSize)
+	 *\param aType \see eOpenType
 	 */
 	CIPCSignalEvent(uint8_t* aBuf, size_t aSize,eOpenType aIsNew=E_UNDEF);
 	~CIPCSignalEvent();
 
-	/** \brief Октрыть(создать) УП в буфере aBuf
+	/**\brief Октрыть(создать) УП в буфере aBuf
 	*	\param aBuf указатель на буфер, где будет храниться семафор
 	*	\param aSize размер буфера (должен быть >=eReguredBufSize)
 	*	\param aType \see eOpenType
@@ -83,27 +83,27 @@ public:
 	bool MTimedwait(CIPCSem *, const struct timespec* = NULL);
 	bool MTimedwait(CIPCSem *, double const);
 
-	/** \brief После вызова этого метода УП \aостается в памяти,
+	/**\brief После вызова этого метода УП \aостается в памяти,
 	 *  а объект становиться не инициализированным
 	 */
 	void MFree();
 	bool MIsInited() const;
 
-	/** \brief возвращет уникальный ID УП, если он существует
+	/**\brief возвращет уникальный ID УП, если он существует
 	 *
-	 * \return - пустую строку в случае ошибки
+	 *\return - пустую строку в случае ошибки
 	 * 			- ID УП
 	 */
 	NSHARE::CText const& MName() const;
 
-	/** \brief удаляет условную переменную из памяти
+	/**\brief удаляет условную переменную из памяти
 	 *
 	 */
 	void MUnlink();
 
-	/** \brief Возвращает в каком режиме была открыт УП
+	/**\brief Возвращает в каком режиме была открыт УП
 	 *
-	 * \return E_HAS_TO_BE_NEW - УП была создан
+	 *\return E_HAS_TO_BE_NEW - УП была создан
 	 * 		   E_HAS_EXIST - УП уже существовала
 	 * 		   иное - УП не инициализирована
 	 *

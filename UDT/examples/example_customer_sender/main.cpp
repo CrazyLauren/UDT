@@ -15,7 +15,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* WHAT, void* YOU_
 extern void doing_something();
 int main(int argc, char *argv[])
 {
-	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);//!< initialize UDT library
+	const int _val=CCustomer::sMInit(argc, argv, INDITIFICATION_NAME);///< initialize UDT library
 
 	if(_val!=0)
 	{
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	}
 
 	{
-		//!< When the UDT library will be connected to UDT kernel. The function
+		///< When the UDT library will be connected to UDT kernel. The function
 		//event_connect_handler is called.
 		callback_t _handler_event_connect(event_connect_handler, NULL);
 		CCustomer::value_t _event_connect(CCustomer::EVENT_CONNECTED,
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 		CCustomer::sMGetInstance() += _event_connect;
 	}
 	{
-		//!< When some consumers will start receiving data from me. The function
+		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_connect(event_new_receiver, NULL);
 		CCustomer::value_t _event_connect(CCustomer::EVENT_NEW_RECEIVER,
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	}
 
 	{
-		//!< When the sent packet is not delivered by UDT (usually It's happened when The UDT system
+		///< When the sent packet is not delivered by UDT (usually It's happened when The UDT system
 		// is overloaded or The receiver has been disconnected). The function
 		//event_fail_sent_handler is called.
 		callback_t _handler_fail_sent(event_fail_sent_handler, NULL);
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 		CCustomer::sMGetInstance() += _event_fail;
 	}
 	{
-		//!< When the customer's list has been updated. The function
+		///< When the customer's list has been updated. The function
 		//event_customers_update_handler is called.
 
 		callback_t _handler_cus_update(event_customers_update_handler, NULL);

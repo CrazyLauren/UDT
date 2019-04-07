@@ -58,7 +58,7 @@ private:
 
 	NSHARE::smart_field_t<program_id_t> FKernel;
 	bool FIsSent;
-	const eType FPType;
+	const eProgramType FPType;
 };
 } /* namespace NUDT */
 #endif /* CLOCALLINKCONNECTIONHANDLER_H_ */

@@ -261,7 +261,7 @@ CConfig const& CConfig::MChild(const CText& childName) const
 static uint8_t g_buffer[sizeof(CConfig)+__alignof(CConfig)];
 CConfig const& CConfig::sMGetEmpty()
 {
-	static CConfig const& emptyConf=*new (get_alignment_address<CConfig>(g_buffer)) CConfig;//!< allocate to static memory
+	static CConfig const& emptyConf=*new (get_alignment_address<CConfig>(g_buffer)) CConfig;///< allocate to static memory
 	return emptyConf;
 }
 const CConfig* CConfig::MChildPtr(const CText& childName) const
@@ -1116,7 +1116,7 @@ bool CConfig::sMUnitTest()
 			_conf.MAdd("int64",_i64);
 
 			CBuffer _buf(i);
-			{//!< Filling message
+			{///< Filling message
 				NSHARE::CBuffer::iterator _it=_buf.begin(),_it_end=_buf.end();
 				for(unsigned j=0;_it!=_it_end;++j,++_it)
 				{

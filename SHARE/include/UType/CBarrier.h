@@ -14,7 +14,7 @@
 
 namespace NSHARE
 {
-/** \brief This class provides an object-oriented thread barrier interface
+/**\brief This class provides an object-oriented thread barrier interface
  *
  */
 class SHARE_EXPORT CBarrier: CDenyCopying
@@ -23,17 +23,17 @@ public:
 	CBarrier(int aNum=0);
 	~CBarrier();
 
-	/** \brief Block the caller until all count threads have called wait
+	/**\brief Block the caller until all count threads have called wait
 	 *
 	 */
 	bool MWait(unsigned  aNum=0);
 
-    /** \brief Aborting the wait of all waiting threads
+    /**\brief Aborting the wait of all waiting threads
      *
      */
 	bool MShutDown ();
 
-	/** \brief Reset the barrier to it's original state.
+	/**\brief Reset the barrier to it's original state.
 	*
 	*/
 	void MReset();

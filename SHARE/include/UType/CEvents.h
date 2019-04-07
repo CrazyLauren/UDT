@@ -22,7 +22,7 @@ struct  CEventLessComapare:std::less<_Tp>
 {
 };
 
-/** \brief Класс реализует идеологию обратных вызовов
+/**\brief Класс реализует идеологию обратных вызовов
  *
  * Этот класс предназначен для упрощения реализация идеологии обратных вызовов.
  * Чтобы реализавать CB идеологию  достаточно отнаследовать этот класс.
@@ -33,10 +33,10 @@ struct  CEventLessComapare:std::less<_Tp>
  *
  * Сигнатура CB определяется event_type.
  *
- * \tparam key_type - тип ключа события
- * \tparam event_type - тип CB
- * \tparam TIEvents - тип интерфейса класса CEvents. Если нужно добавить возможность пергрузки методов класса то в качестве этого параметра укажите IEvents
- * \tparam mutex_type - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
+ *\tparam key_type - тип ключа события
+ *\tparam event_type - тип CB
+ *\tparam TIEvents - тип интерфейса класса CEvents. Если нужно добавить возможность пергрузки методов класса то в качестве этого параметра укажите IEvents
+ *\tparam mutex_type - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
  */
 template<class key_type = NSHARE::CText, class event_type = CEvent<>,
 		template<class, class > class TIEvents = IEventsEmpty,
@@ -58,18 +58,18 @@ public:
 	CEvents();
 	bool operator+=(value_t const & aVal);
 	bool operator-=(value_t const & aVal);
-	/** \brief добавить CB
+	/**\brief добавить CB
 	 *
 	 * Если CB уже существует, то он заменяется
 	 *
-	 *	\param aVal - пара ключ - CB
-	 *	\param aPrior - приоритет CB
+	 *\param aVal - пара ключ - CB
+	 *\param aPrior - приоритет CB
 	 */
 	bool MAdd(value_t const & aVal, unsigned int aPrior = std::numeric_limits<unsigned int>::max());
 
-	/** \brief удалить CB
+	/**\brief удалить CB
 	 *
-	 *	\param aVal -  пара ключ - CB
+	 *\param aVal -  пара ключ - CB
 	 */
 	bool MErase(value_t const& aVal);
 
@@ -80,16 +80,16 @@ public:
 
 	inline bool MEmpty  ()const;
 
-	/** \brief возвращает кол-во изменение списка
+	/**\brief возвращает кол-во изменение списка
 	 *
-	 *	\return число изменений
+	 *\return число изменений
 	 */
 	inline atomic_t::value_type MGetNumberOfChange() const;
 
-	/** \brief Сравнивает счётчки кол-ва изменеий списка
+	/**\brief Сравнивает счётчки кол-ва изменеий списка
 	 *
-	 *	\param aVal -  предыдущее значение счётчика
-	 *	\return true - если список изменился
+	 *\param aVal -  предыдущее значение счётчика
+	 *\return true - если список изменился
 	 */
 	inline bool MWasChanged(atomic_t::value_type const& aVal) const;
 
@@ -107,14 +107,14 @@ protected:
 private:
 	typedef typename Sequence_t::iterator iterator;
 	typedef typename Sequence_t::const_iterator const_iterator;
-	Sequence_t FCBs;//<! Array of CB
-	sender_t FSender;//<! pointer to Event's sender
-	mutable mutex_t	 FMutex;//<! mutex
-	NSHARE::atomic_t FNumberOfArrayChange;//<! Счётчик изменений FCBs, используется для оптимизации в методе MCall
+	Sequence_t FCBs;///< Array of CB
+	sender_t FSender;///< pointer to Event's sender
+	mutable mutex_t	 FMutex;///< mutex
+	NSHARE::atomic_t FNumberOfArrayChange;///< Счётчик изменений FCBs, используется для оптимизации в методе MCall
 };
 
 
-/** \brief Интерфейс CEvents
+/**\brief Интерфейс CEvents
  *
  * Если возникла необходимость перегружать методы в CEvents, то в качестве
  * аргумента шаблона нужно указать этот класс
@@ -146,7 +146,7 @@ public:
 	virtual bool MErase(value_t const& aVal)=0;
 	virtual bool MChangePrior(value_t const&aVal, unsigned int aPrior)=0;
 };
-/** \brief Интерфейс CEvents без полиморфизма
+/**\brief Интерфейс CEvents без полиморфизма
  *
  */
 template<class key_type, class value_type>

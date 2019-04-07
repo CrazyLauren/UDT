@@ -72,16 +72,6 @@ const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=(E_DATA_TOO_LARGE);
 const CCustomer::error_t CCustomer::E_MERGE_ERROR=(E_MERGE_ERROR);
 const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
 
-//reserverd
-//customer's error
-const CCustomer::error_t CCustomer::E_CANNOT_READ_CONFIGURE= E_CANNOT_READ_CONFIGURE;
-const CCustomer::error_t CCustomer::E_CONFIGURE_IS_INVALID= E_CONFIGURE_IS_INVALID;
-const CCustomer::error_t CCustomer::E_NO_NAME= E_NO_NAME;
-const CCustomer::error_t CCustomer::E_NOT_OPEN = E_NOT_OPEN;
-const CCustomer::error_t CCustomer::E_NAME_IS_INVALID= E_NAME_IS_INVALID;
-const CCustomer::error_t CCustomer::E_NOT_CONNECTED_TO_KERNEL= E_NOT_CONNECTED_TO_KERNEL;
-const CCustomer::error_t CCustomer::E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE= E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE;
-
 const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=E_USER_ERROR_BEGIN;
 const unsigned CCustomer::MAX_SIZE_USER_ERROR=sizeof(error_type)*8-eUserErrorStartBits;
 
@@ -908,25 +898,25 @@ int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_
 			if (_name.find_last_of(".xml") != NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from xml configuration file "<<_name;
-				_rval=_conf.MFromXML(_stream)?_rval:-static_cast<int>(E_CONFIGURE_IS_INVALID);
+				_rval=_conf.MFromXML(_stream)?_rval:static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
 			}
 			else if(_name.find_last_of(".json")!=NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from json configuration file "<<_name;
-				_rval=_conf.MFromJSON(_stream)?_rval:-static_cast<int>(E_CONFIGURE_IS_INVALID);
+				_rval=_conf.MFromJSON(_stream)?_rval:static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
 			}
 			else
 			{
 				LOG(DFATAL)<<"Unknown file format "<<_name;
-				_rval= -static_cast<int>(E_CANNOT_READ_CONFIGURE);
+				_rval= static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
 			}
 			_stream.close();
 		}
 		else
-		_rval=-static_cast<int>(E_CANNOT_READ_CONFIGURE);
+		_rval=static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
 	}
 	else
-		_rval=-static_cast<int>(E_CANNOT_READ_CONFIGURE);
+		_rval=static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
 
 	if(_rval==0)
 		_rval= sMInit(argc, argv, aName,aVersion, _conf);
@@ -1011,11 +1001,15 @@ int CCustomer::MDoNotReceiveMSG(const requirement_msg_info_t& aNumber)
 {
 	return FImpl->MRemoveDgParserFor(aNumber);
 }
+int CCustomer::MDoNotReceiveMSG(unsigned aHandlerId)
+{
+	return FImpl->MRemoveDgParserFor(aHandlerId);
+}
 int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
 {
 	requirement_msg_info_t _msg;
-	_msg.FRequired.FVersion = MGetID().FKernelVersion;
+	_msg.FRequired.FVersion = MGetID().FVersion;
 	_msg.FRequired.FNumber = aNumber;
 	_msg.FFrom=aFrom;
 	return FImpl->MRemoveDgParserFor( _msg);
@@ -1044,7 +1038,7 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 	CHECK_NOTNULL(FImpl);
 	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
-		return -static_cast<int>(E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
+		return static_cast<int>(ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
 	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, "", aFlag);
@@ -1056,7 +1050,7 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 	CHECK_NOTNULL(FImpl);
 	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
-		return -static_cast<int>(E_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
+		return static_cast<int>(ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
 	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, aTo,
