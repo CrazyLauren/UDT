@@ -16,5 +16,5 @@ share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}  )
 share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES} ${UDT_SHARE_LIBRARIES})
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/gui)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/kernel.json 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/default_kernel_config.json
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

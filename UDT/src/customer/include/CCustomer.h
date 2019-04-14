@@ -29,6 +29,8 @@ class CCustomer;
  *
  *\note
  * Non-POD type.
+ *
+ *\see NUDT::CCustomer
  */
 struct requirement_msg_info_t
 {
@@ -68,10 +70,21 @@ struct requirement_msg_info_t
 	NSHARE::CText 		FProtocolName; ///<Type of message protocol
 	required_header_t 	FRequired;///< Header of requirement message
 	unsigned 			FFlags;///< subscription flags
-	NSHARE::CText 		FFrom;///< Name of program
+	NSHARE::CText 		FFrom;///< A requirement message from (for detail see NUDT::CCustomer)
+
+	/*!\brief To constructor may be passed to be copied
+	 * a protocol name, a message header, from receive the message and flags
+	 *
+	 *\param aProtocol A type of message protocol
+	 *\param aWhat A message header (number)
+	 *\param aFrom A from receive the message (for detail see NUDT::CCustomer)
+	 *\param aFlags A bitwise flags #eFLags
+	 */
+	requirement_msg_info_t(NSHARE::CText const& aProtocol,required_header_t const& aWhat,
+			NSHARE::CText const& aFrom,unsigned aFlags=E_NO_FLAGS);
 
 	/*!\brief The default constructor creates fields using their
-     *  respective default constructors.
+	 *  respective default constructors.
 	 */
 	requirement_msg_info_t();
 
@@ -216,7 +229,7 @@ struct fail_sent_args_t
  *				 The format of the data varies with event type.
  *				 (see *_args_t structures)
  *\param YOU_DATA -A pointer to data that you wanted to pass
- *					 as the second parameter(FYouData) callback_t structure.
+ *					 as the third parameter(FYouData) callback_t structure.
  *
  *\return by default Callback functions must return 0
  *			for detail see NSHARE::eCBRval
@@ -233,13 +246,23 @@ struct callback_t
 {
 	signal_t FSignal; ///< A pointer to the callback function
 	void* 	FYouData;/*!<A pointer to data that you
-					 want to pass as the second parameter
+					 want to pass as the third parameter
 					 to the callback function when it's invoked.*/
 
 	/*!\brief The default constructor initializes
 	 * @c FSignal and @c FYouData to NULL.
 	 */
 	callback_t();
+
+	/*!\brief Only a pointer to the callback function
+	 * will be passed to constructor.
+	 *
+	 * To the third parameter to the callback function will
+	 * be passed NULL value.
+	 *
+	 *\param aSignal - A pointer to the callback function
+	 */
+	callback_t(signal_t const& aSignal);
 
 	/*!\brief Two objects may be passed to a @c callback_t
 	 * constructor to be copied
@@ -296,8 +319,21 @@ struct event_handler_info_t
 
 	/*!\brief Two objects may be passed to a constructor to be copied.
 	 *
+	 *\param aKey - aName of event
+	 *\param aCb - event handler
 	 */
 	event_handler_info_t (NSHARE::CText const& aKey,callback_t const& aCb);
+
+	/*!\brief Three objects may be passed to a constructor to be copied.
+	 *
+	 *\param aKey - aName of event
+	 *\param aSignal - A pointer to the callback function
+	 *\param aData - A pointer to data that you
+					 want to pass as the third parameter
+					 to the callback function when it's invoked.
+	 */
+	event_handler_info_t(NSHARE::CText const& aKey, signal_t const& aSignal,
+			void * const aData=NULL);
 
 	NSHARE::CText 	FKey;///< A Name of Event
 	callback_t 		FCb;/*!<A callback function that will handle
@@ -808,6 +844,7 @@ public:
 	 *			 number of received_message_args_t::FPacketNumber \n
 	 *		  0 if loopback mode (the data is sent to youself)\n
 	 *		  <0 if error is occured (see bitwise error codes E_*)
+	 *\warning  aMsg object will be empty if the buffer is sent to the kernel successfully
 	 */
 	int MSend(unsigned aNumber, NSHARE::CBuffer & aMsg,
 			NSHARE::version_t const& aVersion= NSHARE::version_t(), eSendToFlags aFlags=
@@ -821,7 +858,7 @@ public:
 	 *\param  aMsg A pointer to the message
 	 *\param  aVersion A version of the message
 	 *\param  aFlags A combination of the send flag
-	 *\warning  aBuffer object will be empty if the buffer is sent to the kernel successfully
+	 *\warning  aMsg object will be empty if the buffer is sent to the kernel successfully
 	*/
 	int MSend(unsigned aNumber, NSHARE::CBuffer & aMsg,
 			const NSHARE::uuid_t& aTo, NSHARE::version_t const& aVersion=
@@ -849,7 +886,7 @@ public:
 	 *		  0 if loopback mode (the data is sent to youself)\n
 	 *		  <0 if error is occured (see bitwise error codes E_*)
 	 *\warning It's the recommended way to send a message.
-	 *\warning aBuffer object will be empty if the buffer is sent to the kernel successfully
+	 *\warning aMsg object will be empty if the buffer is sent to the kernel successfully
 	 */
 	int MSend(required_header_t const& aNumber, NSHARE::CText aProtocolName,
 			NSHARE::CBuffer & aMsg, eSendToFlags aFlags= E_NO_SEND_FLAGS);
@@ -1037,7 +1074,18 @@ private:
 	_pimpl* FImpl;
 };
 
-inline requirement_msg_info_t::requirement_msg_info_t():FFlags(E_NO_FLAGS)
+inline requirement_msg_info_t::requirement_msg_info_t(
+		NSHARE::CText const& aProtocol, required_header_t const& aWhat,
+		NSHARE::CText const& aFrom, unsigned aFlags):
+				FProtocolName(aProtocol),//
+				FRequired(aWhat),//
+				FFrom(aFrom),//
+				FFlags(aFlags)
+{
+	;
+}
+inline requirement_msg_info_t::requirement_msg_info_t()://
+		FFlags(E_NO_FLAGS)
 {
 
 }
@@ -1058,6 +1106,12 @@ inline received_data_t::received_data_t():
 }
 inline callback_t::callback_t() :
 		FSignal(NULL), FYouData(NULL)
+{
+	;
+}
+inline callback_t::callback_t(signal_t const& aSignal):
+		FSignal(aSignal),//
+		FYouData(NULL)
 {
 	;
 }
@@ -1096,9 +1150,17 @@ inline event_handler_info_t::event_handler_info_t()
 
 }
 inline event_handler_info_t::event_handler_info_t (NSHARE::CText const& aKey,callback_t const& aCb):
-	FKey(aKey),FCb(aCb)
+	FKey(aKey),//
+	FCb(aCb)
 {
 
+}
+inline event_handler_info_t::event_handler_info_t(NSHARE::CText const& aKey,
+		signal_t const& aSignal, void * const aData):
+		FKey(aKey),//
+		FCb(aSignal,aData)
+{
+	;
 }
 } //
 namespace std

@@ -15,19 +15,18 @@
 
 using namespace NSHARE;
 using namespace NUDT;
-
+namespace test_selection
+{
 static NSHARE::CMutex g_mutex(NSHARE::CMutex::MUTEX_NORMAL);
 static NSHARE::CCondvar g_convar;
-
 
 extern NSHARE::CIPCSem g_mutex_stream;
 extern std::string g_name;
 #define LOCK_STREAM CRAII<CIPCSem> _block(g_mutex_stream); std::cout<<std::endl <<"Publisher "<<g_name<<" say:"<<std::endl;
 
-static bool g_is_working=false;
+static bool g_is_working = false;
 
 extern std::string const g_subscriber_name;
-
 
 static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA);
 static int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA);
@@ -36,7 +35,7 @@ static int event_remove_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA);
 static int event_connect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 {
 	CRAII<CMutex> _block(g_mutex);
-	g_is_working=true;
+	g_is_working = true;
 
 	{
 		LOCK_STREAM
@@ -60,7 +59,7 @@ static int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./example_customer.xml"); ///< initialize UDT library
+			NSHARE::version_t(1, 0), "./default_customer_config.xml"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
@@ -83,9 +82,9 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 	{
 		requirement_msg_info_t _msg;
-		((msg_head_t*)_msg.FRequired.FMessageHeader)->FType = E_MSG_CONTROL;
+		((msg_head_t*) _msg.FRequired.FMessageHeader)->FType = E_MSG_CONTROL;
 		_msg.FProtocolName = PROTOCOL_NAME;
-		_msg.FFrom=g_subscriber_name;
+		_msg.FFrom = g_subscriber_name;
 
 		callback_t _handler(msg_control_handler, NULL);
 
@@ -103,7 +102,8 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		///< When some consumers will start receiving data from me. The function
 		//event_new_receiver is called.
 		callback_t _handler_event_disconnect(event_remove_receiver, NULL);
-		event_handler_info_t _event_disconnect(CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
+		event_handler_info_t _event_disconnect(
+				CCustomer::EVENT_RECEIVER_UNSUBSCRIBE,
 				_handler_event_disconnect);
 		CCustomer::sMGetInstance() += _event_disconnect;
 	}
@@ -121,7 +121,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 }
 
-extern void start_publisher(int argc, char const *argv[],char const * aName)
+extern void start_publisher(int argc, char const *argv[], char const * aName)
 {
 	initialize(argc, aName, argv);
 	{
@@ -137,15 +137,17 @@ extern void start_publisher(int argc, char const *argv[],char const * aName)
 }
 static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	received_message_args_t const* _recv_arg=(received_message_args_t const*)aWHAT;
-	const msg_control_t* _control=(const msg_control_t*)_recv_arg->FMessage.FBegin;
+	received_message_args_t const* _recv_arg =
+			(received_message_args_t const*) aWHAT;
+	const msg_control_t* _control =
+			(const msg_control_t*) _recv_arg->FMessage.FBegin;
 
 	{
 		LOCK_STREAM
 		std::cout << "Receiving packet #"<<_recv_arg->FPacketNumber<<" bytes from "
-				<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<<" command "<<_control->FCommand<< std::endl;
+		<<_recv_arg->FFrom<<" by "<<_recv_arg->FProtocolName<<" command "<<_control->FCommand<< std::endl;
 	}
-	if(_control->FCommand.MGetFlag(msg_control_t::eFINISH))
+	if (_control->FCommand.MGetFlag(msg_control_t::eFINISH))
 	{
 		CRAII<CMutex> _block(g_mutex);
 		g_is_working = false;
@@ -180,39 +182,40 @@ static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 }
 static int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 {
-	subcribe_receiver_args_t* _recv_arg=(subcribe_receiver_args_t*)aWHAT;
+	subcribe_receiver_args_t* _recv_arg = (subcribe_receiver_args_t*) aWHAT;
 
 	LOCK_STREAM
 
-	std::cout <<"subscribed: "<<std::endl;
+std	::cout << "subscribed: " << std::endl;
 
-	for(auto& _it:_recv_arg->FReceivers)
+	for (auto& _it : _recv_arg->FReceivers)
 	{
-		std::cout <<"-*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*"<< std::endl;
+		std::cout << "-*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*" << std::endl;
 		std::cout << "Now " << _it.FWho << " receive " << _it.FWhat.FRequired
 				<< " by " << _it.FWhat.FProtocolName << " As I am in "
 				<< _it.FWhat.FFrom << std::endl;
-		std::cout <<"-------------------------------------"<< std::endl;
+		std::cout << "-------------------------------------" << std::endl;
 	}
 
 	return 0;
 }
 static int event_remove_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 {
-	subcribe_receiver_args_t* _recv_arg=(subcribe_receiver_args_t*)aWHAT;
+	subcribe_receiver_args_t* _recv_arg = (subcribe_receiver_args_t*) aWHAT;
 
 	LOCK_STREAM
 
-	std::cout <<"unsubscribed: "<<std::endl;
+std	::cout << "unsubscribed: " << std::endl;
 
-	for(auto& _it:_recv_arg->FReceivers)
+	for (auto& _it : _recv_arg->FReceivers)
 	{
-		std::cout <<"*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"<< std::endl;
-		std::cout << "Now " << _it.FWho << " doesn't receive " << _it.FWhat.FRequired
-				<< " by " << _it.FWhat.FProtocolName << " As I am in "
-				<< _it.FWhat.FFrom << std::endl;
-		std::cout <<"-------------------------------------"<< std::endl;
+		std::cout << "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*" << std::endl;
+		std::cout << "Now " << _it.FWho << " doesn't receive "
+				<< _it.FWhat.FRequired << " by " << _it.FWhat.FProtocolName
+				<< " As I am in " << _it.FWhat.FFrom << std::endl;
+		std::cout << "-------------------------------------" << std::endl;
 
 	}
 	return 0;
+}
 }

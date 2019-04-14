@@ -66,12 +66,18 @@ WARN_LOGFILE           = "@CMAKE_INSTALL_PREFIX@/doc/udt_error.txt"
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/" "@CMAKE_CURRENT_SOURCE_DIR@/tests/" "@CMAKE_CURRENT_SOURCE_DIR@/tools/"
+INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/"\
+						 "@CMAKE_CURRENT_SOURCE_DIR@/tests/"\
+						"@CMAKE_CURRENT_SOURCE_DIR@/tools/"\
+						"@CMAKE_CURRENT_SOURCE_DIR@/examples/"\
+						"@SHARE_INCLUDES@"
+						
 FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
+EXCLUDE_SYMBOLS        = sMUnitTest
 EXAMPLE_PATH           = "${CMAKE_CURRENT_SOURCE_DIR}/examples/"
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = YES

@@ -17,5 +17,4 @@ share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
 share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} )
 share_add_dependency(${TARGET_NAME} ${CUSTOMER_LIBRARIES})
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/example_customer.xml 
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)						  
+					  

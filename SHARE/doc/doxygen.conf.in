@@ -70,6 +70,7 @@ RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
+EXCLUDE_SYMBOLS        = sMUnitTest
 EXAMPLE_PATH           = "${CMAKE_CURRENT_SOURCE_DIR}/examples/"
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = YES

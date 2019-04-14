@@ -106,6 +106,11 @@ class CmdLine : public CmdLineInterface
 		char _delimiter;
 
 		/**
+		 * Ignoring not founded arguments
+		 */
+		bool _ignoring_nomatch;
+
+		/**
 		 * The handler that manages xoring lists of args.
 		 */
 		XorHandler _xorHandler;
@@ -200,7 +205,7 @@ private:
 		CmdLine(const std::string& message,
 				const char delimiter = ' ',
 				const std::string& version = "none",
-				bool helpAndVersion = true);
+				bool helpAndVersion = true, bool aIsIgnore=false);
 
 		/**
 		 * Deletes any resources allocated by a CmdLine object.
@@ -323,7 +328,7 @@ private:
 inline CmdLine::CmdLine(const std::string& m,
                         char delim,
                         const std::string& v,
-                        bool help )
+                        bool help,bool aIsIgnore )
     :
   _argList(std::list<Arg*>()),
   _progName("not_set_yet"),
@@ -331,6 +336,7 @@ inline CmdLine::CmdLine(const std::string& m,
   _version(v),
   _numRequired(0),
   _delimiter(delim),
+  _ignoring_nomatch(aIsIgnore),
   _xorHandler(XorHandler()),
   _argDeleteOnExitList(std::list<Arg*>()),
   _visitorDeleteOnExitList(std::list<Visitor*>()),
@@ -470,7 +476,7 @@ inline void CmdLine::parse(std::vector<std::string>& args)
 			if ( !matched && _emptyCombined( args[i] ) )
 				matched = true;
 
-			if ( !matched && !Arg::ignoreRest() )
+			if ( !matched && !Arg::ignoreRest() && !_ignoring_nomatch)
 				throw(CmdLineParseException("Couldn't find match "
 				                            "for argument",
 				                            args[i]));

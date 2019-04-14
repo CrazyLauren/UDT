@@ -164,7 +164,7 @@ inline required_header_t::required_header_t(T const& aHeader,
 			sizeof(T) <= sizeof(FMessageHeader) ?
 					sizeof(T) : sizeof(FMessageHeader);
 
-	uint8_t const*const _p=static_cast<uint8_t const*>(&aHeader);
+	uint8_t const*const _p=reinterpret_cast<uint8_t const*>(&aHeader);
 
 	unsigned i=0;
 	for(;i<_size;++i)

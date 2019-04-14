@@ -117,14 +117,13 @@ void init_trace(int argc, char *argv[])
 			char const _log_flag[] =
 			{ default_logging_short_option_name, '\0' };
 
-			CmdLine cmd("fix", ' ', "0.9", false);
+			CmdLine cmd("fix", ' ', "0.9", false,true);
 			cmd.setExceptionHandling(false);
 
 			CShareLogArgsParser _logging(_log_flag,
 					default_logging_option_name,false);
 			cmd.add(_logging);
-
-			Arg::beginIgnoring();
+			
 			cmd.parse(argc, argv);
 
 			init_share_trace(cmd.getProgramName().c_str());

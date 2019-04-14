@@ -13,7 +13,7 @@
 #define UDT_EXAMPLE_PROTOCOL_H_
 
 #define PROTOCOL_NAME "pudt" ///<Unique protocol name.Recommended using a short name
-#define CONFIG_PATH "./example_customer2.xml" ///< Configuration file path. The file format are xml or json.
+#define CONFIG_PATH "./default_customer_config.xml" ///< Configuration file path. The file format are xml or json.
 #define PACKET_SIZE 200000
 
 enum  eMsgType
@@ -32,6 +32,17 @@ struct msg_head_t
 {
 	uint32_t  FType           : 8;            ///< Type of msg E_MSG_*
 	uint32_t  FSize           : 24;           ///< Size of msg include header
+
+	msg_head_t()
+	{
+		memset(this,0,sizeof(*this));
+	}
+
+	msg_head_t(eMsgType  aType,uint32_t aSize)://
+		FType(aType),//
+		FSize(aSize)
+	{
+	}
 };
 struct msg_data
 {

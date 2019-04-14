@@ -71,3 +71,5 @@ add_subdirectory(modules)
 
 #SET(${CUSTOMER_TARGET_NAME_UP}_LIST_STATIC_MODULES ${${CUSTOMER_TARGET_NAME_UP}_AVAILABLE_MODULES}  CACHE STRING "list of modules which will linked static")
 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/default_customer_config.xml 
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)	

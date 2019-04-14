@@ -446,7 +446,7 @@ namespace NSHARE
 	}
 	void CThread::MCancelCleanUp()
 	{
-		LOG_IF(DFATAL,!MIsRunning())<<"The thread is not running.";
+		DLOG_IF(WARNING,!MIsRunning())<<"The thread is not running.";
 		if(MIsRunning())
 		{
 			FCleanUp.MCall(NULL);

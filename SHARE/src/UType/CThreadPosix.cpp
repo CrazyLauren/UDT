@@ -237,7 +237,6 @@ void* CThread::CImpl::sMThreadFunc(void* aData)
 void CThread::CImpl::sMCleanUpHandler(void* arg)
 {
 	CThread::CImpl* _cu = static_cast<CThread::CImpl*>(arg);
-	_cu->FThis.MSetRunnig(false);
 	_cu->FThis.MCancelCleanUp();
 }
 

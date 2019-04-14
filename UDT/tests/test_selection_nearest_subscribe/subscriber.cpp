@@ -16,7 +16,8 @@
 
 using namespace NSHARE;
 using namespace NUDT;
-
+namespace test_selection
+{
 static NSHARE::CMutex g_mutex(NSHARE::CMutex::MUTEX_NORMAL);
 static NSHARE::CCondvar g_convar;
 
@@ -124,7 +125,7 @@ static bool test_stage_4();
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./example_customer.xml"); ///< initialize UDT library
+			NSHARE::version_t(1, 0), "./default_customer_config.xml"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
@@ -615,4 +616,4 @@ void stop_publishers()
 			g_convar.MTimedwait(&g_mutex);
 	}
 }
-
+}

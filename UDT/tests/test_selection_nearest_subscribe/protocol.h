@@ -13,7 +13,8 @@
 #ifndef UDT_TESTS_TEST_SELECTION_NEAREST_SUBSCRIBE_PROTOCOL_H_
 #define UDT_TESTS_TEST_SELECTION_NEAREST_SUBSCRIBE_PROTOCOL_H_
 
-
+namespace test_selection
+{
 #define PROTOCOL_NAME "tudt" ///<Unique protocol name.Recommended using a short name
 enum eType
 {
@@ -48,5 +49,5 @@ namespace
 	static_assert(sizeof(msg_control_t)==4,"Invalid size of message");
 	static_assert(sizeof(msg_test_t)==4,"Invalid size of message");
 }
-
+}
 #endif /* UDT_TESTS_TEST_SELECTION_NEAREST_SUBSCRIBE_PROTOCOL_H_ */

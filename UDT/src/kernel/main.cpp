@@ -197,8 +197,8 @@ void initialize_core(int argc, char* argv[])
 			"string", _cmd);
 
 	ValueArg<std::string> _config("c", "config",
-			"configure path (json or xml). By default ./kernel.json.", false,
-			"./kernel.json", "path to json or xml config", _cmd);
+			"configure path (json or xml). By default ./default_kernel_config.json.", false,
+			"./default_kernel_config.json", "path to json or xml config", _cmd);
 
 	try
 	{
