@@ -11,6 +11,7 @@ include_directories (
 					${Boost_INCLUDE_DIRS} 
 					${CUSTOMER_INCLUDES} 
 					${LOGGING_INCLUDES}
+					${EXAMPLE_PARSER_INCLUDES}
 					${UDT_SHARE_INCLUDES})
 
 share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)

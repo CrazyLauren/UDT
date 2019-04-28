@@ -1,10 +1,10 @@
 #include <customer.h>
-#include <udt_example_protocol.h>
-#include "api_example_customer_for_user_protocol.h"
+#include "api_example_sender.h"
 
-namespace example_for_user_protocol
-{
 using namespace NUDT;
+
+namespace example_customer_sender
+{
 int initialize_library(int argc, char const*argv[])
 {
 	/*! Algorithm: \n
@@ -18,18 +18,8 @@ int initialize_library(int argc, char const*argv[])
 		return EXIT_FAILURE;
 	}
 
-	/*! 2) Say to the kernel that I want to receive the message
-	 * number #E_MSG_TEST
-	 * from #INDITIFICATION_NAME and it will be  handled
-	 * by function #msg_test_handler
-	 */
-	CCustomer::sMGetInstance().MIWantReceivingMSG( //
-			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(E_MSG_TEST, PACKET_SIZE)),
-					INDITIFICATION_NAME), //
-			msg_test_handler);
 
-	/*! 3) Subscribe to the event #NUDT::CCustomer::EVENT_CONNECTED to when the UDT library
+	/*! 2) Subscribe to the event #NUDT::CCustomer::EVENT_CONNECTED to when the UDT library
 	 *  will be connected to the kernel, the function
 	 *  #event_connect_handler is called.
 	 */
@@ -38,14 +28,14 @@ int initialize_library(int argc, char const*argv[])
 	CCustomer::sMGetInstance() += event_handler_info_t(
 			CCustomer::EVENT_DISCONNECTED, event_disconnect_handler);
 
-	/*! 4) Subscribe to the event #NUDT::CCustomer::EVENT_RECEIVER_SUBSCRIBE to
-	 * when some program will start receiving data from me. The function
+	/*! 3) Subscribe to the event #NUDT::CCustomer::EVENT_RECEIVER_SUBSCRIBE to
+	 * when some program will started to receive data from me. The function
 	 * #event_new_receiver is called.
 	 */
 	CCustomer::sMGetInstance() += event_handler_info_t(
 			CCustomer::EVENT_RECEIVER_SUBSCRIBE, event_new_receiver);
 
-	/*! 5) Subscribe to the event #NUDT::CCustomer::EVENT_RECEIVER_UNSUBSCRIBE to
+	/*! 4) Subscribe to the event #NUDT::CCustomer::EVENT_RECEIVER_UNSUBSCRIBE to
 	 * when some program will finished to receive data from me. The function
 	 * #event_remove_receiver is called.
 	 */
@@ -89,9 +79,7 @@ int main(int argc, char const*argv[])
 	return EXIT_SUCCESS;
 }
 }
-
-
-int main(int argc, char const*argv[])
+int main(int argc, char const *argv[])
 {
-	return example_for_user_protocol::main(argc, argv);
+	return example_customer_sender::main(argc, argv);
 }

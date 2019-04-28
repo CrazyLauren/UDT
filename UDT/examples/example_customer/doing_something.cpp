@@ -28,7 +28,6 @@ namespace example_1
  *\{
  */
 #ifdef _WIN32
-#	include <windows.h>
 struct _stream_block
 {
 	_stream_block()

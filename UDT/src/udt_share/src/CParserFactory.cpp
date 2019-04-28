@@ -28,7 +28,6 @@ extern UDT_SHARE_EXPORT const NSHARE::CText RAW_PROTOCOL_NAME = "raw";
 
 
 const NSHARE::CText CParserFactory::NAME="parsers";
-const NSHARE::CText CParserFactory::PARSER="parser";
 CParserFactory::CParserFactory()
 {
 	MAddFactory(new CRawProtocolParser());

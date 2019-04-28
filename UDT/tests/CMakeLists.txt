@@ -9,6 +9,7 @@ else()
 	if(COMPILER_SUPPORTS_CXX11 OR MSVC_VERSION GREATER 1800)
 		
 		add_subdirectory(test_selection_nearest_subscribe)
+		add_subdirectory(speed_test)
 		
 		install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel.json 
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/test)

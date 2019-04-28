@@ -575,7 +575,7 @@ public:
 	*\return 0 - EOK
 	 *			else bitwise error code
 	 */
-	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),const NSHARE::CText& aConfPath="");
+	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),const NSHARE::CText& aConfPath="default_customer_config.xml");
 
 <<<<<<< HEAD
 <<<<<<< HEAD

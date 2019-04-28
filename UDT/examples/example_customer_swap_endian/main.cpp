@@ -1,17 +1,19 @@
 #include <customer.h>
-#include <udt_example_protocol.h>
-#include "api_example_customer_for_user_protocol.h"
 
-namespace example_for_user_protocol
-{
+#include <udt_example_protocol.h>
+#include "api_example_swap_endian.h"
+
 using namespace NUDT;
+
+namespace example_customer_swap_endian
+{
 int initialize_library(int argc, char const*argv[])
 {
 	/*! Algorithm: \n
 	 * 1) Initialize UDT library
 	 */
 	const int _val = CCustomer::sMInit(argc, argv, INDITIFICATION_NAME,
-			NSHARE::version_t(1, 0));
+			NSHARE::version_t(1, 0), CONFIG_PATH);
 	if (_val != 0)
 	{
 		std::cerr << "Cannot initialize library as " << _val << std::endl;
@@ -19,13 +21,13 @@ int initialize_library(int argc, char const*argv[])
 	}
 
 	/*! 2) Say to the kernel that I want to receive the message
-	 * number #E_MSG_TEST
+	 * number #E_MSG_SWAP_BYTE_TEST
 	 * from #INDITIFICATION_NAME and it will be  handled
 	 * by function #msg_test_handler
 	 */
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
 			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(E_MSG_TEST, PACKET_SIZE)),
+					required_header_t(msg_head_t(E_MSG_SWAP_BYTE_TEST, sizeof(swap_byte_order_msg_t))),
 					INDITIFICATION_NAME), //
 			msg_test_handler);
 
@@ -39,7 +41,7 @@ int initialize_library(int argc, char const*argv[])
 			CCustomer::EVENT_DISCONNECTED, event_disconnect_handler);
 
 	/*! 4) Subscribe to the event #NUDT::CCustomer::EVENT_RECEIVER_SUBSCRIBE to
-	 * when some program will start receiving data from me. The function
+	 * when some program will started to receive data from me. The function
 	 * #event_new_receiver is called.
 	 */
 	CCustomer::sMGetInstance() += event_handler_info_t(
@@ -90,8 +92,7 @@ int main(int argc, char const*argv[])
 }
 }
 
-
 int main(int argc, char const*argv[])
 {
-	return example_for_user_protocol::main(argc, argv);
+	return example_customer_swap_endian::main(argc, argv);
 }

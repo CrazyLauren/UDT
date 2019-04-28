@@ -1,5 +1,5 @@
 /*
- * api_example_customer_for_user_protocol.h
+ * speed_test_api.h
  *
  *  Created on: 29.04.2019
  *      Author:  https://github.com/CrazyLauren
@@ -9,12 +9,15 @@
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
-#ifndef EXAMPLE_CUSTOMER_API_H_
-#define EXAMPLE_CUSTOMER_API_H_
+#ifndef SPEED_TEST_API_H_
+#define SPEED_TEST_API_H_
 
-namespace example_for_user_protocol
+namespace speed_test
 {
-#define INDITIFICATION_NAME "uex2@guex" ///<Identification program name which will see another program
+#define INDITIFICATION_NAME "speed_test@guex" ///<Identification program name which will see another program
+#define MESSAGE_NUMBER 5
+
+extern size_t g_buf_size;///<Size of sent message
 
 /*!\brief Initialize library, add event handler,
  * subscription for a message (add handlers for
@@ -28,7 +31,9 @@ namespace example_for_user_protocol
 extern int initialize_library(int argc, char const*argv[]);
 
 /*!\brief The function is called  for handling received message
- * of number #E_MSG_TEST
+ * of number #MESSAGE_NUMBER
+ *
+ * It's calculated speed of sending and receiving messages
  *
  *\param WHO A pointer to the structure Customer which is invoked function
  *\param WHAT A pointer to the structure #NUDT::received_message_args_t
@@ -38,7 +43,7 @@ extern int initialize_library(int argc, char const*argv[]);
  *
  *\return 0
  */
-extern int msg_test_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+extern int msg_speed_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
 /*! \brief The function is called when some program
  * wants to receive some message from me
@@ -118,22 +123,6 @@ extern void send_messages();
  */
 int main(int argc, char const*argv[]);
 
-/*\brief Recommended method of a message sending
- * by user protocol
- *
- */
-void send_message();
-
-/*\brief The buffer will be passed to the kernel
- * and when it parses the buffer for making
- * messages. Into the buffer can be more than one
- * message.
- *
- *\warning Non recommended method of a message sending
- *by user protocol as the method has been added
- *for compatibility with existing source code.
- */
-void send_buffer_which_is_consist_msg();
 }
 
-#endif /* EXAMPLE_CUSTOMER_API_H_ */
+#endif /* SPEED_TEST_API_H_ */

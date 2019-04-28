@@ -1,5 +1,5 @@
 /*
- * api_example_customer_for_user_protocol.h
+ * api_example_sender.h
  *
  *  Created on: 29.04.2019
  *      Author:  https://github.com/CrazyLauren
@@ -9,12 +9,12 @@
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
-#ifndef EXAMPLE_CUSTOMER_API_H_
-#define EXAMPLE_CUSTOMER_API_H_
+#ifndef EXAMPLE_SENDER_API_H_
+#define EXAMPLE_SENDER_API_H_
 
-namespace example_for_user_protocol
+namespace example_customer_sender
 {
-#define INDITIFICATION_NAME "uex2@guex" ///<Identification program name which will see another program
+#define INDITIFICATION_NAME "uex_sender@guex" ///<Identification program name which will see another program
 
 /*!\brief Initialize library, add event handler,
  * subscription for a message (add handlers for
@@ -27,18 +27,6 @@ namespace example_for_user_protocol
  */
 extern int initialize_library(int argc, char const*argv[]);
 
-/*!\brief The function is called  for handling received message
- * of number #E_MSG_TEST
- *
- *\param WHO A pointer to the structure Customer which is invoked function
- *\param WHAT A pointer to the structure #NUDT::received_message_args_t
- *			  in which is contained the message.
- *\param YOU_DATA A pointer to data that you has been wanted to pass
- *				  as the third parameter (NULL In this case).
- *
- *\return 0
- */
-extern int msg_test_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
 /*! \brief The function is called when some program
  * wants to receive some message from me
@@ -108,32 +96,16 @@ extern int event_fail_sent_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_D
  */
 extern int event_customers_update_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
-/*\brief Easiest example of sending(publishing) messages
- *
- */
-extern void send_messages();
-
 /*\brief Main function of test
  *
  */
 int main(int argc, char const*argv[]);
 
-/*\brief Recommended method of a message sending
- * by user protocol
+/*\brief Sending(publishing) messages
  *
  */
-void send_message();
+extern void send_messages();
 
-/*\brief The buffer will be passed to the kernel
- * and when it parses the buffer for making
- * messages. Into the buffer can be more than one
- * message.
- *
- *\warning Non recommended method of a message sending
- *by user protocol as the method has been added
- *for compatibility with existing source code.
- */
-void send_buffer_which_is_consist_msg();
 }
 
-#endif /* EXAMPLE_CUSTOMER_API_H_ */
+#endif /* EXAMPLE_SENDER_API_H_ */

@@ -14,25 +14,43 @@
 #define CPARSERFACTORY_H_
 
 #include <IExtParser.h>
-namespace NSHARE
-{
-//#if  defined( _WIN32 )
-//template class UDT_SHARE_EXPORT CFactoryManager<NUDT::IExtParser> ;
-//#endif
-}
+
 namespace NUDT
 {
+
+/*!\brief A class which is consist all parsers
+ *
+ *\see #REGISTRE_ONLY_ONE_PROTOCOL_MODULE
+ */
 class UDT_SHARE_EXPORT CParserFactory: public NSHARE::CFactoryManager<
 		NUDT::IExtParser>
 {
 public:
-	static const NSHARE::CText NAME;
-	static const NSHARE::CText PARSER;
+	static const NSHARE::CText NAME;///< A serializing key
+
+	/*!\brief default constructor which is added raw protocol
+	 *
+	 */
 	CParserFactory();
+
+	/*!\brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 *\return Serialized object.
+	 */
 	NSHARE::CConfig MSerialize() const;
 };
-} //
-//easy-to-use macro registrator
+}
+
+/*!\brief easy-to-use macro for defining
+ * a class which is added(registered) a parser to the kernel
+ *
+ *\warning It has to be defined only once in the library
+ * without any namespace
+ *
+ *\see #CExampleRegister
+ */
 #define REGISTRE_ONLY_ONE_PROTOCOL_MODULE(aClassName, aLibraryName)\
 	namespace{struct CRegisterImpl:public NSHARE::CFactoryRegisterer{\
 	CRegisterImpl():NSHARE::CFactoryRegisterer(NSHARE::CText().MMakeRandom(10),NSHARE::version_t(0,1)){};\

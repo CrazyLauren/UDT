@@ -12,13 +12,12 @@
 #include <customer.h>
 #include <CParserFactory.h>
 #include <udt_example_protocol.h>
+#include "import_export_macros.h"
 #include "CExampleProtocolParser.h"
-#include "CExampleRegister.h"
 
 
 using namespace NUDT;
 NSHARE::CText const CExampleProtocolParser::NAME = PROTOCOL_NAME;
-NSHARE::CText const CExampleRegister::NAME = "ExampleRegister";///< The name must be unique
 
 CExampleProtocolParser::CExampleProtocolParser() :
 		IExtParser(NAME)
@@ -31,12 +30,13 @@ CExampleProtocolParser::~CExampleProtocolParser()
 }
 size_t CExampleProtocolParser::MDataOffset(const NUDT::required_header_t& aHeader) const
 {
+	/*! In the example protocol the data is begun after header.*/
 	return sizeof(msg_head_t);
 }
 CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 		const uint8_t* aItBegin, const uint8_t* aItEnd,NSHARE::uuid_t aFrom,uint8_t aMask)
 {
-	//Parsing buffer aItBegin:aItEnd
+	/*! Algorithm of Parsing buffer from aItBegin to aItEnd:*/
 	result_t _result;
 
 	for (; aItBegin != aItEnd;)
@@ -46,10 +46,18 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 		obtained_dg_t _founded_dg;
 		_founded_dg.FBegin = aItBegin;
 
+		/*! If remain of buffer is less than the message header size
+		 * wait for a new data.*/
 		if (_remain < sizeof(msg_head_t))
 			_buffer_is_small=true;
 		else
 		{
+			/*! Compare the message type and size with predefined value of #eMsgType.
+			 *  If are equals then the message is founded.
+			 *  In the other case the error #E_INVALID_MSG_TYPE or #E_INVALID_MSG_SIZE
+			 *  is occured.
+			 * */
+
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
 			switch (_phead->FType)
 			{
@@ -72,7 +80,7 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 				}
 				break;
 			case E_MSG_SWAP_BYTE_TEST:
-				if (_phead->FSize != sizeof(test_msg_t))
+				if (_phead->FSize != sizeof(swap_byte_order_msg_t))
 				{
 					aItBegin = aItEnd;
 					_founded_dg.FErrorCode = E_INVALID_MSG_SIZE;
@@ -109,7 +117,8 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 std::pair<NUDT::required_header_t,bool> CExampleProtocolParser::MHeader(
 		const NSHARE::CConfig& aFrom) const
 {
-	std::cout<<aFrom<<std::endl;
+	/*! This is example of deserialization of the message header.*/
+
 	NUDT::required_header_t _header;
 	_header.FNumber=aFrom.MValue("num",0u);
 	_header.FVersion=NSHARE::version_t(aFrom.MChild("ver"));
@@ -118,6 +127,8 @@ std::pair<NUDT::required_header_t,bool> CExampleProtocolParser::MHeader(
 NSHARE::CConfig CExampleProtocolParser::MToConfig(
 		const NUDT::required_header_t& aHeader) const
 {
+	/*! This is example of serialization  the message header.*/
+
 	NSHARE::CConfig _conf("head");
 	_conf.MAdd("num",aHeader.FNumber);
 	_conf.MAdd("ver",aHeader.FVersion.MSerialize());
@@ -126,9 +137,12 @@ NSHARE::CConfig CExampleProtocolParser::MToConfig(
 bool CExampleProtocolParser::MSwapEndian(const NUDT::required_header_t& aHeader,
 		uint8_t* aItBegin, uint8_t* aItEnd) const
 {
+	/*! You has to be defined method for swapping byte order
+	 * of message.*/
+
 	if(aHeader.FNumber==E_MSG_SWAP_BYTE_TEST)
 	{
-		test_msg_t* const _msg=(test_msg_t*)aItBegin;
+		swap_byte_order_msg_t* const _msg=(swap_byte_order_msg_t*)aItBegin;
 		_msg->FData.FNumber=NSHARE::swap_endain(_msg->FData.FNumber);
 		_msg->FData.FByte1=NSHARE::swap_endain(_msg->FData.FByte1);
 		_msg->FData.FByte2=NSHARE::swap_endain(_msg->FData.FByte2);
@@ -147,51 +161,9 @@ bool CExampleProtocolParser::MSwapEndian(const NUDT::required_header_t& aHeader,
 }
 bool CExampleProtocolParser::MSwapEndian(NUDT::required_header_t* aHeader) const
 {
+	/*! You has to be defined method for swapping byte order
+	 * of the header message.*/
 	aHeader->FNumber=NSHARE::swap_endain(aHeader->FNumber);
 	return true;
 }
 
-//The code below is trivial for all parsers.
-//You can use REGISTRE_ONLY_ONE_PROTOCOL_MODULE or define class register(see below)
-
-//REGISTRE_ONLY_ONE_PROTOCOL_MODULE(CExampleProtocolParser,EXAMPLE_PARSER)
-
-CExampleRegister::CExampleRegister() :
-		NSHARE::CFactoryRegisterer(NAME,NSHARE::version_t(0,1))
-{
-
-}
-void CExampleRegister::MUnregisterFactory() const
-{
-	CParserFactory::sMGetInstance().MRemoveFactory(CExampleProtocolParser::NAME);
-}
-void CExampleRegister::MAdding() const
-{
-	CParserFactory::sMAddFactory<CExampleProtocolParser>();
-}
-bool CExampleRegister::MIsAlreadyRegistered() const
-{
-	if (CParserFactory::sMGetInstancePtr())
-		return CParserFactory::sMGetInstance().MIsFactoryPresent(
-				CExampleProtocolParser::NAME);
-	return false;
-
-}
-
-#if !defined(EXAMPLE_PARSER_STATIC)
-static NSHARE::factory_registry_t g_factory;
-extern "C" EXAMPLE_PARSER_EXPORT NSHARE::factory_registry_t* get_factory_registry()
-{
-	if(g_factory.empty())
-	{
-		g_factory.push_back(new CExampleRegister);
-	}
-	return &g_factory;
-}
-#else//#if !defined(EXAMPLE_PARSER_STATIC)
-#	include <load_static_module.h>
-namespace
-{
-	static NUDT::CStaticRegister< CExampleRegister> _reg;
-}
-#endif

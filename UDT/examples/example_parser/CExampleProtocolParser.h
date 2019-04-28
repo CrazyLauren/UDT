@@ -13,21 +13,25 @@
 #define CEXAMPLEPROTOCOLPARSER_H_
 #include <udt_share_macros.h>
 #include <udt_types.h>
-#if  defined( _WIN32 )
-#   ifdef EXAMPLE_PARSER_EXPORTS
-#       define EXAMPLE_PARSER_EXPORT __declspec(dllexport)
-#   else
-#       define EXAMPLE_PARSER_EXPORT __declspec(dllimport)
-#   endif
-#else
-#       define EXAMPLE_PARSER_EXPORT
-#endif
 
+/*!\brief An example of easiest protocol parser
+ *
+ */
 class EXAMPLE_PARSER_EXPORT CExampleProtocolParser:public NUDT::IExtParser
 {
 public:
-	static NSHARE::CText const NAME;
+	static NSHARE::CText const NAME;///< The unique name of protocol
+
+	/*!\brief the default constructor
+	 * in which you has to pass to IExtParser
+	 * the unique protocol name
+	 *
+	 */
 	CExampleProtocolParser();
+
+	/*!\brief default destructor
+	 *
+	 */
 	virtual ~CExampleProtocolParser();
 
 	virtual result_t MParserData(const uint8_t* aItBegin,

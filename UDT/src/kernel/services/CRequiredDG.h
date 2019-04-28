@@ -274,9 +274,9 @@ private:
 
 	void MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,user_data_info_t* const aInfo,fail_send_array_t*const aFail) const;
 
-	inline void MFillByUserProtocol(user_datas_t*const aFrom,user_datas_t* const aTo,
+	inline void MFillByUserProtocol(user_datas_t* const aFrom,user_datas_t* const aTo,
 			fail_send_array_t * const aFail) const;
-	inline void MFillByRawProtocol(user_datas_t& aTo,user_datas_t& aFailed,
+	inline void MFillByRawProtocol(user_datas_t*const aFrom,user_datas_t*const aTo,
 			fail_send_array_t * const aFail) const;
 
 	inline void MSendPacketFromTo(NSHARE::uuid_t const& aFrom,

@@ -311,7 +311,7 @@ extern void doing_something()
 		_msg2->FSize = PACKET_SIZE+1/*Imitation error. See example_parser_error*/;
 		
 		//filling first msg
-		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(test_msg_t),_it_end=(_buf.begin()+PACKET_SIZE);
+		NSHARE::CBuffer::iterator _it=_buf.begin()+sizeof(msg_head_t),_it_end=(_buf.begin()+PACKET_SIZE);
 		for(int i=0;_it!=_it_end;++i,++_it)
 		{
 			*_it=i%255;

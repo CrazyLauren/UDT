@@ -698,36 +698,55 @@ demand_dgs_for_t CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
  * 		   and adding theirs to list of message's receivers
  *
  */
-void CRequiredDG::MFillByRawProtocol(user_datas_t& aFrom, user_datas_t& aFailed,
+void CRequiredDG::MFillByRawProtocol(user_datas_t*const aFrom, user_datas_t*const aTo,
 		fail_send_array_t* const aFail) const
 {
-	DCHECK_EQ(aFrom.size(), 1);
+	DCHECK_NOTNULL(aFrom);
+	DCHECK_NOTNULL(aTo);
 
-	user_data_t& _data = aFrom.front();
-	const NSHARE::uuid_t _from = _data.FDataId.FRouting.FFrom.FUuid;
-	NSHARE::CText const& _protocol=RAW_PROTOCOL_NAME;
+	user_datas_t& _sent_datas(*aFrom);
+	user_datas_t::iterator _ut=_sent_datas.begin();
 
-	VLOG(3) << "Get uuids for " << _from<<" protocol "<<_protocol;
-
-	data_routing_t& _routing=MGetOrCreateExpectedListFor(_from,_protocol);
-
-	if (_routing.FExpected.empty())
+	for (; _ut != _sent_datas.end();)
 	{
-		LOG(INFO)<< "Nobody expects of data from '" << _from<< "' by  '"<< _protocol<< "' protocol.";
-		return;
+		user_data_t& _data = *_ut;
+		const NSHARE::uuid_t _from = _data.FDataId.FRouting.FFrom.FUuid;
+		NSHARE::CText const& _protocol = RAW_PROTOCOL_NAME;
+
+		VLOG(3) << "Get uuids for " << _from << " protocol " << _protocol;
+
+		data_routing_t& _routing = MGetOrCreateExpectedListFor(_from,
+				_protocol);
+
+		if (_routing.FExpected.empty())
+		{
+			LOG(INFO) << "Nobody expects of data from '" << _from
+									<< "' by  '" << _protocol << "' protocol.";
+			aTo->splice(aTo->end(), _sent_datas, _ut++);//only post increment
+			continue;
+		}
+
+		VLOG(2) << "Receive by raw protocol.";
+		required_header_t const& _header = _data.FDataId.FWhat;
+		uuids_of_receiver_t _receivers;
+
+		uuids_of_receiver_t const& _ru = MGetUUIDsOfReceivers(
+				_routing.FExpected, _header);
+
+		if (!_ru.empty() && _ru.FNumberOfRealReceivers > 0)
+		{
+			MFillRouteAndDestanationInfo(_ru, &_data.FDataId, aFail);
+			++_ut;
+		}
+		else
+		{
+			LOG(INFO) << "Packet " << _header.FNumber << " from " << _from
+									<< " does not required. Ignoring ...";
+			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)
+																<< "As only registrars are exist!!!";
+			aTo->splice(aTo->end(), _sent_datas, _ut++);//only post increment
+		}
 	}
-
-	VLOG(2) << "Receive by raw protocol.";
-	required_header_t const& _header=_data.FDataId.FWhat;
-	uuids_of_receiver_t _receivers;
-
-	uuids_of_receiver_t const& _ru = MGetUUIDsOfReceivers(_routing.FExpected,
-			_header);
-
-	if (!_ru.empty())
-		MFillRouteAndDestanationInfo(_ru, &_data.FDataId, aFail);
-	else
-		LOG(INFO)<< "Packet "<< _header.FNumber << " from "<< _from<< " does not required. Ignoring ...";
 
 }
 <<<<<<< HEAD
@@ -930,7 +949,7 @@ void CRequiredDG::MFillMsgReceivers(user_datas_t * const aFrom,
 		else
 		{
 			if (_handling.front().FDataId.MIsRaw())	//simplified parser for raw protocol
-				MFillByRawProtocol(_handling, _fail_packets, aFail);
+				MFillByRawProtocol(&_handling, &_fail_packets, aFail);
 			else
 				MFillByUserProtocol(&_handling,& _fail_packets, aFail);
 
@@ -1007,6 +1026,7 @@ error_type CRequiredDG::MAddReceiverOfMsg(msg_handlers_t const& aHandlers,
 /**\brief  Checking valid of receivers and
  * 			adding theirs to the list of message's receivers
  *
+ *
  */
 void CRequiredDG::MFillRouteAndDestanationInfo(
 		uuids_of_receiver_t const& aRoute, user_data_info_t* const aDataInfo,
@@ -1016,7 +1036,7 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 	fail_send_array_t& _fails(*aErrors);
 
 	VLOG(2) << "Filling " << _data_info;
-	if (aRoute.FNumberOfRealReceivers > 0)
+	DCHECK_GT(aRoute.FNumberOfRealReceivers, 0);
 	{
 		uuids_t _uuids_of_incorrect_version;
 		uuids_t _sent_to;
@@ -1086,9 +1106,6 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 		std::sort(aDataInfo->FDestination.begin(), aDataInfo->FDestination.end());
 		std::sort(aDataInfo->FRegistrators.begin(), aDataInfo->FRegistrators.end());
 		std::sort(aDataInfo->FRouting.begin(), aDataInfo->FRouting.end());
-	}else
-	{
-		LOG(INFO)<<"Only registrars are exist!!!";
 	}
 }
 
@@ -1280,7 +1297,7 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 
 		uuids_of_receiver_t const & _ru = MGetUUIDsOfReceivers(aUUIDs,
 				_msg.FType);
-		if (!_ru.empty())
+		if (!_ru.empty() && _ru.FNumberOfRealReceivers>0)
 		{
 			VLOG(4) << " OK " << " filling info";
 			MFillRouteAndDestanationInfo(_ru, &_handling_data.FDataId,
@@ -1289,7 +1306,18 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 		}
 		else
 		{
+<<<<<<< HEAD
 			LOG(INFO)<< "Packet " << _p.MToConfig(_msg.FType).MToJSON(true) << " from " << _handling_data.FDataId.FRouting.FFrom.FUuid << " does not required. Ignoring ...";
+=======
+			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)<<"Only registrars are exist!!!";
+			LOG(INFO) << "Packet "
+									<< serialize_head(_msg.FType,
+											_handling_data.FDataId.FProtocol).MToJSON(
+											true) << " from "
+									<< _handling_data.FDataId.FRouting.FFrom.FUuid
+									<< " does not required. Ignoring ...";
+			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)<<"As only registrars are exist!!!";
+>>>>>>> 38a6ae7... see changelog
 			aTo->splice(aTo->end(),*aFrom,_it_buf++);//only postincrement
 		}
 	}
