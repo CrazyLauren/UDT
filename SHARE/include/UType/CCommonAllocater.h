@@ -25,8 +25,8 @@ public:
 
 	CCommonAllocater();
 	virtual ~CCommonAllocater();
-	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = 4,eAllocatorType =ALLOCATE_FROM_COMMON );
-	virtual void* MReallocate(void* p,size_type aSize, uint8_t aAlignment = 4,eAllocatorType =ALLOCATE_FROM_COMMON);
+	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),eAllocatorType =ALLOCATE_FROM_COMMON );
+	virtual void* MReallocate(void* p,size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),eAllocatorType =ALLOCATE_FROM_COMMON);
 	virtual void MDeallocate(void* p,size_type aSize);
 
 	virtual size_type MMaxSize() const;

@@ -50,11 +50,11 @@ public:
 	{
 	}
 
-	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = 4,
+	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),
 			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
 
 	virtual void MDeallocate(void* p, size_type aSize) = 0;
-	virtual void* MReallocate(void* p, size_type aSize, uint8_t aAlignment = 4,
+	virtual void* MReallocate(void* p, size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),
 			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
 //	virtual void* MMove(void* aWhat)=0; \todo
 	virtual offset_pointer_t MOffset(void* aP) const
