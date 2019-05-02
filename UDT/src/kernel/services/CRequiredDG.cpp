@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CRequiredDG.cpp
  *
@@ -1096,7 +1098,7 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 		}
 		if (!_uuids_of_incorrect_version.empty())
 		{
-			LOG(ERROR)<<"Cannot send the msg the protocol's version is not compatible: "<<_sent_to;
+			LOG(ERROR)<<"Cannot send the msg the protocol's version is not compatible: "<< _uuids_of_incorrect_version;
 
 			fail_send_t _sent(_data_info, _uuids_of_incorrect_version,
 					E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);

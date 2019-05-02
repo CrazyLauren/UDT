@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * doing_something.cpp
  *
@@ -12,6 +14,7 @@
 #include <customer.h>
 #include <map>
 #include <udt_example_protocol.h>
+#include <stdexcept>
 
 #ifdef _WIN32
 #	include <windows.h>
@@ -76,7 +79,7 @@ extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 			std::cerr << "Fail data:" << i << "!=" << (unsigned) (*_it)
 					<< std::endl;
 			STREAM_MUTEX_UNLOCK
-			throw;
+			throw std::invalid_argument("Invalid argument");
 		}
 	}
 

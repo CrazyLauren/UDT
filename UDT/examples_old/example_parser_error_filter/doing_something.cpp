@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <<<<<<< HEAD:UDT/examples/example_parser_error2/doing_something.cpp
 /*
  * doing_something.h
@@ -169,6 +170,10 @@ extern void doing_something()
 }
 
 =======
+=======
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+>>>>>>> caa8e6a... see changelog
 /*
  * doing_something.h
  *

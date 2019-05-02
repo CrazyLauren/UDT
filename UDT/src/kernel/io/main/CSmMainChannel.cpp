@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CSmMainChannel.cpp
  *
@@ -745,8 +747,8 @@ bool CSmMainChannel::MHandleServiceDG(main_channel_error_param_t const* aP,
 				_p_param = &_jt->second;
 			}
 		}
-		if (!_p_param)
-			return false;
+
+		DCHECK_NOTNULL(_p_param);		
 		switch (_p_param->FState)
 		{
 		case param_t::E_TRY_OPEN:

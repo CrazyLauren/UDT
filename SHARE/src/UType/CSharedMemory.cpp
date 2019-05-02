@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CSharedMemory.cpp
  *
@@ -58,9 +60,9 @@ bool CSharedMemory::mem_info_t::MUpdateCRC()
 {
 	/// \note crc берётся от двух переменных
 	const size_t _crc_length = (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t);
-	
+	const size_t  _offset=offsetof(struct mem_info_t,FSize)/sizeof(mem_info_t::crc_t::type_t);
 	const mem_info_t::crc_t::type_t* _begin =
-			(mem_info_t::crc_t::type_t*) (&FSize);
+			(mem_info_t::crc_t::type_t*)this+_offset;
 	const mem_info_t::crc_t::type_t* _end =
 		_begin+ _crc_length;
 
@@ -72,9 +74,9 @@ bool CSharedMemory::mem_info_t::MCheckCRC() const
 {
 	/// \note crc берётся от двух переменных
 	const size_t _crc_length = (sizeof(FPidOffCreator) + sizeof(FSize)) / sizeof(mem_info_t::crc_t::type_t);
-
+	const size_t  _offset=offsetof(struct mem_info_t,FSize)/sizeof(mem_info_t::crc_t::type_t);
 	const mem_info_t::crc_t::type_t* _begin =
-			(mem_info_t::crc_t::type_t*) (&FSize);
+			(mem_info_t::crc_t::type_t*)this+_offset;
 
 	crc_t::type_t const _crc = crc_t::sMCalcCRCofBuf(_begin,
 			_begin + _crc_length);

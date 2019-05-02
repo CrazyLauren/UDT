@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CInfoService.cpp
  *
@@ -159,6 +161,7 @@ bool CInfoService::MAddOrUpdateClientTo(kernel_infos_t& aTo,
 
 void CInfoService::MDebugPrintState() const
 {
+	/*
 	return;
 	r_access _access = FData.MGetRAccess();
 	const _data_info_t& _d_info = _access.MGet();
@@ -166,6 +169,7 @@ void CInfoService::MDebugPrintState() const
 	std::cerr << _d_info.FNet.FNumberOfChange << std::endl;
 	_d_info.FNet.MSerialize().MToJSON(std::cerr, true);
 	std::cerr << "+-+-+-+-+-+-+-+-+-+-" << std::endl;
+	*/
 }
 
 void CInfoService::MPopConsumerFromMyInfo(const descriptor_t& aFrom,

@@ -199,7 +199,7 @@ public:
 		if (!MPtr())
 			return NULL;
 		T* _tmp = MPtr();
-		if (MPtr())
+		//if (MPtr())
 			(MPtr())->MUnrefWithoutDelete();
 		MSet( NULL);
 		return _tmp;

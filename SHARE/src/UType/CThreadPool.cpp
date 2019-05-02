@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CThreadPool.cpp
  *
@@ -225,7 +227,7 @@ bool CPoolThread::MCancel()
 	VLOG(2) << "Cancelling OperationThread" << MIsRunning();
 
 	FInOperation = false;
-	int result = 0;
+	//int result = 0;
 	if (MIsRunning())
 	{
 
@@ -262,9 +264,10 @@ bool CPoolThread::MCancel()
 		MJoin();
 	}
 
-	VLOG(2) << " thread cancelled ";
+	VLOG(2) << " thread canceled ";
 
-	return result!=0;
+	//return result!=0;
+	return true;
 }
 bool CPoolThread::MIsFree() const
 {

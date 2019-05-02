@@ -153,7 +153,7 @@ inline bool CKernelIo:: MSendTo(descriptor_t const& aBy, const T & aVal, routing
 		}
 		_p=&_it->second->FWho;
 	}
-	return  _p != NULL &&  _p->MSend(aVal, aBy, aTo, aError);
+	return  /*_p != NULL &&*/  _p->MSend(aVal, aBy, aTo, aError);
 }
 
 

@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CExampleProtocolParser.cpp
  *
@@ -73,10 +75,14 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 				{
 					aItBegin += _phead->FSize;
 <<<<<<< HEAD
+<<<<<<< HEAD
 					_founded_dg.FType.FNumber = _phead->FType;
 =======
 					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));					
 >>>>>>> f3da2cc... see changelog.txt
+=======
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
+>>>>>>> caa8e6a... see changelog
 				}
 				break;
 			case E_MSG_SWAP_BYTE_TEST:

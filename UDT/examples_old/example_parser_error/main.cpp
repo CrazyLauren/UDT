@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <<<<<<< HEAD:UDT/examples/example_parser_error/main.cpp
 #include <customer.h>
 
@@ -60,6 +61,10 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 =======
+=======
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+>>>>>>> caa8e6a... see changelog
 #include <customer.h>
 
 #include <udt_example_protocol.h>

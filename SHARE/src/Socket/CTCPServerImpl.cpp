@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CTCPServerImpl.cpp
  *
@@ -514,7 +516,7 @@ ssize_t IMPL::MReceiveData(recvs_t*aFrom, data_t*aBuf,
 				LOG(ERROR) << "Unknown error:" << print_error();
 				continue;
 			}
-			else if (_val > 0)
+			else //if (_val > 0)
 			{
 
 				CHECK(FLoopBack.MIs());

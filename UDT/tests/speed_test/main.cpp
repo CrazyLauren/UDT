@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <customer.h>
 
 #include "speed_test_api.h"
@@ -18,6 +20,8 @@ int main(int argc, char const*argv[])
 
 	///2) sending something by send_messages()
 	send_messages();
+
+	CCustomer::sMGetInstance().MClose();
 
 	///3) wait for finished by NUDT::CCustomer::MJoin()
 	CCustomer::sMGetInstance().MJoin();

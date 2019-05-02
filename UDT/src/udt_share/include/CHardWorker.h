@@ -163,7 +163,9 @@ inline void CHardWorker::MPushData(const NSHARE::CText& aWhat, const T& aVal,
 template<class T>
 inline void CHardWorker::sMPutData(object_data_t &_data, const T& aVal)
 {
-	_data.FData=malloc(sizeof(aVal));
+	_data.FData=malloc(sizeof(aVal));///< \todo alignment of data
+	DCHECK_NOTNULL(_data.FData);
+
 	_data.FDataSize=sizeof(aVal);
 	new (_data.FData) T(aVal);
 	_data.FDestroy = &CHardWorker::MDataCleanUp<T>;

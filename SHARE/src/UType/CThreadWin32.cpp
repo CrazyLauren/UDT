@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CThreadWin32.cpp
  *
@@ -68,8 +70,7 @@ void CThread::CImpl::MSetCpuNum()
        return;
     if (FPThread == INVALID_HANDLE_VALUE)
        return ;
-    if(FThis.FParam.priority<0)
-    	return;
+	DCHECK_GE(FThis.FParam.priority, 0);
 
     DWORD affinityMask = 0x1 << FThis.FParam.priority;
 	SetThreadAffinityMask(FPThread, affinityMask);

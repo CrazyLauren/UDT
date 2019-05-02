@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CBuffer.cpp
  *
@@ -828,8 +830,9 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,
 		}
 		else if (_free_end_mem >= aSize) //there is  memory
 		{
-			const bool _begin_use_up = (_elems_befor == 0) //
-			&& (!_insert_to_begin) //
+			const bool _begin_use_up = (_elems_befor == 0) 	//warning elements no copied from begin,
+															//see if (_begin_use_up)
+			//&& (!_insert_to_begin) //Commented as if (_insert_to_begin) below
 					&& (_free_begin_mem < BEGIN_SIZE);
 
 			VLOG_IF(1,_begin_use_up) << "The begin buffer is use up.";
@@ -853,7 +856,8 @@ CBuffer::pointer CBuffer::MInsertImpl(iterator aPosition, size_type aSize,
 				memmove(_position + aSize + _move_on, _position,
 						_elems_after - aSize);
 				// copy prefix
-				memmove(_begin + _move_on, _begin, _elems_befor);
+				//Comments as no elements from begin see _begin_use_up variable
+				//memmove(_begin + _move_on, _begin, _elems_befor);
 
 				_position += _move_on;
 				_new_start_offset = _free_begin_mem + _move_on;

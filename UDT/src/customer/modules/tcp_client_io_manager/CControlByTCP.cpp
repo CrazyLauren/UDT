@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CControlByTCP.cpp
  *
@@ -221,7 +223,7 @@ void CControlByTCP::MProcess(request_main_channel_param_t const* aP, void*)
 
 	CRAII<CMutex> _block(FMainLock);
 	bool const _is_equal =
-			FMain
+			FMain!=NULL
 					&& NSHARE::CText((utf8 const*) (aP->FType))
 							== FMain->MGetType() ? true : false;
 	LOG_IF(WARNING,!_is_equal) << "Warning type of main channel is not equal.";
@@ -249,8 +251,9 @@ void CControlByTCP::MProcess(request_main_channel_param_t const* aP, void*)
 			_channel_error = main_channel_error_param_t::E_NO_CHANNEL;
 
 	}
-	if (_channel_error > 0)
-		MSendMainChannelError(NSHARE::CText((utf8*) aP->FType), _channel_error);
+	DCHECK_GT(_channel_error, 0);
+
+	MSendMainChannelError(NSHARE::CText((utf8*) aP->FType), _channel_error);
 }
 template<>
 void CControlByTCP::MProcess(close_main_channel_t const* aP, void*)

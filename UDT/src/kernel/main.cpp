@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * main.cpp
  *
@@ -220,18 +222,17 @@ void initialize_core(int argc, char* argv[])
 		NSHARE::CConfig aConf;
 		NSHARE::CText _path(_config.getValue());
 		aConf.MGetIfSet("path", _path);
-		CConfigure* _p_conf = NULL;
 		if (_path.find(".xml") != NSHARE::CText::npos)
 		{
-			_p_conf = new CConfigure(_path, CConfigure::XML);
+			new CConfigure(_path, CConfigure::XML);
 		}
 		else if (_path.find(".json") != NSHARE::CText::npos)
 		{
-			_p_conf = new CConfigure(_path, CConfigure::JSON);
+			new CConfigure(_path, CConfigure::JSON);
 		}
 		else
 			LOG(DFATAL)<<"Invalid type of Configuration file - "<<_path<<".";
-		_p_conf->MGet().MBlendWith(aConf);
+		CConfigure::sMGetInstance().MGet().MBlendWith(aConf);
 	}
 
 	new CDataObject();
@@ -263,7 +264,8 @@ void perpetual_loop()
 }
 void start()
 {
-	CKernelIo* _io = new CKernelIo();
+	new CKernelIo();
+	CKernelIo*const _io = CKernelIo::sMGetInstancePtr();
 
 	std::cout << "Starting..." << std::endl;
 	_io->MInit();

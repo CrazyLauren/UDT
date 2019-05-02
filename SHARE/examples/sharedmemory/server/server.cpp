@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * server.cpp
  *
@@ -11,6 +13,7 @@
  */
 #include <deftype>
 #include <iostream>
+#include <stdexcept>
 #include <share_socket.h>
 #include <UType/CSharedMemory.h>
 using namespace NSHARE;
@@ -60,7 +63,7 @@ int main(int argc, char *argv[])
 		if(_last_flags!=aFlags)
 		{
 			std::cerr<<"WTF? Invalid flag or The several clients is working."<<std::endl;
-			throw;
+			throw std::invalid_argument("Invalid argument");
 		}
 		NSHARE::CBuffer::size_type const _data_size = _data.size();
 		_recv_count += _data_size;

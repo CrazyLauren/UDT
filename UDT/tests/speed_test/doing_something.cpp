@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * doing_something.cpp
  *
@@ -25,6 +27,7 @@ namespace speed_test
 {
 using namespace NUDT;
 
+static double g_test_working_time = 60;///< Time of working test
 static NSHARE::CMutex g_stream_mutex;///< A mutex for lock console output
 static double g_time = 0.0;///< Current time
 static double g_start_time = 0.0;///< Start time of the test
@@ -169,7 +172,10 @@ extern void send_messages()
 	g_time = NSHARE::get_time();
 	g_start_time = NSHARE::get_time();
 	g_last_print_time= NSHARE::get_time();
-	for (;;)
+	for (unsigned i=0;
+		(i%10000)!=0//Check only every 10000 sent message
+		|| (NSHARE::get_time()-g_start_time)<g_test_working_time//stop after timeout
+		;++i)
 	{
 		///1) allocate the buffer for msg
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
@@ -185,6 +191,20 @@ extern void send_messages()
 			++g_amount_of_doesnt_allocated;
 	};
 
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+
+		std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
+			<< " md; Med="
+			<< ((g_recv_bytes / 1024.0 / 1024.0)
+				/ (NSHARE::get_time() - g_start_time)) << " mb/s."
+			<< std::endl;
+		std::cout << "Messages=" << g_amount_of_messages << "; fail sent="
+			<< g_amount_of_doesnt_send << "; fail allocated="
+			<< g_amount_of_doesnt_allocated << std::endl;
+		std::cout << "Press any key... " << std::endl;
+		getchar();
+	}
 }
 }
 

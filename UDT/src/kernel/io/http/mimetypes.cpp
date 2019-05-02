@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <deftype>
 #include "parser-cpp.h"
 #include "CHttpResponse.h"
@@ -196,7 +198,7 @@ NSHARE::CText CHttpResponse::sMGetMimetype (NSHARE::CText const& filename)
     	NSHARE::CText const _ext(_pos==NSHARE::CText::npos?filename:filename.substr(_pos+1));
 
     	unsigned i =0;
-        for(; i<sizeof(g_mimetypes); i += 2)
+        for(; i<sizeof(g_mimetypes)/sizeof(g_mimetypes[0]); i += 2)
         {
         	if(_ext==g_mimetypes[i])
         	    return g_mimetypes[++i];

@@ -133,6 +133,10 @@ private:
 	{
 		return aLeft==aRht;
 	}
+	static inline bool sMValueEqualeCompare(bool const & aLeft, bool const & aRht)
+	{
+		return aLeft==aRht;
+	}
 	static inline bool sMValueEqualeCompare( double const & aLeft, double const & aRht)
 	{
 		return approximatelyEqual(aLeft,aRht);

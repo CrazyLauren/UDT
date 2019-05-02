@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * shared_types.cpp
  *
@@ -219,7 +221,7 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 =======
 bool user_data_info_t::MIsMsgExist() const
 {
-	static const uint8_t _fix_buf[sizeof(FWhat.FMessageHeader)]={};
+	static const uint8_t _fix_buf[sizeof(FWhat.FMessageHeader)]={0};
 
 	return memcmp(FWhat.FMessageHeader,_fix_buf,sizeof(FWhat.FMessageHeader))!=0;
 }
@@ -807,52 +809,52 @@ IExtParser* aP) const
 	if (aP)
 	{
 		size_t _data_offset=0;
-		if (!_is_base64)
-			try
+		try
+		{
+			if (FDataId.MIsRaw())
 			{
-				if (FDataId.MIsRaw())
-				{
-					IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
-						RAW_PROTOCOL_NAME);
-					DCHECK_NOTNULL(_p);
-					_data_offset=_p->MDataOffset(FDataId.FWhat);
-				}
-				else
-				{
-					_data_offset=aP->MDataOffset(FDataId.FWhat);
-				}
-			} catch (...)
-			{
-				LOG(DFATAL)<<"Exception is occurred";
-				_is_base64 = true;
+				IExtParser* const _p =
+						CParserFactory::sMGetInstance().MGetFactory(
+								RAW_PROTOCOL_NAME);
+				DCHECK_NOTNULL(_p);
+				_data_offset = _p->MDataOffset(FDataId.FWhat);
 			}
+			else
+			{
+				_data_offset = aP->MDataOffset(FDataId.FWhat);
+			}
+		} catch (...)
+		{
+			LOG(DFATAL) << "Exception is occurred";
+			_is_base64 = true;
+		}
 		if (!_is_base64)
 			try
 			{
 				NSHARE::CConfig _data(
-						aP->MToConfig(FDataId.FWhat, _begin+_data_offset, _begin + _size-_data_offset));
+						aP->MToConfig(FDataId.FWhat, _begin + _data_offset,
+								_begin + _size - _data_offset));
 				_data.MKey() = DATA;
 				if (_data.MIsOnlyKey())
 				{
-					LOG(ERROR)<<"Cannot serialize by "<<aP->MGetType();
+					LOG(ERROR) << "Cannot serialize by " << aP->MGetType();
 					_is_base64 = true;
 				}
 				else
 				{
 					_conf.MAdd(_data);
-					_conf.MAdd(PARSER,aP->MGetType());
+					_conf.MAdd(PARSER, aP->MGetType());
 				}
 
-			}
-			catch (...)
+			} catch (...)
 			{
-				LOG(DFATAL)<<"Exception is occurred";
+				LOG(DFATAL) << "Exception is occurred";
 				_is_base64 = true;
 			}
 
 	}
 	else
-	_is_base64=true;
+		_is_base64=true;
 
 	if (_is_base64)
 	{

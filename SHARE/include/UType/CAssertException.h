@@ -89,7 +89,7 @@ inline void massert(_T const& aVal1, _Y const& aVal2,char const* description, ch
 	_assert+=_buf.str();
 
 	std::cerr<<_assert<<std::endl;
-	throw new CAssertException (description,filename,lineNumber);
+	throw CAssertException (description,filename,lineNumber);
 }
 
 template<class _T,class _Y>
@@ -108,7 +108,7 @@ inline void massert(_T* const& aVal1, _Y const& aVal2,char const* description, c
 	_assert+=_buf.str();
 
 	std::cerr<<_assert<<std::endl;
-	throw new CAssertException (description,filename,lineNumber);
+	throw CAssertException (description,filename,lineNumber);
 }
 template<class _T>
 inline void massert(_T const& aVal,char const* description, char const* filename,
@@ -126,7 +126,7 @@ inline void massert(_T const& aVal,char const* description, char const* filename
 	_assert+=_buf.str();
 
 	std::cerr<<_assert<<std::endl;
-	throw new CAssertException (description,filename,lineNumber);
+	throw CAssertException (description,filename,lineNumber);
 }
 #ifdef NDEBUG
 template<class _T, class _Y>

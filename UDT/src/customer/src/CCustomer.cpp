@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CCustomer.cpp
  *
@@ -931,7 +933,8 @@ int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_
 	_pimpl::sMInitConfigure(aConf);
 	//fixme to constructor
 	//init rrd client
-	CCustomer* _p = new CCustomer();
+	new CCustomer();
+	CCustomer* _p =CCustomer::sMGetInstancePtr();
 	const int _rval = _p->MInitialize(argv[0], aName,aVersion);
 	if (_rval != 0)
 		delete _p;

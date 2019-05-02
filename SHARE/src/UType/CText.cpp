@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CText.cpp
  *
@@ -2047,7 +2049,7 @@ static utf32 ucs4_tolower(utf32 c) //FIXME
 		return c + 0x50;
 	if (((c >= (0x410 + 0x20)) && (c <= (0x42f + 0x20))) //
 	|| (c == 0x401 + 0x50) //
-			|| (c > 0 && c <= 127) //
+			|| (/*c > 0 &&*/ c <= 127) //
 			)
 		return c;
 	LOG(DFATAL)<<"Unknown \"tolower\" function for "<<CText(1,c) <<"("<<c<<")";
@@ -2065,7 +2067,7 @@ static utf32 ucs4_toupper(utf32 c) //FIXME
 		return 0x401;
 	if (((c >= 0x410) && (c <= 0x42f)) //
 	|| c == 0x401 || //
-			(c > 0 && c <= 127))
+			(/*c > 0 &&*/ c <= 127))
 		return c;
 	LOG(DFATAL)<<"Unknown \"toupper\" function for "<<CText(1,c) <<"("<<c<<")";
 	return c;

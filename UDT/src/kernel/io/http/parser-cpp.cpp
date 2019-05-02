@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * parcer-cpp.cpp
  *
@@ -249,7 +251,7 @@ void CUrl::MDecode(CText& aTo, CText::const_iterator aBegin,
 	{
 		if (*aBegin == '%')
 		{
-			int _val = 0;
+			unsigned int _val = 0;
 			++aBegin; //%
 			CText _tmp(aBegin, aBegin + 2); //hex value
 			++aBegin;

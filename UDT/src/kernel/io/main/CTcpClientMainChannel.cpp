@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CTcpClientMainChannel.cpp
  *
@@ -351,7 +353,7 @@ void CTcpClientMainChannel::MReceiver()
 			LOG(ERROR) << "Unknown error";
 			continue;
 		}
-		else if (_val > 0)
+		else// if (_val > 0)
 		{
 			CSelectSocket::socks_t::iterator _it = _to.begin(),_it_end(_to.end());
 			for (; _it != _it_end; ++_it)

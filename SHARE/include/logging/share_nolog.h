@@ -70,7 +70,7 @@ enum eNoLogLevel
 #	define CHECK_GT(some,some1) LOG_ASSERT((some)>(some1))
 #	define CHECK_GE(some,some1) LOG_ASSERT((some)>=(some1))
 #	define CHECK_EQ(some,some1) LOG_ASSERT((some)==(some1))
-#	define CHECK_NOTNULL(aVal) LOG_ASSERT(aVal!=NULL)
+#	define CHECK_NOTNULL(aVal) LOG_ASSERT((aVal)!=NULL)
 #	define DCHECK_POINTER_ALIGN(aVal) LOG_ASSERT(NSHARE::impl::check_pointer_align(aVal))
 #	define CHECK(aVal) LOG_ASSERT(aVal)
 
@@ -80,7 +80,7 @@ enum eNoLogLevel
 #	define DCHECK_GT(some,some1) DLOG_ASSERT((some)>(some1))
 #	define DCHECK_GE(some,some1) DLOG_ASSERT((some)>=(some1))
 #	define DCHECK_EQ(some,some1) DLOG_ASSERT((some)==(some1))
-#	define DCHECK_NOTNULL(aVal) DLOG_ASSERT(aVal!=NULL)
+#	define DCHECK_NOTNULL(aVal) DLOG_ASSERT((aVal)!=NULL)
 #	define DCHECK(aVal) DLOG_ASSERT(aVal)
 
 #	define VLOG_EVERY_N(verboselevel, n) VLOG(verboselevel)

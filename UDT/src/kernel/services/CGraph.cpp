@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * CGraph.cpp
  *
@@ -73,6 +75,8 @@ void CRouteGraph::MDijkstraComputePathsFor(node_t source) const
 		VLOG(2) << "Exist u :" << _u;
 		// Visit each edge exiting u
 		adjacency_list_t::const_iterator _neighbors = FVertices.find(_u);
+		DCHECK(_neighbors != FVertices.end());
+
 		for (vertexs_t::const_iterator neighbor_iter =
 				_neighbors->second.begin();
 				neighbor_iter != _neighbors->second.end(); ++neighbor_iter)

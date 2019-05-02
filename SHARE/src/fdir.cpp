@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
  * fdir.cpp
  *
@@ -164,6 +166,7 @@ extern int filecmp(std::string const& aF1, std::string const& aF2)
 
 extern int filecmp(FILE* aF1, FILE* aF2)
 {
+	int _rval=0;
 	uint8_t* _buf1=(uint8_t*)malloc (FILE_COMPARE_BUFFER_SIZE);
 	uint8_t* _buf2=(uint8_t*)malloc (FILE_COMPARE_BUFFER_SIZE); 
 	
@@ -174,9 +177,15 @@ extern int filecmp(FILE* aF1, FILE* aF2)
 	fseek(aF2, 0, SEEK_END);
 	int _s1 = ftell(aF1), _s2 = ftell(aF2);
 	if (_s1 < 0 || _s2 < 0)
-		return -1;
+	{
+		_rval = -1;
+		goto exit;
+	}
 	if (_s1 != _s2)
-		return 1;
+	{
+		_rval = 1;
+		goto exit;
+	}
 	fseek(aF1, 0, SEEK_SET);
 	fseek(aF2, 0, SEEK_SET);
 	do
@@ -184,11 +193,16 @@ extern int filecmp(FILE* aF1, FILE* aF2)
 		_s1 = (int)fread(_buf1, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF1);
 		_s2 = (int)fread(_buf2, sizeof(uint8_t), FILE_COMPARE_BUFFER_SIZE, aF2);
 		if (!_s1 || _s1 != _s2 || (memcmp(_buf1, _buf2, _s1)!=0))
-			return 1;
+		{
+			_rval = 1;
+			goto exit;
+		}
 	} while (!feof(aF1) && !feof(aF2));
+
+exit:
 	free(_buf1);
 	free(_buf2);
-	return 0;
+	return _rval;
 }
 extern std::string get_path()
 {
