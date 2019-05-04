@@ -50,11 +50,11 @@ public:
 	sent_state_t MSend(data_t const& aVal);
 	sent_state_t MSend(void const*  aData, std::size_t aSize);
 	sent_state_t MSend(data_t const& aVal, NSHARE::CConfig const& aTo);
-	eSendState MSend(NSHARE::CBuffer const& aVal,bool aBlock,unsigned aId=0);
+	eSendState MSend(NSHARE::CBuffer const& aVal,bool aBlock,uint32_t aFlags=0);
 
 
 
-	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,unsigned* aId=NULL,double aTime=-1);
+	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,uint32_t* aId=NULL,double aTime=-1);
 	ssize_t MReceiveData(NSHARE::CBuffer *, float const aTime);
 
 	size_t MGetSize() const;

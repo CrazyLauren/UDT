@@ -161,6 +161,7 @@ void CTraceToSocket::MOpen(NSHARE::CConfig const& aConf)
 				helpers::getLogLog().error(LOG4CPLUS_TEXT("The next socket will be ignored..."));
 				helpers::getLogLog().error(_buf.str());
 				delete (*_it);
+				*_it=NULL;
 			}
 
 			std::stringstream _buf;

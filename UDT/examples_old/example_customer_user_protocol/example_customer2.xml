@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<conf>
-	<worker>tcp_client_io_manager</worker>
-	<tcp_client_io_manager>
-			<Port>18011</Port>
-	</tcp_client_io_manager>
-	<modules/>
-</conf>

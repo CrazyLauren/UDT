@@ -34,9 +34,9 @@ public:
 	bool MClose(shared_identify_t const&);
 	bool MClose(int aUserId);//if aUserId is negative, close all clients
 	CSharedMemoryBase::eSendState MSend(shared_identify_t const&,NSHARE::CBuffer & aVal,bool aBlock,unsigned aFlags);
-	unsigned MSend(int aUserId,NSHARE::CBuffer & aVal,bool aBlock,unsigned aFlags);//if aUserId is negative, The is sent to all clients
+	unsigned MSend(int aUserId,NSHARE::CBuffer & aVal,bool aBlock,CSharedMemoryBase::CImpl::recv_t::flags_t aFlags);//if aUserId is negative, The is sent to all clients
 
-	bool  MReceiveData(NSHARE::CBuffer &,shared_identify_t* aFrom,double aTime,unsigned * aFlags);
+	bool  MReceiveData(NSHARE::CBuffer &,shared_identify_t* aFrom,double aTime,CSharedMemoryBase::CImpl::recv_t::flags_t * aFlags);
 
 	//fixme todo my name as from_t
 	NSHARE::CText const& MSharedName() const;

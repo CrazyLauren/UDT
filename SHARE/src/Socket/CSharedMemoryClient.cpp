@@ -91,7 +91,7 @@ shared_identify_t CSharedMemoryClient::MServerIdentifier() const
 	return FImpl->MServerIdentifier();
 }
 CSharedMemoryClient::eSendState CSharedMemoryClient::MSend(
-		NSHARE::CBuffer const& aVal, bool aBlock, unsigned aFlags)
+		NSHARE::CBuffer const& aVal, bool aBlock, uint32_t aFlags)
 {
 	data_t _data(aVal);//fixme copy data
 	return FImpl->MSend(_data, aBlock, aFlags);
@@ -126,7 +126,7 @@ CSharedMemoryClient::sent_state_t CSharedMemoryClient::MSend(data_t const& aVal,
 	return MSend(aVal);
 }
 bool CSharedMemoryClient::MReceiveData(NSHARE::CBuffer& aTo,
-		shared_identify_t* aFrom, unsigned* aFlags, double aTime)
+		shared_identify_t* aFrom, uint32_t* aFlags, double aTime)
 {
 	return FImpl->MReceiveData(aTo, aFrom, aTime, aFlags);
 }

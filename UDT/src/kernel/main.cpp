@@ -119,7 +119,16 @@ void initialize_def_main_channels()
 			CMainFactoryRegisterer<CTcpClientMainChannel>().MRegisterFactory();
 	}
 		
+<<<<<<< HEAD
 	new CMainChannelFactory();
+=======
+	g_main_channel_factory=new CMainChannelFactory();
+}
+void remove_def_main_channels()
+{
+	delete g_main_channel_factory;
+	g_main_channel_factory = NULL;
+>>>>>>> 3b9273e... See ChangeLog.txt
 }
 void initialize_def_links()
 {
@@ -167,10 +176,31 @@ void initialize_extern_modules()
 }
 void initialize_def_sevices()
 {
+<<<<<<< HEAD
 	new CParserFactory(); //todo IState
 	new CRoutingService();
 	new CInfoService();
 	new CPacketDivisor();
+=======
+	g_CParserFactory=new CParserFactory(); //todo IState
+	g_CRoutingService=new CRoutingService();
+	g_CInfoService=new CInfoService();
+	g_CPacketDivisor=new CPacketDivisor();
+}
+void remove_def_sevices()
+{
+	delete g_CPacketDivisor;
+	g_CPacketDivisor=NULL;
+
+	delete g_CInfoService;
+	g_CInfoService=NULL;
+
+	delete g_CRoutingService;
+	g_CRoutingService=NULL;
+
+	delete g_CParserFactory;
+	g_CParserFactory=NULL;
+>>>>>>> 3b9273e... See ChangeLog.txt
 }
 
 void initialize_core(int argc, char* argv[])

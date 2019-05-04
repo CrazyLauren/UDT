@@ -12,7 +12,7 @@
 #ifndef SPEED_TEST_API_H_
 #define SPEED_TEST_API_H_
 
-namespace speed_test
+namespace test_of_speed
 {
 #define INDITIFICATION_NAME "speed_test@guex" ///<Identification program name which will see another program
 #define MESSAGE_NUMBER 5

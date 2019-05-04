@@ -41,7 +41,7 @@ enum eError
 	E_NO_ROUTE=0x1<<11,
 	E_UNKNOWN_ERROR=0x1<<12,
 	E_PARSER_IS_NOT_EXIST=0x1<<13,
-	E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=0x1<<14,//deprecated
+	E_CANNOT_PARSE_BUFFER=0x1<<14,
 	E_SOCKET_CLOSED=0x1<<15,
 	E_BUFFER_IS_FULL=0x1<<16,
 	E_PACKET_LOST=0x1<<17,
@@ -770,9 +770,9 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	{
 		aStream << " Parser is not exist,";
 	}
-	if (_val.MGetFlag(NUDT::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE))
+	if (_val.MGetFlag(NUDT::E_CANNOT_PARSE_BUFFER))
 	{
-		aStream << " No msg in the buffer or the number of msg is more than one,";
+		aStream << " Cannot parse the buffer,";
 	}
 	if (_val.MGetFlag(NUDT::E_SOCKET_CLOSED))
 	{

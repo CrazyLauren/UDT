@@ -213,9 +213,9 @@ NSHARE::CText process_name(CThread::process_id_t pid)
 	{
 		fscanf(fd_CmdLineFile, "%s", chrarry_NameOfProcess); // read from /proc/<NR>/cmdline
 		fclose(fd_CmdLineFile); // close the file prior to exiting the routine
-
-		if (strrchr(chrarry_NameOfProcess, '/'))
-			chrptr_StringToCompare = strrchr(chrarry_NameOfProcess, '/') + 1;
+		char* const _slash=strrchr(chrarry_NameOfProcess, '/');
+		if (_slash!=NULL)
+			chrptr_StringToCompare = _slash + 1;
 		else
 			chrptr_StringToCompare = chrarry_NameOfProcess;
 

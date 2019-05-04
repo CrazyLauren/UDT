@@ -36,12 +36,12 @@ public:
 	shared_identify_t MIdentifier() const;
 	shared_identify_t MServerIdentifier() const;
 
-	eSendState MSend(NSHARE::CBuffer& aVal,bool aBlock=false, unsigned aFlags=0);
+	eSendState MSend(NSHARE::CBuffer& aVal,bool aBlock=false, CSharedMemoryBase::CImpl::recv_t::flags_t aFlags=0);
 	bool MIsOpen() const;
 	bool MReOpen();//-
 	bool MIsConnected() const;
 
-	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,double aTime=-1,unsigned*aFlags=NULL);
+	bool MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom=NULL,double aTime=-1,CSharedMemoryBase::CImpl::recv_t::flags_t*aFlags=NULL);
 
 	size_t MGetSize() const;//fixme what is it?
 	std::ostream & MPrint(std::ostream & aStream) const;

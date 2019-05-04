@@ -20,7 +20,11 @@
 #include <Socket/CSharedMemoryBaseImpl.h>
 namespace NSHARE
 {
+
+
 #define IMPL CSharedMemoryBase::CImpl
+COMPILE_ASSERT(
+		sizeof(CSharedMemoryBase::CImpl::recv_t::flags_t)==sizeof(event_info_t::recv_t::flags_t),InvalidSizeofFlags);
 
 static unsigned get_pid_optimized()
 {
@@ -367,7 +371,7 @@ bool  IMPL::MWaitForSend(const event_info_t& _info, event_cv_t& aEvent)
 	return _is_send;
 }
 CSharedMemoryBase::eSendState IMPL::MSend(
-		shared_port_t const& aFrom,event_cv_t &aEvent, NSHARE::CBuffer& aVal,bool aBlockMode,unsigned aFlags)
+		shared_port_t const& aFrom,event_cv_t &aEvent, NSHARE::CBuffer& aVal,bool aBlockMode,CSharedMemoryBase::CImpl::recv_t::flags_t aFlags)
 {
 	CHECK(!aVal.empty());
 	IAllocater* const _p_alloc = FSharedMemory.MGetAllocator();

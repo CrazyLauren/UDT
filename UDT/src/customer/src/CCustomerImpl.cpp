@@ -271,6 +271,7 @@ void CCustomer::_pimpl::MClose()
 		VLOG(2) << "Close worker";
 		FWorker->MClose();
 		delete FWorker;
+		FWorker=NULL;
 //		FThread.MCancel();
 		VLOG(2) << "EOK";
 	}

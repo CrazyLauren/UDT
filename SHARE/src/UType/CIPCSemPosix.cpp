@@ -191,9 +191,10 @@ CIPCSem::~CIPCSem()
 }
 bool CIPCSem::MWait(void)
 {
+	DCHECK_NOTNULL(FImpl);
 	VLOG(2) << "Wait for mutex(lock) " << FImpl->FName;
-	CHECK_NOTNULL(FImpl);
-	CHECK_NOTNULL(FImpl->FSem);
+
+	DCHECK_NOTNULL(FImpl->FSem);
 	int _rval=0;
 	//HANG_INIT;
 	//do
@@ -207,7 +208,11 @@ bool CIPCSem::MWait(void)
 }
 bool CIPCSem::MWait(double const aTime)
 {
+	CHECK_NOTNULL(FImpl);
+
 	VLOG(2) << "Wait for mutex(lock) " << FImpl->FName<<" Time = "<<aTime;
+	CHECK_NOTNULL(FImpl->FSem);
+
 	struct timespec tm;
 	if (clock_gettime(CLOCK_REALTIME, &tm) < 0)
 	{
@@ -219,8 +224,6 @@ bool CIPCSem::MWait(double const aTime)
 	static const unsigned _nano_time=1000*1000*1000;
 	tm.tv_sec += static_cast<unsigned>(aTime)+(_time/_nano_time);
 	tm.tv_nsec = (_time - (_time/_nano_time));
-	CHECK_NOTNULL(FImpl);
-	CHECK_NOTNULL(FImpl->FSem);
 
 	bool _is = sem_timedwait(&FImpl->FSem->FSem,&tm) == 0;
 	VLOG(2) << "Sem " << FImpl->FName << " hold.";
@@ -229,9 +232,11 @@ bool CIPCSem::MWait(double const aTime)
 }
 bool CIPCSem::MTryWait(void)
 {
+	DCHECK_NOTNULL(FImpl);
 	VLOG(2) << "Try Wait for mutex " << FImpl->FName;
-	CHECK_NOTNULL(FImpl);
-	CHECK_NOTNULL(FImpl->FSem);
+
+	DCHECK_NOTNULL(FImpl->FSem);
+
 	bool _is = sem_trywait(&FImpl->FSem->FSem) == 0;
 	VLOG(2) << "Sem " << FImpl->FName << " hold.";
 	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
@@ -239,9 +244,11 @@ bool CIPCSem::MTryWait(void)
 }
 bool CIPCSem::MPost(void)
 {
+	DCHECK_NOTNULL(FImpl);
 	VLOG(2) << "Post mutex(unlock) " << FImpl->FName;
-	CHECK_NOTNULL(FImpl);
-	CHECK_NOTNULL(FImpl->FSem);
+
+	DCHECK_NOTNULL(FImpl->FSem);
+
 	int _rval=0;
 	//HANG_INIT;
 	//do

@@ -39,3 +39,4 @@
 +10. Example_customer переменовать в defailt_config
 11. Kerne.cfg переменовать в defailt_kernel
 12. Авто поиск ядер по ping пакетам
+13. Продокументировать SHARE Sockets и привести код в порядок

@@ -111,7 +111,10 @@ void CExternalChannel::CFrontEnd::MInit(const NSHARE::CConfig& aConf)
 		if (_socks.size() > 1)
 		{
 			for (unsigned i = 1; i < _socks.size(); ++i)
+			{
 				delete _socks[i];
+				_socks[i] = NULL;
+			}
 		}
 
 		FSplit.FType.MSetFlag(split_info::CAN_NOT_SPLIT, true);

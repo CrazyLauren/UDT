@@ -14,6 +14,7 @@ UDT SHARE 0.6
   - Fix some problems with alignof  shared memory
   - Fix DFATAL error in cleanup callback of posix thread
   - Change default alignment of allocated memory to 4 byte for x86 8 byte to x64
+  - Fix maybe incorrect casting from unsigned to uint32_t value in SharedMemorySocket
   
 >>>>>>> 3a2b21d... see changelog
 UDT SHARE 0.5

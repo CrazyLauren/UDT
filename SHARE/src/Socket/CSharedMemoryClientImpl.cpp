@@ -26,7 +26,7 @@ namespace NSHARE
 {
 version_t CSharedMemoryClient::sMGetVersion()
 {
-	return version_t(0, 1);
+	return version_t(0, 2);
 }
 
 CSharedMemoryClient::CImpl::CImpl(CSharedMemoryClient& aThis,
@@ -308,7 +308,7 @@ bool IMPL_CLASS::MClose()
 }
 
 bool IMPL_CLASS::MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom,
-		double aTime,unsigned* aFFlags)
+		double aTime,CSharedMemoryBase::CImpl::recv_t::flags_t* aFFlags)
 {
 	VLOG(2) << "Start receive.";
 	for (; MIsOpen(); )
@@ -358,7 +358,7 @@ void IMPL_CLASS::MEventKeepAliveRequest(shared_identify_t const& aId,
 {
 	CSharedMemoryBase::CImpl::MSendKeapAliveAnswer(FMyInfo->FInfo.FId,FServerSignalEvent, 0);
 }
-CSharedMemoryClient::eSendState IMPL_CLASS::MSend(NSHARE::CBuffer & aVal, bool aBlock, unsigned aFlags)
+CSharedMemoryClient::eSendState IMPL_CLASS::MSend(NSHARE::CBuffer & aVal, bool aBlock, CSharedMemoryBase::CImpl::recv_t::flags_t aFlags)
 {
 	if (aVal.empty())
 	{

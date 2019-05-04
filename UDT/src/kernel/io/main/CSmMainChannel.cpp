@@ -340,27 +340,25 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 	for (bool _is_info_sended = false; FSmServer.MIsOpen();)
 	{
 		flag_mask_t _mask;
-		_mask.FCounter = _counter;
-		_mask.FType = _is_info_sended ? E_SM_DATA : E_SM_INFO;
-		uint32_t const* const _flag = (uint32_t const*) &_mask;
-
+		_mask.FData.FCounter = _counter;
+		_mask.FData.FType = _is_info_sended ? E_SM_DATA : E_SM_INFO;
 		NSHARE::CSharedMemoryServer::eSendState _state =
 				_is_info_sended ?
-						FSmServer.MSend(_addr, _data_buf, false, *_flag) :
-						FSmServer.MSend(_addr, _buf, false, *_flag);
+						FSmServer.MSend(_addr, _data_buf, false, _mask.FMask) :
+						FSmServer.MSend(_addr, _buf, false, _mask.FMask);
 
 		switch (_state)
 		{
 		case NSHARE::CSharedMemoryClient::E_SENDED:
 		{
-			VLOG(4) << "Sent counter "<<_mask.FCounter;
-			++_mask.FCounter;
-			_counter = _mask.FCounter;
+			VLOG(4) << "Sent counter "<<_mask.FData.FCounter;
+			++_mask.FData.FCounter;
+			_counter = _mask.FData.FCounter;
 			if (_is_info_sended)
 			{
 				VLOG(0) << aVal.FData.size()
 									<< " bytes sent successfully Counter="
-									<< _mask.FCounter;
+									<< _mask.FData.FCounter;
 				_io->FSendBytes += (unsigned)_data_buf.size();
 				return true;
 			}
@@ -371,7 +369,7 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 		}
 		case NSHARE::CSharedMemoryClient::E_ERROR:
 		{
-			VLOG(1) << " Send error Counter=" << _mask.FCounter;
+			VLOG(1) << " Send error Counter=" << _mask.FData.FCounter;
 			++_io->FSendError;
 			return false;
 			break;
@@ -383,7 +381,7 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 				++_io->FOverloades;
 			}
 			_is_overload = true;
-			VLOG(1) << "Try send again." << _mask.FCounter;
+			VLOG(1) << "Try send again." << _mask.FData.FCounter;
 			NSHARE::CThread::sMYield();
 			break;
 		}
@@ -555,9 +553,9 @@ void CSmMainChannel::MCheckPacketSequence(const unsigned aPacket,
 		unsigned & aLast)
 {
 	flag_mask_t _last_counter;
-	_last_counter.FCounter = aLast;
-	++_last_counter.FCounter;
-	LOG_IF(FATAL,aLast&&_last_counter.FCounter!=aPacket)
+	_last_counter.FData.FCounter = aLast;
+	++_last_counter.FData.FCounter;
+	LOG_IF(FATAL,aLast&&_last_counter.FData.FCounter!=aPacket)
 															<< "The packet has been lost. "
 															<< " Counter="
 															<< aPacket
@@ -577,7 +575,7 @@ void CSmMainChannel::MReceiver()
 		shared_identify_t _from;
 		flag_mask_t _mask;
 		CBuffer _data;
-		bool _is=FSmServer.MReceiveData(_data,&_from, (unsigned*) &_mask);
+		bool _is=FSmServer.MReceiveData(_data,&_from,&_mask.FMask);
 		VLOG(2) << "Receive data from " << _from<<" is ="<<_is;
 		VLOG_IF(2,_data.empty()) << "data empty from "<<_from;
 		DCHECK((!_is) || (_is&&!_data.empty()));
@@ -600,8 +598,8 @@ void CSmMainChannel::MReceiver()
 					_param = _it->second;
 				}
 			}
-			MCheckPacketSequence(_mask.FCounter, _param.FIo->FFrom);
-			size_t _num = MReceiveImpl(_mask.FType, _data, _from,
+			MCheckPacketSequence(_mask.FData.FCounter, _param.FIo->FFrom);
+			size_t _num = MReceiveImpl(_mask.FData.FType, _data, _from,
 					_param.FHandler);
 
 			_param.FIo->FRecvBytes += (unsigned)_num;

@@ -250,11 +250,15 @@ public:
 	 *\{
 	 */
 	
-	/// \note for safety non const version is not exist
+	/// \note for safety non const version is not exist using at function
 	const_reference operator[](size_type __n) const;
-	/// \note for safety non const version is not exist 
+
+	reference at(size_type __n);
+	const_reference at(size_type __n) const;
+
+	/// \note for safety non const version is not exist  using at function
 	const_reference front() const;
-	/// \note  for safety non const version is not exist
+	/// \note  for safety non const version is not exist using at function
 	const_reference back() const;
 	
 	/// \note  for safety non const version is not exist, use instead ptr() 

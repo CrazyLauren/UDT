@@ -671,18 +671,22 @@ CBuffer::const_iterator CBuffer::end() const
 	return CBuffer::const_iterator(
 			FBuffer.FBeginOfStorage + _info.MStartOffset() + _info.MSize());
 }
-//CBuffer::reference CBuffer::operator[](size_type __n)
-//{
-//	MDetach();
-//	CHECK_LT(__n, size());
-//	CHECK(!FBuffer.empty());
-//	return *(begin() + __n);
-//}
+CBuffer::reference CBuffer::at(size_type __n)
+{
+	MDetach();
+	CHECK_LT(__n, size());
+	CHECK(!FBuffer.empty());
+	return *(begin() + __n);
+}
 CBuffer::const_reference CBuffer::operator[](size_type __n) const
 {
 	CHECK_LT(__n, size());
 	CHECK(!FBuffer.empty());
 	return *(begin() + __n);
+}
+CBuffer::const_reference CBuffer::at(size_type __n) const
+{
+	return (*this)[__n];
 }
 //CBuffer::reference CBuffer::front()
 //{

@@ -14,6 +14,7 @@
 #include <deftype>
 #include <malloc.h>
 #include <fdir.h>
+#include <exception>
 //todo replace to boost realization
 
 #define FILE_COMPARE_BUFFER_SIZE 1024*512
@@ -120,7 +121,7 @@ extern bool is_diretory(const std::string &_name)
 	struct stat buf;
 	int rc = stat(_name.c_str(), &buf);
 	if (rc != 0)
-	throw;
+		throw std::runtime_error("stat calling error");
 	return S_ISDIR(buf.st_mode);
 #endif
 }
@@ -142,7 +143,7 @@ extern bool is_the_file_exist(const std::string &_name)
 		if (errno == ENOENT)
 			return false;
 		else
-			throw;
+			throw std::runtime_error("stat calling error");
 	}
 	return true;
 }

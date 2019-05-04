@@ -135,7 +135,10 @@ inline CSafeData<_T>::WAccess<_Y>::~WAccess()
 {
 #ifndef NDEBUG
 	if (1 == FSafe.FImpl.FWritersLock)
+	{
 		delete FPThread;
+		FPThread = NULL;
+	}
 #endif //NDEBUG
 	MUnlock();
 }

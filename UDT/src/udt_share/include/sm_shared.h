@@ -19,12 +19,18 @@ enum eDataType
 	E_SM_DATA,
 	E_SM_DATA_INFO,
 };
-SHARED_PACKED( struct flag_mask_t
+struct flag_mask_t
 {
-	uint32_t FCounter:30;
-	uint32_t FType:2;//eDataType
-});
-COMPILE_ASSERT(sizeof(flag_mask_t) == sizeof(uint32_t), InvalidSizeOfFlasgMask);
+	union
+	{
+		struct
+		{
+			uint32_t FCounter :30;
+			uint32_t FType :2; //eDataType
+		} FData;
+		uint32_t FMask;
+	};
+};
 
 }
 #endif /* SM_SHARED_H_ */

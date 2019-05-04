@@ -99,7 +99,7 @@ struct IMPL_CLASS::CClient: NSHARE::IIntrusived
 	{
 		FThis->CSharedMemoryBase::CImpl::MSendDataConfirmation(FThis->FServerInfo->FInfo.FId, FEvent,aCode);
 	}
-	eSendState MSend(NSHARE::CBuffer & aVal,bool aBlock,unsigned aFlags) const
+	eSendState MSend(NSHARE::CBuffer & aVal,bool aBlock,CSharedMemoryBase::CImpl::recv_t::flags_t aFlags) const
 	{
 		if (aVal.empty())
 		{
@@ -514,7 +514,7 @@ bool IMPL_CLASS::MCreateServer(void* _p,size_t const _server_size)
 	_info->MFillCRC();
 	return _is;
 }
-unsigned IMPL_CLASS::MSend(int aUserId, NSHARE::CBuffer & aVal,bool aBlock,unsigned aFlags)
+unsigned IMPL_CLASS::MSend(int aUserId, NSHARE::CBuffer & aVal,bool aBlock,CSharedMemoryBase::CImpl::recv_t::flags_t aFlags)
 {
 	if (aVal.empty())
 	{
@@ -682,7 +682,7 @@ client_info_t* IMPL_CLASS::MGetClientImpl(unsigned aPid) const
 	return _last;
 }
 bool IMPL_CLASS::MReceiveData(NSHARE::CBuffer& aTo,shared_identify_t* aFrom,
-		double aTime,unsigned * aFlags)
+		double aTime,CSharedMemoryBase::CImpl::recv_t::flags_t * aFlags)
 {
 	VLOG(2) << "The server starts to receive.";
 	if (!MIsOpen())

@@ -516,7 +516,7 @@ public:
 												 is not loaded (exist) to kernel.
 												 For fix: load the parser of the raw buffer for specified protocol
 												to the kernel.*/
-	static const error_t E_HANDLER_NO_MSG_OR_MORE_THAN_ONE;///< No message in the buffer or the number of message is more than one (deprecated)
+	static const error_t E_CANNOT_PARSE_BUFFER;///< Cannot parse the sent buffer
 	static const error_t E_SOCKET_CLOSED;///<The receiver has been disconnected yet
 	static const error_t E_BUFFER_IS_FULL;/*!<The block of memory which kernel has been allocated to receiver is full.
 											For fix error: change size of memory that the allocated to receiver or

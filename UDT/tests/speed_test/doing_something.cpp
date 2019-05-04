@@ -14,16 +14,9 @@
 #include <deftype>
 #include <customer.h>
 
-#ifdef _WIN32
-#	include <windows.h>
-#else
-#	include <pthread.h>
-#	include <unistd.h>
-#endif
-
 #include "speed_test_api.h"
 
-namespace speed_test
+namespace test_of_speed
 {
 using namespace NUDT;
 
@@ -48,24 +41,18 @@ extern int msg_speed_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	NSHARE::CBuffer::size_type const _data_size = _recv_arg->FMessage.FBuffer.size();
 	g_recv_bytes += _data_size;
 
-	/*! 3) Calculating current speed */
+	/*! 3) Calculating current time */
 	double const _current_time = NSHARE::get_time();
-	double _delta = _current_time - g_time;
-	if (_delta == 0.0)
-		_delta = 0.0000000000001;
-
-	double const _speed = ((_data_size / 1024.0 / 1024.0) / _delta);
-	g_time = NSHARE::get_time();
 
 	/*! 3) Print result every 2 seconds */
-	if ((g_time - g_last_print_time) >= 2.)
+	if ((_current_time - g_last_print_time) >= 2.)
 	{
-		g_last_print_time = g_time;
+		g_last_print_time = _current_time;
 
 		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
 
 		std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
-				<< " md; speed=" << _speed << " mb/s; Med="
+				<< " md; Average speed ="
 				<< ((g_recv_bytes / 1024.0 / 1024.0)
 						/ (_current_time - g_start_time)) << " mb/s."
 				<< std::endl;
@@ -74,6 +61,7 @@ extern int msg_speed_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 				<< g_amount_of_doesnt_allocated << std::endl;
 
 	}
+	++g_amount_of_messages;
 	return 0;
 }
 extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
@@ -195,7 +183,7 @@ extern void send_messages()
 		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
 
 		std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
-			<< " md; Med="
+			<< " md; Average speed ="
 			<< ((g_recv_bytes / 1024.0 / 1024.0)
 				/ (NSHARE::get_time() - g_start_time)) << " mb/s."
 			<< std::endl;

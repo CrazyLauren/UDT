@@ -6,7 +6,7 @@
 using namespace NUDT;
 
 
-namespace speed_test
+namespace test_of_speed
 {
 size_t g_buf_size=100000;
 int main(int argc, char const*argv[])
@@ -90,5 +90,5 @@ int initialize_library(int argc, char const*argv[])
 }
 int main(int argc, char const*argv[])
 {
-	return speed_test::main(argc,argv);
+	return test_of_speed::main(argc,argv);
 }

@@ -105,10 +105,12 @@ SHARED_PACKED(struct event_info_t
 	};
 	struct recv_t
 	{
+		typedef uint32_t flags_t;
+
 		CSharedAllocator::offset_t FBufferOffset;
 		CSharedAllocator::block_size_t FSize;
 		uint32_t FBlockCode;//if is zero - Receiving of packet  has not to be  confirmed
-		uint32_t FFlags;
+		flags_t FFlags;
 	};
 	struct data_confirmation_t
 	{

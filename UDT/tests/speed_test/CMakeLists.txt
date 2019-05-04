@@ -1,4 +1,4 @@
-SET(TARGET_NAME speed_test)
+SET(TARGET_NAME test_of_speed)
 
 add_definitions(${LOGGING_DEFENITIONS})
 

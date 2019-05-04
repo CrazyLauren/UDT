@@ -1159,6 +1159,7 @@ void CRequiredDG::MRemoveDataWithUserErrors(IExtParser::result_t * const aMsg,
 			if(aFail)
 			{
 				fail_send_t _sent(_handling_data.FDataId);
+				_sent.MSetError(E_CANNOT_PARSE_BUFFER);
 				_sent.MSetUserError(_msg.FErrorCode);
 				aFail->push_back(_sent);
 

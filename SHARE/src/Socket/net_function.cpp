@@ -70,6 +70,7 @@ namespace NSHARE
 			struct icmp *_icmp;
 			uint8_t _buf[MAX_PACKET];
 			_icmp = (struct icmp *) _buf;
+			DCHECK_POINTER_ALIGN(_icmp);
 			_icmp->icmp_type = ICMP_ECHO;
 			_icmp->icmp_code = 0;
 			_icmp->icmp_cksum = 0;
@@ -188,37 +189,36 @@ namespace NSHARE
 				for (_ifa = _ifaddr; _ifa != NULL; _ifa = _ifa->ifa_next)
 				{
 					if (_ifa->ifa_addr == NULL)
-					continue;
+						continue;
 					int _family = _ifa->ifa_addr->sa_family;
 					void *_haddr = NULL;
 					if (_family == AF_INET)
-					_haddr = &((struct sockaddr_in *) _ifa->ifa_addr)->sin_addr;
+						_haddr = &((struct sockaddr_in *) _ifa->ifa_addr)->sin_addr;
 					else if (_family == AF_INET6)
-					_haddr = &((struct sockaddr_in6 *) _ifa->ifa_addr)->sin6_addr;
+						_haddr = &((struct sockaddr_in6 *) _ifa->ifa_addr)->sin6_addr;
 					else
-					continue;
+						continue;
 
 					if (inet_ntop(_family, _haddr, _buf, sizeof(_buf)) == NULL)
-					continue;
+						continue;
 					_temp.IP = _buf;
 					if (_ifa->ifa_name)
-					_temp.Name = _ifa->ifa_name;
+						_temp.Name = _ifa->ifa_name;
 					else
-					_temp.Name = "";
+						_temp.Name = "";
 
-					_temp.Mask = "";
+						_temp.Mask = "";
 					if (_ifa->ifa_netmask != NULL)
 					{
 						_haddr = NULL;
 						if (_family == AF_INET)
-						_haddr =
-						&((struct sockaddr_in *) _ifa->ifa_netmask)->sin_addr;
+							_haddr =&((struct sockaddr_in *) _ifa->ifa_netmask)->sin_addr;
 						else if (_family == AF_INET6)
-						_haddr =
-						&((struct sockaddr_in6 *) _ifa->ifa_netmask)->sin6_addr;
+							_haddr = &((struct sockaddr_in6 *) _ifa->ifa_netmask)->sin6_addr;
 
-						if (_haddr
-								&& inet_ntop(_ifa->ifa_netmask->sa_family, _haddr, _buf,
+						DCHECK_NOTNULL(_haddr);
+
+						if (inet_ntop(_ifa->ifa_netmask->sa_family, _haddr, _buf,
 										sizeof(_buf)) != NULL)
 						_temp.Mask = _buf;
 
@@ -243,7 +243,8 @@ namespace NSHARE
 			MASSERT_1( aMaxCountAddrOfSubNet);
 
 			uint32_t _pow_of_two = 1;
-			for (; _pow_of_two < aMaxCountAddrOfSubNet && _pow_of_two < LONG_MAX;
+			for (; _pow_of_two < aMaxCountAddrOfSubNet &&//
+			_pow_of_two < std::numeric_limits<uint32_t>::max()/2;
 					_pow_of_two *= 2)
 			;
 			aMaxCountAddrOfSubNet = _pow_of_two;
@@ -320,6 +321,7 @@ int input(int const aSocket, double aTime)
 			return -1;
 
 			struct ip *_ip = (struct ip *) _buf;
+			DCHECK_POINTER_ALIGN(_ip);
 			int _hlen = _ip->ip_hl << 2;
 
 			if (_n < (_hlen + ICMP_MINLEN))

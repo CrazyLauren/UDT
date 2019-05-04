@@ -312,13 +312,14 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 
 #ifdef	WSAEMSGSIZE
 			case WSAEMSGSIZE:
-#endif
 
 			{
 				LOG(ERROR)<<"The buffer is small.";
 				continue;
 				break;
 			}
+#endif
+
 #ifdef EPIPE
 			case EPIPE:
 			{

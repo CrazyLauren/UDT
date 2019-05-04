@@ -267,7 +267,7 @@ public:
 	}
 	inline void MUnlock()
 	{
-		FIsLock && FMutex->MUnlock(FBuf);
+		if(FIsLock) FMutex->MUnlock(FBuf);
 		FIsLock = false;
 	}
 private:

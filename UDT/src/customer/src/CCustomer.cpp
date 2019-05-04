@@ -62,19 +62,19 @@ COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SI
 COMPILE_ASSERT(sizeof(fail_sent_args_t::error_t)==sizeof(error_type),E_INVALID_FAIL_ERROR_SIZE);
 
 
-const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=(E_HANDLER_IS_NOT_EXIST);
-const CCustomer::error_t CCustomer::E_NO_ROUTE=(E_NO_ROUTE);
-const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=(E_UNKNOWN_ERROR);
-const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=(E_PARSER_IS_NOT_EXIST);
-const CCustomer::error_t CCustomer::E_HANDLER_NO_MSG_OR_MORE_THAN_ONE=(E_HANDLER_NO_MSG_OR_MORE_THAN_ONE);
-const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=(E_SOCKET_CLOSED);
-const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=(E_BUFFER_IS_FULL);
-const CCustomer::error_t CCustomer::E_PACKET_LOST=(E_PACKET_LOST);
-const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=(E_DATA_TOO_LARGE);
-const CCustomer::error_t CCustomer::E_MERGE_ERROR=(E_MERGE_ERROR);
-const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=(E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
+const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=eError::E_HANDLER_IS_NOT_EXIST;
+const CCustomer::error_t CCustomer::E_NO_ROUTE=eError::E_NO_ROUTE;
+const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=eError::E_UNKNOWN_ERROR;
+const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=eError::E_PARSER_IS_NOT_EXIST;
+const CCustomer::error_t CCustomer::E_CANNOT_PARSE_BUFFER=eError::E_CANNOT_PARSE_BUFFER;
+const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=eError::E_SOCKET_CLOSED;
+const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=eError::E_BUFFER_IS_FULL;
+const CCustomer::error_t CCustomer::E_PACKET_LOST=eError::E_PACKET_LOST;
+const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=eError::E_DATA_TOO_LARGE;
+const CCustomer::error_t CCustomer::E_MERGE_ERROR=eError::E_MERGE_ERROR;
+const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=eError::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;
 
-const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=E_USER_ERROR_BEGIN;
+const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=eError::E_USER_ERROR_BEGIN;
 const unsigned CCustomer::MAX_SIZE_USER_ERROR=sizeof(error_type)*8-eUserErrorStartBits;
 
 <<<<<<< HEAD
@@ -943,7 +943,8 @@ int CCustomer::sMInit(int argc, char* argv[], char const* aName,NSHARE::version_
 void CCustomer::sMFree()
 {
 	delete CCustomer::sMGetInstancePtr();
-	//TODO
+	sFSingleton=NULL;
+	/// \TODO it
 }
 bool CCustomer::MIsOpened() const
 {

@@ -78,9 +78,9 @@ void CSmMainChannel::MCheckPacketSequence(const unsigned aPacket,
 		unsigned & aLast)const
 {
 	flag_mask_t _last_counter;
-	_last_counter.FCounter = aLast;
-	++_last_counter.FCounter;
-	LOG_IF(FATAL,_last_counter.FCounter!=aPacket)
+	_last_counter.FData.FCounter = aLast;
+	++_last_counter.FData.FCounter;
+	LOG_IF(FATAL,_last_counter.FData.FCounter!=aPacket)
 															<< "The packet has been lost. "
 															<< " Counter="
 															<< aPacket
@@ -137,7 +137,7 @@ void CSmMainChannel::MReceiver()
 		shared_identify_t _from;
 		flag_mask_t _mask;
 		CBuffer _data;
-		bool const _is=FSm.MReceiveData(_data,&_from, (unsigned*) &_mask);
+		bool const _is=FSm.MReceiveData(_data,&_from, &_mask.FMask);
 
 		VLOG(2) << "Receive data from " << _from<<" is ="<<_is;
 		VLOG_IF(2,_data.empty()) << "data empty from "<<_from;
@@ -146,11 +146,11 @@ void CSmMainChannel::MReceiver()
 		if (_is && !_data.empty())
 		{
 
-			VLOG(2) << "Type=" << _mask.FType << " Counter="
-								<< _mask.FCounter << " Last counter="
+			VLOG(2) << "Type=" << _mask.FData.FType << " Counter="
+								<< _mask.FData.FCounter << " Last counter="
 								<< FCounter.FFrom;
-			MCheckPacketSequence(_mask.FCounter, FCounter.FFrom);
-			MReceiveImpl(_mask.FType, _data, _from);
+			MCheckPacketSequence(_mask.FData.FCounter, FCounter.FFrom);
+			MReceiveImpl(_mask.FData.FType, _data, _from);
 
 		}
 	}
@@ -295,11 +295,10 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 	for (;;)
 	{
 		flag_mask_t _mask;
-		_mask.FCounter = FCounter.FTo;
-		_mask.FType = E_SM_DATA_INFO;
-		uint32_t const* const _flag = (uint32_t const*) &_mask;
+		_mask.FData.FCounter = FCounter.FTo;
+		_mask.FData.FType = E_SM_DATA_INFO;
 		NSHARE::CSharedMemoryClient::eSendState _state = FSm.MSend(_data_buf,
-				false, *_flag);
+				false, _mask.FMask);
 		VLOG_IF(1,_state==NSHARE::CSharedMemoryClient::E_SENDED)
 																		<< _data_buf.size()
 																		<< " bytes sent successfully ";
@@ -307,9 +306,9 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 		{
 		case NSHARE::CSharedMemoryClient::E_SENDED:
 		{
-			++_mask.FCounter;
-			VLOG(2) << "Next counter=" << _mask.FCounter;
-			FCounter.FTo = _mask.FCounter;
+			++_mask.FData.FCounter;
+			VLOG(2) << "Next counter=" << _mask.FData.FCounter;
+			FCounter.FTo = _mask.FData.FCounter;
 			_data_buf.release(); //force release
 			return true;
 			break;
@@ -344,13 +343,13 @@ bool  CSmMainChannel::MSendInTwoParts(const size_t _size, const user_data_info_t
 	for (;;)
 	{
 		flag_mask_t _mask;
-		_mask.FCounter = FCounter.FTo;
-		_mask.FType = _is_info_sended ? E_SM_DATA : E_SM_INFO;
-		uint32_t const* const _flag = (uint32_t const*) &_mask;
+		_mask.FData.FCounter = FCounter.FTo;
+		_mask.FData.FType = _is_info_sended ? E_SM_DATA : E_SM_INFO;
+
 		NSHARE::CSharedMemoryClient::eSendState _state =
 				_is_info_sended ?
-						FSm.MSend(_data_buf, false, *_flag) :
-						FSm.MSend(_buf, false, *_flag);
+						FSm.MSend(_data_buf, false, _mask.FMask) :
+						FSm.MSend(_buf, false, _mask.FMask);
 		VLOG_IF(1,_state==NSHARE::CSharedMemoryClient::E_SENDED)
 																		<< _data_buf.size()
 																		<< " bytes sent successfully ";
@@ -358,9 +357,9 @@ bool  CSmMainChannel::MSendInTwoParts(const size_t _size, const user_data_info_t
 		{
 		case NSHARE::CSharedMemoryClient::E_SENDED:
 		{
-			++_mask.FCounter;
-			VLOG(2) << "Next counter=" << _mask.FCounter;
-			FCounter.FTo = _mask.FCounter;
+			++_mask.FData.FCounter;
+			VLOG(2) << "Next counter=" << _mask.FData.FCounter;
+			FCounter.FTo = _mask.FData.FCounter;
 			if (_is_info_sended)
 				return true;
 			else

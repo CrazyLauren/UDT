@@ -148,11 +148,13 @@ inline void CFactoryManager<TFactory>::MRemoveFactoryImpl(const CText& name)
 			<< name;
 	if (_it == FRegistry.end())
 		return;
-	delete _it->second;
-	FRegistry.erase(_it);
 
 	VLOG(2) << "WindowFactory for " << name << ":" << (*_it).second
 			<< " removed. ";
+
+	delete _it->second;
+	_it->second = NULL;
+	FRegistry.erase(_it);
 
 //	typename owned_factorys_t::iterator _jt = sMCreatedOurselves().begin();
 //	for (; _jt != sMCreatedOurselves().end(); ++_jt)

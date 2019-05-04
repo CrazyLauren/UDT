@@ -31,9 +31,10 @@ public:
 
 	struct recv_t
 	{
+		typedef uint32_t flags_t;
 		NSHARE::CBuffer FData;
 		shared_identify_t FFrom;
-		unsigned FFlags;
+		flags_t FFlags;
 	};
 	struct event_cv_t
 	{
@@ -117,7 +118,7 @@ public:
 
 	CSharedMemoryBase::eSendState MSend(shared_port_t const& aFrom,
 			event_cv_t &aEvent, NSHARE::CBuffer& aVal, bool aBlock,
-			unsigned aFlags);
+			CSharedMemoryBase::CImpl::recv_t::flags_t aFlags);
 
 
 	bool MReceiveData(recv_t& aTo, double aTime);

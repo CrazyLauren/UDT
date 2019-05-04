@@ -325,19 +325,19 @@ int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
 
 namespace
 {
-struct _compare_fail
+struct _less_compare
 {
 	bool operator()(const fail_send_t& a, const fail_send_t& b) const
 	{
-		return a.FPacketNumber == b.FPacketNumber
-				&& a.FRouting.FFrom.FUuid == b.FRouting.FFrom.FUuid;
+		return a.FPacketNumber < b.FPacketNumber||
+				(a.FPacketNumber == b.FPacketNumber && a.FRouting.FFrom.FUuid < b.FRouting.FFrom.FUuid);
 	}
 };
 }
 void CRoutingService::MNoteFailSend(const fail_send_array_t& aFail)
 {
 
-	typedef std::set<fail_send_t, _compare_fail> _packet_repeated;
+	typedef std::set<fail_send_t, _less_compare> _packet_repeated;
 	//for instance. If splitted packet has been lost the same error is occurred for all packets
 
 	_packet_repeated _repeates;
