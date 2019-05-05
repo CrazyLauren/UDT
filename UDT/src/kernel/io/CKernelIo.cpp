@@ -30,7 +30,7 @@ const NSHARE::CText CKernelIo::BUFFERS = "buffers";
 const NSHARE::CText CKernelIo::DEFAULT = "default";
 const NSHARE::CText CKernelIo::NAME = "io";
 CKernelIo::CKernelIo() :
-		IState(NAME)
+		ICore(NAME)
 {
 	FIsInited = false;
 }
@@ -188,11 +188,11 @@ CKernelIo* CKernelIo::sMGetInstancePtr()
 {
 	return static_cast<CKernelIo*>(fac_manager_t::sMGetInstancePtr());
 }
-void CKernelIo::MInit()
+bool CKernelIo::MStart()
 {
 	LOG_IF(DFATAL,FIsInited) << "Reinited ";
 	if (FIsInited)
-		return;
+		return false;
 	FIsInited = true;
 	factory_its_t _its = MGetIterator();
 	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
@@ -201,6 +201,7 @@ void CKernelIo::MInit()
 		MFactoryAdded(_its.FBegin->second);
 	}
 	VLOG(2) << "Kernel IO is initialized";
+	return true;
 }
 NSHARE::CConfig CKernelIo::MBufferingConfFor(descriptor_t const& aName,
 		IIOManager* aWhere)

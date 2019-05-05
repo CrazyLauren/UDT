@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include "IState.h"
+#include <fdir.h>
 #include "CResources.h"
 
 #if defined(RRD_STATIC)
@@ -27,19 +27,27 @@ NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton =
 		NULL;
 namespace NUDT
 {
-const NSHARE::CText CResources::NAME = "res";
-CResources::CResources(std::vector<NSHARE::CText> const& aResources,
-		NSHARE::CText const& aExtPath) :
-		IState(NAME), FExtLibraryPath(aExtPath)
+const NSHARE::CText CResources::NAME = "modules";
+const NSHARE::CText CResources::MODULES_PATH = "modules_path";
+const NSHARE::CText CResources::LIST_OF_LOADED_LIBRARY = "libraries";
+const NSHARE::CText CResources::ONLY_SPECIFIED_LIBRARY = "only_specified";
+
+CResources::CResources(NSHARE::CConfig const& aConf) :
+		ICore(NAME),//
+		FDontSearchLibrary(false)
 {
-	std::vector<NSHARE::CText>::const_iterator _it = aResources.begin();
-	for (; _it != aResources.end(); ++_it)
+	CConfig const& _libs=aConf.MChild(LIST_OF_LOADED_LIBRARY);
+	if(!_libs.MIsEmpty())
 	{
-		module_t _mod;
-		_mod.FName = *_it;
-		_mod.FRegister = NULL;
-		FModules.push_back(_mod);
+		ConfigSet _set = _libs.MChildren();
+		ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			MPutModule(_it->MKey(),*_it);
+		}
 	}
+	aConf.MGetIfSet(MODULES_PATH,FExtLibraryPath);
+	aConf.MGetIfSet(ONLY_SPECIFIED_LIBRARY,FDontSearchLibrary);
 
 }
 
@@ -49,86 +57,81 @@ CResources::~CResources()
 	VLOG(0) << "All resources unloaded :" << this;
 }
 
+bool CResources::MStart()
+{
+	return true;
+}
+
+/*! \brief Put module to FModules
+ *
+ *\param aName A name of module without .so(dll)
+ *\param aConf A passed configure information
+ *\return true if put
+ */
+bool CResources::MPutModule(NSHARE::CText const& aName,NSHARE::CConfig const& aConf)
+{
+	VLOG(4) << "Push library " << aName;
+	module_t _mod(aName);
+	_mod.FConfig = aConf;
+	bool const _result= FModules.insert(_mod).second;
+
+	DLOG_IF(WARNING,!_result)<<"The library is not put as it's exist:"<<aName;
+
+	return _result;
+}
+
+/*! \brief Looking for libraries and put result
+ *
+ */
+void CResources::MLookingForLibraries()
+{
+	VLOG(0) << "Looking for libraries in "<<FExtLibraryPath<< this;
+
+	const std::string _path=FExtLibraryPath.empty()?"./":FExtLibraryPath.c_str();
+
+	///1) Get list of all files in the directory
+	std::list<std::string> _to;
+	NSHARE::get_name_of_files_of_dir(&_to, _path);
+
+	///2) Put all library
+	for (std::list<std::string>::iterator _it = _to.begin(); _it != _to.end();
+			++_it)
+	{
+		if(NSHARE::CDynamicModule::sMIsNameOfLibrary(*_it))
+		{
+			NSHARE::CText const _name(_it->substr(0,_it->length()-NSHARE::CDynamicModule::LIBRARY_EXTENSION.length()));
+			MPutModule(_name);
+		}
+	}
+}
 void CResources::MLoad()
 {
 	VLOG(0) << "Begining resource loading:" << this;
 
-	//all resources
-	MLoadChannels();
+	if(!FDontSearchLibrary)
+		MLookingForLibraries();
+
+	MLoadLibraries();
+
 	VLOG(0) << "Resource loading completed:" << this;
 }
 void CResources::MUnload()
 {
 	VLOG(0) << "Begining resource unloading:" << this;
-	MUnloadChannels();
+	MUnloadLibraries();
 	VLOG(0) << "Resource unloading completed:" << this;
 }
-void CResources::MLoadChannels()
+
+void CResources::MLoadLibraries()
 {
 	VLOG(0) << "Begining channels loading:" << this;
 	for (mod_channels_t::iterator _it = FModules.begin(); _it != FModules.end();
 			++_it)
 	{
-		VLOG(2) << "Load '" << _it->FName << "' dynamic module";
-		LOG_IF(WARNING,_it->FRegister) << "The Dynamic module '" << _it->FName
-												<< "' has been loaded already";
-		if (!_it->FRegister)
-		{
-			// load dynamic module
-			if (!_it->FDynamic.get())
-			{
-				const NSHARE::CText& _name=_it->FName;
-				try
-				{
-
-					SHARED_PTR<CDynamicModule> _module(new CDynamicModule(_name)); //throw std::invalid_argument if failed
-					_it->FDynamic=_module;
-
-					factory_registry_func_t _func = (factory_registry_func_t)(
-							_it->FDynamic->MGetSymbolAddress(FACTORY_REGISTRY_FUNC_NAME));
-
-					LOG_IF(DFATAL,!_func)<<
-					"Required function export '"<<FACTORY_REGISTRY_FUNC_NAME<<
-					"' was not found in dynamic module '" <<_name<< "'.";
-					if(!_func)
-					continue;
-					
-					_it->FRegister = _func(NULL);
-					CHECK_NOTNULL(_it->FRegister);
-				}
-				catch(...)
-				{
-#if defined(RRD_STATIC)
-					LOG(WARNING) << "The dynamic module '" << _it->FName << "' is static ";
-					_it->FRegister = get_factory_registry();
-#else
-					LOG(ERROR)<<"Library "<<_name<<" is not exist. Ignoring ...";
-					continue;
-
-#endif //defined(RRD_STATIC)
-				}
-			}
-		}
-		VLOG(2) << "adding all	available factories.";
-		factory_registry_t::iterator _jt = _it->FRegister->begin();
-		for (; _jt != _it->FRegister->end(); ++_jt)
-		{
-			if (!(*_jt))
-			{
-				LOG(ERROR)<<"Null pointer of Factory register. Ignoring ...";
-				continue;
-			}
-			if((*_jt)->FType.empty())
-			{
-				LOG(ERROR)<<"Invalid name of factory in "<<_it->FName<<". Ignoring ...";
-				continue;
-			}
-			VLOG(2) << "Registry " << (*_jt)->FType<<" Version:"<<(*_jt)->FVersion;
-			(*_jt)->MRegisterFactory();
-		}
+		_it->MLoad(FExtLibraryPath);
 	}
 }
-void CResources::MUnloadChannels()
+void CResources::MUnloadLibraries()
 {
 	VLOG(0) << "Begining channels unloading:" << this;
 	for (mod_channels_t::iterator _it = FModules.begin(); _it != FModules.end();
@@ -162,10 +165,35 @@ NSHARE::CConfig CResources::MSerialize() const
 	}
 	return _conf;
 }
+const NSHARE::CText CResources::module_t::NAME = "emod";
+
+CResources::module_t::module_t(NSHARE::CText const& aName)://
+		FName(aName),//
+		FRegister(NULL),//
+		FError(E_NO_ERROR)
+{
+	DCHECK(!NSHARE::CDynamicModule::sMIsNameOfLibrary(aName));
+}
+bool CResources::module_t::operator<(module_t const& aRht) const
+{
+	return CStringFastLessCompare()(FName,aRht.FName);
+}
+/*!\brief Serialize object
+ *
+ * The key of serialized object is #NAME
+ *
+ *\return Serialized object.
+ */
 NSHARE::CConfig CResources::module_t::MSerialize() const
 {
-	NSHARE::CConfig _conf("emod");
+	NSHARE::CConfig _conf(NAME);
 	_conf.MAdd("ename", FName);
+
+	if(!FConfig.MIsEmpty())
+		_conf.MAdd("configure",FConfig);
+
+	_conf.MAdd("error_code",FError);
+
 	if (FDynamic.get())
 	{
 		_conf.MAdd(NSHARE::CDynamicModule::NAME, FDynamic->MSerialize());
@@ -185,5 +213,91 @@ NSHARE::CConfig CResources::module_t::MSerialize() const
 		}
 	}
 	return _conf;
+}
+/*! \brief Load the library
+ *
+ *\param aPath Path to library
+ *\return true if loaded
+ */
+bool CResources::module_t::MLoad(NSHARE::CText const& aPath) const
+{
+	VLOG(2) << "Load '" << FName << "' dynamic module";
+	DLOG_IF(FATAL,FRegister) << "The Dynamic module '" << FName
+										<< "' has been loaded already";
+	if (!FRegister)
+	{
+		///1) load dynamic library
+		if (!FDynamic.get())
+		{
+			const NSHARE::CText& _name = FName;
+			try
+			{
+
+				SHARED_PTR<CDynamicModule> _module(new CDynamicModule(_name,aPath)); //throw std::invalid_argument if failed
+				FDynamic = _module;
+
+				factory_registry_func_t _func =
+						(factory_registry_func_t) (FDynamic->MGetSymbolAddress(
+						FACTORY_REGISTRY_FUNC_NAME));
+				if (!_func)
+				{
+					LOG(DFATAL) << "Required function export '"
+													<< FACTORY_REGISTRY_FUNC_NAME
+													<<
+													"' was not found in dynamic module '"
+													<< _name << "'.";
+					FError = E_NO_FUNCTION;
+					return false;
+				}
+
+				FRegister = _func(&FConfig);
+				CHECK_NOTNULL(FRegister);
+			} catch (...)
+			{
+#if defined(RRD_STATIC)
+						LOG(WARNING) << "The dynamic module '" << FName << "' is static ";
+						FRegister = get_factory_registry();
+#else
+				LOG(DFATAL) << "Library " << _name
+										<< " is not exist. Ignoring ...";
+				FError = E_NO_FUNCTION;
+				return false;
+
+#endif //defined(RRD_STATIC)
+			}
+		}
+		else
+		{
+			DLOG(FATAL) << "It has been loaded before :" << FName;
+		}
+
+		VLOG(2) << "adding all	available factories.";
+
+		///2) Registering all factory of library
+
+		factory_registry_t::iterator _jt = FRegister->begin();
+		for (; _jt != FRegister->end(); ++_jt)
+		{
+			if (!(*_jt))
+			{
+				LOG(DFATAL) << "Null pointer of Factory register. Ignoring ...";
+				FError = E_NO_FACTORY_REGISTER;
+				return false;
+			}
+			if ((*_jt)->FType.empty())
+			{
+				LOG(DFATAL) << "Invalid name of factory in " << FName
+										<< ". Ignoring ...";
+				FError = INVALID_NAME_OF_FACTORY;
+				return false;
+			}
+			VLOG(2) << "Registry " << (*_jt)->FType << " Version:"
+								<< (*_jt)->FVersion;
+			(*_jt)->MRegisterFactory();
+		}
+	}
+
+
+	return true;
 }
 } //

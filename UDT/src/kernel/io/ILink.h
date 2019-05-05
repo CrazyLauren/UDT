@@ -12,20 +12,21 @@
 #ifndef ILINK_H_
 #define ILINK_H_
 
+#include <core/IState.h>
 namespace NUDT
 {
-class ILink:public NSHARE::IIntrusived,public NSHARE::IFactory,public IState
+class ILink: public NSHARE::IIntrusived, public NSHARE::IFactory,public IState
 {
 public:
 	typedef NSHARE::CBuffer data_t;
 
 	ILink(const NSHARE::CText& type,uint64_t aTime) :
-		NSHARE::IFactory(type),IState(type),FTime(aTime)
+			NSHARE::IFactory(type), IState(type), FTime(aTime)
 	{
 
 	}
 	ILink(const ILink& aRht) :
-			NSHARE::IFactory(aRht.FType),IState(aRht.FType), FTime(aRht.FTime)
+			NSHARE::IFactory(aRht.FType), IState(aRht.FType), FTime(aRht.FTime)
 	{
 
 	}

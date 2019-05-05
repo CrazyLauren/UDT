@@ -14,16 +14,43 @@
 
 namespace NUDT
 {
-
+/*! \brief This class provides API
+ * for serializing object state.
+ *
+ */
 class IState
 {
 public:
-	IState(NSHARE::CText const& aName);//auto add to CDiagnostic
+	/*! \brief The destructor autoremoves
+	 * pointer from #NUDT::CCore object
+	 *
+	 */
 	virtual ~IState();
+
+	/*!\brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 *\return Serialized object.
+	 */
 	virtual NSHARE::CConfig MSerialize() const=0;
 
-	NSHARE::CConfig MSerializeRef() const;//return reference
-};
+	/*!\brief Serialize reference to object
+	 *
+	 * It's need to decrease the number of
+	 * serialized subobjects of object.
+	 *
+	 *\return Serialized reference to object.
+	 */
+	NSHARE::CConfig MSerializeRef() const;
+protected:
 
+	/*! \brief The constructor is passed
+	 * pointer to NUDT::CCore::MAddState method
+	 *
+	 *\param aName -A non-unique name
+	 */
+	IState(NSHARE::CText const& aName);
+};
 } /* namespace NUDT */
 #endif /* ISTATE_H_ */

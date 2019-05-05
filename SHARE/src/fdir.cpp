@@ -52,7 +52,7 @@ extern bool get_name_of_files_of_dir(std::list<std::string> *out,
 {
 #ifdef _WIN32
 	::WIN32_FIND_DATA _data;
-	HANDLE _find = ::FindFirstFile(directory.c_str(), &_data);
+	HANDLE _find = ::FindFirstFile((directory+"\\*").c_str(), &_data);
 	if (_find == INVALID_HANDLE_VALUE)
 		return false;
 	do

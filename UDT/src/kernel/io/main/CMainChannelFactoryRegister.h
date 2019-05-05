@@ -50,7 +50,7 @@ void CMainFactoryRegisterer<T>::MUnregisterFactory() const
 template <typename T>
 void CMainFactoryRegisterer<T>::MAdding() const
 {
-	CMainChannelFactory::sMAddFactory<T>()->MInit();
+	CMainChannelFactory::sMAddFactory<T>();
 }
 
 //----------------------------------------------------------------------------//

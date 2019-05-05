@@ -14,11 +14,11 @@
 #include <programm_id.h>
 #include <udt_types.h>
 #include <CHardWorker.h>
-#include "IState.h"
+#include "ICore.h"
 #include "kernel_type.h"
 namespace NUDT
 {
-class CDataObject: public CHardWorker, public NSHARE::CSingleton<CDataObject>,public IState
+class CDataObject: public CHardWorker, public NSHARE::CSingleton<CDataObject>,public ICore
 {
 public:
 	NSHARE::IAllocater* MDefAllocater() const;
@@ -28,6 +28,7 @@ public:
 	//The resources can be leaked in destructor
 	virtual ~CDataObject();
 
+	bool MStart();
 	//T has to be movable type. I.e.
 	//The memory of T can be moved without calling
 	//coping constuctor.

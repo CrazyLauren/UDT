@@ -16,7 +16,6 @@
 #include <internel_protocol.h>
 
 #include <core/kernel_type.h>
-#include <core/IState.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
 #include <io/CKernelIo.h>
@@ -31,13 +30,29 @@ namespace NUDT
 {
 const NSHARE::CText CRoutingService::NAME = "route";
 CRoutingService::CRoutingService() :
-		IState(NAME)
+		ICore(NAME)
 {
 	MInit();
 }
 
 CRoutingService::~CRoutingService()
 {
+}
+bool CRoutingService::MStart()
+{
+	{
+		program_id_t _my = get_my_id();
+		w_route_access _access = FRouteData.MGetWAccess();
+		_access->FRequiredDG.MAddClient(_my.FId);
+
+		if (!_access->FRequiredDG.MInitializeMsgInheritance())
+		{
+			LOG(ERROR) << "Cannot initialize genealogical tree";
+			return false;
+		}
+
+	}
+	return true;
 }
 static void set_intersection(demand_dgs_for_t& aTo,
 		demand_dgs_for_t const& aFrom)
@@ -820,11 +835,6 @@ void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
 
 inline void CRoutingService::MInit()
 {
-	{
-		program_id_t _my = get_my_id();
-		w_route_access _access = FRouteData.MGetWAccess();
-		_access->FRequiredDG.MAddClient(_my.FId);
-	}
 	{
 		callback_data_t _cb(sMHandleDemandId, this);
 		CDataObject::value_t _val(demands_id_t::NAME, _cb);

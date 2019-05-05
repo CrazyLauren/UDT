@@ -15,7 +15,6 @@
 #include <share_socket.h>
 #include <internel_protocol.h>
 #include <core/kernel_type.h>
-#include <core/IState.h>
 #include <io/IIOManager.h>
 #include "CMainChannelFactory.h"
 
@@ -30,12 +29,25 @@ const NSHARE::CText CMainChannelFactory::MAIN_CHANNEL="mch";
 const NSHARE::CText CMainChannelFactory::NAME_MAIN="name";
 const NSHARE::CText IMainChannel::CONFIGURE_NAME=CMainChannelFactory::NAME;
 
-CMainChannelFactory::CMainChannelFactory():IState(NAME)
+CMainChannelFactory::CMainChannelFactory():ICore(NAME)
 {
 }
 
 CMainChannelFactory::~CMainChannelFactory()
 {
+}
+bool CMainChannelFactory::MStart()
+{
+	VLOG(0) << "Starting Main channels";
+	unsigned _fails = 0;
+	factory_its_t _its = MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+		if (!_its.FBegin->second->MStart())
+		{
+			++_fails;
+			LOG(ERROR) << "Cannot start " << _its.FBegin->first;
+		}
+	return _fails == 0;
 }
 NSHARE::CConfig CMainChannelFactory::MSerialize() const
 {

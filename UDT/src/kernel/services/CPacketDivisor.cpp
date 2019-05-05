@@ -13,7 +13,6 @@
  */
 #include <deftype>
 #include <core/kernel_type.h>
-#include <core/IState.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
 #include <io/CKernelIo.h>
@@ -29,13 +28,17 @@ namespace NUDT
 {
 const NSHARE::CText CPacketDivisor::NAME = "div";
 CPacketDivisor::CPacketDivisor() :
-		IState(NAME)
+		ICore(NAME)
 {
 }
 
 CPacketDivisor::~CPacketDivisor()
 {
 	//todo handle close uuid ==> remove in FMergeOp
+}
+bool CPacketDivisor::MStart()
+{
+	return true;
 }
 void CPacketDivisor::MSetLimitsFor(descriptor_t const& aFor,
 		split_info const& aWhat)

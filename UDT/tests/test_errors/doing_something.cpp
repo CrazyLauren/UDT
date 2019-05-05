@@ -38,6 +38,7 @@ static NSHARE::CMutex g_stream_mutex;///< A mutex for lock console output
 static unsigned g_no_uuid_error=0;///< Amount of error no uuid
 static unsigned g_invalid_version_error=0;///< Amount of error of invalid version
 static unsigned g_parse_error=0;///< Amount of error during parsing of buffer
+static unsigned g_parse_is_not_exist=0;///< Amount of no parser error
 
 static unsigned g_amount_of_msg=0;///< Amount of received messages #MESSAGE_NUMBER
 static unsigned g_amount_of_msg_test=0;///< Amount of received messages #example_of_user_protocol::E_MSG_TEST
@@ -166,12 +167,17 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	if (_recv_arg->FErrorCode & CCustomer::E_CANNOT_PARSE_BUFFER)
 		++g_parse_error;
 
+	if (_recv_arg->FErrorCode & CCustomer::E_PARSER_IS_NOT_EXIST)
+		++g_parse_is_not_exist;
+
+
 	return 0;
 }
 
 extern void send_messages()
 {
 	NSHARE::sleep(1);
+
 
 	if(!test_invalid_uuid())
 		exit(EXIT_FAILURE);
@@ -180,10 +186,12 @@ extern void send_messages()
 		exit(EXIT_FAILURE);
 
 	if (!test_parsing_error())
-	{
-		getchar();
 		exit(EXIT_FAILURE);
-	}
+
+
+	if (!test_no_parser_error())
+		exit(EXIT_FAILURE);
+
 
 	std::cout<<"Press any key... "<<std::endl;
 	getchar();
@@ -358,6 +366,129 @@ bool test_invalid_msg_version()
 			std::cout << "Invalid version test finished successfully "
 					<< std::endl;
 	}
+	return true;
+}
+bool test_no_parser_error()
+{
+	unsigned _count = 0;
+	///1)  Testing behavior without subscribers
+	for (_count=0; _count < 5; ++_count)
+	{
+		///1.1) filing the message
+		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+		1000);
+
+		{
+			auto _it = _buf.begin(), _it_end = _buf.end();
+			for (int i = 0; _it != _it_end; ++i, ++_it)
+			{
+				*_it = i % 255;
+			}
+		}
+		///1.2) Send the message with random protocol name
+
+		int _num = CCustomer::sMGetInstance().MSend(
+				NSHARE::CText().MMakeRandom(10), _buf);
+
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+			if (_num > 0)
+				std::cout << "Send Packet#" << _num << std::endl;
+			else
+			{
+				std::cout << "Send error  " << _num << std::endl;
+				return false;
+			}
+		}
+
+	}
+	NSHARE::sleep(1);
+	{
+		/*! 1.3) Checking amount of errors
+		 *  As no receivers of messages The error has not to be received.
+		 */
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+
+		if (g_parse_is_not_exist != 0)
+		{
+			std::cout
+					<< "Invalid test for no parser error finished unsuccessfully: "
+					<< std::endl;
+			std::cout<<_count<<"!="<<g_parse_is_not_exist<<std::endl;
+			return false;
+		}
+		else
+			std::cout << "Invalid test for no parser  finished successfully "
+					<< std::endl;
+	}
+
+	_count=0;
+
+	///2)  Testing behavior if subscribers are exists
+
+	///2.1) Create random protocol name
+	NSHARE::CText _procol_name;
+	_procol_name.MMakeRandom(10);
+
+	///2.2) Subscribe to receive messages by this protocol
+
+	CCustomer::sMGetInstance().MIWantReceivingMSG( //
+			requirement_msg_info_t(_procol_name, required_header_t(),
+			INDITIFICATION_NAME), //
+			NULL);
+	NSHARE::sleep(1);
+	for (_count=0; _count < 5; ++_count)
+	{
+
+		///2.2) filing the message
+		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+		1000);
+
+		{
+			auto _it = _buf.begin(), _it_end = _buf.end();
+			for (int i = 0; _it != _it_end; ++i, ++_it)
+			{
+				*_it = i % 255;
+			}
+		}
+		///2.3) Send the message with created rendom protocol name
+
+		int _num = CCustomer::sMGetInstance().MSend(
+				_procol_name, _buf);
+
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+			if (_num > 0)
+				std::cout << "Send Packet#" << _num << std::endl;
+			else
+			{
+				std::cout << "Send error  " << _num << std::endl;
+				return false;
+			}
+		}
+
+	}
+
+	NSHARE::sleep(1);
+	{
+		/*! 2.4) Checking amount of errors
+		 *  As there are receivers of messages The error has to be received.
+		 */
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+
+		if (_count != g_parse_is_not_exist)
+		{
+			std::cout
+					<< "Invalid test for no parser error finished unsuccessfully: "
+					<< std::endl;
+			std::cout<<_count<<"!="<<g_parse_is_not_exist<<std::endl;
+			return false;
+		}
+		else
+			std::cout << "Invalid test for no parser  finished successfully "
+					<< std::endl;
+	}
+
 	return true;
 }
 

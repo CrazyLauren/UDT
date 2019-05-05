@@ -13,7 +13,6 @@
  */
 #include <deftype>
 #include <udt_share.h>
-#include <core/IState.h>
 #include <core/kernel_type.h>
 #include <core/CDataObject.h>
 #include <core/CDescriptors.h>

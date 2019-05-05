@@ -24,14 +24,14 @@
 #include <tclap/CmdLine.h>
 #include <logging/CShareLogArgsParser.h>
 
-#include "core/IState.h"
+#include "core/CCore.h"
 
 #include "core/CDescriptors.h"
 #include "core/CResources.h"
-#include "core/CDiagnostic.h"
 #include "core/CConfigure.h"
 #include "core/CDataObject.h"
 
+#include "io/CParserFactoryState.h"
 #include "io/CLinkDiagnostic.h"
 #include "io/CChannelDiagnostics.h"
 #include "io/CKernelIo.h"
@@ -244,7 +244,7 @@ void initialize_core(int argc, char* argv[])
 				<< endl;
 		exit(EXIT_FAILURE);
 	}
-	new CDiagnostic();
+	new CCore();
 	new CDescriptors();
 
 	//default configure
@@ -269,22 +269,11 @@ void initialize_core(int argc, char* argv[])
 
 	//parsers
 	{
-		const CConfig* _p = CConfigure::sMGetInstance().MGet().MChildPtr(
-				"modules");
-		//LOG_IF(DFATAL,!_p) << "Invalid config file.Key modules is not exist.";
-		std::vector<NSHARE::CText> _text;
-		if (_p)
-		{
-			ConfigSet::const_iterator _it = _p->MChildren().begin();
-
-			for (; _it != _p->MChildren().end(); ++_it)
-				_text.push_back(_it->MKey());
-		}
-
-		NSHARE::CText _ext_path;
-		CConfigure::sMGetInstance().MGet().MGetIfSet("modules_path",_ext_path);
-		new NUDT::CResources(_text,_ext_path);
+		const CConfig& _p = CConfigure::sMGetInstance().MGet().MChild(
+				NUDT::CResources::NAME);
+		new NUDT::CResources(_p);
 	}
+	new CParserFactoryState();
 }
 
 void perpetual_loop()
@@ -295,9 +284,8 @@ void perpetual_loop()
 void start()
 {
 	new CKernelIo();
-	CKernelIo*const _io = CKernelIo::sMGetInstancePtr();
 
 	std::cout << "Starting..." << std::endl;
-	_io->MInit();
+	CCore::sMGetInstance().MStart();
 	std::cout << "Working ..." << std::endl;
 }

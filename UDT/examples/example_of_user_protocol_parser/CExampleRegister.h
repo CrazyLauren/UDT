@@ -17,9 +17,17 @@
  *
  * As the kernel is used the plugin idiom  you has
  * to define the class which will added the
- * a parser. Instead of defining a class
+ * a parser. To pass configuration information
+ * to library you has to be specified it
+ * in the configuration file of kernel
+ * in the key NUDT::CResources::NAME ->
+ * NUDT::CResources::LIST_OF_LOADED_LIBRARY ->
+ * "the library name" -> "you parameters...".
+ * (with value passed to function #get_factory_registry)
+ * Instead of defining a class
  * you can use macro #REGISTRE_ONLY_ONE_PROTOCOL_MODULE
  * (REGISTRE_ONLY_ONE_PROTOCOL_MODULE(CExampleProtocolParser,EXAMPLE_PARSER) )
+ * where EXAMPLE_PARSER is prefix of #EXAMPLE_PARSER_EXPORT macro
  * if you what to define class "registrar" this code
  * can be used as example.
  * The code below is trivial for all parsers.

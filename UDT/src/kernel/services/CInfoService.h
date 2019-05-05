@@ -12,16 +12,18 @@
 #ifndef CINFOSERVICE_H_
 #define CINFOSERVICE_H_
 #include "CGraph.h"
+#include <core/ICore.h>
 namespace NUDT
 {
 class CHardWorker;
-class CInfoService:public NSHARE::CSingleton<CInfoService>,public IState
+class CInfoService:public NSHARE::CSingleton<CInfoService>,public ICore
 {
 public:
 	static const NSHARE::CText NAME;
 	CInfoService();
 	~CInfoService();
 	NSHARE::CConfig MSerialize() const;
+	bool MStart();
 
 	std::vector<descriptor_t> MNextDestinations(CRouteGraph::node_t const&  aTo) const;
 	bool MIsVertex(const CRouteGraph::node_t& name) const;

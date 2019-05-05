@@ -13,7 +13,6 @@
  */
 #include <deftype>
 #include "kernel_type.h"
-#include "IState.h"
 #include "CDataObject.h"
 #include "CConfigure.h"
 
@@ -25,20 +24,22 @@ NUDT::CDataObject::singleton_pnt_t NUDT::CDataObject::singleton_t::sFSingleton =
 namespace NUDT
 {
 const NSHARE::CText CDataObject::NAME="hw";
-CDataObject::CDataObject():IState(NAME),FAllocater(NULL)
+CDataObject::CDataObject():ICore(NAME),FAllocater(NULL)
 {
-	NSHARE::CThread::eThreadPriority _priority;
-	if (CConfigure::sMGetInstance().MGet().MGetIfSet("priority", _priority))
-		MCreate( _priority,-1);
-	else
-		MCreate(-1);
 }
 
 CDataObject::~CDataObject()
 {
 }
 
-
+bool CDataObject::MStart()
+{
+	NSHARE::CThread::eThreadPriority _priority;
+	if (CConfigure::sMGetInstance().MGet().MGetIfSet("priority", _priority))
+		return MCreate(_priority, -1);
+	else
+		return MCreate(-1);
+}
 void CDataObject::MPush(const destroy_descriptor & aVal)
 {
 	MPushImpl(aVal, true);

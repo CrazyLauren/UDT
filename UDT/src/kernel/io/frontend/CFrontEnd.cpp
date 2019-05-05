@@ -17,7 +17,6 @@
 #include <Socket/socket_parser.h>
 #include <CParserFactory.h>
 #include <core/kernel_type.h>
-#include <core/IState.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
 #include <services/CInfoService.h>

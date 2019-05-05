@@ -21,9 +21,14 @@ namespace NUDT
 {
 const NSHARE::CText CRequiredDG::NAME = "demands";
 //todo using hash algorithm
+//todo cache
 CRequiredDG::CRequiredDG()
 {
 	FMsgID = 0;
+<<<<<<< HEAD
+=======
+	FMaxInheritanceDepth = DEFAULT_MAX_INHERITANCE_DEPTH; //todo to config
+>>>>>>> 5d2f97a... see ChangeLog.txt
 }
 
 CRequiredDG::~CRequiredDG()
@@ -655,9 +660,15 @@ bool CRequiredDG::MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew,
 			{
 				if (*_kt == *_jt)
 				{
+<<<<<<< HEAD
 					aRemoved.erase(_kt.base());
 					_jt = demand_dgs_t::reverse_iterator(
 							aAdd.erase(_jt.base()));
+=======
+					_removed.erase((_kt+1).base());
+					_jt = demand_dgs_t::reverse_iterator(
+							_add.erase((_jt+1).base()));
+>>>>>>> 5d2f97a... see ChangeLog.txt
 					_is_found = true;
 					break;
 				}
@@ -737,8 +748,10 @@ void CRequiredDG::MFillByRawProtocol(user_datas_t*const aFrom, user_datas_t*cons
 
 		if (!_ru.empty() && _ru.FNumberOfRealReceivers > 0)
 		{
-			MFillRouteAndDestanationInfo(_ru, &_data.FDataId, aFail);
-			++_ut;
+			if (MFillRouteAndDestanationInfo(_ru, &_data.FDataId, aFail))
+				++_ut;
+			else
+				aTo->splice(aTo->end(), _sent_datas, _ut++);//only post increment
 		}
 		else
 		{
@@ -1029,8 +1042,9 @@ error_type CRequiredDG::MAddReceiverOfMsg(msg_handlers_t const& aHandlers,
  * 			adding theirs to the list of message's receivers
  *
  *
+ *\return false if No valid receivers
  */
-void CRequiredDG::MFillRouteAndDestanationInfo(
+bool CRequiredDG::MFillRouteAndDestanationInfo(
 		uuids_of_receiver_t const& aRoute, user_data_info_t* const aDataInfo,
 		fail_send_array_t* const aErrors) const
 {
@@ -1039,76 +1053,79 @@ void CRequiredDG::MFillRouteAndDestanationInfo(
 
 	VLOG(2) << "Filling " << _data_info;
 	DCHECK_GT(aRoute.FNumberOfRealReceivers, 0);
+
+	uuids_t _uuids_of_incorrect_version;
+	uuids_t _sent_to;
+
+	const bool _is_by_subscriber = _data_info.FDestination.empty();	//the data sent to concrete receiver or
+																	//to all subscribers
+
+	_data_info.FDestination.swap(_sent_to);
+	std::sort(_sent_to.begin(), _sent_to.end());
+
+	for (CRequiredDG::uuids_of_receiver_t::const_iterator _kt = aRoute.begin();
+			_kt != aRoute.end(); ++_kt)
 	{
-		uuids_t _uuids_of_incorrect_version;
-		uuids_t _sent_to;
+		NSHARE::uuid_t const& _uuid = _kt->first;
+		msg_handlers_t const& _handlers = _kt->second;
 
-		const bool _is_by_subscriber = _data_info.FDestination.empty();//the data sent to concrete receiver or
-																		//to all subscribers
-
-		_data_info.FDestination.swap(_sent_to);
-		std::sort(_sent_to.begin(), _sent_to.end());
-
-		for (CRequiredDG::uuids_of_receiver_t::const_iterator _kt =
-				aRoute.begin(); _kt != aRoute.end(); ++_kt)
+		if (!_is_by_subscriber)					//send message directly to uuids
 		{
-			NSHARE::uuid_t const& _uuid = _kt->first;
-			msg_handlers_t const& _handlers = _kt->second;
+			uuids_t::iterator _it = std::find(_sent_to.begin(), _sent_to.end(),
+					_uuid);
+			bool const _is_found = _it != _sent_to.end();
 
-			if (!_is_by_subscriber)//send message directly to uuids
+			if (_is_found)
 			{
-				uuids_t::iterator _it = std::find(_sent_to.begin(),
-						_sent_to.end(), _uuid);
-				bool const _is_found = _it != _sent_to.end();
+				//The receiver is  subscribered to the msg
 
-				if (_is_found)
-				{
-					//The receiver is  subscribered to the msg
+				_sent_to.erase(_it);
 
-					_sent_to.erase(_it);
-
-					error_type const _error = MAddReceiverOfMsg(_handlers,
-							_uuid, _data_info);
-					if (_error != E_NO_ERROR)
-						_uuids_of_incorrect_version.push_back(_uuid);
-				}
-				else if (_handlers.MIsRegistrarExist())	//The registrar has to receive the msg
-				{
-					MAddUUIDToRoute(_handlers, _uuid, _data_info);
-				}
-			}
-			else
-			{
 				error_type const _error = MAddReceiverOfMsg(_handlers, _uuid,
 						_data_info);
 				if (_error != E_NO_ERROR)
 					_uuids_of_incorrect_version.push_back(_uuid);
 			}
+			else if (_handlers.MIsRegistrarExist())	//The registrar has to receive the msg
+			{
+				MAddUUIDToRoute(_handlers, _uuid, _data_info);
+			}
 		}
-
-		///<generating errors
-
-
-		if (!_sent_to.empty())
+		else
 		{
-			LOG(ERROR)<<"The user sends the msg to concrete uuids but they doesn't expect to receive this msg: "<<_sent_to;
-
-			fail_send_t _sent(_data_info, _sent_to, E_HANDLER_IS_NOT_EXIST);
-			_fails.push_back(_sent);
+			error_type const _error = MAddReceiverOfMsg(_handlers, _uuid,
+					_data_info);
+			if (_error != E_NO_ERROR)
+				_uuids_of_incorrect_version.push_back(_uuid);
 		}
-		if (!_uuids_of_incorrect_version.empty())
-		{
-			LOG(ERROR)<<"Cannot send the msg the protocol's version is not compatible: "<< _uuids_of_incorrect_version;
-
-			fail_send_t _sent(_data_info, _uuids_of_incorrect_version,
-					E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
-			_fails.push_back(_sent);
-		}
-
-		std::sort(aDataInfo->FDestination.begin(), aDataInfo->FDestination.end());
-		std::sort(aDataInfo->FRegistrators.begin(), aDataInfo->FRegistrators.end());
-		std::sort(aDataInfo->FRouting.begin(), aDataInfo->FRouting.end());
 	}
+
+	///<generating errors
+
+	if (!_sent_to.empty())
+	{
+		LOG(ERROR)
+								<< "The user sends the msg to concrete uuids but they doesn't expect to receive this msg: "
+								<< _sent_to;
+
+		fail_send_t _sent(_data_info, _sent_to, E_HANDLER_IS_NOT_EXIST);
+		_fails.push_back(_sent);
+	}
+	if (!_uuids_of_incorrect_version.empty())
+	{
+		LOG(ERROR)
+								<< "Cannot send the msg the protocol's version is not compatible: "
+								<< _uuids_of_incorrect_version;
+
+		fail_send_t _sent(_data_info, _uuids_of_incorrect_version,
+				E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE);
+		_fails.push_back(_sent);
+	}
+
+	std::sort(_data_info.FDestination.begin(), _data_info.FDestination.end());
+	std::sort(_data_info.FRegistrators.begin(), _data_info.FRegistrators.end());
+	std::sort(_data_info.FRouting.begin(), _data_info.FRouting.end());
+	return !_data_info.FRouting.empty();
 }
 
 <<<<<<< HEAD
@@ -1281,6 +1298,7 @@ CRequiredDG::uuids_of_receiver_t& CRequiredDG::MGetOrCreateUUIDsOfReceivers(
 
 /**\brief Adding receivers info to message
  *
+ *\warning _msgs will corresponded to aFrom
  */
 void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 		user_datas_t* aFrom, user_datas_t * const aTo,
@@ -1303,9 +1321,11 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 		if (!_ru.empty() && _ru.FNumberOfRealReceivers>0)
 		{
 			VLOG(4) << " OK " << " filling info";
-			MFillRouteAndDestanationInfo(_ru, &_handling_data.FDataId,
-					aFail);
-			++_it_buf;
+			if (MFillRouteAndDestanationInfo(_ru, &_handling_data.FDataId,
+					aFail))
+				++_it_buf;
+			else
+				aTo->splice(aTo->end(), *aFrom, _it_buf++);	//only postincrement
 		}
 		else
 		{
@@ -1355,7 +1375,7 @@ NSHARE::CBuffer CRequiredDG::MParseData(IExtParser::result_t* aMsgs,
 	{
 
 		CHECK_LE(_msgs.back().FEnd, _end);
-		CHECK_EQ(_msgs.back().FBegin, _begin);
+		CHECK_EQ(_msgs.front().FBegin, _begin);
 		if (_end != _msgs.back().FEnd)
 		{
 			VLOG(2) << "Copy data to buffer ";
@@ -1365,6 +1385,7 @@ NSHARE::CBuffer CRequiredDG::MParseData(IExtParser::result_t* aMsgs,
 															<< " > " << _end;
 			_rval = NSHARE::CBuffer(_msgs.back().FEnd, _end); //copy tail
 			_buf.resize(_msgs.back().FEnd - _msgs.front().FBegin);
+			_end = _begin + _buf.size();
 		}
 		CHECK_EQ(_msgs.back().FEnd, _end);
 	}
@@ -1508,6 +1529,7 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 			user_datas_t _to;
 			_ut=MExtractMessages(_msgs,&_sent_datas,_ut, &_to, *_p);//!< here increment iterator
 
+<<<<<<< HEAD
 			MRemoveDataWithUserErrors(&_msgs, &_to, aTo, aFail);
 
 			MAddReceiversForMessages(_msgs,  &_to,aTo,_routing.FExpected,
@@ -1515,6 +1537,11 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 
 			if(!_to.empty())
 				_sent_datas.splice(_ut,_to);
+=======
+			MAddReceiversForMessages(_msgs_headers,  &_msgs,aTo,_routing.FExpected, aFail);
+			if(!_msgs.empty())
+				_sent_datas.splice(_ut,_msgs);
+>>>>>>> 5d2f97a... see ChangeLog.txt
 		}
 		else
 		{
@@ -2355,10 +2382,7 @@ void CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 			CReqHeaderFastLessCompare> msg_inheritance_tree_t;
 =======
 }
-/*!\brief initialize inherent map
- *
- */
-inline void CRequiredDG::MInitializeMsgInheritance()
+bool CRequiredDG::MInitializeMsgInheritance()
 {
 	msg_inheritances_t _childrens,_genealogy;
 	MReadMsgChild(&_childrens);
@@ -2378,6 +2402,7 @@ inline void CRequiredDG::MInitializeMsgInheritance()
 	{
 		///todo change state
 	}
+	return true;
 }
 >>>>>>> f3da2cc... see changelog.txt
 

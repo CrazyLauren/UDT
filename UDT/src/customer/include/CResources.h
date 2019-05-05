@@ -17,9 +17,9 @@ namespace NUDT
 class CResources: public NSHARE::CSingleton<CResources>
 {
 public:
-
 	CResources(std::vector<NSHARE::CText> const& aResources,
-			NSHARE::CText const& aExtPath = NSHARE::CText());
+				NSHARE::CText const& aExtPath = NSHARE::CText());
+
 	~CResources();
 
 	//Loads all resources
@@ -28,7 +28,7 @@ public:
 	bool MIsLoaded(void) const;
 
 	//Load only channels
-	void MLoadChannels();
+	void MLoadLibrariess();
 	bool MIsChannelsLoaded(void) const;
 	void MUnloadChannels();
 

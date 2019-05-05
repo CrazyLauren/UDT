@@ -13,7 +13,6 @@
  */
 #include <deftype>
 #include <fstream>
-#include "IState.h"
 #include "CConfigure.h"
 
 
@@ -23,12 +22,12 @@ namespace NUDT
 {
 const NSHARE::CText CConfigure::NAME="conf";
 CConfigure::CConfigure() :
-		IState(NAME),FConf(NAME)
+		ICore(NAME),FConf(NAME)
 {
 	;
 }
 CConfigure::CConfigure(NSHARE::CText const& aPath, eType const& aType) :
-		IState(NAME),FConf(NAME),FPath(aPath)
+		ICore(NAME),FConf(NAME),FPath(aPath)
 {
 	VLOG(2)<<"Read "<<aPath<<" type ="<<(int)aType;
 
@@ -53,7 +52,10 @@ CConfigure::CConfigure(NSHARE::CText const& aPath, eType const& aType) :
 	}
 	VLOG(6)<<FConf.MToJSON(true);
 }
-
+bool CConfigure::MStart()
+{
+	return true;
+}
 
 NSHARE::CConfig & CConfigure::MGet()
 {

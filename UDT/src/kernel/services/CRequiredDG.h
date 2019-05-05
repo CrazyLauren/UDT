@@ -61,6 +61,12 @@ public:
 	CRequiredDG();
 	 ~CRequiredDG();
 
+	/*!\brief Initialize genealogical tree of
+	 * messages
+	 *
+	 */
+	bool MInitializeMsgInheritance();
+
 	/*!< \brief Update requirement messages list for the client
 	*
 	*	It updates requirement messages list for
@@ -272,7 +278,9 @@ private:
 	struct unique_compare_t;
 >>>>>>> f3da2cc... see changelog.txt
 
-	void MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,user_data_info_t* const aInfo,fail_send_array_t*const aFail) const;
+	bool MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,
+			user_data_info_t* const aInfo,
+			fail_send_array_t* const aFail) const;
 
 	inline void MFillByUserProtocol(user_datas_t* const aFrom,user_datas_t* const aTo,
 			fail_send_array_t * const aFail) const;
@@ -334,11 +342,58 @@ private:
 	inline bool MBufferingDataIfNeed(data_routing_t& _routing,NSHARE::CBuffer const & _tail	) const;
 	inline static bool sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_header_t* aTo);
 	inline static bool sMSwapMessageEndian(NSHARE::CText const & aProtocol,
+<<<<<<< HEAD
 			required_header_t const& aType, NSHARE::CBuffer* aTO);
 	msg_handlers_t const* MGetHandlers(user_data_info_t & aFrom) const;
 
 	inline void MInitializeMsgInheritance();//todo
 
+=======
+			required_header_t const& aType, NSHARE::CBuffer* const aTO);
+	msg_handlers_t const* MGetHandlers(user_data_info_t const & aFrom) const;
+
+	msg_heritance_t const& MGetMessageChildren(
+			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const;
+	static msg_heritance_t const& sMGetMessageChildren(
+			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,msg_inheritances_t const& aFrom);
+	static void sMAddMessageChildren(
+			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,
+			msg_heritance_t const& aChildren,msg_inheritances_t *const aTo);
+
+	msg_heritance_t const& MGetMessageParents(
+			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const;
+
+	unsigned MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
+			NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
+			uuids_of_expecting_dg_t*  aIncludeTo, demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
+	unsigned MUnincludeMessageChildren(NSHARE::uuid_t const & aFrom,
+			NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
+			uuids_of_expecting_dg_t*  aIncludeTo,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
+	inline void MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const;
+	inline void MReadMsgChild(msg_inheritances_t * const aTo) const;
+	inline unsigned MCreateGenealogyTreeFromChildInfo(
+			msg_inheritances_t * const aChildInfo,msg_inheritances_t * const aTo) const;
+	inline void MParentInfo(msg_inheritances_t * const aTo) const;
+	void  MGetOnlyNearestUUIDFor(unique_uuids_t * const aTo) const;
+	inline bool MRemoveAllReceiversForMsgsFrom(id_t const& aFrom,demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved);
+	static unsigned sMGetDemandsByHandlers(msg_handlers_t const & aHandlers,
+			demand_dgs_t const & aDemand, demand_dgs_t* aTo);
+	void MTakeIntoAccountOnlyNearestSendersIfNeed(NSHARE::uuid_t const& aFrom, array_of_demand_for_t* const aNew,
+			array_of_demand_for_t* const aRemoved);
+	unsigned MUpdateSendInfoFor(NSHARE::uuid_t const& aFor,
+			array_of_demand_for_t const& aAdd, array_of_demand_for_t const& aRemove, demand_dgs_for_t* const aNew,
+			demand_dgs_for_t*  constaRemoved);
+	void MGetListOfReceiversOfMsgsFrom(id_t const & aFrom,
+			array_of_demand_for_t*const aTo) const;
+	void MGetDistance(id_t const & aFrom, demand_dgs_for_t const& aFor,
+			array_of_demand_for_t* aTo);
+	void MRemoveSenderIfNeed(NSHARE::uuid_t const& aFrom, array_of_demand_for_t*const aAdded,
+			array_of_demand_for_t*const aRemoved);
+	void MAddSenderIfNeed(NSHARE::uuid_t const & aFrom,
+			array_of_demand_for_t const& aRemoved, array_of_demand_for_t*const aAdded);
+
+	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo);
+>>>>>>> 5d2f97a... see ChangeLog.txt
 
 	mutable protocol_of_uuid_t FWhatIsSendingBy;
 <<<<<<< HEAD

@@ -14,7 +14,6 @@
 #include <deftype>
 #include <share_socket.h>
 #include <vector>
-#include "IState.h"
 #include "CDescriptors.h"
 #include "CDataObject.h"
 
@@ -31,7 +30,7 @@ const NSHARE::CText CDescriptors::DESCRIPTOR_NAME="kerd";
 //const descriptor_t CDescriptors::MAX = 255;
 const descriptor_t CDescriptors::INVALID = -1;
 CDescriptors::CDescriptors() :
-		IState(NAME),FLast(1) //1 - minimal  value of descriptor
+		ICore(NAME),FLast(1) //1 - minimal  value of descriptor
 {
 	//MIncreaseNumberOfFree();
 }
@@ -44,6 +43,10 @@ CDescriptors::CDescriptors() :
 //	}
 //	FLastSize = _max;
 //}
+bool CDescriptors::MStart()
+{
+	return true;
+}
 int CDescriptors::MCreate()
 {
 	VLOG(2) << "Open descriptor";

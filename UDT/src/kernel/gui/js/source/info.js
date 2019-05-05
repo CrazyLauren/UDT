@@ -3,7 +3,7 @@ function udt_info(aPanel)
     $.ajax(
             {
                 type: "GET",
-                data: {query: ["desc","info","res"]},
+                data: {query: ["desc","info","modules"]},
                 dataType: "json"
             }).done(function (data)
     {

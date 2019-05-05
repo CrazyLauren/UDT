@@ -45,9 +45,9 @@ typedef void* DYN_LIB_HANDLE;
 #endif
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
-static const NSHARE::CDynamicModule::string_t g_libraryExtension(".dll");
+const NSHARE::CText CDynamicModule::LIBRARY_EXTENSION(".dll");
 #else
-static const NSHARE::CDynamicModule::string_t g_libraryExtension(".so");
+const NSHARE::CText CDynamicModule::LIBRARY_EXTENSION(".so");
 #endif
 
 
@@ -73,22 +73,30 @@ NSHARE::CConfig CDynamicModule::MSerialize() const
 	_conf.MAdd("name",FPimpl->FModuleName);
 	return _conf;
 }
+bool CDynamicModule::MIsValid()const
+{
+	return !FPimpl->FModuleName.empty();
+}
 //----------------------------------------------------------------------------//
 //extern const char MODULE_DIR_VAR_NAME[] = "";
 
 static bool has_extension(const CText& name)
 {
-	const size_t ext_len = g_libraryExtension.length();
+	const size_t ext_len = CDynamicModule::LIBRARY_EXTENSION.length();
 
 	if (name.length() < ext_len)
 		return false;
 
-	return name.compare(name.length() - ext_len, ext_len, g_libraryExtension) == 0;
+	return name.compare(name.length() - ext_len, ext_len, CDynamicModule::LIBRARY_EXTENSION) == 0;
+}
+bool NSHARE::CDynamicModule::sMIsNameOfLibrary(const CText& name)
+{
+	return has_extension(name);
 }
 //----------------------------------------------------------------------------//
 static void append_extension(CText& name)
 {
-	name.append(g_libraryExtension);
+	name.append(CDynamicModule::LIBRARY_EXTENSION);
 }
 //----------------------------------------------------------------------------//
 static void add_suffixes(CText& name)
@@ -139,13 +147,14 @@ static DYN_LIB_HANDLE dyn_lib_load(const CText& name,const CText& aPath)
 
 	if (!envModuleDir.empty())
 		handle = DYN_LIB_LOAD(envModuleDir + '/' + name);
+	else
+	{
+		if (!handle)
+			handle = DYN_LIB_LOAD(name);
 
-	if (!handle)
-		handle = DYN_LIB_LOAD(name);
-
-	if (!handle)
-		handle = DYN_LIB_LOAD("./" + name);
-
+		if (!handle)
+			handle = DYN_LIB_LOAD("./" + name);
+	}
 	return handle;
 }
 

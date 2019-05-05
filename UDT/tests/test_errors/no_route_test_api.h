@@ -131,6 +131,11 @@ extern bool test_invalid_msg_version();
  */
 extern bool test_parsing_error();
 
+/*\brief Testing error which occured if parse for the protocol is not exist
+ *
+ */
+extern bool test_no_parser_error();
+
 /*\brief Easiest example of sending(publishing) messages
  *
  */

@@ -17,8 +17,8 @@
 #include <core/kernel_type.h>
 #include <core/CDataObject.h>
 #include <core/CDescriptors.h>
-#include <core/CDiagnostic.h>
 #include <core/CConfigure.h>
+#include <core/CCore.h>
 #include <io/CKernelIo.h>
 
 #include "CHttpRequest.h"
@@ -269,7 +269,7 @@ eStatusCode CHttpIOManger::MGetStateInfo(const CUrl& _url,
 		{
 
 			const NSHARE::CConfig _conf(
-					CDiagnostic::sMGetInstance().MSerialize(_what.first->second,
+					CCore::sMGetInstance().MSerialize(_what.first->second,
 							_is_deep));
 			if (!_conf.MIsEmpty())
 			{

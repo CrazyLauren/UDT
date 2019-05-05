@@ -12,11 +12,11 @@
 #ifndef CDESCRIPTORS_H_
 #define CDESCRIPTORS_H_
 
-#include "IState.h"
 #include "kernel_type.h"
+#include "ICore.h"
 namespace NUDT
 {
-class CDescriptors:public NSHARE::CSingleton<CDescriptors>,public IState
+class CDescriptors:public NSHARE::CSingleton<CDescriptors>,public ICore
 {
 public:
 	static const NSHARE::CText NAME;
@@ -27,6 +27,7 @@ public:
 	typedef std::map<descriptor_t, smart_info_t> d_list_t;
 
 	CDescriptors();
+	bool MStart();
 
 	//int MOpen(const descriptor_info_t&);
 	int MCreate();

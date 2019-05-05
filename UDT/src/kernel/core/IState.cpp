@@ -13,22 +13,22 @@
  */
 #include <deftype>
 #include "IState.h"
-#include "CDiagnostic.h"
+#include "CCore.h"
 
 namespace NUDT
 {
 IState::IState(NSHARE::CText const& aName)
 {
-	CDiagnostic::sMGetInstance().MAddState(this,aName);
+	CCore::sMGetInstance().MAddState(this,aName);
 }
 IState::~IState()
 {
-	CDiagnostic::sMGetInstance().MRemoveState(this);
+	CCore::sMGetInstance().MRemoveState(this);
 }
 NSHARE::CConfig IState::MSerializeRef() const
 {
-	NSHARE::CConfig _ref(CDiagnostic::REFFRENCE_TO,this);
-	_ref.MValue().insert(0,CDiagnostic::REFFRENCE_PREFIX);
+	NSHARE::CConfig _ref(CCore::REFFRENCE_TO,this);
+	_ref.MValue().insert(0,CCore::REFFRENCE_PREFIX);
 	return _ref;
 }
 }

@@ -62,7 +62,7 @@ public:
 				return false;};\
 	};};\
 	static NSHARE::factory_registry_t g_factory;\
-	extern "C" aLibraryName##_EXPORT NSHARE::factory_registry_t* get_factory_registry()\
+	extern "C" aLibraryName##_EXPORT NSHARE::factory_registry_t* get_factory_registry(NSHARE::CConfig const*)\
 	{if (g_factory.empty())g_factory.push_back(new CRegisterImpl());\
 		return &g_factory;}\
 		/*END macro*/

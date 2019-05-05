@@ -11,11 +11,11 @@
  */
 #ifndef CPACKETDIVISOR_H_
 #define CPACKETDIVISOR_H_
-
+#include <core/ICore.h>
 namespace NUDT
 {
 
-class CPacketDivisor: public NSHARE::CSingleton<CPacketDivisor>, public IState
+class CPacketDivisor: public NSHARE::CSingleton<CPacketDivisor>, public ICore
 {
 public:
 	static const NSHARE::CText NAME;
@@ -36,6 +36,8 @@ public:
 //	};
 	CPacketDivisor();
 	~CPacketDivisor();
+	bool MStart();
+
 	void MSetLimitsFor(descriptor_t const&,split_info const&);
 	std::pair<split_info,bool>  MGetLimitsFor(descriptor_t const&) const;
 	bool  MRemoveLimitsFor(descriptor_t const&);

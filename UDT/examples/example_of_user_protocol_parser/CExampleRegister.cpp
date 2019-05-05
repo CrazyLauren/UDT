@@ -53,7 +53,7 @@ static NSHARE::factory_registry_t g_factory;///< List of registrar
  *
  *\return list of all available  plugin
  */
-extern "C" EXAMPLE_PARSER_EXPORT NSHARE::factory_registry_t* get_factory_registry()
+extern "C" EXAMPLE_PARSER_EXPORT NSHARE::factory_registry_t* get_factory_registry(NSHARE::CConfig const*)
 {
 	if(g_factory.empty())
 	{

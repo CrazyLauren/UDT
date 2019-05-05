@@ -6,7 +6,7 @@
  *  Created on: 19.01.2016
  *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016  https://github.com/CrazyLauren
+ *	Copyright В© 2016  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
@@ -58,7 +58,7 @@ void CResources::MLoad()
 {
 	VLOG(0) << "Begining resource loading:" << this;
 	//all resources
-	MLoadChannels();
+	MLoadLibrariess();
 	VLOG(0) << "Resource loading completed:" << this;
 }
 void CResources::MUnload()
@@ -67,7 +67,7 @@ void CResources::MUnload()
 	MUnloadChannels();
 	VLOG(0) << "Resource unloading completed:" << this;
 }
-void CResources::MLoadChannels()
+void CResources::MLoadLibrariess()
 {
 	VLOG(0) << "Begining channels loading:" << this;
 	for (mod_channels_t::iterator _it = FModules.begin(); _it != FModules.end();

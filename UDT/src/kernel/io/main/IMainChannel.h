@@ -26,11 +26,8 @@ public:
 	{
 
 	}
-	virtual void MInit()
-	{
+	virtual bool MStart()=0;
 
-	}
-	;
 	virtual bool MOpen(ILink* aHandler, program_id_t const&,
 			NSHARE::net_address const& aFor)=0;
 	virtual bool MIsOpen(descriptor_t aFor) const =0;

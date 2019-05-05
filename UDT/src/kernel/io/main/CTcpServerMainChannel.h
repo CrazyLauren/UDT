@@ -25,7 +25,7 @@ public:
 
 	CTcpServerMainChannel();
 	virtual ~CTcpServerMainChannel();
-	void MInit();
+	bool MStart();
 	bool MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_address const& aFor);
 	bool MIsOpen(descriptor_t aFor) const;
 	bool MClose(descriptor_t aFor);

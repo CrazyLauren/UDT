@@ -12,10 +12,10 @@
 #ifndef CCONFIGURE_H_
 #define CCONFIGURE_H_
 
-#include "IState.h"
+#include "ICore.h"
 namespace NUDT
 {
-class CConfigure:public NSHARE::CSingleton<CConfigure>,public IState
+class CConfigure:public NSHARE::CSingleton<CConfigure>,public ICore
 {
 public:
 	static const NSHARE::CText NAME;
@@ -26,6 +26,7 @@ public:
 	};
 	CConfigure();
 	CConfigure(NSHARE::CText const&,eType const& =JSON);
+	bool MStart();
 
 	NSHARE::CConfig & MGet();
 	NSHARE::CText const&  MGetPath() const;

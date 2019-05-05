@@ -41,8 +41,8 @@ public:
 	CHardWorker();
 	CHardWorker(int aNum);
 	CHardWorker(NSHARE::CThread::eThreadPriority _priority,int aNum=-1);
-	void MCreate(int aNum=-1);
-	void MCreate(NSHARE::CThread::eThreadPriority _priority,int aNum=-1);
+	bool MCreate(int aNum = -1);
+	bool MCreate(NSHARE::CThread::eThreadPriority _priority, int aNum = -1);
 
 	//The resources can be leaked in destructor
 	virtual ~CHardWorker();

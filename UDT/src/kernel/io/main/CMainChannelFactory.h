@@ -12,10 +12,11 @@
 #ifndef CMAINCHANNELFACTORY_H_
 #define CMAINCHANNELFACTORY_H_
 
+#include <core/ICore.h>
 #include "IMainChannel.h"
 namespace NUDT
 {
-class CMainChannelFactory: public NSHARE::CFactoryManager<IMainChannel>,public IState
+class CMainChannelFactory: public NSHARE::CFactoryManager<IMainChannel>,public ICore
 {
 public:
 	static const NSHARE::CText NAME;
@@ -24,6 +25,7 @@ public:
 	CMainChannelFactory();
 	virtual ~CMainChannelFactory();
 	NSHARE::CConfig MSerialize() const;
+	bool MStart();
 };
 }
 #endif /* CMAINCHANNELFACTORY_H_ */

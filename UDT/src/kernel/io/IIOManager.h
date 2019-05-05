@@ -12,11 +12,12 @@
 #ifndef IIOMANAGER_H_
 #define IIOMANAGER_H_
 
+#include <core/IState.h>
 #include "IProtocols.h"
 namespace NUDT
 {
 class CKernelIo;
-class IIOManager:public IProtocols,public NSHARE::IFactory,public IState
+class IIOManager: public IProtocols, public NSHARE::IFactory, public IState
 {
 public:
 	typedef NSHARE::ISocket::data_t data_t;
@@ -41,7 +42,7 @@ public:
 
 protected:
 	IIOManager(const NSHARE::CText& type) :
-		NSHARE::IFactory(type),IState(type)
+			NSHARE::IFactory(type), IState(type)
 	{
 	}
 };

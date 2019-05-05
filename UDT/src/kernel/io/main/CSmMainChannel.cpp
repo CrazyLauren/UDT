@@ -53,20 +53,20 @@ CSmMainChannel::CSmMainChannel() :
 
 
 
-void CSmMainChannel::MInit()
+bool CSmMainChannel::MStart()
 {
 	VLOG(2) << "Initialize sm server";
 	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
 	if (_main_settings.MIsEmpty())
 	{
 		LOG(ERROR) << "Main channel settings is not exist";
-		return;
+		return false;
 	}
 	CConfig _settings = _main_settings.MChild(NAME);
 	if (_settings.MIsEmpty())
 	{
 		LOG(WARNING)<<"The Shared memory is not initialized as no configure.";
-		return;
+		return false;
 	}
 
 	if (!_settings.MGetIfSet(SERVER_NAME, FName))
@@ -100,7 +100,7 @@ void CSmMainChannel::MInit()
 
 	_settings.MGetIfSet(USING_AS_DEF, FIsUsingAsDef);
 
-	MOpenIfNeed();
+	return MOpenIfNeed();
 }
 bool CSmMainChannel::MOpenIfNeed()
 {

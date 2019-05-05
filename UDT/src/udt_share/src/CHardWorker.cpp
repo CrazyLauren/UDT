@@ -32,15 +32,15 @@ CHardWorker::CHardWorker(NSHARE::CThread::eThreadPriority _priority, int aNum) :
 
 	MCreate(_priority,aNum);
 }
-void CHardWorker::MCreate(int aNum )
+bool CHardWorker::MCreate(int aNum)
 {
-	FPool.MCreate(aNum);
+	return FPool.MCreate(aNum);
 }
-void CHardWorker::MCreate(NSHARE::CThread::eThreadPriority _priority, int aNum )
+bool CHardWorker::MCreate(NSHARE::CThread::eThreadPriority _priority, int aNum)
 {
 	NSHARE::CThread::param_t _param;
 	_param.priority = _priority;
-	FPool.MCreate(aNum, &_param);
+	return FPool.MCreate(aNum, &_param);
 }
 
 CHardWorker::~CHardWorker()

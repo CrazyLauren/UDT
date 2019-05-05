@@ -14,7 +14,6 @@
 #include <deftype>
 #include <algorithm>
 #include <iterator>
-#include <core/IState.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
 #include <core/kernel_type.h>
@@ -28,17 +27,40 @@ namespace NUDT
 {
 const NSHARE::CText CInfoService::NAME = "udt_net";
 CInfoService::CInfoService() :
-		IState(NAME)
+		ICore(NAME)
 {
 	MInit();
-
 }
 
 CInfoService::~CInfoService()
 {
 
 }
+bool CInfoService::MStart()
+{
+	{
+		w_access _access = FData.MGetWAccess();
+		kernel_infos_t _my_info(get_my_id());
 
+		k_diff_t _fix;
+		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
+				_access->FNet);
+
+		CDescriptors::d_list_t _cons;
+		CDescriptors::sMGetInstance().MGetAll(_cons);
+		CDescriptors::d_list_t::const_iterator _it = _cons.begin(), _it_end =
+				_cons.end();
+		for (; _it != _it_end; ++_it)
+		{
+			if (_it->second.MIs())
+			{
+				MPutConsumerToMyInfo(_it->first, _it->second.MGetConst(),
+						*_access, _fix);
+			}
+		}
+	}
+	return true;
+}
 void CInfoService::MSendNet(const descriptors_t& _sent_to)
 {
 	const r_access _access = FData.MGetRAccess();
@@ -611,27 +633,6 @@ void CInfoService::MHandle(const kernel_infos_array_t& aNet,
 
 inline void CInfoService::MInit()
 {
-	{
-		w_access _access = FData.MGetWAccess();
-		kernel_infos_t _my_info(get_my_id());
-
-		k_diff_t _fix;
-		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
-				_access->FNet);
-
-		CDescriptors::d_list_t _cons;
-		CDescriptors::sMGetInstance().MGetAll(_cons);
-		CDescriptors::d_list_t::const_iterator _it = _cons.begin(), _it_end =
-				_cons.end();
-		for (; _it != _it_end; ++_it)
-		{
-			if (_it->second.MIs())
-			{
-				MPutConsumerToMyInfo(_it->first, _it->second.MGetConst(),
-						*_access, _fix);
-			}
-		}
-	}
 	{
 		callback_data_t _cb(sMHandleOpenId, this);
 		CDataObject::value_t _val(open_descriptor::NAME, _cb);

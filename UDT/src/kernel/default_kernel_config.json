@@ -1,8 +1,14 @@
 {
-        "modules": {
-            "example_parser": {
-                "some": "val"
-            }
+        "modules": 
+		{
+			"modules_path":"./plugins",
+			"only_specified":"false",
+			"libraries":
+			{
+				"example_parser": {
+					"some": "val"
+				}
+			}
         },
 		"mainchannels":
 		{

@@ -12,18 +12,21 @@
 #ifndef CROUTINGSERVICE_H_
 #define CROUTINGSERVICE_H_
 
+#include <core/ICore.h>
 #include "CRequiredDG.h"
 namespace NUDT
 {
 class CDataObject;
 struct args_data_t;
 class CHardWorker;
-class CRoutingService: public NSHARE::CSingleton<CRoutingService>, public IState
+class CRoutingService: public NSHARE::CSingleton<CRoutingService>, public ICore
 {
 public:
 	static const NSHARE::CText NAME;
 	CRoutingService();
 	~CRoutingService();
+	bool MStart();
+
 	NSHARE::CConfig MSerialize() const;
 
 	void MNoteFailSend(const fail_send_t&);
