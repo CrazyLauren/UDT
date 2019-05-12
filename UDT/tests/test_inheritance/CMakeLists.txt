@@ -1,3 +1,3 @@
 
 add_subdirectory(protocol_parser)
-#add_subdirectory(example_working_by_user_protocol)
+add_subdirectory(test_inheritance)

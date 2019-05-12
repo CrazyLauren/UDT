@@ -143,7 +143,7 @@ struct received_message_args_t
 	NSHARE::uuid_t 		FFrom;///<UUID of message sender
 	NSHARE::CText 		FProtocolName;///<Type of message protocol
 	uint16_t 			FPacketNumber;/*!<The packet (message) sequence number (continuous numbering
-							for all packets from sender)
+	 	 	 	 	 	 	for all packets from sender)
 							two message can identical number only
 							if is sent in one packet (buffer), usually that two
 							messages in one buffer isn't sent (see send buffer method).*/

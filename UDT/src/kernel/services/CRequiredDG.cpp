@@ -2441,12 +2441,66 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 
 			for(;_jt!=_jt_end;++_jt)
 			{
+<<<<<<< HEAD
 				//доделать
 				//1) нужно найти всех потомков и родителей
 				//2) подумать как хранить типы протоколов
 				//3) customer должен получать в качестве указателя блок начала данных
 				msg_children_t& _children=_current[*_jt];
 				_children.insert(_jt->FChildHeader);
+=======
+				for (msg_heritance_t::const_iterator _kt = _child.begin();
+						_kt != _child.end() && _is_correct; ++_kt)
+				{
+					bool const _is_insert = _unique.insert(*_kt).second;
+					if (!_is_insert)
+					{
+						_is_correct = false;
+						LOG(DFATAL)<<"Invalid child for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+					}
+					msg_inheritances_t::const_iterator _p = aWhat.find(
+							_kt->first);
+					if ((_p == aWhat.end()
+							|| _p->second.find(_kt->second) == _p->second.end())//no child in genealogy tree
+							)
+					{
+						_is_correct = false;
+						LOG(DFATAL)<<"No child in tree for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+					}
+				}
+
+				for (msg_heritance_t::const_iterator _kt = _parent.begin();
+						_kt != _parent.end() && _is_correct; ++_kt)
+				{
+					bool const _is_insert = _unique.insert(*_kt).second;
+					if (!_is_insert)
+					{
+						_is_correct = false;
+						LOG(ERROR)<<"Invalid parent for "<<_jt->first<<" parent protocol="<<_kt->first<<" header "<<_kt->second;
+					}
+
+					msg_inheritances_t::const_iterator _p = aWhat.find(_kt->first);
+					if ((_p == aWhat.end()
+									|| _p->second.find(_kt->second) == _p->second.end())//no parent in genealogy tree
+							&& _kt != --_parent.end()	//its not last
+					)
+					{
+						_is_correct = false;
+						LOG(ERROR)<<"No parent in tree for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+					}
+				}
+			}
+			else
+			{
+				_is_correct = false;
+				LOG(ERROR)<<" empty child and parent";
+			}
+			if (!_is_correct)
+			{
+				++_amount_of;
+				if (aTo != NULL)
+					(*aTo)[_it->first][_jt->first] = _hierarchy;
+>>>>>>> 5a6713c... Add inheritance test
 			}
 		}
 	}

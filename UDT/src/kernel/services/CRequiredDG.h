@@ -257,8 +257,8 @@ private:
 		msg_heritance_t FParents;
 	};
 	typedef std::map<required_header_t, msg_family_t, CReqHeaderFastLessCompare> msg_inheritance_tree_t;///< key - message type, value - its hierarchy
-	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;	///< key message protocol ,
-																				//value -  genealogy tree of this tree
+	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t; /*!< key message protocol, value
+																				-  genealogy tree of this tree*/
 
 	typedef std::map<demand_dg_t::event_handler_t, unsigned> current_nearest_t;
 	typedef std::map<NSHARE::uuid_t, current_nearest_t> nearest_info_t;

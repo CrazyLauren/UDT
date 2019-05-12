@@ -3,10 +3,10 @@
 /*
  * CProtocolParser.cpp
  *
- *  Created on:  22.01.2016
+ *  Created on:  12.09.2019
  *      Author:  https://github.com/CrazyLauren
  *
- *	Copyright © 2016  https://github.com/CrazyLauren
+ *	Copyright © 2019  https://github.com/CrazyLauren
  *
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
