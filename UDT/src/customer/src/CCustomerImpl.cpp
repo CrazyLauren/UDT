@@ -345,8 +345,11 @@ int CCustomer::_pimpl::sMDemands(CHardWorker* aWho, args_data_t* aWhat,
 		_what.FWhat.FFrom = _it->FNameFrom.MGetRawName();
 		_what.FWhat.FProtocolName = _it->FProtocol;
 		_what.FWhat.FRequired = _it->FWhat;
+		_what.FWhat.FFlags=_it->FFlags.MGetMask();
+
 		if (_it->FUUIDFrom.MIs())
 			_what.FWho = _it->FUUIDFrom.MGetConst();
+
 		if(_it->FFlags.MGetFlag(demand_dg_t::E_REMOVED))
 			_old.FReceivers.push_back(_what);
 		else

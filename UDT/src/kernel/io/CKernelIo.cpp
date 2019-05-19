@@ -527,10 +527,10 @@ void CKernelIo::MSendUserDataImpl()
 	VLOG(2) << "End send of " << _d.first;
 }
 
-eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
+eErrorBitwiseCode CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
 		user_datas_t& _data)
 {
-	eError _rval;
+	eErrorBitwiseCode _rval;
 	const safe_manager_t::RAccess<> _access = FIoManagers.MGetRAccess();
 	const managers_t& _man = _access.MGet();
 	managers_t::const_iterator _it_man = _man.find(_by);
@@ -570,7 +570,7 @@ eError CKernelIo::MPutUserDataToSendFifo(descriptor_t const& _by,
 	return _rval;
 }
 
-eError CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
+eErrorBitwiseCode CKernelIo::MSendUserData(descriptor_t const& _by, user_datas_t & _data)
 {
 	VLOG(4) << "Send to " << _by;
 	if (!CDescriptors::sMIsValid(_by))

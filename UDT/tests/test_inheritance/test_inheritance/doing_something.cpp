@@ -37,7 +37,7 @@ using namespace protocol_inherited;
 using namespace NUDT;
 
 static NSHARE::CMutex g_stream_mutex;///< A mutex for lock console output
-static unsigned _amount_of_msg[E_MSG_LAST_NUMBER];///<Amount of received messages
+static unsigned _amount_of_msg[(unsigned)eMsgType::E_MSG_LAST_NUMBER];///<Amount of received messages
 
 /*!\brief function for common messages operation
  *
@@ -46,25 +46,25 @@ static unsigned _amount_of_msg[E_MSG_LAST_NUMBER];///<Amount of received message
 template<class TMsg>
 static void receive_msg(received_data_t const& aMsg)
 {
-	typedef decltype(TMsg::FData) T;
+	typedef decltype(TMsg::FData) TData;
 
 	auto const _bytes= aMsg.FEnd-aMsg.FBegin;
 
-	if (sizeof(T) != _bytes)
+	if (sizeof(TData) > _bytes)
 	{
-		std::cerr << "Invalid size of message:" << sizeof(T) << "!=" << _bytes
+		std::cerr << "Invalid size of message:" << sizeof(TData) << "!=" << _bytes
 				<< std::endl;
 		throw std::invalid_argument("Invalid argument");
 	}
-	const T* _p = (T*)aMsg.FBegin;
-	if (strcmp(_p->FMsg,_p->MString())!=0)
+	const TData* _p = (TData*)aMsg.FBegin;
+	if (strcmp(_p->FMsg, g_enum_name<TMsg::type()>)!=0)
 	{
-		std::cerr << "Invalid message:" << _p->FMsg<< "!=" << _p->MString()
+		std::cerr << "Invalid message:" << _p->FMsg<< "!=" << g_enum_name<TMsg::type()>
 				<< std::endl;
 		throw std::invalid_argument("Invalid argument");
 	}
 
-	++_amount_of_msg[TMsg::eType];
+	++_amount_of_msg[static_cast<unsigned>(TMsg::type())];
 };
 extern int msg_grand_child_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
@@ -74,9 +74,9 @@ extern int msg_grand_child_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	received_message_args_t const * _recv_arg=(received_message_args_t*)aWHAT;
 
 	/*! 2) Handle the received data */
-	receive_msg<grand_child_msg_t>(_recv_arg->FMessage);
+	receive_msg<sub_sub_msg_t>(_recv_arg->FMessage);
 
-	std::cout << "Message #" << _recv_arg->FPacketNumber << " ver "
+	std::cout << "Grand Message #" << _recv_arg->FPacketNumber << " ver "
 			<< _recv_arg->FHeader.FVersion << " size " << _recv_arg->FMessage.FBuffer.size()
 			<< " bytes received from " << _recv_arg->FFrom << " by "
 			<< _recv_arg->FProtocolName << std::endl;
@@ -93,9 +93,9 @@ extern int msg_child_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	received_message_args_t const * _recv_arg=(received_message_args_t*)aWHAT;
 
 	/*! 2) Handle the received data */
-	receive_msg<child_msg_t>(_recv_arg->FMessage);
+	receive_msg<sub_msg_t>(_recv_arg->FMessage);
 
-	std::cout << "Message #" << _recv_arg->FPacketNumber << " ver "
+	std::cout << "Child Message #" << _recv_arg->FPacketNumber << " ver "
 			<< _recv_arg->FHeader.FVersion << " size " << _recv_arg->FMessage.FBuffer.size()
 			<< " bytes received from " << _recv_arg->FFrom << " by "
 			<< _recv_arg->FProtocolName << std::endl;
@@ -113,7 +113,7 @@ extern int msg_parent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	/*! 2) Handle the received data */
 	receive_msg<parent_msg_t>(_recv_arg->FMessage);
 
-	std::cout << "Message #" << _recv_arg->FPacketNumber << " ver "
+	std::cout << "Parent Message #" << _recv_arg->FPacketNumber << " ver "
 			<< _recv_arg->FHeader.FVersion << " size " << _recv_arg->FMessage.FBuffer.size()
 			<< " bytes received from " << _recv_arg->FFrom << " by "
 			<< _recv_arg->FProtocolName << std::endl;
@@ -136,6 +136,14 @@ extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 		std::cout << "Now " << _it.FWho << " receive " << _it.FWhat.FRequired
 				<< " from me by " << _it.FWhat.FProtocolName << " As its Request "
 				<< _it.FWhat.FFrom << std::endl;
+		if((_it.FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)!=0)
+			std::cout << "Inheritances"<<std::endl;
+/*		else if(!(_it.FWhat.FRequired==required_header_t(msg_head_t(eMsgType::E_MSG_GRANDCHILD,sizeof(grand_child_msg_t)))))
+		{
+			std::cerr << "Isn't inheritance:" << _it.FWhat.FRequired<< std::endl;
+			throw std::invalid_argument("Invalid argument");
+		}*/
+
 		std::cout <<"-------------------------------------"<< std::endl;
 	}
 	return 0;
@@ -177,33 +185,85 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 
 	return 0;
 }
-template<class T>
+template<class TData>
 bool send_message()
 {
-	typedef decltype(T::FData) data_t;
+	typedef decltype(TData::FData) data_t;
 
 
 	NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
 			sizeof(data_t));
 
-	data_t* _p = (data_t *) _buf.ptr();
-	strcpy( _p->FMsg,_p->MString());
+	new (_buf.ptr()) data_t;
 
-	required_header_t const _header(msg_head_t((eMsgType)T::eType, sizeof(T)));
+	required_header_t const _header(msg_head_t(TData::type(), sizeof(TData)));
 
 	return CCustomer::sMGetInstance().MSend(_header, PROTOCOL_NAME, _buf)>0;
 }
-extern void send_messages()
+
+void test_number_1()
+{
+	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
+	send_message<sub_msg_t>();
+	NSHARE::sleep(1);
+	if (_amount_of_msg[(int) (eMsgType::E_MSG_SUB_SUB_MESSAGE)] == 0//
+			|| _amount_of_msg[(int) (eMsgType::E_MSG_SUB_MESSAGE)] == 0//
+			|| _amount_of_msg[(int) (eMsgType::E_MSG_PARENT)] != 0//
+			)
+	{
+		std::cout << "Invalid  hierarchy test number 1 " << std::endl;
+	}
+	else
+		std::cout << "Hierarchy test number 1  finished successfully " << std::endl;
+
+	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
+}
+void test_number_2()
+{
+	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
+	send_message<sub_sub_msg_t>();
+	NSHARE::sleep(1);
+
+	if (_amount_of_msg[(int) (eMsgType::E_MSG_SUB_SUB_MESSAGE)] == 0//
+				|| _amount_of_msg[(int) (eMsgType::E_MSG_SUB_MESSAGE)] != 0//
+				|| _amount_of_msg[(int) (eMsgType::E_MSG_PARENT)] != 0//
+				)
+	{
+		std::cout << "Invalid  hierarchy test number 2" << std::endl;
+	}
+	else
+		std::cout << "Hierarchy test finished successfully " << std::endl;
+}
+void test_number_3()
+{
+	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
+	send_message<parent_msg_t>();
+	NSHARE::sleep(1);
+
+	if (_amount_of_msg[(int) (eMsgType::E_MSG_SUB_SUB_MESSAGE)] == 0//
+				|| _amount_of_msg[(int) (eMsgType::E_MSG_SUB_MESSAGE)] == 0//
+				|| _amount_of_msg[(int) (eMsgType::E_MSG_PARENT)] == 0//
+				)
+	{
+		std::cout << "Invalid  hierarchy test number 3" << std::endl;
+	}
+	else
+		std::cout << "Hierarchy test finished successfully " << std::endl;
+}
+extern void doing_tests()
 {
 	NSHARE::sleep(1);
 
 	getchar();
 
-	send_message<child_msg_t>();
-
-
+/*	test_number_1();
+	std::cout<<std::endl<<std::endl;
+	test_number_2();
+	std::cout<<std::endl<<std::endl;*/
+	test_number_3();
 	std::cout<<"Press any key... "<<std::endl;
 	getchar();
+
 }
 
 }

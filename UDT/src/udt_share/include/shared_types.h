@@ -23,7 +23,7 @@ enum
 {
 	eUserErrorStartBits=(sizeof(error_type)-sizeof(user_error_type))*8
 };
-enum eError
+enum eErrorBitwiseCode
 {
 	E_NO_ERROR=0x0,
 	//Resreved=0x1<<0,
@@ -109,13 +109,16 @@ struct UDT_SHARE_EXPORT split_packet_t
 //
 struct UDT_SHARE_EXPORT demand_dg_t
 {
+	typedef uint32_t handler_priority_t;
 	typedef uint32_t event_handler_t;
 	typedef uint32_t flags_t;
 
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText HANDLER;
 	static const NSHARE::CText KEY_FLAGS;
-	static const uint32_t NO_HANDLER;
+	static const NSHARE::CText KEY_HANDLER_PRIORITY;
+	static const event_handler_t NO_HANDLER;
+	static const handler_priority_t HANDLER_DEFAULT_PRIORITY;
 
 	enum eFlags
 	{
@@ -144,6 +147,7 @@ struct UDT_SHARE_EXPORT demand_dg_t
 		E_DEMAND_DEFAULT_FLAGS=E_IS_BIG_ENDIAN,
 #endif
 	};
+	handler_priority_t FHandlerPriority;
 	required_header_t FWhat;
 	//NSHARE::CText FNameRegExp;	//from
 	NSHARE::CRegistration FNameFrom;
@@ -153,6 +157,7 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	NSHARE::CFlags<eFlags,flags_t> FFlags;
 
 	demand_dg_t():
+		FHandlerPriority(HANDLER_DEFAULT_PRIORITY),//
 		FHandler(NO_HANDLER),//
 		FFlags(E_DEMAND_DEFAULT_FLAGS)//
 	{
@@ -196,7 +201,7 @@ struct UDT_SHARE_EXPORT routing_t: uuids_t
 //
 struct UDT_SHARE_EXPORT user_data_info_t
 {
-
+	typedef std::vector<demand_dg_t::event_handler_t> handler_id_array_t;///< List of handlers
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText KEY_PACKET_NUMBER;
 	static const NSHARE::CText KEY_PACKET_FROM;
@@ -223,7 +228,8 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	NSHARE::CText FProtocol;
 	unsigned FDataOffset;
 
-	std::vector<demand_dg_t::event_handler_t> FEventsList;
+	handler_id_array_t FEventsList;/*!< A list of the unique id of
+									the callback function which has to process the message*/
 	uuids_t FDestination;///< List of all uuids of customers
 						//which are to be received message. (must be sorted)
 	uuids_t FRegistrators;///< List of all uuids of message's
@@ -469,7 +475,7 @@ struct UDT_SHARE_EXPORT error_info_t
 	static const NSHARE::CText WHERE;
 	static const NSHARE::CText CODE;
 
-	eError FError;
+	eErrorBitwiseCode FError;
 	id_t FWhere;
 	uuids_t FTo;
 
@@ -715,11 +721,11 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
-		NUDT::eError const& aVal)
+		NUDT::eErrorBitwiseCode const& aVal)
 {
 	DCHECK_EQ(aVal,NUDT::encode_inner_error(aVal));
 
-	NSHARE::CFlags<NUDT::eError,NUDT::error_type> const _val(aVal);
+	NSHARE::CFlags<NUDT::eErrorBitwiseCode,NUDT::error_type> const _val(aVal);
 /*	if (_val.MGetFlag(NUDT::E_CANNOT_READ_CONFIGURE))
 	{
 		aStream << " Cannot read configure,";

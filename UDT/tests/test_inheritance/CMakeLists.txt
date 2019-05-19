@@ -1,3 +1,21 @@
 
-add_subdirectory(protocol_parser)
-add_subdirectory(test_inheritance)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+
+if("x${CMAKE_CXX_COMPILER_ID}" STREQUAL "xGNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.0)
+		SET(cxx_template_variable TRUE)
+	endif()
+elseif( "x${CMAKE_CXX_COMPILER_ID}" STREQUAL "xMSVC")
+	if(MSVC_VERSION GREATER 1800)
+		SET(cxx_template_variable TRUE)
+	endif()
+elseif(COMPILER_SUPPORTS_CXX14)
+	SET(cxx_template_variable TRUE)
+endif()	
+
+if(cxx_template_variable)		
+	add_subdirectory(protocol_parser)
+	add_subdirectory(test_inheritance)
+else()
+		message(WARNING "\nCannot build tests as c++14 is not available")		
+endif()	

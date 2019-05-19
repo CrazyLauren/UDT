@@ -82,7 +82,7 @@ private:
 		user_data_info_t const  FFor;
 		descriptor_t const FDescriptor;
 		std::map<unsigned, split_packet_t> FSplitLevel;
-		eError FError;
+		eErrorBitwiseCode FError;
 		bool FIsMerged;
 	private:
 		bool MMerging(

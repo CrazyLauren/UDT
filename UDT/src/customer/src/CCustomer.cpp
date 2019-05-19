@@ -11,19 +11,18 @@
  *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
-
 #include <deftype>
-#include <fstream>
+#	include <fstream>
 #ifdef _WIN32
-#include <winsock2.h>
+#	include <winsock2.h>
 #endif
 #include <fdir.h>
 #include <revision.h>
 #include <programm_id.h>
-
 #include <CCustomer.h>
 
 #include <CCustomerImpl.h>
+#include <shared_types.h>
 
 DECLARATION_VERSION_FOR(customer)
 
@@ -62,19 +61,19 @@ COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SI
 COMPILE_ASSERT(sizeof(fail_sent_args_t::error_t)==sizeof(error_type),E_INVALID_FAIL_ERROR_SIZE);
 
 
-const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=eError::E_HANDLER_IS_NOT_EXIST;
-const CCustomer::error_t CCustomer::E_NO_ROUTE=eError::E_NO_ROUTE;
-const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=eError::E_UNKNOWN_ERROR;
-const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=eError::E_PARSER_IS_NOT_EXIST;
-const CCustomer::error_t CCustomer::E_CANNOT_PARSE_BUFFER=eError::E_CANNOT_PARSE_BUFFER;
-const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=eError::E_SOCKET_CLOSED;
-const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=eError::E_BUFFER_IS_FULL;
-const CCustomer::error_t CCustomer::E_PACKET_LOST=eError::E_PACKET_LOST;
-const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=eError::E_DATA_TOO_LARGE;
-const CCustomer::error_t CCustomer::E_MERGE_ERROR=eError::E_MERGE_ERROR;
-const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=eError::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;
+const CCustomer::error_t CCustomer::E_HANDLER_IS_NOT_EXIST=NUDT::E_HANDLER_IS_NOT_EXIST;
+const CCustomer::error_t CCustomer::E_NO_ROUTE=NUDT::E_NO_ROUTE;
+const CCustomer::error_t CCustomer::E_UNKNOWN_ERROR=NUDT::E_UNKNOWN_ERROR;
+const CCustomer::error_t CCustomer::E_PARSER_IS_NOT_EXIST=NUDT::E_PARSER_IS_NOT_EXIST;
+const CCustomer::error_t CCustomer::E_CANNOT_PARSE_BUFFER=NUDT::E_CANNOT_PARSE_BUFFER;
+const CCustomer::error_t CCustomer::E_SOCKET_CLOSED=NUDT::E_SOCKET_CLOSED;
+const CCustomer::error_t CCustomer::E_BUFFER_IS_FULL=NUDT::E_BUFFER_IS_FULL;
+const CCustomer::error_t CCustomer::E_PACKET_LOST=NUDT::E_PACKET_LOST;
+const CCustomer::error_t CCustomer::E_DATA_TOO_LARGE=NUDT::E_DATA_TOO_LARGE;
+const CCustomer::error_t CCustomer::E_MERGE_ERROR=NUDT::E_MERGE_ERROR;
+const CCustomer::error_t CCustomer::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE=NUDT::E_PROTOCOL_VERSION_IS_NOT_COMPATIBLE;
 
-const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=eError::E_USER_ERROR_BEGIN;
+const CCustomer::error_t CCustomer::E_USER_ERROR_EXIST=NUDT::E_USER_ERROR_BEGIN;
 const unsigned CCustomer::MAX_SIZE_USER_ERROR=sizeof(error_type)*8-eUserErrorStartBits;
 
 <<<<<<< HEAD
@@ -1144,7 +1143,7 @@ void CCustomer::MJoin()
 }
 std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
 {
-	return aStream<<static_cast<eError>(encode_inner_error(aVal));
+	return aStream<<static_cast<eErrorBitwiseCode>(encode_inner_error(aVal));
 }
 } //
 

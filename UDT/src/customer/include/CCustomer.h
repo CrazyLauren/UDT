@@ -56,6 +56,8 @@ struct requirement_msg_info_t
 		E_REGISTRATOR=0x1<<0,/*!< if it's set then message will be delivered to you
 							  only if there is at least one "non-registrator" (real)
 							  subscribed to the message*/
+		E_AS_INHERITANCE=0x1<<2,/*!< it the message header is a parent for the other
+								message header.*/
 		E_INVERT_GROUP=0x1<<3,/*!< if it's set then the order@com.ru.putin is not enter
 							 into the order@com.ru, but is enter into the order@com.ru.putin.vv*/
 		E_NEAREST=0x1<<4,/*!< if it's set then 	if there are next programs:

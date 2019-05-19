@@ -11,6 +11,8 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SHARE_INCLUDES} ${Boost_INCLU
 
 add_library (${TARGET_NAME} SHARED
 			${SOURCE_FILES} ${HEADER_FILES})
+			
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 14)
 
 target_link_libraries(	${TARGET_NAME} 
 						${PLATFORM_LIBS} 						

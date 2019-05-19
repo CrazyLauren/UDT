@@ -136,10 +136,10 @@ extern bool test_parsing_error();
  */
 extern bool test_no_parser_error();
 
-/*\brief Easiest example of sending(publishing) messages
+/*\brief Doing tests
  *
  */
-extern void send_messages();
+extern void doing_tests();
 
 /*\brief Main function of test
  *

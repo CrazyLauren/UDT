@@ -18,8 +18,8 @@ int main(int argc, char const*argv[])
 	if (_rval != 0)
 		return _rval;
 
-	///2) sending something by send_messages()
-	send_messages();
+	///2) sending something by doing_tests()
+	doing_tests();
 
 	CCustomer::sMGetInstance().MClose();
 		

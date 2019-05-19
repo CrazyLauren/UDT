@@ -12,6 +12,7 @@
 #ifndef UDT_TYPES_H_
 #define UDT_TYPES_H_
 
+#include <udt_share_macros.h>
 namespace NUDT
 {
 /*!\brief A header of the requirement message
@@ -28,7 +29,7 @@ namespace NUDT
  *\warning The header with all zero bytes is considered
  * invalid.
  */
-struct required_header_t
+struct UDT_SHARE_EXPORT required_header_t
 {
 	NSHARE::version_t FVersion;///< A required version of the message
 
@@ -45,7 +46,7 @@ struct required_header_t
 	};
 
 	/*!\brief The default constructor creates
-	 * create #FMessageHeader with all zero bytes
+	 * #FMessageHeader with all zero bytes
 	 * to avoid incorrect messages routing.
 	 */
 	required_header_t();

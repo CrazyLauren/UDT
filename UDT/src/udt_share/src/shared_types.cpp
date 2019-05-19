@@ -323,10 +323,11 @@ bool kernel_infos_t::MIsValid() const
 //---------------------------
 const NSHARE::CText demand_dg_t::NAME = "dem";
 const NSHARE::CText demand_dg_t::HANDLER = "hand";
+const NSHARE::CText demand_dg_t::KEY_HANDLER_PRIORITY = "hand_priority";
 const NSHARE::CText demand_dg_t::KEY_FLAGS = "dflag";
 
-const uint32_t demand_dg_t::NO_HANDLER = static_cast<uint32_t>(-1);
-
+const demand_dg_t::event_handler_t demand_dg_t::NO_HANDLER = static_cast<event_handler_t>(-1);
+const demand_dg_t::handler_priority_t demand_dg_t::HANDLER_DEFAULT_PRIORITY=std::numeric_limits<handler_priority_t>::max()/2;
 extern std::pair<required_header_t, bool> UDT_SHARE_EXPORT parse_head(
 		NSHARE::CConfig const& aConf, NSHARE::CText const& _proto)
 {
@@ -384,6 +385,7 @@ extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
 	}
 }
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
+		FHandlerPriority(HANDLER_DEFAULT_PRIORITY),//
 		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)), //
 		FHandler(NO_HANDLER), //
 		FFlags(aConf.MValue < flags_t > (KEY_FLAGS, E_DEMAND_DEFAULT_FLAGS))
@@ -402,6 +404,7 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 	{
 		FWhat = _val.first;
 		aConf.MGetIfSet(HANDLER, FHandler);
+		aConf.MGetIfSet(KEY_HANDLER_PRIORITY, FHandlerPriority);
 
 		NSHARE::CConfig const & _set = aConf.MChild(NSHARE::uuid_t::NAME);
 		if (!_set.MIsEmpty())
@@ -421,6 +424,7 @@ NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
 	_conf.MAdd(HANDLER, FHandler);
+	_conf.MAdd(KEY_HANDLER_PRIORITY, FHandlerPriority);
 	_conf.MAdd(KEY_FLAGS, FFlags.MGetMask());
 
 	if (FUUIDFrom.MIs())
@@ -632,7 +636,7 @@ error_info_t::error_info_t() :
 }
 error_info_t::error_info_t(NSHARE::CConfig const& aConf) :
 		FError(
-				static_cast<eError>(aConf.MValue < error_type
+				static_cast<eErrorBitwiseCode>(aConf.MValue < error_type
 						> (CODE, E_NO_ERROR))), //
 		FWhere(FError != E_NO_ERROR ? id_t(aConf.MChild(WHERE)) : id_t()), //
 		FTo(

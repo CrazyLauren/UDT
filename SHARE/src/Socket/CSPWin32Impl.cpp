@@ -13,6 +13,7 @@
  */  
 #ifdef _WIN32
 #include <deftype>
+#include <winerror.h>
 #include <SerialPort.h>
 #include <Socket/CSPWin32Impl.h>
 

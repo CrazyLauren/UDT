@@ -229,7 +229,7 @@ void send_buffer_which_is_consist_msg()
 		NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
 			MSG_TEST_SIZE); ///< allocate the buffer for full msg
 		//filing the head of msg
-		msg_head_t* _msg = (msg_head_t*) (_buf.ptr());
+		msg_head_t* _msg = new (_buf.ptr()) msg_head_t;
 		_msg->FType = E_MSG_TEST;
 		_msg->FSize = MSG_TEST_SIZE;
 		NSHARE::CBuffer::iterator _it = _buf.begin() + sizeof(msg_head_t),

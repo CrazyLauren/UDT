@@ -13,6 +13,7 @@
  */
 #ifdef _WIN32
 #include <deftype>
+#include <winerror.h>
 #include <Pipe.h>
 #include <Socket/CFifoWin32Impl.h>
 

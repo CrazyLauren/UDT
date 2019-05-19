@@ -78,7 +78,7 @@ public:
 	*/
 	std::pair<demand_dgs_for_t, demand_dgs_for_t> MSetDemandsDGFor(id_t const&, demand_dgs_t const&);
 
-	/*!< \brief Adding a new client to the publisher-
+	/*! \brief Adding a new client to the publisher-
 	 * subscribe list
 	 *
 	 *	It adds a new client and generate the subscriber's
@@ -96,7 +96,7 @@ public:
 	 */
 	demand_dgs_for_t MAddClient(id_t const& aId );
 
-	/*!< \brief Removing the client from the publisher-
+	/*! \brief Removing the client from the publisher-
 	 * subscribe list
 	 *
 	 *	It removes the client and unsubscribe the other
@@ -113,7 +113,7 @@ public:
 	demand_dgs_for_t MRemoveClient(NSHARE::uuid_t const& aUUID);
 
 
-	/*!< \brief  Split packet to messages and
+	/*! \brief  Split packet to messages and
 	 * addition info about message's receivers
 	 *
 	 *	The "message info" is filled uuids of message's
@@ -132,6 +132,13 @@ public:
 	void MFillMsgReceivers(user_datas_t* const aFrom, user_datas_t* const aTo,fail_send_array_t* const aFail) const;
 
 
+	/*! @brief Fills information about what
+	 * subscriber callback  has to be called
+	 *
+	 * @param aFrom [in] A data (will be empty)
+	 * @param aTo [out] A data for which the info has been filled
+	 * @param aError [out] A data for which the info hasn't been filled
+	 */
 	void MFillMsgHandlersFor(user_datas_t & aFrom,user_datas_t &aTo,fail_send_array_t & aError) const;
 
 
@@ -212,19 +219,39 @@ private:
 	 */
 	id_t const& MGetIdBy(NSHARE::uuid_t const & aUUID) const;
 private:
-	struct msg_handlers_t: std::vector<demand_dg_t::event_handler_t> //todo sort by messages inherent priority
+	/** @brief Information about id of
+	 * callback function which has to process the message
+	 *
+	 * If At least one handler is not registrator than The consumer is not registator.
+	 * @see NUDT::demands_dg_t::FFlags
+	 *
+	 */
+	struct msg_handlers_t
 	{
+		typedef user_data_info_t::handler_id_array_t handler_id_array_t;///< List of handlers
+		typedef std::vector<unsigned> handler_id_priority_array_t;///< Priority of handlers
+
 		msg_handlers_t():FNumberOfRealHandlers(0)
 		{
 
 		}
 		bool MIsRegistrarExist() const;
-
+		bool MAddHandler(demand_dg_t const & aWhat);
+		bool MRemoveHandler(demand_dg_t const & aWhat);
+		handler_id_array_t const& MGetHandlers()const;
+		bool MIsOnlyRealHandlers() const;
+		bool MIsOnlyNonRealHandlers() const;
 
 		NSHARE::version_t FVersion;
 		int FNumberOfRealHandlers;
-		//see demands_dg_t::FFlags.
-		//If At least one handler is not registrator than The consumer is not registator.
+	private:
+		handler_id_array_t FHandlers;/*!< A list of the unique id of
+									the callback function which has to process the message
+									It's sorted by priority which is kept in #FHandlerPriority*/
+
+		handler_id_priority_array_t FHandlerPriority;/*!< A list of handler priority
+														  which is kept in #FHandlers/
+		 	 	 	 	 	 	 	 	 	 	 	 	 */
 	};
 	struct uuids_of_receiver_t:std::map<NSHARE::uuid_t,msg_handlers_t >
 	{
@@ -248,17 +275,80 @@ private:
 
 	typedef std::map<NSHARE::uuid_t, protocols_t> protocol_of_uuid_t;
 
-	typedef std::pair<NSHARE::CText, required_header_t> msg_header_t;
-	typedef std::vector<msg_header_t> msg_heritance_t;
+	/**\brief Information about message header type
+	 * is used for unambiguous identification
+	 * of message type
+	 *
+	 */
+	struct inheritance_msg_header_t
+	{
+		static const NSHARE::CText NAME;///< A serializing key
 
+		NSHARE::CText FProtcol;///< A Protocol name
+		required_header_t FHeader;///< A header type
+		unsigned 		 FDepth;///<  A hierarchical depth of message (0 - direct heir)
+
+
+		inheritance_msg_header_t();
+		inheritance_msg_header_t(NSHARE::CText const& aProctocol,required_header_t const& aHeader,unsigned aDepth);
+
+
+
+		bool operator==(inheritance_msg_header_t const & aRht) const;
+		bool operator<(inheritance_msg_header_t const & aRht) const;
+
+		/*!\brief Deserialize object
+		 *
+		 * To check the result of deserialization,
+		 * used the MIsValid().
+		 *\param aConf Serialized object
+		 */
+		inheritance_msg_header_t(NSHARE::CConfig const& aConf);
+
+		/*!\brief Serialize object
+		 *
+		 * The key of serialized object is #NAME
+		 *
+		 *\return Serialized object.
+		 */
+		NSHARE::CConfig MSerialize() const;
+
+		/*!\brief Checks object for valid
+		 *
+		 * Usually It's used after deserializing object
+		 *\return true if it's valid.
+		 */
+		bool MIsValid()const;
+	};
+	typedef std::vector<inheritance_msg_header_t> msg_heritance_t;
+
+	/** \brief Information about messages hierarchy
+	 * beginning from current message
+	 *
+	 */
 	struct msg_family_t
 	{
-		msg_heritance_t FChildren;
-		msg_heritance_t FParents;
+		msg_heritance_t const& MGetChildren() const;
+		unsigned MPutChildrenOfChild(msg_heritance_t const&);
+		bool MPutChild(inheritance_msg_header_t const&);
+		bool MIsChild(inheritance_msg_header_t const&)const;
+
+		msg_heritance_t const& MGetParrents() const;
+		bool MPutParrent(inheritance_msg_header_t const&);
+		bool MIsParent(inheritance_msg_header_t const&)const;
+
+	private:
+		static bool sMBaseMSGCompare(inheritance_msg_header_t const& aLht, inheritance_msg_header_t const& aRht);
+		msg_heritance_t FBaseMessages;///< Sorted in hierarchical order list of all parents of messages
+		msg_heritance_t FSubMessages;///< All children of message has to be sorted by priority
 	};
-	typedef std::map<required_header_t, msg_family_t, CReqHeaderFastLessCompare> msg_inheritance_tree_t;///< key - message type, value - its hierarchy
-	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t; /*!< key message protocol, value
-																				-  genealogy tree of this tree*/
+
+	/** key - message type, value - its hierarchy
+	 *
+	 */
+	typedef std::map<required_header_t, msg_family_t, CReqHeaderFastLessCompare> msg_inheritance_tree_t;
+	/** key message protocol, value	-  genealogy tree of this tree*/
+	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;
 
 	typedef std::map<demand_dg_t::event_handler_t, unsigned> current_nearest_t;
 	typedef std::map<NSHARE::uuid_t, current_nearest_t> nearest_info_t;
@@ -275,8 +365,11 @@ private:
 		demand_for_info_t FTo;
 	};
 	typedef std::vector<way_info_t> array_of_demand_for_t;
+<<<<<<< HEAD
 	struct unique_compare_t;
 >>>>>>> f3da2cc... see changelog.txt
+=======
+>>>>>>> 57aaf6a... see Changelog
 
 	bool MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,
 			user_data_info_t* const aInfo,
@@ -330,10 +423,14 @@ private:
 			user_data_t& _data, IExtParser& _p) const;
 	data_routing_t& MGetOrCreateExpectedListFor(NSHARE::uuid_t const & aFrom,
 			NSHARE::CText const & aProtocol) const;
+<<<<<<< HEAD
 	inline bool MAddHandler(demand_dg_t const & aWhat,
 			msg_handlers_t& _handlers) const;
 	inline bool MRemoveHandler(demand_dg_t const & aWhat,
 			msg_handlers_t& _handlers) const;
+=======
+
+>>>>>>> 57aaf6a... see Changelog
 	inline bool MGetValidHeader(const demand_dg_t& aWhat,demand_dg_t * aTo) const;
 	inline uuids_of_receiver_t const& MGetUUIDsOfReceivers(uuids_of_expecting_dg_t const & aUUIDs,	required_header_t const & _msg) const;
 	inline uuids_of_receiver_t & MGetOrCreateUUIDsOfReceivers(uuids_of_expecting_dg_t & aUUIDs,	required_header_t const & _msg);
@@ -352,16 +449,12 @@ private:
 			required_header_t const& aType, NSHARE::CBuffer* const aTO);
 	msg_handlers_t const* MGetHandlers(user_data_info_t const & aFrom) const;
 
+	msg_heritance_t const& MGetMessageParents(
+			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const;
 	msg_heritance_t const& MGetMessageChildren(
 			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const;
 	static msg_heritance_t const& sMGetMessageChildren(
 			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,msg_inheritances_t const& aFrom);
-	static void sMAddMessageChildren(
-			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,
-			msg_heritance_t const& aChildren,msg_inheritances_t *const aTo);
-
-	msg_heritance_t const& MGetMessageParents(
-			NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const;
 
 	unsigned MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
 			NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
@@ -373,7 +466,7 @@ private:
 	inline void MReadMsgChild(msg_inheritances_t * const aTo) const;
 	inline unsigned MCreateGenealogyTreeFromChildInfo(
 			msg_inheritances_t * const aChildInfo,msg_inheritances_t * const aTo) const;
-	inline void MParentInfo(msg_inheritances_t * const aTo) const;
+	inline bool MParentInfo(msg_inheritances_t * const aTo) const;
 	void  MGetOnlyNearestUUIDFor(unique_uuids_t * const aTo) const;
 	inline bool MRemoveAllReceiversForMsgsFrom(id_t const& aFrom,demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved);
 	static unsigned sMGetDemandsByHandlers(msg_handlers_t const & aHandlers,
@@ -391,9 +484,15 @@ private:
 			array_of_demand_for_t*const aRemoved);
 	void MAddSenderIfNeed(NSHARE::uuid_t const & aFrom,
 			array_of_demand_for_t const& aRemoved, array_of_demand_for_t*const aAdded);
+	demand_dg_t MGetChildDemand(const demand_dg_t& aWhat,
+			inheritance_msg_header_t const& aChildHeader) const;
 
+<<<<<<< HEAD
 	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo);
 >>>>>>> 5d2f97a... see ChangeLog.txt
+=======
+	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo,bool aParentCheck=false);
+>>>>>>> 57aaf6a... see Changelog
 
 	mutable protocol_of_uuid_t FWhatIsSendingBy;
 <<<<<<< HEAD
@@ -407,12 +506,76 @@ private:
 	msg_inheritances_t FMsgsGenealogy;
 	unsigned FMaxInheritanceDepth;
 	nearest_info_t FNearestInfo;///< contains current "group depth" of demand
+<<<<<<< HEAD
 >>>>>>> f3da2cc... see changelog.txt
+=======
+	static msg_heritance_t const sFEmptyHeritance;/*!< Is used for optimization
+													return value of function
+													where is requirement to return
+													msg_heritance_t.
+													*/
+
+
+
+
+	template<class T>
+	friend struct std::less;
+
+	friend
+	std::ostream& operator<<(std::ostream & aStream,
+			inheritance_msg_header_t const& aVal);
+
+>>>>>>> 57aaf6a... see Changelog
 };
 inline bool CRequiredDG::msg_handlers_t::MIsRegistrarExist() const
 {
-	return !empty() && FNumberOfRealHandlers!=size();
+	return !FHandlers.empty() && FNumberOfRealHandlers!=FHandlers.size();
+}
+<<<<<<< HEAD
+
+=======
+/** Returns list of message handles
+ *
+ * @return list of message handles
+ */
+inline CRequiredDG::msg_handlers_t::handler_id_array_t const& CRequiredDG::msg_handlers_t::MGetHandlers() const
+{
+	return FHandlers;
+}
+/** Check if only real handler
+ *
+ * @return true only real handler
+ */
+inline bool CRequiredDG::msg_handlers_t::MIsOnlyRealHandlers() const
+{
+	return FNumberOfRealHandlers==FHandlers.size();
+}
+/** Check if only registrator handler
+ *
+ * @return true only registrator handler
+ */
+inline bool CRequiredDG::msg_handlers_t::MIsOnlyNonRealHandlers() const
+{
+	return FNumberOfRealHandlers==0;
 }
 
+inline demand_dgs_for_t const& CRequiredDG::MGetDemands() const
+{
+	return FDGs;
+}
+inline CRequiredDG::unique_id_t const& CRequiredDG::MGetUniquieID() const
+{
+	return FIds;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::CRequiredDG::inheritance_msg_header_t const& aVal)
+{
+	return aStream <<"Protocol:" <<aVal.FProtcol<<", header:"<<aVal.FHeader<< std::endl;
+}
+>>>>>>> 57aaf6a... see Changelog
 } /* namespace NUDT */
+namespace std
+{
+
+}
 #endif /* CREQUIREDDG_H_ */

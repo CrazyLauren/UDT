@@ -13,7 +13,7 @@
  */ 
 #ifdef _WIN32
 #include <deftype>
-
+#include <winerror.h>
 namespace NSHARE
 {
 extern size_t get_unique_name(char const* aPreifix,uint8_t* aTo,size_t aSize);

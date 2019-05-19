@@ -131,10 +131,10 @@ extern int event_disconnect_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_
 extern int event_fail_sent_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
 
 
-/*\brief Easiest example of sending(publishing) messages
+/*\brief Doing test
  *
  */
-extern void send_messages();
+extern void doing_tests();
 
 /*\brief Main function of test
  *

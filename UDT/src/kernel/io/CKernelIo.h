@@ -53,7 +53,7 @@ public:
 
 	void MSendTo(output_user_data_t& aBy,
 			fail_send_array_t & _non_sent,user_datas_t& aFailedData); //warning! All arguments can be changed(optimization)
-	eError MSendUserData(descriptor_t const& _by, user_datas_t& _data);
+	eErrorBitwiseCode MSendUserData(descriptor_t const& _by, user_datas_t& _data);
 	//void MSendTo(output_user_data_t& aBy, uuids_t & _non_sent); //warning! All arguments can be changed(optimization)
 
 
@@ -122,7 +122,7 @@ private:
 	void MSendingUserDataTo(descriptor_t aTo, IIOManager* aBy,
 			CBuffering::data_list_t& _data,
 			fail_send_array_t& _non_sent) const;
-	eError MPutUserDataToSendFifo(descriptor_t const& _by, user_datas_t& _data);
+	eErrorBitwiseCode MPutUserDataToSendFifo(descriptor_t const& _by, user_datas_t& _data);
 	void MRemoveManagerFor(const descriptor_t& aVal,
 			CBuffering::data_list_t& _not_sent_data);
 

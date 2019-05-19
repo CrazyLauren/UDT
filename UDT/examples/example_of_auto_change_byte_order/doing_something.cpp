@@ -552,7 +552,7 @@ extern void send_messages()
 
 		/// 3) Filling message into allocated buffer (without header)
 		{
-			swap_byte_order_data *_msg = (swap_byte_order_data*) _buf.ptr();
+			swap_byte_order_data *_msg = new (_buf.ptr()) swap_byte_order_data;
 			memset(_msg, 0, sizeof(swap_byte_order_data));
 
 			_msg->FNumber = i;

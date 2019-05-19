@@ -17,5 +17,5 @@ include_directories (
 share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
 share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} )
 share_add_dependency(${TARGET_NAME} ${CUSTOMER_LIBRARIES})
-set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 14)
 				  

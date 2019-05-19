@@ -20,13 +20,17 @@ static const char* PROTOCOL_NAME="test_udt"; ///<A protocol name
 /*!\brief A type of example message
  *
  */
-enum  eMsgType
+enum class eMsgType:uint8_t
 {
-	E_MSG_GRANDCHILD=0,///< A number message of the lowest in genealogic tree
-	E_MSG_CHILD,///< A number message of the middle in genealogic tree
+	E_MSG_SUB_MESSAGE=0,///< A number message of the middle in genealogic tree
+	E_MSG_SUB_SUB_MESSAGE,///< A number message of the lowest in genealogic tree
 	E_MSG_PARENT,///< A number message of the highest in genealogic tree
 	E_MSG_LAST_NUMBER
 };
+template<eMsgType> constexpr const char g_enum_name[]="Unknown";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>[]="sub_sub_msg";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>[]="sub_msg";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_PARENT>[]="parent";
 
 /*!\brief A user error number which is passed
  * to field NUDT::fail_sent_args_t::FUserCode
@@ -47,8 +51,9 @@ enum eParserError
  */
 struct msg_head_t
 {
-	uint32_t  FType           : 8;            ///< A type of message eParserError
-	uint32_t  FSize           : 24;           ///< A size of message include header
+	eMsgType    FType;            ///< A type of message eParserError
+	uint8_t 	FReserv;
+	uint16_t  	FSize;           ///< A size of message include header
 
 	/*!\brief default constructor
 	 *
@@ -63,10 +68,12 @@ struct msg_head_t
 	 */
 	msg_head_t(eMsgType  aType,uint32_t aSize)://
 		FType(aType),//
+		FReserv(0),//
 		FSize(aSize)
 	{
 	}
 };
+static_assert(sizeof(msg_head_t) == sizeof(uint32_t), "invalid size of message header");
 /*! \brief Calculate requirement size of array
  * for saving string
  *
@@ -77,75 +84,72 @@ constexpr unsigned array_size_for(char const (&) [N])
 	return ((N-1)%sizeof(uint64_t))*sizeof(uint64_t);
 }
 
-static const char string_grand []="grand_child";
 /*!\brief A  grand child data
  */
-struct grand_child_data_t
+struct sub_sub_msg_data_t
 {
-	constexpr auto const MString() const{return string_grand; }
+	char FMsg[array_size_for(g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>)];///< "grand_child" + '/0'
 
-	char FMsg[array_size_for(string_grand)];///< "grand_child" + '/0'
+	sub_sub_msg_data_t()
+	{
+		strcpy( FMsg, g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>);
+	}
 };
 
-static const char string_child[]="grand_child";
 /*!\brief A child data
  */
-struct child_data_t
+struct sub_msg_data_t:sub_sub_msg_data_t
 {
-	constexpr auto const MString() const {return string_child; }
+	char FMsg[array_size_for(g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>)];///< "child" + '/0'
 
-	char FMsg[array_size_for(string_child)];///< "child" + '/0'
+	sub_msg_data_t()
+	{
+		strcpy( FMsg, g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>);
+	}
 };
 
-static const char string_parent[]="parent";
 /*!\brief A parent data
  */
-struct parent_data_t
+struct parent_data_t:sub_msg_data_t
 {
-	constexpr auto const MString()const{return string_parent; }
+	char FMsg[array_size_for(g_enum_name<eMsgType::E_MSG_PARENT>)];///< "parent" + '/0'
 
-	char FMsg[array_size_for(string_parent)];///< "parent" + '/0'
+	parent_data_t()
+	{
+		strcpy( FMsg, g_enum_name<eMsgType::E_MSG_PARENT>);
+	}
 };
 
 /*!\brief The Grand child message
  *
  */
-struct grand_child_msg_t
+struct sub_sub_msg_t
 {
-	enum
-	{
-		eType=E_MSG_GRANDCHILD,///< Number of message
-	};
+	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_SUB_MESSAGE;};///< Number of message
 
 	msg_head_t FHead;///< Header (type #E_MSG_GRANDCHILD)
 	//4 bytes
-	grand_child_data_t FData;///< Data
+	sub_sub_msg_data_t FData;///< Data
 };
 
 /*!\brief The child message
  *
  */
-struct child_msg_t
+struct sub_msg_t
 {
-	enum
-	{
-		eType = E_MSG_CHILD,	///< Number of message
-	};
+	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_MESSAGE;};
 
 	msg_head_t FHead;///< Header (type #E_MSG_CHILD)
 	//4 bytes
-	child_data_t FData;///< Data
+	sub_msg_data_t FData;///< Data
 };
 
-/*!\brief The child message
+/*!\brief The parent message
  *
  */
 struct parent_msg_t
 {
-	enum
-	{
-		eType = E_MSG_PARENT,	///< Number of message
-	};
+	static constexpr eMsgType type(){return eMsgType::E_MSG_PARENT;};///< Number of message
 
 	msg_head_t FHead;///< Header (type #E_MSG_PARENT)
 	//4 bytes

@@ -66,8 +66,8 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
 			switch (_phead->FType)
 			{
-			case E_MSG_GRANDCHILD:
-				if (_phead->FSize != sizeof(grand_child_msg_t))
+			case eMsgType::E_MSG_SUB_SUB_MESSAGE:
+				if (_phead->FSize != sizeof(sub_sub_msg_t))
 				{
 					aItBegin+=sizeof(msg_head_t);
 					_founded_dg.FErrorCode = E_INVALID_MSG_SIZE;
@@ -80,8 +80,8 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
 				}
 				break;
-			case E_MSG_CHILD:
-				if (_phead->FSize != sizeof(child_msg_t))
+			case eMsgType::E_MSG_SUB_MESSAGE:
+				if (_phead->FSize != sizeof(sub_msg_t))
 				{
 					aItBegin+=sizeof(msg_head_t);
 					_founded_dg.FErrorCode = E_INVALID_MSG_SIZE;
@@ -95,7 +95,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				}
 				break;
 
-			case E_MSG_PARENT:
+			case eMsgType::E_MSG_PARENT:
 				if (_phead->FSize != sizeof(parent_msg_t))
 				{
 					aItBegin+=sizeof(msg_head_t);
@@ -169,16 +169,17 @@ CProtocolParser::inheritances_info_t CProtocolParser::MGetInheritances() const
 	_info.push_back(
 			msg_inheritance_t( //
 					required_header_t(
-							msg_head_t(E_MSG_CHILD, sizeof(child_msg_t))), //
+												msg_head_t(eMsgType::E_MSG_SUB_SUB_MESSAGE,
+														sizeof(sub_sub_msg_t))), //
 					required_header_t(
-							msg_head_t(E_MSG_GRANDCHILD,
-									sizeof(grand_child_msg_t))) //
+							msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))) //
+
 					));
 
 	_info.push_back(
 			msg_inheritance_t( //
-			required_header_t(msg_head_t(E_MSG_PARENT, sizeof(parent_msg_t))), //
-			required_header_t(msg_head_t(E_MSG_CHILD, sizeof(child_msg_t))) //
+			required_header_t(msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))), //
+			required_header_t(msg_head_t(eMsgType::E_MSG_PARENT, sizeof(parent_msg_t))) //
 					));
 
 	return _info;

@@ -20,6 +20,11 @@
 namespace NUDT
 {
 const NSHARE::CText CRequiredDG::NAME = "demands";
+<<<<<<< HEAD
+=======
+const unsigned CRequiredDG::DEFAULT_MAX_INHERITANCE_DEPTH = 20;
+const CRequiredDG::msg_heritance_t CRequiredDG::sFEmptyHeritance;
+>>>>>>> 57aaf6a... see Changelog
 //todo using hash algorithm
 //todo cache
 CRequiredDG::CRequiredDG()
@@ -64,30 +69,63 @@ std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
  *
 *\return true if it the first "real" handler
  */
+<<<<<<< HEAD
 >>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MAddHandler(demand_dg_t const & aWhat,
 		msg_handlers_t& _handlers) const
+=======
+bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
+>>>>>>> 57aaf6a... see Changelog
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 
-	_handlers.push_back(aWhat.FHandler);
+	handler_id_array_t::iterator _it = std::find(FHandlers.begin(),
+			FHandlers.end(), aWhat.FHandler);
+
+	bool _is_exist = _it != FHandlers.end();
+	if (_is_exist)
+	{
+		VLOG(INFO) << "Handler " << aWhat.FHandler << " is exist";
+
+		/// Change priority if need
+		handler_id_priority_array_t::iterator _it_priority =
+				FHandlerPriority.begin() + (_it - FHandlers.begin());
+
+		if (aWhat.FHandlerPriority < *_it_priority)
+		{
+			_is_exist = false;
+			FHandlerPriority.erase(_it_priority);
+			FHandlers.erase(_it);
+		}
+	}
+
+	if(!_is_exist)
+	{
+		handler_id_priority_array_t::iterator _it_priority = std::lower_bound(FHandlerPriority.begin(),
+				FHandlerPriority.end(), aWhat.FHandlerPriority);
+		handler_id_priority_array_t::iterator _cur_pos=FHandlerPriority.insert(_it_priority, aWhat.FHandlerPriority);
+
+		_it=FHandlers.begin()+(_cur_pos-FHandlerPriority.begin());///< Position of handler has to corresponding with its priority
+
+		FHandlers.insert(_it, aWhat.FHandler);
+	}
 
 	if (aWhat.FWhat.FVersion.MIsExist())
 	{
-		LOG_IF(DFATAL,(_handlers.FVersion.MIsExist()&& _handlers.FVersion!=aWhat.FWhat.FVersion))
+		LOG_IF(DFATAL,(FVersion.MIsExist()&& FVersion!=aWhat.FWhat.FVersion))
 																											<< "Different version for msg "
 																											<< aWhat.FWhat
 																											<< " handler= "
 																											<< aWhat.FHandler
 																											<< " 'Old' version: "
-																											<< _handlers.FVersion;
-		_handlers.FVersion = aWhat.FWhat.FVersion;
+																											<< FVersion;
+		FVersion = aWhat.FWhat.FVersion;
 	}
 
 	if (!_is_registator)
 	{
-		++_handlers.FNumberOfRealHandlers;
-		return _handlers.FNumberOfRealHandlers == 1;
+		++FNumberOfRealHandlers;
+		return FNumberOfRealHandlers == 1;
 	}
 	else
 
@@ -196,7 +234,11 @@ bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
 	if (!_is_registator)
 		++_r_uuid.FNumberOfRealReceivers;
 
+<<<<<<< HEAD
 	bool const _is_first_real = MAddHandler(aWhat, _r_uuid[aTo]);
+=======
+	bool const _is_first_real = _r_uuid[aTo].MAddHandler(aWhat);
+>>>>>>> 57aaf6a... see Changelog
 
 	LOG_IF(INFO,_is_first_real) << "Now The packet:" << aWhat << " from "
 										<< aFrom << " is received of by "
@@ -219,29 +261,38 @@ bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
  *
  *\return true if it was the last handler
  */
+<<<<<<< HEAD
 >>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MRemoveHandler(demand_dg_t const & aWhat,
 		msg_handlers_t& _handlers) const
+=======
+bool CRequiredDG::msg_handlers_t::MRemoveHandler(demand_dg_t const & aWhat)
+>>>>>>> 57aaf6a... see Changelog
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 	bool _rval = false;
 
 	if (!_is_registator)
 	{
-		CHECK_GT(_handlers.FNumberOfRealHandlers, 0);
-		--_handlers.FNumberOfRealHandlers;
+		CHECK_GT(FNumberOfRealHandlers, 0);
+		--FNumberOfRealHandlers;
 
-		_rval = _handlers.FNumberOfRealHandlers == 0;
+		_rval = FNumberOfRealHandlers == 0;
 	}
 
-	msg_handlers_t::iterator _it = _handlers.begin();
-	for (; _it != _handlers.end() && *_it != aWhat.FHandler; ++_it)
+	handler_id_array_t::iterator _it = FHandlers.begin();
+	for (; _it != FHandlers.end() && *_it != aWhat.FHandler; ++_it)
 		;
 
-	DCHECK(_it != _handlers.end());
+	DCHECK(_it != FHandlers.end());
 
-	if (_it != _handlers.end())
-		_handlers.erase(_it);
+	if (_it != FHandlers.end())
+	{
+		handler_id_priority_array_t::iterator _it_priority =
+				FHandlerPriority.begin() + (_it - FHandlers.begin());
+		FHandlerPriority.erase(_it_priority);
+		FHandlers.erase(_it);
+	}
 
 	return _rval;
 }
@@ -282,7 +333,11 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 	if (!_is_registator)
 		--_r_uuid.FNumberOfRealReceivers;
 
+<<<<<<< HEAD
 	bool const _is_last_real = MRemoveHandler(aWhat, _list_it->second);
+=======
+	bool const _is_last_real = _list_it->second.MRemoveHandler(aWhat);
+>>>>>>> 57aaf6a... see Changelog
 
 	LOG_IF(INFO,_is_last_real) << "Now The packet:" << aWhat.FWhat
 										<< " from " << aFrom
@@ -292,7 +347,7 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 										<< aFrom << " still received of by "
 										<< aTo;
 	//cleanup maps
-	if (_list_it->second.empty())
+	if (_list_it->second.MGetHandlers().empty())
 		_r_uuid.erase(_list_it);
 
 //	if (_r_uuid.empty())
@@ -342,63 +397,23 @@ CRequiredDG::data_routing_t& CRequiredDG::MGetOrCreateExpectedListFor(
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 /** \brief Adding receiver(aTo) for message (aWhat)
 =======
 /*!\brief Returns child of message
+=======
+/** Returns parents of message if exist
+>>>>>>> 57aaf6a... see Changelog
  *
- *\return the message children or the empty list
+ * @param aMsgProtocol  A protocol of the message
+ * @param aMsgType A message type
+ * @return the header of parents messages or the empty list
  */
-CRequiredDG::msg_heritance_t const& CRequiredDG::MGetMessageChildren(
-		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const
-{
-	return sMGetMessageChildren(aMsgProtocol,aMsgType,FMsgsGenealogy);
-}
-
-/*!\brief Returns child of message
- *
- *\return the message children or the empty list
- */
-CRequiredDG::msg_heritance_t const& CRequiredDG::sMGetMessageChildren(
-		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,msg_inheritances_t const& aFrom)
-{
-	static msg_heritance_t const _fix;
-	msg_inheritances_t::const_iterator _it=aFrom.find(aMsgProtocol);
-	if(_it!=aFrom.end())
-	{
-		msg_inheritance_tree_t const& _tree=_it->second;
-
-		msg_inheritance_tree_t::const_iterator _tit=_tree.find(aMsgType);
-		if(_tit!=_tree.end())
-		{
-			msg_family_t const& _fam=_tit->second;
-			return _fam.FChildren;
-		}
-	}
-
-	return _fix;
-}
-/*!\brief Add children to message
- *
- */
-void CRequiredDG::sMAddMessageChildren(
-		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,
-		msg_heritance_t const& aChildren,msg_inheritances_t *const aTo)
-{
-	DCHECK_NOTNULL(aTo);
-	msg_inheritances_t& _to(*aTo);
-	msg_inheritance_tree_t & _tree=_to[aMsgProtocol];
-	msg_family_t& _family=_tree[aMsgType];
-	_family.FChildren.insert(_family.FChildren.end(),aChildren.begin(),aChildren.end());
-}
-/*!\brief Returns parents of message
- *
- *\return the message parents or the empty list
- */
-//todo зачем?
 CRequiredDG::msg_heritance_t const& CRequiredDG::MGetMessageParents(
 		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const
 {
-	static msg_heritance_t const _fix;
+	DCHECK(!aMsgProtocol.empty());
+
 	msg_inheritances_t::const_iterator _it=FMsgsGenealogy.find(aMsgProtocol);
 	if(_it!=FMsgsGenealogy.end())
 	{
@@ -408,12 +423,70 @@ CRequiredDG::msg_heritance_t const& CRequiredDG::MGetMessageParents(
 		if(_tit!=_tree.end())
 		{
 			msg_family_t const& _fam=_tit->second;
-			return _fam.FParents;
+			return _fam.MGetParrents();
 		}
 	}
-	return _fix;
+	return sFEmptyHeritance;
 }
-/*!\brief Adding receiver for the message children
+/*!@brief  Returns information about child of the message in
+ * the genealogical tree
+ *
+ * @param aMsgProtocol A protocol of the message
+ * @param aMsgType A message type
+ * @param aFrom A genealogical tree
+ * @return the message's children or the empty list
+ */
+CRequiredDG::msg_heritance_t const& CRequiredDG::sMGetMessageChildren(
+		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType,msg_inheritances_t const& aFrom)
+{
+	DCHECK(!aMsgProtocol.empty());
+
+	msg_inheritances_t::const_iterator _it=aFrom.find(aMsgProtocol);
+	if(_it!=aFrom.end())
+	{
+		msg_inheritance_tree_t const& _tree=_it->second;
+
+		msg_inheritance_tree_t::const_iterator _tit=_tree.find(aMsgType);
+		if(_tit!=_tree.end())
+		{
+			msg_family_t const& _fam=_tit->second;
+			return _fam.MGetChildren();
+		}
+	}
+
+	return sFEmptyHeritance;
+}
+/*!@brief  Returns information about child of the message
+ *
+ * @param aMsgProtocol A protocol of the message
+ * @param aMsgType A message type
+ * @return the message's children or the empty list
+ */
+CRequiredDG::msg_heritance_t const& CRequiredDG::MGetMessageChildren(
+		NSHARE::CText const& aMsgProtocol, required_header_t const & aMsgType) const
+{
+	return sMGetMessageChildren(aMsgProtocol,aMsgType,FMsgsGenealogy);
+}
+
+/** @brief Returns demand for child message
+ *
+ * @param aWhat A parent message
+ * @param aChildHeader An inro about child
+ * @return demand of child
+ */
+demand_dg_t CRequiredDG::MGetChildDemand(const demand_dg_t& aWhat,
+		inheritance_msg_header_t const& aChildHeader) const
+{
+	demand_dg_t _child_msg(aWhat);
+	_child_msg.FFlags.MSetFlag(demand_dg_t::E_AS_INHERITANCE, true);
+	_child_msg.FWhat = aChildHeader.FHeader;
+	_child_msg.FHandlerPriority = aWhat.FHandlerPriority + aChildHeader.FDepth + 1/*as child has to be lowest priority*/;
+	_child_msg.FProtocol = aChildHeader.FProtcol;
+	return _child_msg;
+}
+
+/**\brief Adding receiver for the message children
+ *
  *
  * It adds children with taking into account
  * different message protocol. Therefore the info
@@ -422,7 +495,15 @@ CRequiredDG::msg_heritance_t const& CRequiredDG::MGetMessageParents(
  * the protocol of message, the new expected list
  * of messages will be created.
  *
- *\return a amount of first request of message
+ * @param aFrom [in] Who has sent the message
+ * @param aTo [in] For whom this message
+ * @param aWhat [in] A information about request for  the message
+ * @param aIncludeTo [in,out] list of program uuids which is expected
+ * of messages from aFrom (for optimization)
+ * @param aNew [out] A list of a new subscription of message (not requirement)
+ * @param aOld [out] A list of unsubscription of message (not requirement)
+ *
+ * @return A amount of first request of message
  */
 unsigned CRequiredDG::MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
 		NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
@@ -431,26 +512,37 @@ unsigned CRequiredDG::MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
 	DCHECK_NOTNULL(aIncludeTo);
 	unsigned _count=0;
 
-	//inheritance
+	/**1) Get all children of message
+	 *
+	 */
 	msg_heritance_t const & _children = MGetMessageChildren(aWhat.FProtocol,
 			aWhat.FWhat);
 	msg_heritance_t::const_iterator _it = _children.begin(), _it_end(
 			_children.end());
 
-	demand_dg_t _child_msg(aWhat);
-	_child_msg.FFlags.MSetFlag(demand_dg_t::E_AS_INHERITANCE,true);
+	NSHARE::CText _last_protocol=aWhat.FProtocol;
 
+	/**2) Subscribes to receive the children message
+	 *
+	 */
 	for (; _it != _it_end; ++_it)
 	{
-		if (_child_msg.FProtocol != _it->first)
+		demand_dg_t const _child_msg = MGetChildDemand(aWhat, *_it);
+		/** a) If child message protocol is differed from
+		 * the message in aWhat, it changes pointer to
+		 * expecting messages list
+		 *
+		 */
+		if (_child_msg.FProtocol != _last_protocol)
 		{
-			_child_msg.FProtocol = _it->first;
+			_last_protocol = _child_msg.FProtocol;
 
 			/// support inheritance between different protocols
 			aIncludeTo =
-					&MGetOrCreateExpectedListFor(aFrom, _child_msg.FProtocol).FExpected;
+					&MGetOrCreateExpectedListFor(aFrom, _last_protocol).FExpected;
 		}
-		_child_msg.FWhat = _it->second;
+
+
 		bool const _is = MRegisteringReceiverForMsg(_child_msg, aFrom, aTo,
 				aIncludeTo,aNew,aOld);
 		_count = _is ? _count + 1 : _count;
@@ -459,7 +551,7 @@ unsigned CRequiredDG::MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
 }
 /*!\brief Removing receiver from the message children
  *
- * For detail see method MIncludeMessageChildren.
+ * For detail see method #MIncludeMessageChildren.
  *
  *\return a amount of the last request of message
  */
@@ -476,20 +568,19 @@ unsigned CRequiredDG::MUnincludeMessageChildren(NSHARE::uuid_t const & aFrom,
 	msg_heritance_t::const_iterator _it = _children.begin(), _it_end(
 			_children.end());
 
-	demand_dg_t _child_msg(aWhat);
-	_child_msg.FFlags.MSetFlag(demand_dg_t::E_AS_INHERITANCE,true);
+	NSHARE::CText _last_protocol=aWhat.FProtocol;
 
 	for (; _it != _it_end; ++_it)
 	{
-		if (_child_msg.FProtocol != _it->first)
+		demand_dg_t const _child_msg = MGetChildDemand(aWhat, *_it);
+		if (_child_msg.FProtocol != _last_protocol)
 		{
-			_child_msg.FProtocol = _it->first;
+			_last_protocol = _child_msg.FProtocol;
 
 			/// support inheritance between different protocols
 			aUnincludeFrom =
-					&MGetOrCreateExpectedListFor(aFrom, _child_msg.FProtocol).FExpected;
+					&MGetOrCreateExpectedListFor(aFrom, _last_protocol).FExpected;
 		}
-		_child_msg.FWhat = _it->second;
 
 		bool const _is = MUnRegisteringReceiverForMsg(_child_msg, aFrom, aTo,
 				aUnincludeFrom,aNew,aOld);
@@ -765,20 +856,35 @@ void CRequiredDG::MFillByRawProtocol(user_datas_t*const aFrom, user_datas_t*cons
 
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 CRequiredDG::msg_handlers_t const* CRequiredDG::MGetHandlers(user_data_info_t & _data_info) const
 =======
 /*!\brief Returns the list of message handlers of the customer
+=======
+
+/*!@brief Returns the list of message handlers of the subcriber
+>>>>>>> 57aaf6a... see Changelog
  * or null.
  *
+ * @param aMsgInfo
+ * @return
  */
 CRequiredDG::msg_handlers_t const* CRequiredDG::MGetHandlers(user_data_info_t const & aMsgInfo) const
 >>>>>>> f3da2cc... see changelog.txt
 {
+<<<<<<< HEAD
 	required_header_t & _header=_data_info.FWhat;
 	NSHARE::uuid_t const& _from = _data_info.FRouting.FFrom.FUuid;
 	NSHARE::uuid_t const& _for = _data_info.FRouting.back();
+=======
+	required_header_t const & _header=aMsgInfo.FWhat;
+>>>>>>> 57aaf6a... see Changelog
 	NSHARE::CText const _protocol =
 			_data_info.MIsRaw() ? RAW_PROTOCOL_NAME : _data_info.FProtocol;
+
+
+	NSHARE::uuid_t const& _from = aMsgInfo.FRouting.FFrom.FUuid;
+	NSHARE::uuid_t const& _for = aMsgInfo.FRouting.back();
 
 	uuids_of_expecting_dg_t& _expected = MGetOrCreateExpectedListFor(_from,
 			_protocol).FExpected;
@@ -800,7 +906,7 @@ CRequiredDG::msg_handlers_t const* CRequiredDG::MGetHandlers(user_data_info_t co
 	}
 	_uuid_it = _header_it->second.find(_for);
 
-	if (_uuid_it == _header_it->second.end() || _uuid_it->second.empty())
+	if (_uuid_it == _header_it->second.end() || _uuid_it->second.MGetHandlers().empty())
 	{
 		LOG(ERROR)<< "No handler for " << _header
 		<< " is not exist";
@@ -848,9 +954,9 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		msg_handlers_t const *_handlers=NULL;
 
 		CHECK_EQ(_data_info.FRouting.size(), 1);
-
-		NSHARE::CText const _protocol =
-				_data_info.MIsRaw() ? RAW_PROTOCOL_NAME : _data_info.FProtocol;
+//
+//		NSHARE::CText const _protocol =
+//				_data_info.MIsRaw() ? RAW_PROTOCOL_NAME : _data_info.FProtocol;
 
 
 //		IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
@@ -881,13 +987,12 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			goto error;
 		}
 
-		if (_handlers->FNumberOfRealHandlers == 0
-				|| _handlers->FNumberOfRealHandlers
-						== _handlers->size())
+		if (_handlers->MIsOnlyRealHandlers()
+				|| _handlers->MIsOnlyNonRealHandlers())
 		{
 			VLOG(4)
 								<< "A good programmer as he is not blending  a registrator and a real software.";
-			_data_info.FEventsList = *_handlers;
+			_data_info.FEventsList = _handlers->MGetHandlers();
 		}
 		else
 		{
@@ -908,7 +1013,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			else //
 			{
 				VLOG(2)<<"Can fill all handlers for the packet as it has been sent not by uuid";
-				_data_info.FEventsList = *_handlers;
+				_data_info.FEventsList = _handlers->MGetHandlers();
 			}
 		}
 
@@ -1600,10 +1705,22 @@ inline unsigned CRequiredDG::sMGetDemandsByHandlers(
 	//1) find DGs which are required from aUUID
 	//2) add all demands to protocol_of_uuid_t
 
+<<<<<<< HEAD
 	typedef std::vector<std::pair<id_t, demand_dg_t> > dgs_t;
 	dgs_t _demands;
 	dgs_t _registrator;
 	//todo here has to checked message inheritance
+=======
+	msg_handlers_t::handler_id_array_t::const_iterator _jt = aHandlers.MGetHandlers().begin(),
+			_jt_end(aHandlers.MGetHandlers().end());
+	for (; _jt != _jt_end; ++_jt)
+	{
+		demand_dgs_t::const_iterator _it_hand = aDemand.begin();
+		for (; //
+				_it_hand != aDemand.end() //
+				&& _it_hand->FHandler != *_jt; ++_it_hand)
+			;
+>>>>>>> 57aaf6a... see Changelog
 
 	for (demand_dgs_for_t::const_iterator _it = FDGs.begin(); _it != FDGs.end();
 			++_it)
@@ -1775,7 +1892,7 @@ inline bool CRequiredDG::MRemoveAllReceiversForMsgsFrom(id_t const& aFrom,demand
 				for(;!_list_of_uuids.empty();)
 				{
 					msg_handlers_t& _handlers=_list_of_uuids.begin()->second;
-					DCHECK(_handlers.empty());
+					DCHECK(_handlers.MGetHandlers().empty());
 
 					_list_of_uuids.erase(_list_of_uuids.begin());
 				}
@@ -2267,82 +2384,126 @@ NSHARE::CConfig CRequiredDG::MSerialize() const
 	return _conf;
 }
 
-/*!\brief Reading child of messages
+/*!\brief Reading child of messages of all
+ * protocols
  *
+ * It saves only direct heir for all messages which
+ * have a child.
+ *
+ * @param aTo A pointer to the object where to save
  */
 inline void CRequiredDG::MReadMsgChild(msg_inheritances_t * const aTo) const
 {
 	DCHECK_NOTNULL(aTo);
 
+	///1) For all protocol parsers reads their genealogy tree
 	msg_inheritances_t& _genealogy(*aTo);
 	CParserFactory::factory_its_t _i =
 			CParserFactory::sMGetInstance().MGetIterator();
 	for (; _i.FBegin != _i.FEnd; ++_i.FBegin)
 	{
-		IExtParser::inheritances_info_t const _val(
-				_i.FBegin->second->MGetInheritances());
-		msg_inheritance_tree_t& _current_tree = _genealogy[_i.FBegin->first];
-		IExtParser::inheritances_info_t::const_iterator _jt = _val.begin(),
-				_jt_end = _val.end();
-		for (; _jt != _jt_end; ++_jt)
+		NSHARE::CText const& _protocol=_i.FBegin->first;
+		IExtParser const* _parser=_i.FBegin->second;
+
+		DCHECK(!_protocol.empty());
+		CHECK_NOTNULL(_parser);
+
+		IExtParser::inheritances_info_t const _val(_parser->MGetInheritances());
+		if (!_val.empty())
 		{
-			msg_family_t& _family = _current_tree[*_jt];
-			msg_header_t const _child(_jt->FChildProtcol, _jt->FChildHeader);
-			_family.FChildren.push_back(_child);
+			///2) Saving to aTo only direct heir of the message
+
+			msg_inheritance_tree_t& _current_tree = _genealogy[_protocol];
+			DCHECK(_current_tree.empty());
+
+			IExtParser::inheritances_info_t::const_iterator _jt = _val.begin(),
+					_jt_end = _val.end();
+			for (; _jt != _jt_end; ++_jt)
+			{
+				msg_family_t& _family = _current_tree[*_jt];
+
+				/** if a child protocol value is empty
+				 * then it's equal of the parent protocol
+				 *
+				 */
+				NSHARE::CText const& _child_protocol=_jt->FChildProtcol.empty()?_protocol:_jt->FChildProtcol;
+
+				inheritance_msg_header_t const _child(_child_protocol, _jt->FChildHeader,0/*direct heir*/);
+				_family.MPutChild(_child);
+
+				DCHECK_EQ(_family.MGetChildren().size(), 1);
+			}
 		}
 	}
 }
-/*!\brief Creates genealogy tree of all messages
- * using info about messages child
+/*!\brief Creates genealogical tree of all messages
+ * using only info about message direct heir
  *
- *\param [in] aChildInfo info about messages child
- *\param [out] aChildInfo genealogy tree
+ *\param [in] aChildInfo info about message direct heir (direct heir tree)
+ *\param [out] aChildInfo obtained genealogical tree for all messages
  *
- *\return max depth inheritance
+ *\return A max inheritance depth
  */
 inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
 		msg_inheritances_t * const aChildInfo,msg_inheritances_t * const aTo) const
 {
 
 	msg_inheritances_t& _to(*aTo);
-	msg_inheritances_t& _child_info(*aChildInfo);
+	msg_inheritances_t& _direct_child_info(*aChildInfo);
 
 	unsigned _depth=0;
-	msg_inheritances_t::iterator _it = _child_info.begin();
-	for (; !_child_info.empty() && _depth < FMaxInheritanceDepth;)
+
+	/** Algorithm:
+	 *
+	 * 1) The direct heir tree is handled sequentially
+	 * while There is at least one message for which
+	 * doesn't obtained its hierarchy or
+	 * doesn't override the maximum number of children.
+	 * */
+	for (msg_inheritances_t::iterator _it = _direct_child_info.begin();//
+			!_direct_child_info.empty() && _depth < FMaxInheritanceDepth;//
+			)
 	{
-		if (_it == _child_info.end())
+		if (_it == _direct_child_info.end())
 		{
 			//next circle
-			_it = _child_info.begin();
+			_it = _direct_child_info.begin();
 			++_depth;
 		}
 
 		NSHARE::CText const& _protocol=_it->first;
+		DCHECK(!_protocol.empty());
+
 		msg_inheritance_tree_t & _tree = _it->second;
 
 		msg_inheritance_tree_t::iterator _tit = _tree.begin();
 		for (; _tit != _tree.end(); )
 		{
 			required_header_t const& _current = _tit->first;
-			msg_heritance_t& _children = _tit->second.FChildren;
+			msg_family_t& _family = _tit->second;
 
-			DCHECK(!_children.empty());
-			DCHECK_EQ(_children.size(),1);
+			DCHECK(!_family.MGetChildren().empty());
+			DCHECK_EQ(_family.MGetChildren().size(),1);
 
-			msg_header_t const& _my_child = _children.back();
+			/** 2) If The child of the message hav't
+			 * direct heir in the direct heir tree
+			 */
+			inheritance_msg_header_t const& _my_child = _family.MGetChildren().back();
 
 			msg_heritance_t const& _child_of_my_child = sMGetMessageChildren(
-					_my_child.first, _my_child.second, _child_info);
+					_my_child.FProtcol, _my_child.FHeader, _direct_child_info);
 
 			if (_child_of_my_child.empty())
 			{
 
-				{	//copy children of my child to my family tree
-					msg_heritance_t const& _children_of_my_child(
-							sMGetMessageChildren(_my_child.first,
-									_my_child.second, _to));
+				/** 2.1 Than read  from genealogical tree info
+				 * about child's children which has been
+				 * obtained previously.
+				 *
+				 */
+				{
 
+<<<<<<< HEAD
 					if (!_children_of_my_child.empty())
 						_children.insert(_children.end(),
 								_children_of_my_child.begin(),
@@ -2350,16 +2511,72 @@ inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
 				}
 >>>>>>> f3da2cc... see changelog.txt
 
+=======
+					 /** 2.1.0 If child is not exist in the genealogical tree adds it.
+					  */
+
+					msg_inheritance_tree_t& _tree=_to[_my_child.FProtcol];
+					msg_heritance_t const& _children_of_my_child=_tree[_my_child.FHeader].MGetChildren();
+
+
+					/** If The child has children
+					  *  puts their to the end of
+					  *  message children info object.
+					 *
+					 */
+					if (!_children_of_my_child.empty())
+						_family.MPutChildrenOfChild(_children_of_my_child);
+				}
+				DLOG_IF(FATAL,
+						!(_family.MGetChildren().back().FDepth==_depth||//
+								_family.MGetChildren().back().FDepth==_depth+1)
+						)<<"Invalid depth "<<_family.MGetChildren().back().FDepth<<" != "<<_depth;
+
+				/** 2.1.1 Puts information about the message and its
+				 * children to genealogical tree
+				 *
+				 */
+				_to[_protocol][_current]=_family;
+
+				/** 2.1.2 Then As the message hierarchy is filled to genealogical tree,
+				 *  it is erased from direct heir tree
+				 */
+				_tree.erase(_tit++);	//warning! only postincrement
+			}
+			else
+			{
+				/** 2.2 Otherwise, Skips with message
+				 * until the next cycle
+				 *
+				 */
+				DCHECK_EQ(_child_of_my_child.size(), 1);
+				++_tit;
+			}
+		}
+
+		if (_tree.empty())
+			_direct_child_info.erase(_it++);//warning! only postincrement
+		else
+			++_it;
+>>>>>>> 57aaf6a... see Changelog
 	}
 	//_conf.MAdd(FDGs.MSerialize());
 	return _conf;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 inline void CRequiredDG::MInitializeMsgInheritance()//todo
 =======
 /*!\brief Fills parent info for message hierarchy
+=======
+
+/** @brief Fills parent info of genealogical tree
+>>>>>>> 57aaf6a... see Changelog
  *
+ * @param aTo [in,out] filled genealogical tree
+ * @return true if successfully
  */
+<<<<<<< HEAD
 void CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 >>>>>>> f3da2cc... see changelog.txt
 {
@@ -2381,6 +2598,66 @@ void CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 	typedef std::map<required_header_t, msg_children_t,
 			CReqHeaderFastLessCompare> msg_inheritance_tree_t;
 =======
+=======
+bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
+{
+	DCHECK_NOTNULL(aTo);
+	msg_inheritances_t &_to(*aTo);
+
+	msg_inheritances_t::iterator _it_protocol = _to.begin(), _it_end(
+			_to.end());
+	for (; _it_protocol != _it_end; ++_it_protocol)
+	{
+		NSHARE::CText const& _msg_protocol = _it_protocol->first;
+		msg_inheritance_tree_t::iterator _it_msg = _it_protocol->second.begin(),
+				_jt_end(_it_protocol->second.end());
+
+		for (; _it_msg != _jt_end; ++_it_msg)
+		{
+			required_header_t const& _msg = _it_msg->first;
+			msg_family_t& _hierarchy = _it_msg->second;
+
+			msg_heritance_t const& _child = _hierarchy.MGetChildren();//was filled early
+
+			/** Pass to all message children information
+			 * about it
+			 */
+			for (msg_heritance_t::const_iterator _it_child = _child.begin();
+									_it_child != _child.end(); ++_it_child)
+			{
+				NSHARE::CText const& _child_protocol=_it_child->FProtcol;
+				required_header_t const& _child_type=_it_child->FHeader;
+				msg_inheritances_t::iterator _p = _to.find(_child_protocol);
+
+				if (_p == _to.end())
+				{
+					LOG(DFATAL) << "No child in tree for " << _msg
+											<< " child protocol=" << _child_protocol
+											<< " header " << _child_type;
+					return false;
+				}else
+				{
+					msg_inheritance_tree_t::iterator _pf= _p->second.find(_it_child->FHeader);
+					if (_pf == _p->second.end())
+					{
+						LOG(DFATAL) << "No child in tree for " << _msg
+												<< " child protocol="
+												<< _child_protocol << " header "
+												<< _child_type;
+						return false;
+					}
+					else
+					{
+						_pf->second.MPutParrent(inheritance_msg_header_t(_msg_protocol,_msg,_it_child->FDepth));
+						DCHECK_EQ(_pf->second.MGetParrents().size()-1,_it_child->FDepth);
+					}
+				}
+			}
+
+		}
+	}
+	return true;
+>>>>>>> 57aaf6a... see Changelog
 }
 bool CRequiredDG::MInitializeMsgInheritance()
 {
@@ -2394,7 +2671,7 @@ bool CRequiredDG::MInitializeMsgInheritance()
 	{
 		MParentInfo(&_genealogy);
 
-		DCHECK_EQ(sMCheckCorrectionOfGenealogyTree(_genealogy,NULL),0);
+		DCHECK_EQ(sMCheckCorrectionOfGenealogyTree(_genealogy,NULL,true),0);
 
 		FMsgsGenealogy.swap(_genealogy);
 	}
@@ -2406,22 +2683,28 @@ bool CRequiredDG::MInitializeMsgInheritance()
 }
 >>>>>>> f3da2cc... see changelog.txt
 
+<<<<<<< HEAD
 	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;
 
 <<<<<<< HEAD
 	msg_inheritances_t _inheritances;
 =======
 /*!\brief Checks correction of genealogy tree
+=======
+/*!\brief genealogical tree validation
+>>>>>>> 57aaf6a... see Changelog
  *
- *\param aWhat - genealogy tree
- *\param aTo - if not NULL, than here is saved failed heritance
-*\return 0 if correct
+ *\param aWhat - A genealogical tree
+ *\param aTo - if not NULL, than here is saved incorrect hierarchies
+ *\param aParentCheck - if true when checks that child is in
+ *						parent list is exist
+ *\return 0 if correct
  *			else amount of errors
  */
 unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
-		msg_inheritances_t const& aWhat, msg_inheritances_t* aTo)
+		msg_inheritances_t const& aWhat, msg_inheritances_t* aTo,bool aParentCheck)
 {
-	typedef std::set<msg_heritance_t::value_type, unique_compare_t> unique_heritance_t;
+	typedef std::set<msg_heritance_t::value_type> unique_heritance_t;
 
 	unsigned _amount_of = 0;
 
@@ -2430,6 +2713,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 	for (; _it != _it_end; ++_it)
 >>>>>>> f3da2cc... see changelog.txt
 	{
+<<<<<<< HEAD
 		inheritances_t::const_iterator _it=_tree.begin(),_it_end(_tree.end());
 		for(;_it!=_it_end;++_it)
 		{
@@ -2440,6 +2724,30 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 					_process.begin(), _jt_end = _process.end();
 
 			for(;_jt!=_jt_end;++_jt)
+=======
+		NSHARE::CText const& _protocol=_it->first;
+
+		///A protocol name hasn''t to be empty
+		if(_protocol.empty())
+		{
+			LOG(DFATAL)<<"Empty protocol detected";
+			return false;
+		}
+		msg_inheritance_tree_t::const_iterator _jt = _it->second.begin(),
+				_jt_end(_it->second.end());
+
+		for (; _jt != _jt_end; ++_jt)
+		{
+			unique_heritance_t _unique;
+			_unique.insert(msg_heritance_t::value_type(_protocol, _jt->first,0));
+
+			bool _is_correct = true;
+			msg_family_t const& _hierarchy = _jt->second;
+			msg_heritance_t const& _child = _hierarchy.MGetChildren();
+			msg_heritance_t const& _parent = _hierarchy.MGetParrents();
+
+			if (!_child.empty())
+>>>>>>> 57aaf6a... see Changelog
 			{
 <<<<<<< HEAD
 				//доделать
@@ -2452,49 +2760,110 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 				for (msg_heritance_t::const_iterator _kt = _child.begin();
 						_kt != _child.end() && _is_correct; ++_kt)
 				{
+					NSHARE::CText const& _child_protocol=_kt->FProtcol;
+
+					///A child protocol name hasn''t to be empty
+					if(_protocol.empty())
+					{
+						LOG(DFATAL)<<"Empty protocol detected";
+						return false;
+					}
+
 					bool const _is_insert = _unique.insert(*_kt).second;
+					///A non-unique heir isn't valid.
 					if (!_is_insert)
 					{
 						_is_correct = false;
-						LOG(DFATAL)<<"Invalid child for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+						LOG(DFATAL)<<"A non-unique child for "<<_jt->first<<" child protocol="<<_child_protocol<<" header "<<_kt->FHeader;
 					}
+
+					///The child of message has to be in genealogical tree too.
 					msg_inheritances_t::const_iterator _p = aWhat.find(
-							_kt->first);
-					if ((_p == aWhat.end()
-							|| _p->second.find(_kt->second) == _p->second.end())//no child in genealogy tree
-							)
+							_kt->FProtcol);
+					if (_p == aWhat.end())
 					{
 						_is_correct = false;
-						LOG(DFATAL)<<"No child in tree for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+						LOG(DFATAL)<<"No child in tree for "<<_jt->first<<" child protocol="<<_child_protocol<<" header "<<_kt->FHeader;
+					}else
+					{
+						msg_inheritance_tree_t::const_iterator _pf= _p->second.find(_kt->FHeader);
+						if( _pf== _p->second.end())
+						{
+							_is_correct = false;
+							LOG(DFATAL)<<"No child in tree for "<<_jt->first<<" child protocol="<<_child_protocol<<" header "<<_kt->FHeader;
+						}else if(aParentCheck)
+						{
+							///The message has to be in the parent list of child
+							msg_family_t const& _family=_pf->second;
+							msg_heritance_t::value_type const _value(_protocol,_jt->first,0);
+							if (!_family.MIsParent(_value))
+							{
+								_is_correct = false;
+								LOG(DFATAL)<<"No parent for "<<_jt->first<<" child protocol="<<_kt->FProtcol<<" header "<<_kt->FHeader;
+							}
+						}
 					}
 				}
-
+			}
+			else if(aParentCheck && _parent.empty())
+			{
+				_is_correct = false;
+				LOG(DFATAL)<<" empty child and parent";
+			}
+			else if(aParentCheck)
+			{
 				for (msg_heritance_t::const_iterator _kt = _parent.begin();
 						_kt != _parent.end() && _is_correct; ++_kt)
 				{
-					bool const _is_insert = _unique.insert(*_kt).second;
-					if (!_is_insert)
+					///The parent of message has to be in genealogical tree too.
+					msg_inheritances_t::const_iterator _p = aWhat.find(
+							_kt->FProtcol);
+					if (_p == aWhat.end())
 					{
 						_is_correct = false;
-						LOG(ERROR)<<"Invalid parent for "<<_jt->first<<" parent protocol="<<_kt->first<<" header "<<_kt->second;
+						LOG(DFATAL) << "No parent in tree for " << _jt->first
+												<< " parent protocol="
+												<< _kt->FProtcol << " header "
+												<< _kt->FHeader;
 					}
-
-					msg_inheritances_t::const_iterator _p = aWhat.find(_kt->first);
-					if ((_p == aWhat.end()
-									|| _p->second.find(_kt->second) == _p->second.end())//no parent in genealogy tree
-							&& _kt != --_parent.end()	//its not last
-					)
+					else
 					{
-						_is_correct = false;
-						LOG(ERROR)<<"No parent in tree for "<<_jt->first<<" child protocol="<<_kt->first<<" header "<<_kt->second;
+						msg_inheritance_tree_t::const_iterator _pf =
+								_p->second.find(_kt->FHeader);
+						if (_pf == _p->second.end())
+						{
+							_is_correct = false;
+							LOG(DFATAL) << "No parent in tree for "
+													<< _jt->first
+													<< " parent protocol="
+													<< _kt->FProtcol << " header "
+													<< _kt->FHeader;
+						}
+						else
+						{
+							///The message has to be in the child list of parent
+							msg_family_t const& _family = _pf->second;
+							msg_heritance_t const& _child_of_parent = _family.MGetChildren();
+							msg_heritance_t::value_type const _value(_it->first,
+									_jt->first,0);
+
+							if (std::find(_child_of_parent.begin(),
+									_child_of_parent.end(), _value)
+									== _child_of_parent.end())
+							{
+								_is_correct = false;
+								LOG(DFATAL) << "No child for "
+														<< _jt->first
+														<< " parent protocol="
+														<< _kt->FProtcol
+														<< " header "
+														<< _kt->FHeader;
+							}
+						}
 					}
 				}
 			}
-			else
-			{
-				_is_correct = false;
-				LOG(ERROR)<<" empty child and parent";
-			}
+
 			if (!_is_correct)
 			{
 				++_amount_of;
@@ -2505,4 +2874,194 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 		}
 	}
 }
+
+const NSHARE::CText CRequiredDG::inheritance_msg_header_t::NAME = "header_info";
+
+/** \brief The default constructor creates
+ * creates invalid type header
+ *
+ */
+CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t():
+		FDepth(demand_dg_t::HANDLER_DEFAULT_PRIORITY)
+{
+	;
+}
+/** \brief Two objects can be passed to constructor
+ *
+ * @param aProctocol A protocol Name
+ * @param aHeader A header "number"
+ * @param aDepth A hierarchical depth of message
+ */
+CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t(NSHARE::CText const& aProctocol,
+		required_header_t const& aHeader,unsigned aDepth)://
+		FProtcol(aProctocol),//
+		FHeader(aHeader),//
+		FDepth(aDepth)
+{
+	;
+}
+CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t(NSHARE::CConfig const& aConf) :
+		FHeader(aConf.MChild(required_header_t::NAME)),//
+		FDepth(demand_dg_t::HANDLER_DEFAULT_PRIORITY)
+{
+	VLOG(2) << "Create msg_header_t from " << aConf;
+	aConf.MGetIfSet(user_data_info_t::KEY_PACKET_PROTOCOL,FProtcol);
+	aConf.MGetIfSet(demand_dg_t::KEY_HANDLER_PRIORITY,FDepth);
+}
+NSHARE::CConfig CRequiredDG::inheritance_msg_header_t::MSerialize() const
+{
+	NSHARE::CConfig _conf(NAME);
+	_conf.MAdd(FHeader.MSerialize());
+	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL,FProtcol);
+	_conf.MAdd(demand_dg_t::KEY_HANDLER_PRIORITY,FDepth);
+	return _conf;
+}
+bool CRequiredDG::inheritance_msg_header_t::MIsValid()const
+{
+	return !FProtcol.empty()&& FHeader.MIsValid();
+}
+/** Fast less compare for set(map)
+ * containers
+ *
+ * @param aRht Compare with
+ * @return true if less
+ */
+bool CRequiredDG::inheritance_msg_header_t::operator<(
+		const NUDT::CRequiredDG::inheritance_msg_header_t& aRht) const
+{
+
+	NSHARE::CStringFastLessCompare _str_compare;
+	CReqHeaderFastLessCompare _compare;
+	const inheritance_msg_header_t& aLft(*this);
+	bool const _result = _str_compare(aLft.FProtcol, aRht.FProtcol)
+		|| (!_str_compare(aRht.FProtcol, aLft.FProtcol)
+			&& _compare(aLft.FHeader, aRht.FHeader));
+	return _result;
+}
+/** The objects are equal if their members are equal.
+ *
+ * @param aRht Compare with
+ * @return true if equal
+ */
+bool CRequiredDG::inheritance_msg_header_t::operator==(
+		const NUDT::CRequiredDG::inheritance_msg_header_t& aRht) const
+{
+	return FProtcol == aRht.FProtcol && FHeader == aRht.FHeader;;
+}
+
+/** Returns parent list in hierarchical order
+ *
+ * @return parent list
+ */
+CRequiredDG::msg_heritance_t const& CRequiredDG::msg_family_t::MGetParrents() const
+{
+	return FBaseMessages;
+}
+/*!@brief Check is parent exist
+ *
+ * @param aParrent - a parent
+ * @return true if exist
+ */
+bool CRequiredDG::msg_family_t::MIsParent(inheritance_msg_header_t const& aParrent) const
+{
+	return std::find(FBaseMessages.begin(), FBaseMessages.end(),aParrent)!=FBaseMessages.end();
+}
+/** Puts object to array of
+ * headers
+ *
+ * @param aParrent A new value
+ * @return true
+ */
+bool CRequiredDG::msg_family_t::MPutParrent(inheritance_msg_header_t const& aParrent)
+{
+//	msg_heritance_t::iterator _it = std::lower_bound(FParents.begin(),
+//			FParents.end(), aParrent);
+#ifndef NDEBUG
+	msg_heritance_t::iterator _it = std::find(FBaseMessages.begin(),
+			FBaseMessages.end(), aParrent);
+	LOG_IF(DFATAL,_it != FBaseMessages.end())<< "The parent is exist" << aParrent;
+#endif
+
+	FBaseMessages.push_back(aParrent);
+	return true;
+}
+/*! @brief Returns all children (submessage) of the message
+ *
+ * @return list of children
+ */
+CRequiredDG::msg_heritance_t const& CRequiredDG::msg_family_t::MGetChildren() const
+{
+	return FSubMessages;
+}
+/*!@brief Puts children to child array
+ *
+ * @param aChilds Children
+ *
+ * @return Number of putted child
+ */
+unsigned CRequiredDG::msg_family_t::MPutChildrenOfChild(msg_heritance_t const& aChilds)
+{
+	unsigned _count=0;
+	msg_heritance_t::const_iterator _it=aChilds.begin(),_it_end(aChilds.end());
+	for(;_it!=_it_end;++_it)
+	{
+		msg_heritance_t::value_type _copy(*_it);
+		_copy.FDepth+=1;// as child is 0 depth
+		if(MPutChild(_copy))
+			++_count;
+	}
+	return _count;
+}
+/** @brief Less compare of #FBaseMessages
+ *
+ * @param aLht A left object
+ * @param aRht A right object
+ * @return true if less
+ */
+bool CRequiredDG::msg_family_t::sMBaseMSGCompare(inheritance_msg_header_t const& aLht, inheritance_msg_header_t const& aRht)
+{
+	return aLht.FDepth<aRht.FDepth;
+}
+/*! @brief  Puts object to sorted vector of
+ * headers
+ *
+ * @param aChild a Child for insert
+ * @param aDepth hierarchical depth of child
+ * @return false if exist
+ */
+bool CRequiredDG::msg_family_t::MPutChild(inheritance_msg_header_t const& aChild)
+{
+	msg_heritance_t::iterator _it = std::lower_bound(FSubMessages.begin(),
+			FSubMessages.end(), aChild,sMBaseMSGCompare);
+
+	/**
+	 * As the message can be passed early therefore
+	 * before inserting to the parent list
+	 * it's looked for
+	 */
+	bool _is_exist = false;
+	if (_it != FSubMessages.end())
+	{
+		_is_exist = *_it == aChild;
+		VLOG(INFO) << "The child is exist" << aChild;
+	}
+	DCHECK(!_is_exist);
+
+	if (!_is_exist)
+	{
+		FSubMessages.insert(_it, aChild);
+	};
+	return _is_exist;
+}
+/*! @brief Check is child exist
+ *
+ * @param aValue A child
+ * @return true if exist
+ */
+bool CRequiredDG::msg_family_t::MIsChild(inheritance_msg_header_t const& aValue)const
+{
+	return std::find(FSubMessages.begin(),FSubMessages.end(),aValue)!=FSubMessages.end();
+}
+
+
 } /* namespace NUDT */

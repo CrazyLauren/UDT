@@ -61,12 +61,12 @@ public:
 		/*!\brief To constructor may be passed to be copied
 		 * a parent message type, a child message type, a child message protocol
 		 *
-		 *\param aParent A parent message type
+		 *\param aBase A parent message type
 		 *\param aChild A child message type
 		 *\param aChildProtocol A child message protocol if empty
 		 *						the parent and child protocols are equals.
 		 */
-		explicit msg_inheritance_t(required_header_t const& aParent,
+		explicit msg_inheritance_t(required_header_t const& aBase,
 				required_header_t const& aChild,
 				NSHARE::CText const& aChildProtocol = NSHARE::CText()
 						);
@@ -206,15 +206,29 @@ public:
 	{
 		return sizeof(aHeader.FMessageHeader);
 	}
-
-	/*!\brief Return inheritance messages info
+	/*!@brief Returns the size of data message
 	 *
-	 *\return The message parent list
+	 * The function has to be overload if
+	 * overloaded #MGetInheritances method
+	 * @param aHeader Type of message
+	 * @return The size of the message data or -1 if
+	 * it's not defined
+	 */
+	virtual int MDataSize (const required_header_t& aHeader) const
+	{
+		return -1;
+	}
+
+	/*!@brief Return inheritance messages info
+	 *
+	 * @return The message parent list
+	 * @note The #MDataSize has to be overloaded too
 	 */
 	virtual inheritances_info_t MGetInheritances() const
 	{
 		return inheritances_info_t();
 	}
+
 protected:
 
 	/*! \brief The default constructor

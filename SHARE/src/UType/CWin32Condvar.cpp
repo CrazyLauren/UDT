@@ -14,6 +14,7 @@
 #if defined(_WIN32)
 #include <deftype>
 #include <windows.h>
+#include <winerror.h>
 
 #define InterlockedGet(x) InterlockedExchangeAdd(x,0)
 namespace NSHARE

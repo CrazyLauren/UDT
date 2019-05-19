@@ -14,6 +14,7 @@
 
 #ifdef _WIN32
 #include <deftype>
+#include <winerror.h>
 //#include <ev.h>
 #include <fdir.h>
 #include <Pipe.h>

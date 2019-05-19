@@ -174,7 +174,7 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	return 0;
 }
 
-extern void send_messages()
+extern void doing_tests()
 {
 	NSHARE::sleep(1);
 

@@ -19,7 +19,7 @@ int main(int argc, char const*argv[])
 		return _rval;
 
 	///2) sending something by send_messages()
-	send_messages();
+	doing_tests();
 
 	CCustomer::sMGetInstance().MClose();
 		
@@ -48,19 +48,19 @@ int initialize_library(int argc, char const*argv[])
 	 */
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
 			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(E_MSG_GRANDCHILD, sizeof(grand_child_msg_t))),
+					required_header_t(msg_head_t(eMsgType::E_MSG_SUB_SUB_MESSAGE, sizeof(sub_sub_msg_t))),
 					g_inditification_name), //
 					msg_grand_child_handler);
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
 			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(E_MSG_CHILD, sizeof(child_msg_t))),
-					g_inditification_name), //
-					msg_child_handler);
-	CCustomer::sMGetInstance().MIWantReceivingMSG( //
-			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(E_MSG_PARENT, sizeof(parent_msg_t))),
+					required_header_t(msg_head_t(eMsgType::E_MSG_PARENT, sizeof(parent_msg_t))),
 					g_inditification_name), //
 					msg_parent_handler);
+	CCustomer::sMGetInstance().MIWantReceivingMSG( //
+			requirement_msg_info_t(PROTOCOL_NAME,
+					required_header_t(msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))),
+					g_inditification_name), //
+					msg_child_handler);
 
 	/*! 3) Subscribe to the event #NUDT::CCustomer::EVENT_CONNECTED to when the UDT library
 	 *  will be connected to the kernel, the function
