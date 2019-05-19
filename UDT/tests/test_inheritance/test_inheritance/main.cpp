@@ -48,19 +48,20 @@ int initialize_library(int argc, char const*argv[])
 	 */
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
 			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(eMsgType::E_MSG_SUB_SUB_MESSAGE, sizeof(sub_sub_msg_t))),
+					sub_msg_t::header(),//
 					g_inditification_name), //
-					msg_grand_child_handler);
+					msg_child_handler);//
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
-			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(eMsgType::E_MSG_PARENT, sizeof(parent_msg_t))),
+			requirement_msg_info_t(PROTOCOL_NAME,//
+					sub_sub_msg_t::header(),//
 					g_inditification_name), //
-					msg_parent_handler);
+					msg_grand_child_handler);//
 	CCustomer::sMGetInstance().MIWantReceivingMSG( //
-			requirement_msg_info_t(PROTOCOL_NAME,
-					required_header_t(msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))),
+			requirement_msg_info_t(PROTOCOL_NAME,//
+					parent_msg_t::header(),//
 					g_inditification_name), //
-					msg_child_handler);
+					msg_parent_handler);//
+
 
 	/*! 3) Subscribe to the event #NUDT::CCustomer::EVENT_CONNECTED to when the UDT library
 	 *  will be connected to the kernel, the function

@@ -25,7 +25,7 @@
 // For corectly logging initiliaze, Function
 // init_trace should be call at the first set-out of
 // the "int main(nt argc, char *argv[])" function.
-//
+//a
 // Make a bunch of macros for logging.  The way to log things is to stream
 // things to LOG(<a particular severity level>).  E.g.,
 //
@@ -282,7 +282,7 @@ extern SHARE_EXPORT void init_share_trace(char const *aFileName);
  * По умолчанию, опция называется "verbose". Название опции
  *  можно изменить, но до вызова метода init_trace
  */
-extern SHARE_EXPORT char default_logging_option_name[];
+extern SHARE_EXPORT char const default_logging_option_name[];
 
 /**\brief короткое название опции используемой при настройки логирования
  * через коммандную строку
@@ -290,8 +290,15 @@ extern SHARE_EXPORT char default_logging_option_name[];
  * По умолчанию, опция называется "v". Название опции
  * можно изменить, но до вызова метода init_trace
  */
-extern SHARE_EXPORT char default_logging_short_option_name;
+extern SHARE_EXPORT char const default_logging_short_option_name;
 
+
+/** Parse argument of command line for logging
+ *
+ * @param argc
+ * @param argv
+ */
+extern SHARE_EXPORT void parse_command_line_of_logging(int argc, const char* argv[]);
 
 /**\name implementation function
  *\internal
@@ -300,6 +307,7 @@ extern SHARE_EXPORT char default_logging_short_option_name;
 extern SHARE_EXPORT void init_trace_cplus(int argc, char *argv[]);
 extern SHARE_EXPORT void init_trace_glog(int argc, char *argv[]);
 extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
+extern SHARE_EXPORT void log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();
 //\}
 

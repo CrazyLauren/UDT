@@ -29,7 +29,6 @@ INCLUDE(FindPackageHandleStandardArgs)
 INCLUDE(SHAREMacros)
 
 SET(SHARE_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-SET(SHARE_INCLUDES ${SHARE_ROOT_PATH}/include CACHE PATH  "Include path for the header files of SHARE" )
 SET(SHARE_DEPENDENCIES_PATH ${SHARE_ROOT_PATH}/dependencies CACHE PATH  "share dependencies")
 list( APPEND CMAKE_FIND_ROOT_PATH ${SHARE_DEPENDENCIES_PATH} )
 
@@ -46,27 +45,11 @@ option(ENABLE_VTUNE "Enable Vtune profiling instrumentation" OFF)
 mark_as_advanced (
 	SHARE_LIBRARIES
 	PLATFORM_LIBS
-    SHARE_INCLUDES
 	SHARE_DEPENDENCIES_PATH
 	CMAKE_DEBUG_POSTFIX
 	CMAKE_RELEASE_POSTFIX
     )
 	
-INCLUDE(FindVTune)
-if(ENABLE_VTUNE)
-    find_package(Vtune)
-	
-    if(VTUNE_FOUND)
-        add_definitions(-DENABLE_VTUNE)
-		
-        include_directories(${VTune_INCLUDE_DIRS})
-		
-        list(APPEND PLATFORM_LIBS ${VTune_LIBRARIES})
-				
-    endif(VTUNE_FOUND)
-	
-endif(ENABLE_VTUNE)
-
 ################################################################################
 # Create bin and lib directories if required
 ################################################################################
@@ -88,9 +71,12 @@ LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${OUTPUT_LIBDIR} )
 SET(CMAKE_SHARE_INCLUDE_PATH ${CMAKE_SHARE_INCLUDE_PATH} CACHE STRING "You may add additional search paths here. Use ; to separate multiple paths.")
 SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} CACHE STRING "You may add additional search paths here. Use ; to separate multiple paths.")
 
+include (CMakeModules/configure_share.cmake)
+
 ################################################################################
 #Look for packages
 ################################################################################
+
 if(NOT DEFINED BOOST_ROOT)
 	SET(BOOST_ROOT ${SHARE_DEPENDENCIES_PATH} CACHE PATH "boost path")
 endif(NOT DEFINED BOOST_ROOT)
@@ -115,19 +101,6 @@ if(NOT TCLAP_FOUND)
 	return()
 endif()
 
-configure_logging(${SHARE_DEPENDENCIES_PATH})
-
-OPTION(SHARE_DEX_SOCKET "Adding socket for dex" OFF)
-mark_as_advanced(SHARE_DEX_SOCKET)
-
-IF (NOT SHARE_DEX_SOCKET)
-	add_definitions(-DNODEX)
-	#todo
-ENDIF ()
-
-
-
-
 # Windows specific config
 IF (WIN32)
    if (MSVC)
@@ -150,6 +123,7 @@ ENDIF()
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(examples)
+add_subdirectory(tests)
 
 
 FIND_PACKAGE(Doxygen)

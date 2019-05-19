@@ -119,5 +119,6 @@ inline bool CShareLogArgsParser::processArg(int *i,
 	else
 		return false;
 }
+
 } /* namespace NSHARE */
 #endif /* CSHARELOGARGSPARSER_H_ */

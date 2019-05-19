@@ -41,28 +41,26 @@ file (GLOB UTYPE_EXT_HEADER_FILES ../include/UType/ext/*.h ../include/UType/ext/
 set (SHARE_HEADERS ${CORE_HEADER_FILES} ${SOCKET_HEADER_FILES} ${UTYPE_HEADER_FILES} ${UTYPE_EXT_HEADER_FILES} ${LOGGING_HEADER_FILES})
 
 
-IF (NOT SHARE_DEX_SOCKET)
+IF (NOT HAVE_DEX)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 ENDIF ()
 	
-IF(MINGW)	
-	check_include_files(dlfcn.h  MINGW_DLFCN)
-	
-	IF(NOT MINGW_DLFCN)
-		set_source_files_properties(dymamic_modules.cpp PROPERTIES COMPILE_DEFINITIONS MINGW_WITHOUT_DLFCN)
-	ENDIF()
-ENDIF()
-	
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include 
-					${Boost_INCLUDE_DIRS} 
-					${RAPIDJSON_INCLUDES} 
-					${TCLAP_INCLUDES} 
-					${LOGGING_INCLUDES})	
+
 share_add_library(${TARGET_NAME} FALSE TARGET_SRC SHARE_HEADERS TRUE)
 
+target_include_directories( ${TARGET_NAME} PUBLIC
+					${CMAKE_CURRENT_SOURCE_DIR}/../include 
+					${Boost_INCLUDE_DIRS} 
+					${LOGGING_INCLUDES}
+					${CMAKE_BINARY_DIR}/include)
+
+target_include_directories( ${TARGET_NAME} PRIVATE
+					${RAPIDJSON_INCLUDES} 
+					${TCLAP_INCLUDES} )
+					
 IF (WIN32)
 	set (PLATFORM_LIBS ${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid  CACHE STRING     "PLATFORM_LIBS" FORCE)
-	find_library(LIBADVAPI32 advapi32)
+	
 	IF(LIBADVAPI32)
 		target_compile_definitions(${TARGET_NAME} PRIVATE HAVE_LIBADVAPI32=1)
 		IF(NOT MINGW)	
@@ -83,8 +81,25 @@ list(REMOVE_DUPLICATES _PLATFORM_LIBS)
 SET(PLATFORM_LIBS ${_PLATFORM_LIBS}  CACHE STRING "Platform library" FORCE)
 
 share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${LOGGING_LIBRARIES} )
-#target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${LOGGING_LIBRARIES} )
+if(HAVE_LIBEXECINFO)
+    share_target_link_libraries(${TARGET_NAME} execinfo)
+endif()	
+if(HAVE_DBGHELP)
+    share_target_link_libraries(${TARGET_NAME} dbghelp)
+endif()	
 
+if(ENABLE_VTUNE)    
+	
+    if(VTUNE_FOUND)
+        target_add_definitions(${TARGET_NAME} PRIVATE -DENABLE_VTUNE)
+		
+		target_include_directories( ${TARGET_NAME} PRIVATE
+					${VTune_INCLUDE_DIRS})
+					
+		share_target_link_libraries(${TARGET_NAME} ${VTune_LIBRARIES} )		
+    endif(VTUNE_FOUND)
+	
+endif(ENABLE_VTUNE)
 
 
 install(FILES ${CORE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
@@ -96,4 +111,7 @@ install(FILES ${UTYPE_EXT_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/incl
 SET(SHARE_LIBRARIES  ${TARGET_NAME} CACHE STRING "SHARE_LIBRARIES" FORCE)#fixme must be filepath
 
 set(SHARE_FOUND TRUE CACHE BOOL  "SHARE_FOUND" FORCE)	
+
+SET(SHARE_INCLUDES ${SHARE_ROOT_PATH}/include ${CMAKE_BINARY_DIR}/include CACHE PATH  "Include path for the header files of SHARE" )
+mark_as_advanced(SHARE_INCLUDES)
 		

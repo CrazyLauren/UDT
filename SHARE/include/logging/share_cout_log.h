@@ -112,7 +112,7 @@ struct __logging_t<FATAL>
 		{
 			using namespace std;
 			cerr<<endl;
-			terminate();
+			log_terminate_handler();
 		}
 	}
 	template<typename T>

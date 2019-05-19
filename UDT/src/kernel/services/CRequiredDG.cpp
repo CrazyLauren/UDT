@@ -442,15 +442,26 @@ CRequiredDG::msg_heritance_t const& CRequiredDG::sMGetMessageChildren(
 	DCHECK(!aMsgProtocol.empty());
 
 	msg_inheritances_t::const_iterator _it=aFrom.find(aMsgProtocol);
-	if(_it!=aFrom.end())
+	if (_it != aFrom.end())
 	{
-		msg_inheritance_tree_t const& _tree=_it->second;
+		msg_inheritance_tree_t const& _tree = _it->second;
 
-		msg_inheritance_tree_t::const_iterator _tit=_tree.find(aMsgType);
-		if(_tit!=_tree.end())
+		msg_inheritance_tree_t::const_iterator _tit = _tree.find(aMsgType);
+		if (_tit != _tree.end())
 		{
-			msg_family_t const& _fam=_tit->second;
-			return _fam.MGetChildren();
+			if (aMsgType.FVersion.MIsExist()
+					&& !_tit->first.FVersion.MIsCompatibleWith(aMsgType.FVersion))
+			{
+				LOG(DFATAL) << "Cannot inherit the message as different  version" << aMsgType
+										<< "; Hierarchical version: "
+										<< _tit->first.FVersion;
+			}
+			else
+			{
+
+				msg_family_t const& _fam = _tit->second;
+				return _fam.MGetChildren();
+			}
 		}
 	}
 
@@ -1132,7 +1143,7 @@ void CRequiredDG::MAddUUIDToRoute(msg_handlers_t const& aM,
 error_type CRequiredDG::MAddReceiverOfMsg(msg_handlers_t const& aHandlers,
 		NSHARE::uuid_t const & _uuid, user_data_info_t& aInfo) const
 {
-	if (MCheckVersion(aHandlers.FVersion, _uuid, aInfo))
+	if (MCheckVersion(aHandlers.MGetVersion(), _uuid, aInfo))
 	{
 		MAddUUIDToRoute(aHandlers, _uuid, aInfo);
 	}
@@ -1277,7 +1288,7 @@ void CRequiredDG::MRemoveDataWithUserErrors(IExtParser::result_t * const aMsg,
 
 		if (_msg.FErrorCode != E_NO_ERROR)
 		{
-			LOG(ERROR)<<"Some user error code="<<_msg.FErrorCode<<" ";
+			LOG(ERROR)<<"Some user error code="<<(unsigned)_msg.FErrorCode<<" ";
 			if(aFail)
 			{
 				fail_send_t _sent(_handling_data.FDataId);
@@ -2359,7 +2370,7 @@ void CRequiredDG::MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const
 				{
 					NSHARE::CConfig _to(user_data_info_t::KEY_PACKET_TO);
 					_to.MAdd(_kt->first.MSerialize());
-					_to.MAdd(_kt->second.FVersion.MSerialize());
+					_to.MAdd(_kt->second.MGetVersion().MSerialize());
 					_to.MAdd("is_registrator", _kt->second.MIsRegistrarExist());
 					_to.MAdd("is_real", _kt->second.FNumberOfRealHandlers != 0);
 

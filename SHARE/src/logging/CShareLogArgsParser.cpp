@@ -573,5 +573,29 @@ std::string CShareLogArgsParser::longID(const std::string& val) const
 {
 	return Arg::longID("option[,option]...");
 }
-
 } /* namespace NSHARE */
+
+char const default_logging_option_name[] = "verbose";
+char const default_logging_short_option_name = 'v';
+
+void parse_command_line_of_logging(int argc, const char* argv[])
+{
+	using namespace TCLAP;
+	using namespace NSHARE;
+	using namespace std;
+	try
+	{
+		const char _log_flag[] =
+		{ default_logging_short_option_name, '\0' };
+		CmdLine cmd("fix", ' ', "0.9", false, true);
+		cmd.setExceptionHandling(false);
+		CShareLogArgsParser _logging(_log_flag, default_logging_option_name,
+				false);
+		cmd.add(_logging);
+		cmd.parse(argc, argv);
+		init_share_trace(cmd.getProgramName().c_str());
+	} catch (ArgException& e) // catch any exceptions
+	{
+		cerr << "error: " << e.error() << " for arg " << e.argId() << endl;
+	}
+}

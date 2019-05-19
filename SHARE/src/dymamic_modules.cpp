@@ -17,7 +17,7 @@
 namespace NSHARE
 {
 
-#ifdef MINGW_WITHOUT_DLFCN
+#ifndef HAVE_DLFCN
 #undef __MINGW32__
 #undef __MINGW64__
 #endif
@@ -46,8 +46,16 @@ typedef void* DYN_LIB_HANDLE;
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
 const NSHARE::CText CDynamicModule::LIBRARY_EXTENSION(".dll");
+#	ifdef __CYGWIN__
+const NSHARE::CText CDynamicModule::LIBRARY_PREFIX("cyg");
+#	elif defined(__MINGW32__)
+const NSHARE::CText CDynamicModule::LIBRARY_PREFIX("lib");
+#	else
+const NSHARE::CText CDynamicModule::LIBRARY_PREFIX("");
+#	endif
 #else
 const NSHARE::CText CDynamicModule::LIBRARY_EXTENSION(".so");
+const NSHARE::CText CDynamicModule::LIBRARY_PREFIX("lib");
 #endif
 
 
@@ -89,27 +97,49 @@ static bool has_extension(const CText& name)
 
 	return name.compare(name.length() - ext_len, ext_len, CDynamicModule::LIBRARY_EXTENSION) == 0;
 }
+static bool has_prefix(const CText& name)
+{
+	const size_t ext_len = CDynamicModule::LIBRARY_PREFIX.length();
+
+	if(ext_len==0)
+		return false;
+
+	if (ext_len>name.length())
+		return false;
+	return name.compare(0, ext_len, CDynamicModule::LIBRARY_PREFIX) == 0;
+}
 bool NSHARE::CDynamicModule::sMIsNameOfLibrary(const CText& name)
 {
 	return has_extension(name);
 }
-//----------------------------------------------------------------------------//
-static void append_extension(CText& name)
+CText NSHARE::CDynamicModule::sMGetLibraryName(CText name)
+{
+	if (has_extension(name))
+	{
+		name.erase(name.length() - CDynamicModule::LIBRARY_EXTENSION.length(),
+				CDynamicModule::LIBRARY_EXTENSION.length());
+	}
+	if (has_prefix(name))
+	{
+		name.erase(0, CDynamicModule::LIBRARY_PREFIX.length());
+	}
+	return name;
+}
+CText NSHARE::CDynamicModule::sMGetLibraryNameInSystem(CText name)
 {
 	name.append(CDynamicModule::LIBRARY_EXTENSION);
+	if(!CDynamicModule::LIBRARY_PREFIX.empty())
+	{
+		name.insert(0,CDynamicModule::LIBRARY_PREFIX);
+	}
+	return name;
 }
 //----------------------------------------------------------------------------//
-static void add_suffixes(CText& name)
-{
-	append_extension(name);
-}
-
-//----------------------------------------------------------------------------//
-static NSHARE::CDynamicModule::string_t get_module_env_var()
+/*static NSHARE::CDynamicModule::string_t get_module_env_var()
 {
 	//TODO
 	return NSHARE::CDynamicModule::string_t();
-}
+}*/
 
 //----------------------------------------------------------------------------//
 static NSHARE::CDynamicModule::string_t get_failure_str()
@@ -164,26 +194,9 @@ CDynamicModule::CDynamicModule(const string_t& name,const string_t& aPath) :
 	CHECK (!name.empty());
 
 	if (!has_extension(FPimpl->FModuleName))
-	add_suffixes(FPimpl->FModuleName);
+		FPimpl->FModuleName=sMGetLibraryNameInSystem(FPimpl->FModuleName);
 
 	FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
-
-#if defined(__linux__)  || defined(__MINGW32__) || defined(__FreeBSD__) || defined(__NetBSD__)||defined(__QNX__)
-	if (!FPimpl->FHandle && FPimpl->FModuleName.compare(0, 3, "lib") != 0)
-	{
-		FPimpl->FModuleName.insert(0, "lib");
-		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
-	}
-#endif
-
-#if defined(__CYGWIN__) 
-	// see if adding a leading 'cyg' helps us to open the library
-	if (!FPimpl->FHandle && FPimpl->FModuleName.compare(0, 3, "cyg") != 0)
-	{
-		FPimpl->FModuleName.insert(0, "cyg");
-		FPimpl->FHandle = dyn_lib_load(FPimpl->FModuleName,aPath);
-	}
-#endif
 
 	// check for library load failure
 	if (!FPimpl->FHandle)

@@ -458,9 +458,7 @@ void _log4cplus_impl::abort_impl(const char* aWhat)
 {
 	using namespace std;
 	cerr<<aWhat<<endl;
-	log4cplus::Logger::getRoot().shutdown();
-	//throw std::runtime_error(aWhat);
-	terminate();
+	log_terminate_handler();
 }
 log4cplus::Logger& _log4cplus_impl::get_logging_to_file(eLavel alevel)
 {
@@ -536,8 +534,6 @@ log4cplus::Logger& _log4cplus_impl::logger(eLavel TLevelType, eLoggerType aType)
 extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName)
 {
 	_log4cplus_impl::init_log4cplus(aProgrammName);
-	std::set_terminate(get_log_terminate_handler());
-	install_failure_signal_handler();
 }
 #else
 #include <macro_attributes.h>

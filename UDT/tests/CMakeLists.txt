@@ -1,5 +1,3 @@
-PROJECT(${PROJECT_NAME}_examples C CXX)	
-
 if(${CMAKE_VERSION} VERSION_LESS "3.1.3")
 	message(WARNING "\nCannot build tests as cmake version less than 3.1.3")
 else()

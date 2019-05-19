@@ -162,25 +162,21 @@ bool CProtocolParser::MSwapEndian(NUDT::required_header_t* aHeader) const
 	aHeader->FNumber=NSHARE::swap_endain(aHeader->FNumber);
 	return true;
 }
+
 CProtocolParser::inheritances_info_t CProtocolParser::MGetInheritances() const
 {
-	inheritances_info_t _info;
-
-	_info.push_back(
-			msg_inheritance_t( //
-					required_header_t(
-												msg_head_t(eMsgType::E_MSG_SUB_SUB_MESSAGE,
-														sizeof(sub_sub_msg_t))), //
-					required_header_t(
-							msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))) //
-
-					));
-
-	_info.push_back(
-			msg_inheritance_t( //
-			required_header_t(msg_head_t(eMsgType::E_MSG_SUB_MESSAGE, sizeof(sub_msg_t))), //
-			required_header_t(msg_head_t(eMsgType::E_MSG_PARENT, sizeof(parent_msg_t))) //
-					));
+	inheritances_info_t const _info
+	{ //
+	msg_inheritance_t( //
+			sub_sub_msg_t::header(), //
+			sub_msg_t::header() //
+			),//
+	msg_inheritance_t(
+	//
+			sub_msg_t::header(), //
+			parent_msg_t::header() //
+			) //
+	};
 
 	return _info;
 }

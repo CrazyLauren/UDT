@@ -241,10 +241,11 @@ private:
 		handler_id_array_t const& MGetHandlers()const;
 		bool MIsOnlyRealHandlers() const;
 		bool MIsOnlyNonRealHandlers() const;
+		NSHARE::version_t const& MGetVersion() const;
 
-		NSHARE::version_t FVersion;
 		int FNumberOfRealHandlers;
 	private:
+		NSHARE::version_t FVersion;///< Requirement version of the message
 		handler_id_array_t FHandlers;/*!< A list of the unique id of
 									the callback function which has to process the message
 									It's sorted by priority which is kept in #FHandlerPriority*/
@@ -557,6 +558,14 @@ inline bool CRequiredDG::msg_handlers_t::MIsOnlyRealHandlers() const
 inline bool CRequiredDG::msg_handlers_t::MIsOnlyNonRealHandlers() const
 {
 	return FNumberOfRealHandlers==0;
+}
+/** @brief Returns requirement version of the message
+ *
+ * @return Requirement version
+ */
+inline NSHARE::version_t const& CRequiredDG::msg_handlers_t::MGetVersion() const
+{
+	return FVersion;
 }
 
 inline demand_dgs_for_t const& CRequiredDG::MGetDemands() const

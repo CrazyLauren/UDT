@@ -85,7 +85,7 @@ bool CResources::MPutModule(NSHARE::CText const& aName,NSHARE::CConfig const& aC
  */
 void CResources::MLookingForLibraries()
 {
-	VLOG(0) << "Looking for libraries in "<<FExtLibraryPath<< this;
+	VLOG(0) << "Looking for libraries in "<<FExtLibraryPath;
 
 	const std::string _path=FExtLibraryPath.empty()?"./":FExtLibraryPath.c_str();
 
@@ -93,14 +93,17 @@ void CResources::MLookingForLibraries()
 	std::list<std::string> _to;
 	NSHARE::get_name_of_files_of_dir(&_to, _path);
 
+	VLOG(4) << "Amount of files "<<_to.size();
 	///2) Put all library
 	for (std::list<std::string>::iterator _it = _to.begin(); _it != _to.end();
 			++_it)
 	{
+		VLOG(2)<<"Try to load: "<<*_it;
 		if(NSHARE::CDynamicModule::sMIsNameOfLibrary(*_it))
 		{
-			NSHARE::CText const _name(_it->substr(0,_it->length()-NSHARE::CDynamicModule::LIBRARY_EXTENSION.length()));
-			MPutModule(_name);
+			VLOG(0)<<"Found library:"<<*_it;
+
+			MPutModule(NSHARE::CDynamicModule::sMGetLibraryName(*_it));
 		}
 	}
 }
@@ -258,7 +261,7 @@ bool CResources::module_t::MLoad(NSHARE::CText const& aPath) const
 						LOG(WARNING) << "The dynamic module '" << FName << "' is static ";
 						FRegister = get_factory_registry();
 #else
-				LOG(DFATAL) << "Library " << _name
+				LOG(DFATAL) << "Library " << NSHARE::CDynamicModule::sMGetLibraryNameInSystem(_name)
 										<< " is not exist. Ignoring ...";
 				FError = E_NO_FUNCTION;
 				return false;

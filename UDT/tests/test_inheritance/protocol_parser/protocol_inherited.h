@@ -32,6 +32,8 @@ template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>[]="
 template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>[]="sub_msg";
 template<> constexpr const char g_enum_name<eMsgType::E_MSG_PARENT>[]="parent";
 
+
+
 /*!\brief A user error number which is passed
  * to field NUDT::fail_sent_args_t::FUserCode
  *
@@ -125,11 +127,18 @@ struct parent_data_t:sub_msg_data_t
  */
 struct sub_sub_msg_t
 {
-	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_SUB_MESSAGE;};///< Number of message
 
 	msg_head_t FHead;///< Header (type #E_MSG_GRANDCHILD)
 	//4 bytes
 	sub_sub_msg_data_t FData;///< Data
+
+	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_SUB_MESSAGE;};///< Number of message
+	static auto header()
+	{
+		static auto const _val = NUDT::required_header_t(
+				msg_head_t(type(), sizeof(sub_sub_msg_t)),NSHARE::version_t(1,0));
+		return _val;
+	}
 };
 
 /*!\brief The child message
@@ -137,11 +146,17 @@ struct sub_sub_msg_t
  */
 struct sub_msg_t
 {
-	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_MESSAGE;};
-
 	msg_head_t FHead;///< Header (type #E_MSG_CHILD)
 	//4 bytes
 	sub_msg_data_t FData;///< Data
+
+	static constexpr eMsgType type(){return eMsgType::E_MSG_SUB_MESSAGE;};
+	static auto header()
+	{
+		static auto const _val = NUDT::required_header_t(
+				msg_head_t(type(), sizeof(sub_msg_t)),NSHARE::version_t(1,0));
+		return _val;
+	}
 };
 
 /*!\brief The parent message
@@ -149,11 +164,18 @@ struct sub_msg_t
  */
 struct parent_msg_t
 {
-	static constexpr eMsgType type(){return eMsgType::E_MSG_PARENT;};///< Number of message
-
 	msg_head_t FHead;///< Header (type #E_MSG_PARENT)
 	//4 bytes
 	parent_data_t FData;///< Data
+
+	static constexpr eMsgType type(){return eMsgType::E_MSG_PARENT;};///< Number of message
+
+	static auto header()
+	{
+		static auto const _val = NUDT::required_header_t(
+				msg_head_t(type(), sizeof(parent_msg_t)),NSHARE::version_t(1,0));
+		return _val;
+	}
 };
 
 }

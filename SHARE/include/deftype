@@ -22,6 +22,10 @@
 #	define PROFILE_RESUME()
 #endif
 
+#ifndef MSVC
+#	include <win_processor_detection.h>
+#endif
+
 /**\brief define standard headers
  *\{
  */

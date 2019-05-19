@@ -136,13 +136,23 @@ extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 		std::cout << "Now " << _it.FWho << " receive " << _it.FWhat.FRequired
 				<< " from me by " << _it.FWhat.FProtocolName << " As its Request "
 				<< _it.FWhat.FFrom << std::endl;
-		if((_it.FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)!=0)
-			std::cout << "Inheritances"<<std::endl;
-/*		else if(!(_it.FWhat.FRequired==required_header_t(msg_head_t(eMsgType::E_MSG_GRANDCHILD,sizeof(grand_child_msg_t)))))
+
+		if (_it.FWhat.FRequired
+				== sub_sub_msg_t::header())
 		{
-			std::cerr << "Isn't inheritance:" << _it.FWhat.FRequired<< std::endl;
-			throw std::invalid_argument("Invalid argument");
-		}*/
+			CHECK((_it.FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)==0);
+		}
+
+		if(_it.FWhat.FRequired==parent_msg_t::header())
+		{
+			CHECK((_it.FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)!=0);
+		}
+		if (_it.FWhat.FRequired
+				== sub_msg_t::header())
+		{
+			CHECK((_it.FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)==0);
+		}
+
 
 		std::cout <<"-------------------------------------"<< std::endl;
 	}
@@ -196,9 +206,7 @@ bool send_message()
 
 	new (_buf.ptr()) data_t;
 
-	required_header_t const _header(msg_head_t(TData::type(), sizeof(TData)));
-
-	return CCustomer::sMGetInstance().MSend(_header, PROTOCOL_NAME, _buf)>0;
+	return CCustomer::sMGetInstance().MSend(TData::header(), PROTOCOL_NAME, _buf)>0;
 }
 
 void test_number_1()
@@ -254,12 +262,10 @@ extern void doing_tests()
 {
 	NSHARE::sleep(1);
 
-	getchar();
-
-/*	test_number_1();
+	test_number_1();
 	std::cout<<std::endl<<std::endl;
 	test_number_2();
-	std::cout<<std::endl<<std::endl;*/
+	std::cout<<std::endl<<std::endl;
 	test_number_3();
 	std::cout<<"Press any key... "<<std::endl;
 	getchar();

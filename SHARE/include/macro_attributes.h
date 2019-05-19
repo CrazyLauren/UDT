@@ -12,6 +12,8 @@
 #ifndef MACRO_ATTRIBUTES_DADDFFDFD2342_H_
 #define MACRO_ATTRIBUTES_DADDFFDFD2342_H_
 
+#include <config/config.h>
+
 #if  defined( _WIN32 )  && defined(_MSC_VER)&& !defined(SHARE_STATIC)
 #   ifdef SHARE_EXPORTS
 #       define SHARE_EXPORT __declspec(dllexport)

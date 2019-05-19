@@ -25,6 +25,7 @@ class SHARE_EXPORT CDynamicModule
 public:
 	static const NSHARE::CText NAME;///< A serializing key
 	static const NSHARE::CText LIBRARY_EXTENSION;///<Extension of library (for Win32: .dll, for unix: .so)
+	static const NSHARE::CText LIBRARY_PREFIX;///<Prefix of library (for Win32: "", for unix: "lib")
 	typedef CText string_t;///< Type of used string
 
 	/*!\brief Creates object and loads the library
@@ -77,6 +78,20 @@ public:
 	 *
 	 */
 	static bool sMIsNameOfLibrary(const CText& name);
+
+	/*! Returns library name without prefix and postfix
+	 *
+	 * @param name a full library name
+	 * @return library name
+	 */
+	static CText sMGetLibraryName(CText name);
+
+	/*! Returns full library with prefix and postfix
+	 *
+	 * @param name a  library name
+	 * @return a full library name
+	 */
+	static CText sMGetLibraryNameInSystem(CText name);
 private:
     struct CImpl;
     CImpl* FPimpl;

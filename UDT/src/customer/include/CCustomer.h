@@ -108,11 +108,17 @@ struct requirement_msg_info_t
  * - it's message of child type;\n
  * - the message header and data sent separately (see send API)
  * (usually do that).
- *
- *\note
- *  FBuffer.end() can be not equal FEnd
- *  FBuffer.begin() can be not equal FBegin
+ * @note
+ *  FBuffer.end() can be not equal #FEnd @n
+ *  FBuffer.begin() can be not equal #FBegin @n
  *  Non-POD type.
+ *  @bug The value (#FEnd-#FBegin) can be @b greater
+ *  than the message data size if the message has been inherited.
+ *  Usually (Otherwise it doesn't work)
+ *  inherited only a @b fixed @b size @b message therefore
+ *  if you want to check the message data size using
+ *  operator @a">=" instead of @a"==" for
+ *  compatibility.
  */
 struct received_data_t
 {
@@ -121,7 +127,7 @@ struct received_data_t
 	const uint8_t* FHeaderBegin;/*!< pointer to the message header
 								or NULL if message header is not exist*/
 	const uint8_t* FBegin;///<pointer to the message begin
-	const uint8_t* FEnd;///<pointer to end of message (equal std::vector::end())
+	const uint8_t* FEnd;/*!< Pointer to end of the message (equal std::vector::end())*/
 
 	/*!\brief The default constructor creates fields using their
 	 *  respective default constructors (For it's NULL).

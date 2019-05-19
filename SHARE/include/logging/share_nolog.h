@@ -109,7 +109,7 @@ namespace NSHARE
 			{
 				using namespace std;
 				cerr << endl;
-				terminate();
+				log_terminate_handler();
 			}
 			template<typename T>
 			inline __logging_nc_t<FATAL>& operator<<(const T& aStream)
