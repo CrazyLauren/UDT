@@ -16,7 +16,7 @@ target_include_directories( ${TARGET_NAME} PRIVATE
 					${SHARE_INCLUDES} 
 					${Boost_INCLUDE_DIRS} 
 					${LOGGING_INCLUDES}	
-					${CMAKE_CURRENT_BINARY_DIR}/include/config			
+					${CMAKE_BINARY_DIR}/include/
 					)
 					
 if(HAVE_LIBEXECINFO)

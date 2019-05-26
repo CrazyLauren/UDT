@@ -12,6 +12,9 @@
 #ifndef TRACE_MACROS_H_
 #define TRACE_MACROS_H_
 
+/*! Undefining macros if need
+ * @{
+ */
 #	undef VLOG
 #	undef LOG
 #	undef LOG_IF
@@ -29,7 +32,12 @@
 #	undef CHECK_NOTNULL
 #	undef CHECK
 #	undef DCHECK
+//@}
 
+/*! if no debug mode when DFATAL is equal error
+ * the other case FATAL
+ *
+ */
 #ifdef NDEBUG
 #	define DFATAL ERROR
 #else
@@ -40,19 +48,38 @@
 #	define COMPILE_ASSERT(aVal , aVal2)
 #endif
 
+/*! Assertation
+ *
+ */
 #define LOG_ASSERT(condition)  \
 		LOG_IF(FATAL, !(condition)) << "Assert failed: "<< #condition
 
+/*! Logging every n repeats
+ *
+ * @param severity A level of logging
+ * @param n how often need to log info
+ */
 #define LOG_EVERY_N(severity, n)                                        \
 		COMPILE_ASSERT( severity <= FATAL ,        INVALID_LOG_LEVEL);\
 		static unsigned long long LOG_OCCURRENCES##severity##n = 0; \
 		  if (!n || ++LOG_OCCURRENCES##severity##n%n==0)  LOG(severity)
 
+/*! Logging every n repeats when condition
+ * is true
+ *
+ * @param severity A level of logging
+ * @param n how often need to log info
+ * @param condition condition
+ */
 #define LOG_IF_EVERY_N(severity, condition, n)\
 		COMPILE_ASSERT( severity <= FATAL ,        INVALID_LOG_LEVEL);\
 		static unsigned long long LOG_OCCURRENCES##n = 0; \
 		  if ((!n || ++LOG_OCCURRENCES##n%n==0)&& (condition))  LOG(severity)
 
+/*! Logging if set up verbose level greater
+ * or equal  verboselevel
+ *
+ */
 #define VLOG(verboselevel) LOG_IF(INFO, VLOG_IS_ON(verboselevel))
 
 #define VLOG_IF(verboselevel, condition) \

@@ -129,7 +129,7 @@ extern SHARE_EXPORT bool is_v_log_on(const char* aFile, int verboselevel)
 	return get_file_level(aFile) >= verboselevel;
 }
 
-		extern SHARE_EXPORT bool init_gnu_vlog(int** aLocal, int* aDefault,
+extern SHARE_EXPORT bool init_gnu_vlog(int** aLocal, int* aDefault,
 		const char* aFile, int verboselevel)
 {
 	if (!is_inited())

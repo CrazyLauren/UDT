@@ -27,10 +27,10 @@
 #endif
 
 
-#ifdef _MSC_VER
+/*#ifdef _MSC_VER
 #	pragma optimize("", off)
-#endif /* _MSC_VER */
-
+#endif 
+*/
 
 namespace NSHARE
 {
@@ -47,10 +47,10 @@ CStackTrace::CStackTrace()
 	memset(FBuffer,0,sizeof(*FBuffer));
 }
 
-#ifdef _MSC_VER
+/*#ifdef _MSC_VER
 #	pragma optimize("", on)
-#endif /* _MSC_VER */
-
+#endif 
+*/
 
 CText  CStackTrace::MDemangle(CText const& aName) const
 {

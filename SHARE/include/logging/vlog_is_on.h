@@ -19,13 +19,31 @@
 #define FLAGS_minloglevel NSHARE::logging_impl::flags_minloglevel()
 
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined (STATEMENTS_WITH_INITIALIZER)
+
+#ifndef HAVE_STATEMENTS_WITH_INITIALIZER
+#	define ENABLE_EXTENTION  __extension__
+#else
+#	define ENABLE_EXTENTION
+#endif
+
+/*! A magic fast macro for definition of logging
+ * level in this code area
+ *
+ * if compiler is supported
+ * initialization variable in the if code block
+ * than the macro have O(1) logical complexity
+ * in the other case O(n) where
+ * n - the number of unique level definition (vmodule parameter of
+ * command line)
+ *
+ */
 #define VLOG_IS_ON(verboselevel)                                \
-  __extension__  \
+  ENABLE_EXTENTION  \
   ({ static int* _vlocal = &NSHARE::logging_impl::vlog_uniitialized();/*vlog_uniitialized() is very big num*/\
      (*_vlocal >= verboselevel) &&                          \
      (\
-/*if _vlocal was inited, comparison "*_vlocal >= verboselevel" is valid.*/\
+/*as _vlocal is "static" when if _vlocal was inited, comparison "*_vlocal >= verboselevel" is valid.*/\
 (_vlocal != &NSHARE::logging_impl::vlog_uniitialized() ) ||   \
 /*try to init _vlocal, and comparing "_vlocal" and  "verboselevel" again */\
 (NSHARE::logging_impl::is_inited() &&NSHARE::logging_impl::init_gnu_vlog(&_vlocal, &FLAGS_v, __FILE__, verboselevel)) \
@@ -47,16 +65,92 @@ struct module_info_t
 	std::string FPattern;
 	mutable int FLevel;
 };
-extern SHARE_EXPORT  bool is_file_level(int**, const char* aFile);
+/*! @brief Returns unique login level of file if exist
+ *
+ * See "module" parameter of command string
+ *
+ * @param aLevel [out] Pointer to file level value
+ * @param aFile A name of checked file
+ * @return true if level exist
+ */
+extern SHARE_EXPORT  bool is_file_level(int** aLevel, const char* aFile);
+
+/*! @brief Returns login level of file
+ *
+ * @param aFile A name of file
+ * @return level of logging
+ */
 extern SHARE_EXPORT  int get_file_level(const char* aFile);
+
+/*! @brief Check if "verbose level" logging macros
+ * has to work in the file
+ *
+ * @param aFile A name of file
+ * @param aLevel A maximal verbose level
+ * @return true if has to work
+ *
+ */
 extern SHARE_EXPORT  bool is_v_log_on(const char* aFile, int verboselevel);
+
+/*! @brief Returns reference to very big number
+ * which is used for checking initialization status
+ * of logging level in macro #VLOG_IS_ON macro
+ *
+ *
+ * @return reference for big number
+ *
+ */
 extern SHARE_EXPORT   int& vlog_uniitialized();
+
+/*! @brief Initialize "verbose logging"
+ * for compiler which supported initialize
+ * variable in if block;
+ *
+ */
 extern SHARE_EXPORT   bool init_gnu_vlog(int**, int*, const char* aFile, int verboselevel);
+
+/*! @brief Returns reference for variable
+ * in which saved logging
+ * Initialization status
+ *
+ */
 extern SHARE_EXPORT  bool& is_inited();
+
+/*! @brief Parses command line
+ * and return list of files
+ * which has unique information
+ * about it logging level
+ *
+ * @return information about unique logging level
+ * of files
+ */
 extern SHARE_EXPORT  std::list<module_info_t> init_modules();
+
+/*! @brief Returns information about unique logging level
+ * of files
+ *
+ * @return information about unique logging level
+ * of files
+ */
 extern SHARE_EXPORT  std::list<module_info_t>& get_modules();
+
+/*! @brief Returns reference for vmodule flags
+ * which is passed to command line
+ *
+ */
 extern SHARE_EXPORT std::string& flags_vmodule();
+
+
+/*! @brief Returns reference for vlevel flags
+ * which is passed to command line
+ *
+ */
 extern SHARE_EXPORT int& flags_v();
+
+/*! @brief Returns reference for level flags
+ * which is passed to command line
+ *
+ */
 extern SHARE_EXPORT  int& flags_minloglevel();
 }
 }

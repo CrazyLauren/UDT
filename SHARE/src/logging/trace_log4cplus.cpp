@@ -16,52 +16,17 @@
 #	undef NOLOG
 #endif
 #include <deftype>
-//#include <unistd.h>
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <logging/share_trace_log4cplus.h>
 #include <logging/CTraceToSocket.h>
 #define DEFINE_FLAG( type, name, defvalue) \
-		/*static std::string flags_##name##_to_str();*/\
 		 type& _log4cplus_impl::flags_##name() \
-		{static type _v=/*log_state::sMPut(flags_##name##_to_str)||true? defvalue:*/defvalue;\
+		{static type _v=defvalue;\
 		return _v;}
-/*		static std::string flags_##name##_to_str()\
-		{\
-			std::stringstream _buf;\
-			_buf<<#name<<" = "<<_log4cplus_impl::flags_##name();\
-			return _buf.str();\
-		}
-
-class log_state
-{
-
-public:
-	typedef std::string (*func_t)();
-	typedef std::vector<func_t> funcs_t;
-	static bool sMPut(func_t aF)
-	{
-		sMArray().push_back(aF);
-		return true;
-	}
-	static std::ostream& sMPrint(std::ostream& aStream)
-	{
-		for (funcs_t::const_iterator _it = sMArray().begin();
-				_it != sMArray().end(); ++_it)
-		{
-			if (_it != sMArray().begin())
-				aStream << std::endl;
-			aStream << (*_it)();
-		}
-
-		return aStream;
-	}
-private:
-
-	static std::vector<std::string (*)()>& sMArray()
-	{
-		static std::vector<std::string (*)()> _v;
-		return _v;
-	}
-};*/
 DEFINE_FLAG(bool, logtostderr, false)
 ;
 
@@ -140,8 +105,7 @@ void _log4cplus_impl::create_sym_link(std::string const& filename,
 	linkpath += linkname;
 	unlink(linkpath.c_str()); // delete old one if it exists
 
-#if defined(HAVE_UNISTD_H)
-	// We must have unistd.h.
+#if defined(HAVE_UNISTD_H) && defined(HAVE_SYMLINK)
 	std::string linkdest= _slash!=filename.npos ? filename.substr(_slash+1,filename.npos) : filename;
 	if (symlink(linkdest.c_str(), linkpath.c_str()) != 0)
 	{
@@ -536,7 +500,6 @@ extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName)
 	_log4cplus_impl::init_log4cplus(aProgrammName);
 }
 #else
-#include <macro_attributes.h>
 extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName)
 {
 }

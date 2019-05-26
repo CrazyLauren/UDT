@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef SHARE_CONFIG_H
+#define SHARE_CONFIG_H
 
 #cmakedefine HAVE_LIBEXECINFO
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
@@ -11,7 +11,11 @@
 #cmakedefine HAVE_DLFCN
 #cmakedefine HAVE_SIGNAL_H
 #cmakedefine HAVE_SIGACTION
+#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_SYMLINK
+#cmakedefine HAVE_STATEMENTS_WITH_INITIALIZER
 
 
 
-#endif /* CONFIG_H */
+
+#endif /* SHARE_CONFIG_H */
