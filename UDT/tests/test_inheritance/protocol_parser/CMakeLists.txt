@@ -18,6 +18,6 @@ target_link_libraries(	${TARGET_NAME}
 						${PLATFORM_LIBS} 						
 						${UDT_SHARE_LIBRARIES})
 
-install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/plugins
                           ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
                           RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/plugins)

@@ -2,6 +2,7 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckLibraryExists)
 include(CheckIncludeFileCXX)
+include(CheckCXXSourceCompiles)
 
 configure_logging(${SHARE_DEPENDENCIES_PATH})
 

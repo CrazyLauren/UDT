@@ -500,6 +500,7 @@ extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName)
 	_log4cplus_impl::init_log4cplus(aProgrammName);
 }
 #else
+#include <deftype>
 extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName)
 {
 }

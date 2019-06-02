@@ -42,7 +42,6 @@ struct CThread::CImpl
 
 	inline void MStart(const param_t& aParam);
 	inline void MConvert(attr_t* aTo, const param_t&);
-	void MWaitForCreated();
 private:
 	void MSetCpuNum(attr_t*& aTo);
 	void MSetSchedulePolicy(attr_t*& aTo);
@@ -54,11 +53,6 @@ private:
 	CCondvar FCondvar;
 	friend class CThread;
 };
-void CThread::CImpl::MWaitForCreated()
-{
-	NSHARE::CRAII<CMutex> _block(FMutex);
-	FCondvar.MTimedwait(&FMutex);
-}
 void CThread::CImpl::MSetCpuNum(attr_t*& aTo)
 {
 	if (sMNumberOfProcessor() == 1)
@@ -213,10 +207,15 @@ inline void CThread::CImpl::MStart(const param_t& aP)
 	attr_t _attr;
 	MConvert(&_attr, aP);
 
+	NSHARE::CRAII<CMutex> _block(FMutex);
 	int _rval = pthread_create(&FID, &_attr, CThread::CImpl::sMThreadFunc,
 			this);
-	(void) _rval;
 	LOG_IF(DFATAL,_rval) << strerror(_rval);
+
+	VLOG(2)<<"Wait for thread created";
+
+	if(_rval==0)
+		FCondvar.MTimedwait(&FMutex);
 }
 
 void* CThread::CImpl::sMThreadFunc(void* aData)
@@ -321,7 +320,6 @@ bool CThread::MCreate(const param_t* aParam)
 
 	FImpl->MStart(FParam);
 
-	FImpl->MWaitForCreated();
 	return MIsRunning();
 }
 

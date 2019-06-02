@@ -16,19 +16,19 @@
 /** This file uses preprocessor #defines to set  
 * procesor family in gcc style.
 */
-#if defined(_M_ARM)
+#if defined(_M_ARM) && !defined(__aarch64__)
 #	define __aarch64__
 #endif
 
-#if defined(_M_IA64)
+#if defined(_M_IA64) && !defined(__ia64__)
 #	define __ia64__
 #endif
 
-#if defined(_M_IX86)
+#if defined(_M_IX86) && !defined(__i386__)
 #	define __i386__
 #endif
 
-#if defined(_M_X64) || defined(_M_AMD64)
+#if (defined(_M_X64) || defined(_M_AMD64)) && !defined(__x86_64__)
 #	define __x86_64__
 #endif
 

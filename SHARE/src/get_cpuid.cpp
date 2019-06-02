@@ -19,15 +19,27 @@ namespace NSHARE
 {
 int get_cpuid(int regs[], int h)
 {
-    __asm__(
-                         "cpuid;\n\t"
-#	if defined __x86_64__
-            : "=a"(regs[0]), "=b"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
-             : "0"(h));
+#	if defined(__pic__) && !defined(__x86_64__)
+	asm volatile (	"mov %%ebx, %%edi\n"//save %ebx
+	            "cpuid\n"
+				"xchg %%edi, %%ebx\n"//restore the old %ebx
+	            : "=a"(regs[0]), "=D"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
+	            : "a"(h), "c"(0));
 #	else
+    /*asm volatile (	"mov %%rbx, %%rdi\n"//save %rbx
+            "cpuid;\n"
+			"xchg %%rdi, %%rbx\n"//restore the old %rbx
+            : "=a"(regs[0]), "=D"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
+            : "a"(h), "c"(0));*/
+
+	  asm volatile(
+             "cpuid;\n"
             : "=a"(regs[0]), "=b"(regs[1]), "=c"(regs[2]), "=d"(regs[3])
-            : "0"(h));
+            : "a"(h), "c"(0));
+
 #	endif
+
+			 
     return 0;
 }
 }

@@ -14,9 +14,8 @@
 #include <deftype>
 
 
-#if defined(GLOG) ||defined(CPLUS_LOG)
+#if defined(HAVE_SIGNAL_H) && (defined(GLOG) ||defined(CPLUS_LOG))
 
-#ifdef HAVE_SIGNAL_H
 #	include <signal.h>
 namespace NSHARE
 {
@@ -56,7 +55,7 @@ void signal_handler(int aSignal)
 	}
 
 	LOG(ERROR)<<"The signal "<<aSignal<<" is been processing."
-	<<"A signal code: "<<signal_process<<" Errno: "
+	<<"A signal code: "<<_thread_id<<" Errno: "
 	<<errno<<". "<<strerror(errno)<<".";
 
 	std::cerr<<"Signal:"<<aSignal<<std::endl;
@@ -107,7 +106,7 @@ extern "C" void install_failure_signal_handler()
 	}
 }
 }
-#		endif//#elif defined(CPLUS_LOG)
+#		endif//#ifdef GLOG
 #	else
 namespace NSHARE
 {
@@ -117,6 +116,6 @@ extern "C" void install_failure_signal_handler()
 }
 }
 #endif
-#endif//#ifndef NOLOG
+
 
 
