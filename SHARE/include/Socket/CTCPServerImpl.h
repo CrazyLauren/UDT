@@ -73,7 +73,7 @@ struct CTCPServer::CImpl:public CTcpImplBase, IIntrusived
 	CSocket FHostSock;
 	CSelectSocket FSelectSock;
 
-	struct sockaddr_in FHostAddr;
+	net_address FHostAddr;
 	NSHARE::CSafeData<clients_fd_t> FClients;
 
 	volatile bool FIsWorking;

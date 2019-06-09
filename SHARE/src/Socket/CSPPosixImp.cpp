@@ -516,7 +516,7 @@ CSerialPort::sent_state_t CSerialPort::CImpl::MSend(void const* const aData, std
 			LOG(ERROR)
 					<< "Timeout during sending " << aByte << " to "
 							<< MGetPort();
-			return sent_state_t(E_ERROR,_full_size-aByte);
+			return sent_state_t(sent_state_t::E_ERROR,_full_size-aByte);
 		}
 		aByte -= _count = write(FFd,
 				reinterpret_cast<char const* const >(aData) + _count, aByte);
@@ -525,12 +525,12 @@ CSerialPort::sent_state_t CSerialPort::CImpl::MSend(void const* const aData, std
 			VLOG(1)
 					<< "Send error " << aByte << " to " << MGetPort() << "."
 							<< strerror(errno);
-			return sent_state_t(E_ERROR,_full_size-aByte);
+			return sent_state_t(sent_state_t::E_ERROR,_full_size-aByte);
 						}
 		MWaitBytes(_count);
 		MFlush(FLUSH_OUT);
 	}
-	return sent_state_t(E_SENDED,_full_size-aByte);
+	return sent_state_t(sent_state_t::E_SENDED,_full_size-aByte);
 }
 void CSerialPort::CImpl::MFlush(eFlush const& aVal)
 {

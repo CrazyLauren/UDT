@@ -349,7 +349,7 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 
 		switch (_state)
 		{
-		case NSHARE::CSharedMemoryClient::E_SENDED:
+		case sent_state_t::E_SENDED:
 		{
 			VLOG(4) << "Sent counter "<<_mask.FData.FCounter;
 			++_mask.FData.FCounter;
@@ -367,14 +367,14 @@ bool CSmMainChannel::MSendImpl(NSHARE::intrusive_ptr<sm_io_t>& _io,
 
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_ERROR:
+		case sent_state_t::E_ERROR:
 		{
 			VLOG(1) << " Send error Counter=" << _mask.FData.FCounter;
 			++_io->FSendError;
 			return false;
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_AGAIN:
+		case sent_state_t::E_AGAIN:
 		{
 			if (!_is_overload)
 			{
@@ -450,7 +450,7 @@ bool CSmMainChannel::MSend(data_t const& aVal, descriptor_t aFor)
 	data_t _data(aVal);
 	if (_addr.MIs())
 		return FSmServer.MSend(_addr.MGetConst(), _data, false, 0)
-				== CSharedMemoryServer::E_SENDED; //todo EAGAIN
+				== sent_state_t::E_SENDED; //todo EAGAIN
 	return false;
 }
 bool CSmMainChannel::MSendToService(const data_t& aVal, descriptor_t aFor)

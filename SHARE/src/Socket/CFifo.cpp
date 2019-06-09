@@ -110,8 +110,8 @@ ssize_t CFifo::MReceiveData(data_t* aContainer, const float aTime)
 ISocket::sent_state_t CFifo::MSend(const void*  aData, std::size_t aSize)
 {
 	CHECK_NOTNULL(aData);
-	sent_state_t _is= FImpl->MSend(aData, aSize);
-	FDiagnostic.MSend(_is.FBytes);
+	sent_state_t const _is= FImpl->MSend(aData, aSize);
+	FDiagnostic.MSend(_is);
 	return _is;
 }
 const CSocket& CFifo::MGetSocket(void) const

@@ -41,6 +41,8 @@ enum  eMsgType
 	E_USER_DATA_FAIL_SEND = 24,//
 	E_CUSTOMERS_DEMANDS = 25,//
 	//E_FAIL_SEND = 26,//
+
+	E_AUTO_SEARCH_INFO = 40,//
 };
 //enum eErrorCode
 //{
@@ -500,7 +502,18 @@ COMPILE_ASSERT(sizeof(customers_demands_t) == (sizeof(head_t)+4), InvalidSizeOfC
 SHARED_PACKED(struct accept_info_t: dg_json_base_t<accept_info_t, 0, 1, E_ACCEPTED>
 {
 });
+
+//
+//---------------------
+//
+
+SHARED_PACKED(struct auto_search_dg_t: dg_json_base_t<auto_search_dg_t, 0, 1, E_AUTO_SEARCH_INFO>
+{
+});
+COMPILE_ASSERT(sizeof(auto_search_dg_t) == (sizeof(head_t)+4), InvalidSizeOfAUTO_SEARCH_INFO);
+
 }//namespace NUDT
+
 
 
 
@@ -567,6 +580,10 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::eMsgType const& aV
 
 		case E_CUSTOMERS_DEMANDS:
 			aStream << "Demands.";
+			break;
+
+		case E_AUTO_SEARCH_INFO:
+			aStream << "Auto search info.";
 			break;
 
 	};
@@ -648,7 +665,13 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::customers_demands_
 	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
 	return aStream;
 }
-
+inline std::ostream& operator<<(std::ostream & aStream, NUDT::auto_search_dg_t const& aVal)
+{
+	using namespace NUDT;
+	aStream << static_cast<head_t const&>(aVal);
+	aStream <<NSHARE::CText (aVal.MStrBegin())  << std::endl;
+	return aStream;
+}
 
 
 inline std::ostream& operator<<(std::ostream & aStream,

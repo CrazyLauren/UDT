@@ -63,7 +63,6 @@ private:
 	bool MIsCustomer(const kernel_link& _what, _data_info_t& _d_info) const;
 
 
-	void MDebugPrintState() const;
 	void MSendNet(const descriptors_t& _sent_to);
 	void MChangeInform(const kernel_infos_diff_t& _removed_info);
 	bool MRemoveKernel(const kernel_link& _what, const descriptor_t& aFrom,

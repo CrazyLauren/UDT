@@ -17,6 +17,7 @@ UDT SHARE 0.6
   - Fix maybe incorrect casting from unsigned to uint32_t value in SharedMemorySocket
   - Change sequence of searching library in CDynamicModule
   - Fix bug creating posix thread 
+  - Update CUdp socket, add full broadcast supported (multicast is not supported)
   
 >>>>>>> 3a2b21d... see changelog
 UDT SHARE 0.5

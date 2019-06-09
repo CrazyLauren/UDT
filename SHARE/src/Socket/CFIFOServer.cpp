@@ -139,12 +139,12 @@ CFIFOServer::sent_state_t CFIFOServer::MSend(void const* aData,
 	for (; _it != MGetSetting().FClients.end(); ++_it)
 	//if at least one call  return false - result ==false;
 	_val*=FImpl->MSend(aData, aSize,*_it).MIs()?1:0;
-	return sent_state_t(_val>0?E_SENDED:E_ERROR,aSize);
+	return sent_state_t(_val>0? sent_state_t::E_SENDED: sent_state_t::E_ERROR,aSize);
 }
 CFIFOServer::sent_state_t CFIFOServer::MSend(const data_t& aBuf, CFifo::path_t const& aTo)
 {
 	if (aBuf.empty())
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	return MSend(aBuf.ptr_const(), aBuf.size(), aTo);
 }
 CFIFOServer::sent_state_t CFIFOServer::MSend(void const*  aData, std::size_t aSize,
@@ -152,8 +152,8 @@ CFIFOServer::sent_state_t CFIFOServer::MSend(void const*  aData, std::size_t aSi
 {
 	VLOG(1) << "MSend data:" << aTo << ":" << this;
 	CHECK_NOTNULL(aData);
-	sent_state_t _is= FImpl->MSend(aData, aSize, aTo);
-	FDiagnostic.MSend(_is.FBytes);
+	sent_state_t const _is= FImpl->MSend(aData, aSize, aTo);
+	FDiagnostic.MSend(_is);
 	return _is;
 }
 
@@ -161,8 +161,8 @@ CFIFOServer::sent_state_t CFIFOServer::MSend(void const*  aData, std::size_t aSi
 		NSHARE::CConfig const& aTo)
 {
 	CHECK_NOTNULL(aData);
-	sent_state_t _is= FImpl->MSend(aData, aSize, aTo);
-	FDiagnostic.MSend(_is.FBytes);
+	sent_state_t const _is= FImpl->MSend(aData, aSize, aTo);
+	FDiagnostic.MSend(_is);
 	return _is;
 }
 const CSocket& CFIFOServer::MGetSocket() const

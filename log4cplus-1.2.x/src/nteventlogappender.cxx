@@ -30,6 +30,7 @@
 #include <log4cplus/thread/syncprims-pub-impl.h>
 #include <sstream>
 #include <cstdlib>
+#include <winerror.h>
 
 
 namespace log4cplus

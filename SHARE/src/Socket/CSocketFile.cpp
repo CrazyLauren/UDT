@@ -163,20 +163,22 @@ CSocketFile::sent_state_t CSocketFile::MSend(const void*  aData, std::size_t aSi
 	if (!MIsOpen())
 	{
 		LOG(ERROR)<< "***ERROR***:The file "<<FParam.FPath<<" is not exist.";
-		return sent_state_t(E_NOT_OPENED,0);
+		return sent_state_t(sent_state_t::E_NOT_OPENED,0);
 	}
 	if (FParam.FDirect == eIn)
 	{
 		LOG(ERROR)<< "The type of socket is in. Cannot write data.";
 		std::cerr << "The type of socket is in. Cannot write data" << std::endl;
-		return sent_state_t(E_INVALID_VALUE,0);
+		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 	}
 	VLOG(1) << "Send " << aData << " size=" << aSize << " to " << FParam.FPath;
 	FStream.write((const char* const ) aData, aSize);
 	FStream.flush();
 	const bool _is= FStream.is_open();
-	if(_is)FDiagnostic.MSend(aSize);
-	return _is?sent_state_t(E_SENDED,aSize):sent_state_t(E_ERROR,0);
+
+	sent_state_t const _rval(_is?sent_state_t::E_SENDED:sent_state_t::E_ERROR,aSize);
+	FDiagnostic.MSend(_rval);
+	return _rval;
 }
 CSocketFile::param_t const & CSocketFile::MGetSetting() const
 {

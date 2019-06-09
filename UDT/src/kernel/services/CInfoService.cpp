@@ -40,11 +40,8 @@ bool CInfoService::MStart()
 {
 	{
 		w_access _access = FData.MGetWAccess();
-		kernel_infos_t _my_info(get_my_id());
 
 		k_diff_t _fix;
-		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
-				_access->FNet);
 
 		CDescriptors::d_list_t _cons;
 		CDescriptors::sMGetInstance().MGetAll(_cons);
@@ -179,19 +176,6 @@ bool CInfoService::MAddOrUpdateClientTo(kernel_infos_t& aTo,
 		VLOG(2) << "Updating time";
 	}
 	return false;
-}
-
-void CInfoService::MDebugPrintState() const
-{
-	/*
-	return;
-	r_access _access = FData.MGetRAccess();
-	const _data_info_t& _d_info = _access.MGet();
-	std::cerr << "+-+-+-+-+-+-+-+-+-+-" << std::endl;
-	std::cerr << _d_info.FNet.FNumberOfChange << std::endl;
-	_d_info.FNet.MSerialize().MToJSON(std::cerr, true);
-	std::cerr << "+-+-+-+-+-+-+-+-+-+-" << std::endl;
-	*/
 }
 
 void CInfoService::MPopConsumerFromMyInfo(const descriptor_t& aFrom,
@@ -428,7 +412,6 @@ void CInfoService::MSynchronize(const descriptors_t& _sent_to,
 {
 	MSendNet(_sent_to);
 	MChangeInform(_diff);
-	MDebugPrintState();
 }
 
 void CInfoService::MGetCustomerDiff(kernel_infos_t const& _it_old,
@@ -633,6 +616,14 @@ void CInfoService::MHandle(const kernel_infos_array_t& aNet,
 
 inline void CInfoService::MInit()
 {
+	{
+		w_access _access = FData.MGetWAccess();
+		kernel_infos_t _my_info(get_my_id());
+
+		k_diff_t _fix;
+		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
+				_access->FNet);
+	}
 	{
 		callback_data_t _cb(sMHandleOpenId, this);
 		CDataObject::value_t _val(open_descriptor::NAME, _cb);

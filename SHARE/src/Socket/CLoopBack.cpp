@@ -73,7 +73,7 @@ CLoopBack::sent_state_t CLoopBack::MSend(data_t const& aVal)
 	if (!FServer.MIsOpen())
 	{
 		LOG(ERROR)<< "The Loop back socket is invalid";
-		return sent_state_t(E_NOT_OPENED,0);
+		return sent_state_t(sent_state_t::E_NOT_OPENED,0);
 	}
 	CRAII<CMutex> _block(FMutex);
 	bool const _empty=FData.empty();
@@ -83,12 +83,11 @@ CLoopBack::sent_state_t CLoopBack::MSend(data_t const& aVal)
 	VLOG(5)<<"Buffers length= "<<FData.size();
 	int _some=0;
 
-	if(FServer.MSend(&_some,sizeof(_some)).MIs())
-	{
-		FDiagnostic.MSend(aVal.size());
-		return sent_state_t(E_SENDED,aVal.size());
-	}
-	return sent_state_t(E_ERROR,0);
+	sent_state_t const _state=FServer.MSend(&_some,sizeof(_some));
+
+	sent_state_t const _rval(_state.MIs()?sent_state_t::E_SENDED:sent_state_t::E_ERROR,aVal.size());
+	FDiagnostic.MSend(_rval);
+	return _rval;
 }
 CLoopBack::sent_state_t CLoopBack::MSend(const void* pData, size_t nSize)
 {
@@ -124,14 +123,14 @@ bool CLoopBack::MOpen()
 	CHECK(FClient.MGetPort());
 	net_address _addr(INADDR_LOOPBACK, FClient.MGetPort());
 	VLOG(2) << "Client port:" << FClient.MGetPort();
-	FServer.MOpen(CUDP::param_t(0, _addr));
+	FServer.MOpen(CUDP::settings_t(0, _addr));
 
 	CHECK(FClient.MIsOpen());
 	CHECK(FServer.MIsOpen());
 
 	CHECK(FServer.MGetPort());
 	VLOG(2) << "Server port:" << FServer.MGetPort();
-	_addr.port = FServer.MGetPort();
+	_addr.FPort = FServer.MGetPort();
 	FClient.MSetSendAddress(_addr);
 
 	size_t _rval = 0;

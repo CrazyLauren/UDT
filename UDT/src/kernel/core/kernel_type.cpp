@@ -69,6 +69,9 @@ NSHARE::CConfig descriptor_info_t::MSerialize() const
 }
 const NSHARE::CText split_info::NAME = "mtu";
 const NSHARE::CText split_info::TYPE = "t";
+const NSHARE::CText split_info::KEY_CAN_NOT_SPLIT = "cannot_be_splitted";
+const NSHARE::CText split_info::KEY_NOT_LIMITED = "not_limited";
+const NSHARE::CText split_info::KEY_LIMITED = "limited";
 const NSHARE::CText split_info::SIZE = "s";
 split_info::split_info() :
 		FMaxSize(0), //
@@ -83,14 +86,19 @@ split_info::split_info(NSHARE::CConfig const& aConf):
 				pMCalculate(NULL)
 {
 	aConf.MGetIfSet(SIZE, FMaxSize);
-	unsigned _val= FType.MGetMask();
-	if(aConf.MGetIfSet(TYPE, _val))
-		FType.MSetFlag(_val,true);//todo serialize
+
+	const NSHARE::CText _type = aConf.MValue(TYPE, KEY_NOT_LIMITED);
+	if (_type == KEY_NOT_LIMITED)
+		FType.MReset();
+	else if (_type == KEY_CAN_NOT_SPLIT)
+		FType.MSetFlag(CAN_NOT_SPLIT,true);
+	else if (_type == KEY_LIMITED)
+		FType.MSetFlag(LIMITED,true);
 }
 NSHARE::CConfig split_info::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	_conf.MSet(TYPE, FType.MGetMask());
+	_conf.MAdd(TYPE, FType);
 	_conf.MSet(SIZE, FMaxSize);
 	return _conf;
 }

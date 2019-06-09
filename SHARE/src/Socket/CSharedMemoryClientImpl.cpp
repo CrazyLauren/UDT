@@ -363,20 +363,20 @@ CSharedMemoryClient::eSendState IMPL_CLASS::MSend(NSHARE::CBuffer & aVal, bool a
 	if (aVal.empty())
 	{
 		LOG(ERROR)<<"Send empty buffer";
-		return E_ERROR;
+		return sent_state_t::E_ERROR;
 	}
 	if(!MIsConnected())
 	{
 		LOG(ERROR)<<"The client is not connected.";
-		return E_ERROR;
+		return sent_state_t::E_ERROR;
 	}
 //	CRAII<CMutex> _block(FSendMutex);
 
 	VLOG(2)<<"Sending "<<aVal.size()<<" bytes to "<<FServerInfo->FInfo.FId.MGetId();
 	eSendState _state= CSharedMemoryBase::CImpl::MSend(FMyInfo->FInfo.FId,FServerSignalEvent,aVal,aBlock,aFlags);
-	LOG_IF(INFO,_state==E_SENDED)<<"Send "<<aVal.size()<<" bytes to "<<FServerInfo->FInfo.FId.MGetId();
+	LOG_IF(INFO,_state== sent_state_t::E_SENDED)<<"Send "<<aVal.size()<<" bytes to "<<FServerInfo->FInfo.FId.MGetId();
 
-	LOG_IF(ERROR,_state!=E_SENDED)<<"Cannot send "<<aVal.size()<<" bytes to "<<FServerInfo->FInfo.FId.MGetId()<<" as "<<_state;
+	LOG_IF(ERROR,_state!= sent_state_t::E_SENDED)<<"Cannot send "<<aVal.size()<<" bytes to "<<FServerInfo->FInfo.FId.MGetId()<<" as "<<_state;
 	return _state;
 }
 shared_identify_t IMPL_CLASS::MIdentifier() const

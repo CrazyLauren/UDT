@@ -101,14 +101,14 @@ CSharedMemoryClient::sent_state_t CSharedMemoryClient::MSend(void const* aData, 
 	if (!aSize || !aData)
 	{
 		LOG(ERROR)<<"Buf error.";
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	}
 
 	NSHARE::CBuffer _buffer(MAllocate(aSize));
 	if(_buffer.empty())
 	{
 		LOG(ERROR)<<"Cannot allocate buffer "<<aSize;
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	}
 	memcpy(_buffer.ptr(),aData,aSize);
 	return MSend(_buffer);
@@ -117,7 +117,7 @@ CSharedMemoryClient::sent_state_t CSharedMemoryClient::MSend(data_t const& aVal)
 {
 	data_t _data(aVal);
 	eSendState const _state=MSend(_data, false, 0);
-	return sent_state_t(_state, _state == E_SENDED ? aVal.size() :0 );
+	return sent_state_t(_state, _state == sent_state_t::E_SENDED ? aVal.size() :0 );
 }
 CSharedMemoryClient::sent_state_t CSharedMemoryClient::MSend(data_t const& aVal,
 		NSHARE::CConfig const& aTo)

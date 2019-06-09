@@ -352,7 +352,7 @@ bool CUdpMainChannel::MAddNewImpl(descriptor_t aFor, NSHARE::net_address const& 
 			{
 				VLOG(2)<<" handle "<<aFor;
 				LOG_IF(DFATAL,_it->second->FState!=param_t::E_REQUEST_PARAM)
-																				<< aParam.ip
+																				<< aParam.FIp
 																				<< " Invalid state :"
 																				<< _it->second->FState
 																				<< " Required "

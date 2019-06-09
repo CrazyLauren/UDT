@@ -127,7 +127,7 @@ std::vector<ISocket*> get_sockets(CConfig const& aChild)
 				LOG(ERROR)<<"net addr is not valid "<<(*_it_up);
 				continue;
 			}
-			if (_addr.ip.MIs())
+			if (_addr.FIp.MIs())
 				_rval.push_back(new NSHARE::CTCP(_addr));
 			else
 				_rval.push_back(new NSHARE::CTCPServer(_addr));

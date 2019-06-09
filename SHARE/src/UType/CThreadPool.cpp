@@ -163,6 +163,7 @@ void COperationQueue::MEraseAll()
 
 void COperationQueue::MForceUnlock()
 {
+	CRAII<CMutex> lock(FMutex);
 	FCond.MBroadcast();
 	FWaitForCond.MBroadcast();
 }

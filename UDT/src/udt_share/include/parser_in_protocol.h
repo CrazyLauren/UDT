@@ -16,6 +16,39 @@ namespace NUDT
 {
 //template<class T>
 
+/** Class for parsing the buffer
+ * for looking for the messages
+ *
+ * What the messages is looked for
+ * is specified by macro #RECEIVES.
+ * It has to be defined before header "parser_in_protocol.h"
+ *  and have next structure:
+ *  @code
+ *  #define RECEIVES  \
+		RECEIVE(MESAAGE_NUMBER,DG_T)
+ *	@endcode
+ *	where: \n
+ *	MESAAGE_NUMBER - the number of message from#NUDT::eMsgType \n
+ *	DG_T - type of message corresponding to MESAAGE_NUMBER \n
+ *
+ *	When the message is founded then the function of
+ *	"message handler"
+ *	@code
+ *	void MProcess(DG_T const* aP, parser_t*);
+ *	@endcode
+ *	is called, where parser_t is pointer to object of this
+ *	class.	The pointer to "message handler" has to be specified by
+ *	function #MSetTarget or in constructor of this class.
+ *
+ *	If You what to pass some data to method MProcces
+ *	The field  #FUserData is exist.
+ *
+ *	If some error is occured the the object of type #state_t
+ *	is changed. For gets the odject call method #MGetState
+ *
+ *	@tparam T type of the message handler. Has to specify MProcces method
+ *	@tparam UserData type of user data for passing to function MProcces
+ */
 template<class T, class UserData = void*>
 class CInParser
 {
@@ -34,21 +67,24 @@ public:
 	typedef NSHARE::CBuffer data_t;
 	typedef data_t::const_iterator it_t;
 
+	/** @ State of parser including error state
+	 *
+	 */
 	struct state_t
 	{
 		state_t()
 		{
 			memset(this, 0, sizeof(*this));
 		}
-		std::size_t FInvalidVersion; //The number of packets which is not handled
-								  //as its protocols vesrion is not support
-		std::size_t FESize;								//invalid  sizeof header
-		std::size_t FEBuffer;								//the buffer is small
-		std::size_t FECrc;										//invalid crc
-		std::size_t FDGCounter;			//the number of packets handled by user
-		std::size_t FNumberOfData;							//count of usefully data
-		std::size_t FReadBytes;			//the number of bytes handled by parser
-		std::size_t FPackets;			//the naumber of packets handled by parser
+		std::size_t FInvalidVersion; /*!<The number of packets which is not handled
+								  	  	  as its protocols vesrion is not support*/
+		std::size_t FESize;			///< The number of errors: invalid  sizeof header
+		std::size_t FEBuffer;		///< The number of errors:the buffer is small
+		std::size_t FECrc;			///< The number of errors:invalid crc
+		std::size_t FDGCounter;		///< The number of packets handled by user
+		std::size_t FNumberOfData;	///< Amount of usefully data
+		std::size_t FReadBytes;		///< The number of bytes handled by parser
+		std::size_t FPackets;		///< The number of packets handled by parser
 
 		void MSerialize(NSHARE::CConfig& aTo) const
 		{
@@ -67,11 +103,6 @@ public:
 	{
 
 	}
-	void MSetTarget(target_t* aVal)
-	{
-		VLOG(2) << "New target == " << aVal << " previous ==" << FTarget;
-		FTarget = aVal;
-	}
 	CInParser(target_t* aTarget) :
 			FTarget(aTarget)
 	{
@@ -83,6 +114,27 @@ public:
 		;
 	}
 
+	/** Sets up the new message handler
+	 *
+	 * The message handler has to be declaration
+	 * method void MProcess(DG_T const* aP, parser_t*);
+	 * where DG_T - message type, parser_t - pointer to
+	 * object of this class.
+	 *
+	 * @param aVal A message handler
+	 */
+	void MSetTarget(target_t* aVal)
+	{
+		VLOG(2) << "New target == " << aVal << " previous ==" << FTarget;
+		FTarget = aVal;
+	}
+
+	/** Tests for exist valid message header
+	 *
+	 * @param aItBegin A buffer begin
+	 * @param aItEnd A buffer end
+	 * @return true if valid header is exist
+	 */
 	static bool sMIsValidProtocol(data_t::const_iterator aItBegin,
 			data_t::const_iterator aItEnd)
 	{
@@ -101,6 +153,22 @@ public:
 				&(*aItBegin) + _head_size);
 		return _crc == _crc_t::sMCheckingConstant() ? true : false;
 	}
+
+	/** Parses data
+	 *
+	 * if the message will be found the function MProcess
+	 * of target is called.
+	 *
+	 *
+	 * @param aItBegin A buffer begin
+	 * @param aItEnd A buffer end
+	 *
+	 * @warning	IF the buffer of less of message size
+	 * 			the buffer will be saved. And in next call of function
+	 * 			it will append to begin. For cleaning buffer call
+	 * 			method MCleanBuffer.
+	 *
+	 */
 	void MReceivedData(data_t::const_iterator aItBegin,
 			data_t::const_iterator aItEnd)
 	{
@@ -133,15 +201,27 @@ public:
 		else if (!FBuf.empty())
 			MCleanBuffer();
 	}
+
+	/** Removes all buffered data
+	 *
+	 */
 	void MCleanBuffer()
 	{
 		FBuf.clear();
-		;
 	}
+
+	/** Returns info about current parse state
+	 *
+	 * @return
+	 */
 	state_t const& MGetState() const
 	{
 		return FState;
 	}
+
+	/** Some user data can be kept
+	 *
+	 */
 	user_data_t FUserData;
 
 	//----------------------------------------

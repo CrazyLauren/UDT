@@ -117,29 +117,86 @@ struct destroy_descriptor
 	}
 
 };
+/** Information about maximum message size
+ * which can be transmitted (analog of the MTU)
+ *
+ * if #split_info::FMaxSize is not zero and message is greater of limitation  than \n
+ *  - if message cannot splitted (#split_info::CAN_NOT_SPLIT) then
+ *  the error #eErrorBitwiseCode::E_DATA_TOO_LARGE is occured \n
+ *  - if setup #split_info::NOT_LIMITED then the limitation will be ignored \n
+ *  - if setup #split_info::LIMITED the message will be splitted
+ *
+ *	For calculation data size the callback function #split_info::pMCalculate
+ *	is called. If it not set then the data is equal of size of message (without
+ *	requirement service header)
+ */
 struct split_info
 {
-	static const NSHARE::CText NAME;
-	static const NSHARE::CText TYPE;
-	static const NSHARE::CText SIZE;
+	static const NSHARE::CText NAME;///< A serialization key
+	static const NSHARE::CText TYPE;///< A key of type #FType
+	static const NSHARE::CText SIZE;///< A key of type #FMaxSize
+	static const NSHARE::CText KEY_CAN_NOT_SPLIT;///< A key of value #CAN_NOT_SPLIT
+	static const NSHARE::CText KEY_LIMITED;///< A key of value #LIMITED
+	static const NSHARE::CText KEY_NOT_LIMITED;///< A key of value #NOT_LIMITED
+
+	/** Type of maximum message size limitation
+	 *
+	 */
 	enum eType
 	{
-		CAN_NOT_SPLIT=0x1<<0,//only whole block
-		LIMITED=0x1<<1,
-		IS_UNIQUE=0x1<<2,//deprecated
+		NOT_LIMITED=0x0, ///< No limitation - default value (It zero by historical reason)
+		CAN_NOT_SPLIT=0x1<<0,/*!< This value means that                   //!< CAN_NOT_SPLIT
+		 	 	 	 	 	 * only the entire message can be received
+		 	 	 	 	 	 * (of course, it default value for customer)
+		 	 	 	 	 	 */
+		LIMITED=0x1<<1,		/*!< This value means that limitation is exist *///!< LIMITED
+		IS_UNIQUE=0x1<<2,	///< deprecated value
 
 	};
+	typedef NSHARE::CFlags<eType> mtu_type_t;///< type of MTU
+
+	/** A default constructor
+	 *
+	 */
 	split_info();
 
-	NSHARE::CFlags<eType> FType;
-	size_t FMaxSize;
-	void* FCbData;
-	size_t (*pMCalculate)(user_data_t const&,void*);
+	mtu_type_t FType;///< A type of limitation
+	size_t FMaxSize;///< A maximum received (transmitted) message size
+	void* FCbData;///< The pointer for the data which is passed to callback function
+	size_t (*pMCalculate)(user_data_t const&,void*);/*!< A pointer to callback function for
+	 	 	 	 	 	 	 	 	 	 	 	 	 * calculation the real message size
+	 	 	 	 	 	 	 	 	 	 	 	 	 * (service header + message size).
+	 	 	 	 	 	 	 	 	 	 	 	 	 */
 
+	/** Calculation a full message size
+	 * (service header + message size)
+	 *
+	 * @param aData A reference to message info
+	 * @return A size
+	 */
 	size_t MDataSize(user_data_t const& aData) const;
 
+	/*! @brief Deserialize object
+	 *
+	 * 	To check the result of deserialization,
+	 * 	used the MIsValid().
+	 *	@param aConf Serialized object
+	 */
 	split_info(NSHARE::CConfig const& aConf);
+
+	/*! @brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 * @return Serialized object.
+	 */
 	NSHARE::CConfig MSerialize() const;
+
+	/*! @brief Checks object for valid
+	 *
+	 * Usually It's used after deserializing object
+	 * @return true if it's valid.
+	 */
 	bool MIsValid()const;
 };
 //received data
@@ -262,9 +319,25 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	return aStream << aVal.FId;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::split_info::mtu_type_t const& aVal)
+{
+	typedef NUDT::split_info _t;
+
+	if (aVal.MGetFlag(_t::CAN_NOT_SPLIT))
+		aStream<<_t::KEY_CAN_NOT_SPLIT;
+	else if (aVal.MGetFlag(_t::LIMITED))
+		aStream<<_t::KEY_LIMITED;
+	else
+	{
+		DCHECK_EQ(aVal.MGetMask(),_t::NOT_LIMITED);
+		aStream<<_t::KEY_NOT_LIMITED;
+	}
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::split_info const& aVal)
 {
-	return aStream << aVal.FMaxSize<<" Type="<<aVal.FType.MGetMask();
+	return aStream << aVal.FMaxSize<<" Type="<<aVal.FType;
 }
 
 

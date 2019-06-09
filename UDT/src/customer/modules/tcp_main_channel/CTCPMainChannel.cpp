@@ -173,9 +173,9 @@ void CTCPMainChannel::MHandleServiceDG(request_main_channel_param_t const* aP)
 	data_t _buf;
 	MFill<main_channel_param_t>(&_buf);
 
-	int _is =FTcpClient.MSend(_buf).FError;
+	bool _is =FTcpClient.MSend(_buf).MIs();
 	(void) _is;
-	LOG_IF(ERROR,_is<0) << "Cannot send main channel params.";
+	LOG_IF(ERROR,!_is) << "Cannot send main channel params.";
 }
 void CTCPMainChannel::MHandleServiceDG(close_main_channel_t const* aP)
 {

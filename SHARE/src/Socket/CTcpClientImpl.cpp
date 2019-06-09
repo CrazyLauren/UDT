@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
 #include <Socket/CTcpClientImpl.h>
@@ -59,7 +60,7 @@ CTCP::CClientImpl::~CClientImpl()
 }
 net_address IMPL::MGetInitParam() const
 {
-	return net_address(inet_ntoa(FAddr.sin_addr),ntohs(FAddr.sin_port));
+	return net_address(get_ip(FAddr.sin_addr),ntohs(FAddr.sin_port));
 }
 bool IMPL::MClientConnect()
 {
@@ -154,9 +155,9 @@ CTCP::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 	{
 		VLOG(2) << "Is not connected.Receive= " << FIsReceive;
 		if (FIsReceive) //if receive method does not work, can connect
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 		else if (!MClientConnect())
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	}
 	return MSendTo(FSock,pData,nSize,FDiagnostic,true,FAgainError);
 }

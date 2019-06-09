@@ -516,7 +516,7 @@ CSerialPort::sent_state_t CSerialPort::CImpl::MSend(void const* const aData, siz
 	if (!MIsOpen())
 	{
 		LOG(ERROR)<< "Port is closed.";
-		return sent_state_t(E_NOT_OPENED,0);
+		return sent_state_t(sent_state_t::E_NOT_OPENED,0);
 	}
 	VLOG(2)<<"Send "<<aLength<<" bytes to "<<FThis.FSetting;
 	CRAII<CMutex> _block(FMutexWrite);
@@ -541,12 +541,12 @@ CSerialPort::sent_state_t CSerialPort::CImpl::MSend(void const* const aData, siz
 			{
 				LOG(ERROR)<<" operation aborted.";
 				MClose();
-				return sent_state_t(E_ERROR,static_cast<size_t>(aLength-_length));
+				return sent_state_t(sent_state_t::E_ERROR,static_cast<size_t>(aLength-_length));
 			}
 			else
 			{
 				LOG(ERROR)<<" An error occurred; disconnect from the client. "<<dwErr;
-				return sent_state_t(E_ERROR, static_cast<size_t>(aLength-_length));
+				return sent_state_t(sent_state_t::E_ERROR, static_cast<size_t>(aLength-_length));
 			}
 		}
 		VLOG_IF(2,bytes_written)<<"Write to "<<MGetPort()<<" "<<bytes_written<<" bytes.";
@@ -556,13 +556,13 @@ CSerialPort::sent_state_t CSerialPort::CImpl::MSend(void const* const aData, siz
 			{
 				DWORD err = GetLastError();
 				VLOG(2)<<" An error occurred "<<err;
-				return sent_state_t(E_ERROR, static_cast<size_t>(aLength-_length));
+				return sent_state_t(sent_state_t::E_ERROR, static_cast<size_t>(aLength-_length));
 			}
 			LOG_IF(ERROR,bytes_written==0)<<"Send zero bytes. Wtf?";
 		}
 	}
 	VLOG_IF(1,_length<=0) << "Write " << aLength<<" bytes to "<<MGetPort()<<" within "<< (NSHARE::get_time() - _time) << "sec";
-	return sent_state_t(E_SENDED, static_cast<size_t>(aLength-_length));
+	return sent_state_t(sent_state_t::E_SENDED, static_cast<size_t>(aLength-_length));
 }
 void CSerialPort::CImpl::MSetPort(const CText &port)
 {

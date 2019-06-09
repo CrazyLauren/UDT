@@ -295,10 +295,12 @@ IMPL::eSendResult IMPL::MSendImpl(
 bool IMPL::MSendImpl(data_t const& aData) const
 {
 	CTCP::sent_state_t _state;
+	HANG_INIT;
 	do
 	{
+		HANG_CHECK;
 		_state=FTcp.MSend(aData);
-	}while(_state.FError==CTCP::E_AGAIN);
+	}while(_state.MIs(sent_state_t::E_AGAIN));
 	LOG_IF(ERROR,!_state.MIs())<<"Cannot sent: "<<_state;
 	return _state.MIs();
 }

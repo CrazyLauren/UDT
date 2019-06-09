@@ -830,7 +830,7 @@ bool CConfig::MFromJSON(std::istream& aStream)
 
 	CJsonReader handler(*this);
 
-	return _reader.Parse(_buf, handler);
+	return _reader.Parse<kParseCommentsFlag>(_buf, handler);
 }
 bool CConfig::MFromJSON(NSHARE::CBuffer const& aBuf)
 {
@@ -844,7 +844,7 @@ bool CConfig::MFromJSON(NSHARE::CBuffer const& aBuf)
 
 	CJsonReader handler(*this);
 
-	return _reader.Parse(_buf, handler);
+	return _reader.Parse<kParseCommentsFlag>(_buf, handler);
 }
 bool CConfig::MFromJSON(NSHARE::CText const& aText)
 {
@@ -858,7 +858,7 @@ bool CConfig::MFromJSON(NSHARE::CText const& aText)
 
 	CJsonReader handler(*this);
 
-	return _reader.Parse(_buf, handler);
+	return _reader.Parse<kParseCommentsFlag>(_buf, handler);
 }
 NSHARE::CText CConfig::MToJSON(bool aPretty) const
 {

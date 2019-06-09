@@ -95,5 +95,21 @@ inline atomic_t::value_type atomic_t::operator--(int)
 	return MDecrement();
 }
 }
-
+namespace std
+{
+inline std::ostream& operator <<(std::ostream& aStream,
+		const NSHARE::atomic_t& aAtomic)
+{
+	return aStream << aAtomic.MValue();
+}
+template<class _Elem, class _Traits>
+inline basic_istream<_Elem, _Traits>& operator>>(
+		basic_istream<_Elem, _Traits>& aStream, NSHARE::atomic_t& _Str)
+{
+	NSHARE::atomic_t::value_type _val;
+	aStream>>_val;
+	_Str.MWrite(_val);
+	return (aStream);
+}
+}
 #endif /* COUNTER_H_ */

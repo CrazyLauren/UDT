@@ -222,10 +222,10 @@ ISocket::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t a
 				VLOG(2) << "FIFO  not opened try opened for writing.";
 				bool _rval = MOpenWrite();
 				if (!_rval)
-					return ISocket::sent_state_t(E_ERROR,0);
+					return ISocket::sent_state_t(sent_state_t::E_ERROR,0);
 			}
 			else
-				return ISocket::sent_state_t(E_ERROR,0);
+				return ISocket::sent_state_t(sent_state_t::E_ERROR,0);
 		}
 
 		int _err_count = 0;
@@ -254,7 +254,7 @@ ISocket::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t a
 
 					case EPIPE:
 						VLOG(0) <<"FIFO isn't open for reading.";
-						return ISocket::sent_state_t(E_ERROR,_buf_size-aSize);
+						return ISocket::sent_state_t(sent_state_t::E_ERROR,_buf_size-aSize);
 					break;
 
 					default:
@@ -263,7 +263,7 @@ ISocket::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t a
 				LOG(ERROR)<< "Write error " << print_error() <<"("<<errno<<").";
 				++_err_count;
 				if(_err_count>5)
-					return ISocket::sent_state_t(E_ERROR,_buf_size-aSize);
+					return ISocket::sent_state_t(sent_state_t::E_ERROR,_buf_size-aSize);
 			}
 			else
 			{
@@ -276,7 +276,7 @@ ISocket::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t a
 				break;
 		}
 	}
-	return ISocket::sent_state_t(E_SENDED,_buf_size-aSize);
+	return ISocket::sent_state_t(sent_state_t::E_SENDED,_buf_size-aSize);
 }
 ssize_t CFifo::CImpl::MReceiveData(data_t* aBuf, const float aTime)
 {

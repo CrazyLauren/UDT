@@ -484,7 +484,7 @@ CFIFOServer::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std
 {
 	CText _path;
 	if(!aTo.MGetIfSet("path",_path))
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	CRAII<CMutex> _block(FMutexWrite);
 	return MSendImpl(aData, aSize, _path);
 }
@@ -499,7 +499,7 @@ CFIFOServer::sent_state_t CFIFOServer::CImpl::MSendImpl(void const* const aData,
 	VLOG(2) << "Send data " << aData << " (size=" << aSize << ") to " << aPath
 						<< ":" << this;
 	if (!MIsOpen())
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 
 	CText _path=MGetValidPath(aPath);
 	clients_data_t _clients;
@@ -514,7 +514,7 @@ CFIFOServer::sent_state_t CFIFOServer::CImpl::MSendImpl(void const* const aData,
 		}
 	}
 	if (_clients.empty())
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	clients_data_t::const_iterator _it = _clients.begin();
 	for (; _it != _clients.end(); ++_it)
 	{
@@ -527,13 +527,13 @@ CFIFOServer::sent_state_t CFIFOServer::CImpl::MSendImpl(void const* const aData,
 			if(WriteFile((*_it)->pipe, aData, static_cast<DWORD>(aSize), &dwWritten, NULL)==FALSE)
 			{
 				LOG(ERROR)<<"Error during write "<<GetLastError();
-				return sent_state_t(E_ERROR,aSize-_size);
+				return sent_state_t(sent_state_t::E_ERROR,aSize-_size);
 			}
 			_size-=dwWritten;
 		}
 	}
 
-	return sent_state_t(E_SENDED,aSize);
+	return sent_state_t(sent_state_t::E_SENDED,aSize);
 }
 
 const CSocket& CFIFOServer::CImpl::MGetSocket() const

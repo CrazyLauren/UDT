@@ -14,6 +14,7 @@
 #if   defined(__QNX__)||defined(unix)
 
 #include <deftype>
+#include <limits.h>
 #include <semaphore.h>
 #include <fcntl.h>
 #ifdef SEM_USING_FUTEX

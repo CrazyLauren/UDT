@@ -450,7 +450,7 @@ int CControlByTCP::MSend(data_t & aData)
 		LOG(INFO)<< (*FTcpSocket);
 		return static_cast<int>(CCustomer::ERROR_NOT_CONNECTED_TO_KERNEL);
 	}
-	return FTcpSocket->MSend(aData.ptr(), aData.size()).FError;
+	return FTcpSocket->MSend(aData.ptr(), aData.size()).MIs()?0:CCustomer::ERROR_UNEXPECETED;
 }
 int CControlByTCP::MSend(user_data_t & aData)
 {

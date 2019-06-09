@@ -253,7 +253,7 @@ bool CTcpClientMainChannel::MHandleServiceDG(const main_channel_param_t* aData,
 			if (_it->first == aFor)
 			{
 				_new_link = _it->second;
-				_addr.ip = _new_link.MGetConst().FAddr.ip;
+				_addr.FIp = _new_link.MGetConst().FAddr.FIp;
 				FNewLinks.erase(_it);
 				break;
 			}

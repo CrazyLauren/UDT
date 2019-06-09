@@ -118,9 +118,8 @@ ssize_t CSerialPort::MReceiveData(data_t *aData, std::size_t aCount,
 }
 CSerialPort::sent_state_t CSerialPort::MSend(void const* aData, std::size_t aSize)
 {
-	sent_state_t _is = FImpl->MSend(aData, aSize);
-	if (_is.MIs())
-		FDiagnostic.MSend(aSize);
+	sent_state_t const _is = FImpl->MSend(aData, aSize);
+	FDiagnostic.MSend(_is);
 	return _is;
 }
 

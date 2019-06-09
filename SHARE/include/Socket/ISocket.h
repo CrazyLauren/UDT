@@ -13,6 +13,7 @@
 #define ISOCKET_H_
 
 #include <Socket/CSocket.h>
+#include <Socket/diagnostic_io_t.h>
 
 namespace NSHARE
 {
@@ -20,35 +21,9 @@ namespace NSHARE
 class SHARE_EXPORT ISocket
 {
 public:
-	enum eSendState
-	{
-		E_SENDED = 0, //
-		E_ERROR = -1,//
-		E_AGAIN = -2,//The client buffer is full
-		E_TOO_LARGE = -3,//
-		E_NOT_OPENED = -4,//
-		E_INVALID_VALUE = -5//
-	};
-	struct sent_state_t
-	{
-		sent_state_t(eSendState eError,size_t aBytes):
-		FError(eError), //
-		FBytes(aBytes)//
-		{
+	typedef NSHARE::sent_state_t sent_state_t;
 
-		}
-		sent_state_t()
-		{
-			FError=E_ERROR;
-			FBytes=0;
-		}
-		bool MIs() const
-		{
-			return FError==E_SENDED;
-		}
-		eSendState FError;
-		size_t FBytes;
-	};
+	typedef  sent_state_t::eSendState eSendState;
 
 	enum eFlush
 	{
@@ -137,6 +112,17 @@ public:
 		return ((size_t)-1);
 	}
 	//todo add max packet size method
+
+	/** Returns diagnostic information about
+	 * socket
+	 *
+	 * @return reference to object
+	 */
+	virtual diagnostic_io_t const& MGetDiagnosticState()
+	{
+		static const diagnostic_io_t _no_diagnostic;
+		return _no_diagnostic;
+	}
 protected:
 	ISocket()
 	{
@@ -173,11 +159,6 @@ for (;;)
 		aStream << ",";
 }
 return aStream;
-}
-inline std::ostream& operator <<(std::ostream& aStream,
-	const NSHARE::ISocket::sent_state_t& aVal)
-{
-return aStream << " Error = " << aVal.FError << " sent=" << aVal.FBytes;
 }
 }
 #endif /* ISOCKET_H_ */

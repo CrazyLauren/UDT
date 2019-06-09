@@ -148,7 +148,7 @@ public:
 		if(!aData.empty())
 		{
 			VLOG(2)<<"Send "<<aData.size();
-			if (FSockTo&&FSockTo->MSend(aData).FError==NSHARE::ISocket::E_SENDED)
+			if (FSockTo&&FSockTo->MSend(aData).MIs())
 				FBytesSend += aData.size();
 			else
 			{
@@ -161,7 +161,7 @@ public:
 				for(;_it!=FSockSniffer.end();++_it)
 				{
 					CHECK_NOTNULL(*_it);
-					if((*_it)->MSend(aData).FError==NSHARE::ISocket::E_SENDED)
+					if((*_it)->MSend(aData).MIs())
 						LOG(INFO)<<"Send to sniffer."<<*(*_it);
 					else
 						LOG(ERROR)<<"Cannot send to sniffer"<<*(*_it);

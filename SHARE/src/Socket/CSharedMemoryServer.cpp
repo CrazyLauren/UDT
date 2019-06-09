@@ -121,14 +121,14 @@ CSharedMemoryServer::sent_state_t CSharedMemoryServer::MSend(void const* aData,
 	if (!aSize || !aData)
 	{
 		LOG(ERROR)<<"Buf error.";
-		return sent_state_t(E_INVALID_VALUE,0);
+		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 	}
 
 	NSHARE::CBuffer _buffer(MAllocate(aSize));
 	if(_buffer.empty())
 	{
 		LOG(ERROR)<<"Cannot allocate buffer "<<aSize;
-		return sent_state_t(E_TOO_LARGE,0);
+		return sent_state_t(sent_state_t::E_TOO_LARGE,0);
 	}
 	memcpy(_buffer.ptr(),aData,aSize);
 	return MSend(_buffer,aTo);
@@ -139,24 +139,24 @@ CSharedMemoryServer::sent_state_t CSharedMemoryServer::MSend(void const* aData,
 	if (!aSize || !aData)
 	{
 		LOG(ERROR)<<"Buf error.";
-		return sent_state_t(E_INVALID_VALUE,0);
+		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 	}
 
 	NSHARE::CBuffer _buffer(MAllocate(aSize));
 	if(_buffer.empty())
 	{
 		LOG(ERROR)<<"Cannot allocate buffer "<<aSize;
-		return sent_state_t(E_TOO_LARGE,0);
+		return sent_state_t(sent_state_t::E_TOO_LARGE,0);
 	}
 	memcpy(_buffer.ptr(),aData,aSize);
 	bool const _is=MSend(-1,_buffer,false,0)>0;
-	return _is?sent_state_t(E_SENDED,aSize):sent_state_t(E_ERROR,0);
+	return _is?sent_state_t(sent_state_t::E_SENDED,aSize):sent_state_t(sent_state_t::E_ERROR,0);
 }
 CSharedMemoryServer::sent_state_t CSharedMemoryServer::MSend(data_t const& aVal)
 {
 	data_t _const_fix = aVal;
 	bool const _is = MSend(-1, _const_fix, false, 0) > 0;
-	return _is ? sent_state_t(E_SENDED, aVal.size()) : sent_state_t(E_ERROR, 0);
+	return _is ? sent_state_t(sent_state_t::E_SENDED, aVal.size()) : sent_state_t(sent_state_t::E_ERROR, 0);
 }
 
 CSharedMemoryServer::sent_state_t CSharedMemoryServer::MSend(data_t const& aVal,
@@ -171,16 +171,16 @@ CSharedMemoryServer::sent_state_t CSharedMemoryServer::MSend(data_t const& aVal,
 	{
 		VLOG(2) << "Send by id";
 		eSendState const _state = MSend(_ato, _const_fix, false, _flags);
-		return sent_state_t(_state, _state == E_SENDED ? aVal.size() : 0);
+		return sent_state_t(_state, _state == sent_state_t::E_SENDED ? aVal.size() : 0);
 	}
 	else if (_ato.MIsUserId())
 	{
 		VLOG(2) << "Send by ID";
 		bool const _is = MSend(_ato.FUserId, _const_fix, false, _flags) > 0;
 		return _is ?
-				sent_state_t(E_SENDED, aVal.size()) : sent_state_t(E_ERROR, 0);
+				sent_state_t(sent_state_t::E_SENDED, aVal.size()) : sent_state_t(sent_state_t::E_ERROR, 0);
 	}
-	return sent_state_t(E_INVALID_VALUE, 0);
+	return sent_state_t(sent_state_t::E_INVALID_VALUE, 0);
 }
 bool CSharedMemoryServer::MReceiveData(NSHARE::CBuffer& aTo,
 		shared_identify_t* aFrom, unsigned* aFlags, double aTime)

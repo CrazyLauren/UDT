@@ -14,6 +14,7 @@
  
 #include <Net.h>
 #include <fcntl.h>
+#include <Socket/CNetBase.h>
 
 #if !defined(_WIN32)
 #	include <sys/socket.h>
@@ -43,6 +44,12 @@ struct tcp_keepalive
 #endif //#ifndef WIN32
 
 #include <Socket/print_socket_error.h>
+
+#ifdef _WIN32
+typedef char raw_type_t;
+#else
+typedef void raw_type_t;
+#endif
 namespace NSHARE
 {
 #ifdef _WIN32
@@ -53,6 +60,9 @@ extern bool init_wsa()
 	return _is;
 }
 #endif
+
+long const CNetBase::DEF_BUF_SIZE = 2 * std::numeric_limits<uint16_t>::max(); //2 max packet
+
 CNetBase::CNetBase()
 {
 #ifdef _WIN32
@@ -63,45 +73,127 @@ CNetBase::CNetBase()
 	}
 #endif
 }
-long const CNetBase::DEF_BUF_SIZE = 2 * std::numeric_limits<uint16_t>::max(); //2 max packet
-int CNetBase::MBindSocket(const CSocket& aSocket,
-		const struct sockaddr_in& aAddr)
+CSocket CNetBase::MNewSocket(int aType,int aProtocol)
+{
+	return static_cast<CSocket::socket_t>(socket(AF_INET, aType,aProtocol));
+}
+net_address CNetBase::MGetLocalAddress(CSocket const& aSocket)
+{
+	sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	socklen_t len = sizeof(addr);
+	if (getsockname(aSocket.MGet(), (struct sockaddr*) &addr, &len) != 0)
+		LOG(DFATAL)<<"Fetch of local address failed (getsockname())";
+
+	return net_address(addr);
+}
+net_address CNetBase::MGetForeignAddress(CSocket const& aSocket)
+{
+	sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	socklen_t len = sizeof(addr);
+	if (getpeername(aSocket.MGet(), (struct sockaddr*) &addr, &len) != 0)
+		LOG(DFATAL)<<"Fetch of local address failed (getsockname())";
+
+	return net_address(addr);
+}
+
+int CNetBase::MSetLocalAddrAndPort(const CSocket& aSocket, const net_address& aAddr)
 {
 	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
+
+	sockaddr_in _addr;
+	MSetAddress(aAddr, &_addr);
+
 	VLOG(2)
-			<< "try bind socket  " << aSocket << ", Port:" << aAddr.sin_port
-					<< ":" << this;
-	return bind(aSocket.MGet(), (sockaddr*) (((((&aAddr))))), sizeof(aAddr));
+			<< "try bind socket  " << aSocket << ", Port:" << _addr.sin_port;
+	return bind(aSocket.MGet(), (sockaddr*) (((((&_addr))))), sizeof(_addr));
 }
-void CNetBase::MReUsePort(CSocket& aSocket)
+bool CNetBase::MSetMultiCastTTL(CSocket& aSocket,unsigned char aTTL)
+{
+	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR, (raw_type_t *) &aTTL,
+			sizeof(aTTL))==0;
+}
+bool CNetBase::MJoinGroup(const CSocket& aSocket, const net_address& aAddr)
+{
+	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
+
+	if (aAddr.FIp.MIs())
+	{
+		struct ip_mreq _mreq;
+
+		_mreq.imr_multiaddr.s_addr = inet_addr(
+				aAddr.FIp.MGetConst().c_str());
+		_mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+		if (setsockopt(aSocket.MGet(), IPPROTO_IP, IP_ADD_MEMBERSHIP,
+				(raw_type_t *) &_mreq, sizeof(_mreq)) < 0)
+		{
+			LOG(DFATAL)<<"Multicast group join failed (setsockopt())";
+			return false;
+		}
+	}else
+	{
+		LOG(DFATAL)<<"Invalid address";
+		return false;
+	}
+	return true;
+}
+bool CNetBase::MLeaveGroup(const CSocket& aSocket, const net_address& aAddr)
+{
+	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
+
+	if (aAddr.FIp.MIs())
+	{
+		struct ip_mreq _mreq;
+
+		_mreq.imr_multiaddr.s_addr = inet_addr(
+				aAddr.FIp.MGetConst().c_str());
+		_mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+		if (setsockopt(aSocket.MGet(), IPPROTO_IP, IP_DROP_MEMBERSHIP,
+				(raw_type_t *) &_mreq, sizeof(_mreq)) < 0)
+		{
+			LOG(DFATAL)<<"Multicast group leave failed (setsockopt())";
+			return false;
+		}
+	}else
+	{
+		LOG(DFATAL)<<"Invalid address";
+		return false;
+	}
+	return true;
+}
+bool CNetBase::MReUsePort(CSocket& aSocket)
 {
 	VLOG(2) << "Reuse port " << aSocket;
 
 	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
 #ifdef _WIN32
-	MReUseAddr(aSocket);
+	return MReUseAddr(aSocket);
 #else
 	int optval = 1;
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEPORT, &optval,
-			sizeof optval);
+	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEPORT, (raw_type_t*) &optval,
+			sizeof optval)==0;
 #endif
 }
 
-void CNetBase::MReUseAddr(CSocket& aSocket)
+bool CNetBase::MReUseAddr(CSocket& aSocket)
 {
 	VLOG(2) << "Reuse address " << aSocket;
 	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
 	int optval = 1;
 
 #ifdef _WIN32
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR,
-			reinterpret_cast<char*>(&optval), sizeof optval);
+	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR,
+			(raw_type_t*)&optval, sizeof optval)==0;
+#elif defined(SO_REUSEPORT) && !defined(__linux__)
+	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEPORT,(raw_type_t*) &optval,
+			sizeof optval)==0;
 #else
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR, &optval,
-			sizeof optval);
+	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR,(raw_type_t*) &optval,
+			sizeof optval)==0;
 #endif
 }
-size_t CNetBase::MAvailable(CSocket const& aSocket) const
+size_t CNetBase::MAvailable(CSocket const& aSocket)
 {
 
 #ifdef _WIN32
@@ -121,17 +213,18 @@ size_t CNetBase::MAvailable(CSocket const& aSocket) const
 int CNetBase::MSetAddress(net_address const& aAddress,
 		struct sockaddr_in *aSa)
 {
+	memset(aSa, 0, sizeof(*aSa));
 
 	aSa->sin_family = AF_INET;
-	if (!aAddress.ip.MGetConst().empty())
+	if (aAddress.FIp.MIs() && !aAddress.FIp.MGetConst().empty() && aAddress.FIp.MGetConst()!=net_address::ALL_NETWORKS)
 	{
-		aSa->sin_addr.s_addr = inet_addr(aAddress.ip.MGetConst().c_str());
-		if (aSa->sin_addr.s_addr == INADDR_NONE ) return -1;
+		aSa->sin_addr.s_addr = inet_addr(aAddress.FIp.MGetConst().c_str());
+		if (aSa->sin_addr.s_addr == INADDR_NONE && aAddress.FIp.MGetConst()!=net_address::BROAD_CAST_ADDR) return -1;
 	}
 	else
 		aSa->sin_addr.s_addr = htonl(INADDR_ANY );
 
-	aSa->sin_port = htons(aAddress.port);
+	aSa->sin_port = htons(aAddress.FPort);
 
 	return 0;
 }
@@ -169,7 +262,7 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 	WSAIoctl(aSocket, SIO_KEEPALIVE_VALS, &_alive, sizeof(_alive), NULL, 0,
 			&_ret, NULL, NULL);
 	int on = 1;
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (const char*) &on,
+	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (const raw_type_t*) &on,
 			sizeof(on));
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__QNX__)
 	int on = 1;
@@ -190,13 +283,13 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 	sysctl(mib, 4, NULL, NULL, &ival, sizeof(ival));
 	memset(&tval, 0, sizeof(tval));
 	tval.tv_sec = _sec;
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (void*) &on,
+	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (raw_type_t*) &on,
 			sizeof(on));
-	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPALIVE, (void*) &tval,
+	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPALIVE, (raw_type_t*) &tval,
 			sizeof(tval));
 #elif defined(__linux__)
 	int on = 1;
-	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (void*) &on, sizeof(on));
+	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (raw_type_t*) &on, sizeof(on));
 
 #	ifdef TCP_KEEPCNT
 	int keepcnt = 3;
@@ -246,7 +339,7 @@ void CNetBase::MSettingBufSize(CSocket& aSocket)
 		}
 	}
 }
-size_t CNetBase::MGetSendBufSize(CSocket& aSocket) const
+size_t CNetBase::MGetSendBufSize(CSocket& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 	long aValue=0;
@@ -254,7 +347,7 @@ size_t CNetBase::MGetSendBufSize(CSocket& aSocket) const
 	VLOG(2)
 			<< "Getting the TCP  normal buffer size for output  equal ";
 	int _rval = getsockopt(aSocket.MGet(), SOL_SOCKET, SO_SNDBUF,
-			( char*) &aValue, &_len);
+			( raw_type_t*) &aValue, &_len);
 	VLOG_IF(1,_rval==0) << "The  buffer sizes  for output " << aValue;
 	return aValue;
 }
@@ -265,11 +358,11 @@ bool CNetBase::MSettingSendBufSize(CSocket& aSocket, long aValue)
 			<< "Setting the TCP  normal buffer size for output  equal "
 					<< aValue;
 	int _rval = setsockopt(aSocket.MGet(), SOL_SOCKET, SO_SNDBUF,
-			(const char*) &aValue, sizeof(aValue));
+			(const raw_type_t*) &aValue, sizeof(aValue));
 	VLOG_IF(1,_rval==0) << "The normal buffer sizes  for output " << aValue;
 	return _rval == 0;
 }
-size_t CNetBase::MGetRecvBufSize(CSocket& aSocket) const
+size_t CNetBase::MGetRecvBufSize(CSocket& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 	long aValue=0;
@@ -277,7 +370,7 @@ size_t CNetBase::MGetRecvBufSize(CSocket& aSocket) const
 	VLOG(2)
 			<< "Getting the TCP  normal buffer size for output  equal ";
 	int _rval = getsockopt(aSocket.MGet(), SOL_SOCKET, SO_RCVBUF,
-			( char*) &aValue, &_len);
+			( raw_type_t*) &aValue, &_len);
 	VLOG_IF(1,_rval==0) << "The  buffer sizes  for output " << aValue;
 	return aValue;
 }
@@ -287,18 +380,18 @@ bool CNetBase::MSettingRecvBufSize(CSocket& aSocket, long aValue)
 	VLOG(2)
 			<< "Setting the TCP  normal buffer size for input equal " << aValue;
 	int _rval = setsockopt(aSocket.MGet(), SOL_SOCKET, SO_RCVBUF,
-			(const char*) &aValue, sizeof(aValue));
+			(const raw_type_t*) &aValue, sizeof(aValue));
 	VLOG_IF(1,_rval==0) << "The normal buffer sizes  for input " << aValue;
 	return _rval == 0;
 }
 
-int CNetBase::MGetSendBufSize(CSocket const& aSocket) const
+int CNetBase::MGetSendBufSize(CSocket const& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 	long _size = 0;
 	socklen_t _len = sizeof(_size);
 	int _rval = getsockopt(aSocket.MGet(), SOL_SOCKET, SO_SNDBUF,
-			(char*) &_size, &_len);
+			(raw_type_t*) &_size, &_len);
 
 	VLOG_IF(1,_rval==0) << "The send buffer sizes  for output " << _size;
 	if (_rval > 0)
@@ -309,7 +402,55 @@ int CNetBase::MGetSendBufSize(CSocket const& aSocket) const
 	else
 		return -1;
 }
-void CNetBase::MMakeNonBlocking(CSocket& aSocket)
+bool CNetBase::MMakeAsBroadcast(CSocket& aSocket)
+{
+	int _on = 1;
+	VLOG(2)
+			<< "Setting the broadcast addr ";
+
+	int const _rval=setsockopt(aSocket.MGet(), SOL_SOCKET, SO_BROADCAST,
+			reinterpret_cast<raw_type_t*>(&_on), sizeof _on);
+	if(_rval!=0)
+	{
+		LOG(DFATAL)<<"Fail setting broadcast flag to "<<aSocket<<"."<<print_socket_error();
+	}
+	return _rval==0;
+
+}
+bool CNetBase::MSendMultiCastMsgByInterface(CSocket& aSocket,struct sockaddr_in const & aSa)
+{
+	struct sockaddr_in const* const addr4=(struct sockaddr_in const*) &aSa;
+	struct sockaddr_in6 const* const addr6=(struct sockaddr_in6 const*) &aSa;
+
+	int _rval = -1;
+
+	VLOG(2)
+			<< "Setting the Multicast addr ";
+
+	  if (aSa.sin_family == AF_INET)
+	  {
+		  _rval=setsockopt(aSocket.MGet(),
+                  IPPROTO_IP,
+                  IP_MULTICAST_IF,
+                  (raw_type_t*) &addr4->sin_addr,
+                  sizeof(addr4->sin_addr));
+
+	  } else if (aSa.sin_family == AF_INET6)
+	  {
+		  _rval=setsockopt(aSocket.MGet(),
+	                   IPPROTO_IPV6,
+	                   IPV6_MULTICAST_IF,
+	                   (raw_type_t*) &addr6->sin6_scope_id,
+	                   sizeof(addr6->sin6_scope_id));
+	  }
+	if(_rval!=0)
+	{
+		LOG(DFATAL)<<"Fail setting multicast to "<<aSocket<<"."<<print_socket_error();
+	}
+	return _rval==0;
+
+}
+bool CNetBase::MMakeNonBlocking(CSocket& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 #if defined(unix) || defined(__QNX__) ||defined( __linux__)
@@ -317,24 +458,25 @@ void CNetBase::MMakeNonBlocking(CSocket& aSocket)
 	if (flags < 0)
 	{
 		LOG(DFATAL)<<"Fail getting status flags of "<<aSocket<<"."<<print_socket_error();
-		return;
+		return false;
 	}
 	if (fcntl(aSocket.MGet(), F_SETFL, flags | O_NONBLOCK) < 0)
 	{
 		LOG(DFATAL)<<"Fail setting NONBLOCK flag to "<<aSocket<<"."<<print_socket_error();
-		return;
+		return false;
 	}
 #elif defined(_WIN32)
 	unsigned long _on = 1;
 	if (ioctlsocket(aSocket.MGet(), FIONBIO, &_on) < 0)
 	{
 		LOG(DFATAL)<<"Fail setting NONBLOCK flag to "<<aSocket;
-		return;
+		return false;
 	}
 #else
 #	error Target not supported
 #endif
 
 	VLOG(2) << aSocket << " is NON BLOCKING";
+	return true;
 }
 } /* namespace NSHARE */

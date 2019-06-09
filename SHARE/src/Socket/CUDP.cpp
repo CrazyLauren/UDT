@@ -10,9 +10,10 @@
  *
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
- */  
+ */
 #include <deftype>
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <uclock.h>
 #include <string.h>
 #include <console.h>
@@ -29,128 +30,348 @@
 #include <Socket/print_socket_error.h>
 #define UDP_BUFFER_SIZE USHRT_MAX
 
-/*
- #ifdef __MINGW32__
- #	define _WIN32
- #endif
- */
+#ifdef _WIN32
+typedef char raw_type_t;
+#else
+typedef void raw_type_t;
+#endif
+
 namespace NSHARE
 {
-const NSHARE::CText CUDP::NAME="udp";
+const NSHARE::CText CUDP::NAME = "udp";
+
 CUDP::CUDP(NSHARE::CConfig const& aConf) :
-		FSock(-1)
+		FMaxSendSize(0) //
 {
-	FBuffer = NULL;
-	FBufferSize = 0;
-	FMaxSize = 0;
-	param_t _param(aConf);
-	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for udp is not valid "<<aConf;
+
+	settings_t _param(aConf);
+	LOG_IF(DFATAL,!_param.MIsValid()) << "Configure for udp is not valid "
+												<< aConf;
 	MOpen(_param);
 }
-CUDP::CUDP(const param_t&  aParam) :
-		FSock(-1)
+CUDP::CUDP(const settings_t& aParam)
 {
-	FBuffer = NULL;
-	FBufferSize = 0;
-	FMaxSize = 0;
-	if(aParam.MIsValid())
+	FMaxSendSize = 0;
+	if (aParam.MIsValid())
 		MOpen(aParam);
 }
 CUDP::~CUDP()
 {
 	MClose();
-	if (FBufferSize)
-		delete[] FBuffer;
 }
 void CUDP::MClose()
 {
 	if (MIsOpen())
 	{
 		FSock.MClose();
-		//FSockSelect.MRemoveAll();
 	}
-	/*
-	 #if defined(_WIN32)
-	 closesocket(MGetSocket());
-	 WSACleanup();
-	 #else
-	 close(MGetSocket());
-	 #endif
-	 */
-//	FPort = 0;
+}
+CUDP::list_of_broadcast_addr_t CUDP::sMGetBroadcast()
+{
+	list_of_broadcast_addr_t _rval;
+	interfaces_addr_t _to;
+	if(loocal_addr_ip4(&_to))
+	{
+		VLOG(2)<<"Interfaces "<<_to;
+		for (NSHARE::interfaces_addr_t::const_iterator _it = _to.begin();
+				_it != _to.end(); ++_it)
+		{
+			_rval.insert(broadcast(_it->FIp,_it->FMask));
+		}
+	}
+	return _rval;
 }
 
-inline CSocket CUDP::MNewSocket()
+/** @brief Synchronize info about receivers of message
+ * from settings with  #FSendToAddr
+ *
+ */
+void CUDP::MUpdateSendList()
 {
-	return static_cast<CSocket::socket_t>(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
+	FSendToAddr.resize(FParam.FSendTo.size());
+	net_addresses_t::const_iterator _it=FParam.FSendTo.begin();
+	for (unsigned i=0; i< FSendToAddr.size();++_it, ++i)
+	{
+		CNetBase::MSetAddress(*_it,	&FSendToAddr[i]);
+	}
 }
-bool CUDP::MOpen(const param_t& aParam, int aFlags)
+bool CUDP::MSettingUp(const settings_t& aParam)
 {
-	if(aParam.FAddr.MGetConst().MIsValid())
-		MSetSendAddress(aParam.FAddr.MGetConst());
-	FParam=aParam;
-	return MOpen();
+	if(MIsOpen())
+		return false;
+	FParam = aParam;
+
+	MUpdateSendList();
+	return true;
 }
-void CUDP::MSetSendAddress(net_address const& aAddress)
+
+bool CUDP::MOpen(const settings_t& aParam)
 {
-	VLOG(2) << "Setting  " << aAddress << " as default address";
+	return MSettingUp(aParam)&&MOpen();
+}
+bool CUDP::MSetSendAddress(net_address const& aAddress)
+{
+	VLOG(2) << "Set send address:  " << aAddress;
+	MCleanSendAddress();
+
 	if (aAddress.MIsValid())
 	{
-		FParam.FAddr = aAddress;
-		MSetAddress(aAddress, &FAddr.MGet());
+		return MAddSendAddress(aAddress);
 	}else
 	{
-		FParam.FAddr.MUnSet();
-		FAddr.MUnSet();
+		return true;
 	}
+
+}
+bool CUDP::MAddSendAddress(net_address const& aAddress)
+{
+	VLOG(2) << "Adds  " << aAddress << " to send list";
+
+	if(!FParam.MAddSendAddr(aAddress))
+		return false;
+	MUpdateSendList();
+	return true;
+}
+bool CUDP::MRemoveSendAddress(net_address const& aAddress)
+{
+	VLOG(2) << "Removes  " << aAddress << " from semd list";
+
+	if(!FParam.MRemoveSendAddr(aAddress))
+		return false;
+	MUpdateSendList();
+	return true;
+}
+bool CUDP::MCleanSendAddress()
+{
+	VLOG(2) << "Removes all send addresses";
+
+	FParam.FSendTo.clear();
+
+	MUpdateSendList();
+	return true;
+}
+
+/** Check for exist the net interface
+ * which is in keeping with broadcast
+ *
+ *
+ * @return true if exist valid broadcast ip addresses
+ */
+bool CUDP::MRemoveInvalidBroadcastAddresses()
+{
+	bool _is_broadcast_exist = false;
+
+	/** Receives list of network interface address
+	 *
+	 */
+	interfaces_addr_t _to;
+	loocal_addr_ip4(&_to);
+
+	if (!FParam.FSendTo.empty())
+	{
+		/** Looking for broadcast addresses in FParam
+		 *
+		 */
+		net_addresses_t::iterator _it = FParam.FSendTo.begin();
+		bool _is_full_broadcast=false;
+		do
+		{
+			DCHECK(_it->FIp.MIs());
+
+			network_ip_t const& _ip = _it->FIp.MGetConst();
+			if (is_broadcast_ip(_ip))
+			{
+				/** If 255.255.255.255 broadcast addresses when remove it
+				 * and add network interface  broadcast addresses
+				 *
+				 */
+				if (FParam.FFlags.MGetFlag(
+						settings_t::E_REPLACE_FULL_BROADCAST_ADDR) && _ip==net_address::BROAD_CAST_ADDR)
+				{
+					_is_full_broadcast=true;
+					FParam.FSendTo.erase(_it++); //warning! only post increment
+					continue;
+				}
+				else
+				{
+					/** Check if exist corresponding interface
+					 * to broadcast address
+					 *
+					 */
+					bool _is = false;
+					interfaces_addr_t::const_iterator _it_int = _to.begin();
+					for (; _it_int != _to.end() && !_is; ++_it_int)
+					{
+						_is = is_in(_ip, _it_int->FIp, _it_int->FMask);
+					}
+
+					/** if corresponding interface
+					 * is not  exist removing the address from #FParam
+					 *
+					 */
+					if (_is)
+					{
+						VLOG(2) << "The network interface for broadcast ip:"
+											<< _ip << " is exist " << *_it_int;
+						_is_broadcast_exist = true;
+					}
+					else
+					{
+						LOG(DFATAL)
+												<< "The network intreface for broadcast ip:"
+												<< _ip << " is not exist.";
+
+						if (FParam.FFlags.MGetFlag(
+								settings_t::E_REMOVE_INVALID_SEND_IP))
+						{
+							FParam.FSendTo.erase(_it++); //warning! only post increment
+							continue;
+						}
+					}
+				}
+			}
+
+			++_it;
+		} while (_it != FParam.FSendTo.end());
+
+		if (_is_full_broadcast)
+		{
+			LOG(INFO)<<"Replace full broadcast address to interface broadcast addresses";
+			if(MAddBroadcastInterfaceAddresses()>0)
+				_is_broadcast_exist=true;
+		}
+	}
+	return _is_broadcast_exist;
+}
+/** Adds to #FParam list of broadcast interface addresses
+ *
+ *@return amount of broadcast ip
+ */
+unsigned CUDP::MAddBroadcastInterfaceAddresses()
+{
+	const list_of_broadcast_addr_t _addrs = sMGetBroadcast();
+	list_of_broadcast_addr_t::const_iterator _it = _addrs.begin(), _it_end(
+			_addrs.end());
+	unsigned _count=0;
+	for (; _it != _it_end; ++_it)
+	{
+		const net_address _new_addr(*_it, FParam.FPort);
+		const bool _is = FParam.MAddSendAddr(_new_addr);
+		LOG_IF(DFATAL,!_is) << "Cannot add broadcast address " << _new_addr;
+		LOG_IF(INFO,_is) << "Adds broadcast address " << _new_addr;
+		if(_is)
+			++_count;
+	}
+	return _count;
+}
+
+/** Adds broadcast addresses to send list if
+ * it no exist
+ *
+ * If broadcast is exist in send list
+ * it checks
+ *
+ *	@return true if no error
+ */
+bool CUDP::MAddBroadcastAddresses()
+{
+	bool _is_broadcast_exist=false;
+
+	if(!MRemoveInvalidBroadcastAddresses())
+	{
+		LOG(INFO)<<"As no broadcast addresses adding it";
+		if(FParam.FFlags.MGetFlag(settings_t::E_REPLACE_FULL_BROADCAST_ADDR))
+			MAddBroadcastInterfaceAddresses();
+		else
+			FParam.MAddSendAddr(net_address(net_address::BROAD_CAST_ADDR,FParam.FPort));
+	}
+
+	MUpdateSendList();
+	return true;
 }
 bool CUDP::MOpen()
 {
-	VLOG(2)<<"Open UDP "<<FParam.FPort;
+	VLOG(2) << "Open UDP " << FParam.FPort;
 	LOG_IF(WARNING, FSock.MIsValid())
-			<< "Host socket is valid. Leak socket can occur! "<<FSock;
+												<< "Host socket is valid. Leak socket can occur! "
+												<< FSock;
 	if (FSock.MIsValid())
 		return false;
-	if(!FParam.MIsValid())//auto generate
-		FParam.FPort=0;
-	FSock = MNewSocket();
+
+	if (!FParam.MIsValid()) //auto generate
+		FParam.FPort = 0;
+
+	FSock = CNetBase::MNewSocket(SOCK_DGRAM,IPPROTO_UDP);
 	if (!FSock.MIsValid())
 	{
-		LOG(ERROR)<< FSock << print_socket_error();
+		LOG(DFATAL) << FSock << print_socket_error();
 		return false;
 	}
+
 	if (FParam.FPort)
-		MReUseAddr(FSock);
+		CNetBase::MReUseAddr(FSock);
 
-	FMaxSize = 0;
-	sockaddr_in _addr;
-	net_address _ip(FParam.FPort);
-	MSetAddress(_ip, &_addr);
+	FMaxSendSize = 0;
 
-	MSettingBufSize(FSock);
-	if (MBindSocket(MGetSocket().MGet(), _addr) < 0)
+	CNetBase::MSettingBufSize(FSock);
+	net_address _bind_addr(FParam.FPort);
+
+	switch (FParam.FType)
 	{
-		LOG(ERROR)<<"Binding "<<FParam.FPort<<" failed "<< print_socket_error();
+	case settings_t::eUNICAST:
+	{
+		if (!FParam.FReceiveFrom.empty())
+		{
+			DCHECK_EQ(FParam.FReceiveFrom.size(), 1);
+			_bind_addr.FIp = *FParam.FReceiveFrom.begin();
+		}
+		break;
+	}
+	case settings_t::eBROADCAST:
+	{
+		if (!CNetBase::MMakeAsBroadcast(FSock))
+		{
+			LOG(DFATAL) << "Cannot setup broadcast addresses";
+			return false;
+		}
+
+		if (!MAddBroadcastAddresses())
+		{
+			LOG(DFATAL) << "Cannot adds broadcast addresses";
+			return false;
+		}
+
+		if (!FParam.FReceiveFrom.empty())
+		{
+			DCHECK_EQ(FParam.FReceiveFrom.size(), 1);
+			_bind_addr.FIp = *FParam.FReceiveFrom.begin();
+		}
+	}
+		break;
+
+	case settings_t::eMULTICAST:
+	{
+		LOG(FATAL) << "Multicast address is not implemented";
+	}
+		break;
+	};
+
+	if (CNetBase::MSetLocalAddrAndPort(MGetSocket().MGet(), _bind_addr) < 0)
+	{
+		LOG(ERROR) << "Binding " << FParam.FPort << " failed "
+								<< print_socket_error();
 		FSock.MClose();
 		return false;
 	}
 	if (!FParam.FPort) //if Port is 0 it means select any available port.
 	{
-		//struct sockaddr_in _addr;
-#ifdef _WIN32
-		int _len = sizeof(_addr);
-#else
-		socklen_t _len = sizeof(_addr);
-#endif
-		int _val = getsockname(MGetSocket().MGet(), (sockaddr*) &_addr, &_len);
-		(void) _val;
-		LOG_IF(FATAL,_val!=0) << print_socket_error();
-		FParam.FPort = ntohs(_addr.sin_port);
-		LOG(INFO)<<"Chosen port number "<<FParam.FPort<<" as the random port.";
+		FParam.FPort=CNetBase::MGetLocalAddress(MGetSocket()).FPort;
+		LOG(INFO) << "Chosen port number " << FParam.FPort
+								<< " as the random port.";
 	}
-	//FSockSelect.MAddSocket(FSock);
+
 	VLOG(0) << "The UDP socket has been opened successfully.";
-	FMaxSize = static_cast<size_t>(MGetSendBufSize(MGetSocket()));
+	FMaxSendSize = static_cast<size_t>(CNetBase::MGetSendBufSize(MGetSocket()));
 	return true;
 }
 bool CUDP::MReOpen()
@@ -168,22 +389,24 @@ size_t CUDP::MAvailable() const
 }
 ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 {
+	DCHECK_NOTNULL(aBuf);
+
 	VLOG(2) << "Receive data to " << aBuf << ", max time " << aTime;
 
 	if (!MIsOpen())
 	{
-		LOG(ERROR)<< "The socket is not working";
+		LOG(ERROR) << "The socket is not working";
 		return 0;
 	}
 	int _recvd = 0;
-	_recvd = recvfrom(MGetSocket().MGet(), (char*) &_recvd, 1, MSG_PEEK,
-			NULL, NULL);
+	_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) &_recvd, 1, MSG_PEEK,
+	NULL, NULL);
 #ifdef _WIN32
 	//WTF? Fucking windows. If the received msg is more than the buffer size,
 	//it generates the WSAEMSGSIZE error. But The buffer is always small as
 	//it is 1 byte!!!!!
-	if (_recvd >= 0//
-					|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
+	if (_recvd >= 0	//
+	|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
 #else
 	if (_recvd >= 0)
 #endif
@@ -200,24 +423,19 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 			aBuf->resize(_befor + _size);
 			CHECK_GT(aBuf->size(), 0);
 			CHECK_GE(aBuf->size(), _size);
-			data_t::value_type* _pbegin=aBuf->ptr()+(aBuf->size() - _size);
-#ifdef _WIN32
-			_recvd = recvfrom(MGetSocket().MGet(),
-					(char*) _pbegin, (int)_size,
+			data_t::value_type* _pbegin = aBuf->ptr() + (aBuf->size() - _size);
+
+			_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) _pbegin, (int) _size,
 					0, (struct sockaddr*) &_addr, &_len);
-#else
-			_recvd = recvfrom(MGetSocket().MGet(),
-					_pbegin, _size,
-					0, (struct sockaddr*) &_addr, &_len);
-#endif
+
 			VLOG(2) << "Recvd=" << _recvd;
 			if (aFrom)
 			{
 				LOG_IF(ERROR,_len==0) << "Length of address is 0.";
 				if (_len > 0)
 				{
-					aFrom->ip = inet_ntoa(_addr.sin_addr);
-					aFrom->port = ntohs(_addr.sin_port);
+					aFrom->FIp = get_ip(_addr.sin_addr);
+					aFrom->FPort = ntohs(_addr.sin_port);
 					VLOG(2) << "From " << *aFrom;
 				}
 			}
@@ -231,47 +449,59 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 	if (_recvd <= 0)
 	{
 #ifdef _WIN32
-			int const _errno=::WSAGetLastError();
-			if(_errno==WSAECONNRESET)//Thank you Bill Gates for your care!
-				//It's error  mean that  The packet has been SENT to closed port
-				{
-					VLOG(1)<< "WSAECONNRESET"<<_errno;
-					_recvd=0;
-				}
-			else
-			{
-				LOG(ERROR)<< "Unknown error:"<<_errno;
-				_recvd=-1;
-			}
+		int const _errno = ::WSAGetLastError();
+		if (_errno == WSAECONNRESET) //Thank you Bill Gates for your care!
+		//It's error  mean that  The packet has been SENT to closed port
+		{
+			VLOG(1) << "WSAECONNRESET" << _errno;
+			_recvd = 0;
+		}
+		else
+		{
+			LOG(ERROR) << "Unknown error:" << _errno;
+			_recvd = -1;
+		}
 #else
-			LOG(ERROR)<< "Unknown error:" << print_socket_error();
-			_recvd=-1;
+		LOG(ERROR)<< "Unknown error:" << print_socket_error();
+		_recvd=-1;
 #endif
 	}
 	return _recvd;
 }
-CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize, NSHARE::CConfig const& aTo)
+CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize,
+		NSHARE::CConfig const& aTo)
 {
 	net_address _addr(aTo);
 	LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalide type of smart_addr";
 	if (!_addr.MIsValid())
-		return sent_state_t(E_INVALID_VALUE,0);
+		return sent_state_t(sent_state_t::E_INVALID_VALUE, 0);
+
 	return MSend(pData, nSize, _addr);
 }
 CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize)
 {
-	if (!FParam.FAddr.MIs())
+	if (FSendToAddr.empty())
 	{
-		LOG(ERROR)<<"The Default address is not setting";
-		return sent_state_t(E_INVALID_VALUE,0);
+		LOG(ERROR) << "The Default address is not setting";
+		return sent_state_t(sent_state_t::E_INVALID_VALUE, 0);
 	}
-	return MSend(pData, nSize, FAddr.MGet());
+
+	send_to_t::const_iterator _it=FSendToAddr.begin(),_it_end(FSendToAddr.end());
+
+	sent_state_t _state(sent_state_t::E_ERROR, 0);
+
+	for (; _it != _it_end; ++_it)
+	{
+		_state = MSend(pData, nSize,*_it);
+	}
+	return _state;
 }
-CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize, net_address const& aAddress)
+CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize,
+		net_address const& aAddress)
 {
 	VLOG(1) << "Send " << pData << " size=" << nSize << " to " << aAddress;
 	struct sockaddr_in _Sa;
-	MSetAddress(aAddress, &_Sa);
+	CNetBase::MSetAddress(aAddress, &_Sa);
 	return MSend(pData, nSize, _Sa);
 }
 CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize,
@@ -279,48 +509,60 @@ CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize,
 {
 	if (!MIsOpen())
 	{
-		LOG(WARNING)<<"The Port is not opened.";
-		return sent_state_t(E_NOT_OPENED,0);
+		LOG(WARNING) << "The Port is not opened.";
+		return sent_state_t(sent_state_t::E_NOT_OPENED, 0);
 	}
-	VLOG(2)<<"Sending "<<pData<<" of "<<nSize;
-	if(FMaxSize && nSize>FMaxSize)
-	FMaxSize=static_cast<size_t>(MGetSendBufSize(MGetSocket()));
+	VLOG(2) << "Sending " << pData << " of " << nSize<<" to "<<net_address(aAddress);
 
-	LOG_IF(ERROR,(FMaxSize>0)&&FMaxSize<(size_t)nSize)<<" Message may be too long. Max size = "<<FMaxSize<<". Sending "<<nSize;
-#ifdef _WIN32
-	int _rval=sendto(MGetSocket().MGet(), reinterpret_cast<char const*>(pData), static_cast<int>(nSize), 0,
-			(struct sockaddr *) &aAddress, sizeof(aAddress));
-	LOG_IF(ERROR,_rval<0)<<"Send error "<<print_socket_error();
-	VLOG_IF(2,_rval>=0)<<"Sent "<<_rval<<" bytes.";
-	bool _is= _rval>0;
-#else
-	int _rval= sendto(MGetSocket().MGet(), pData, nSize, 0, (struct sockaddr *) &aAddress,
-			sizeof(aAddress));
+	if (FMaxSendSize && nSize > FMaxSendSize)
+		FMaxSendSize = static_cast<size_t>(CNetBase::MGetSendBufSize(MGetSocket()));
 
-	LOG_IF(ERROR,_rval<0)<<"Send error "<<print_socket_error();
-	VLOG_IF(2,_rval>=0)<<"Sent "<<_rval<<" bytes.";
-	bool const _is= _rval>0;
-#endif
-	if(_is) FDiagnostic.MSend(_rval);
-	return _is?sent_state_t(E_SENDED,_rval):sent_state_t(E_ERROR,0);
+	LOG_IF(ERROR,(FMaxSendSize>0)&&FMaxSendSize<(size_t)nSize)
+																<< " Message may be too long. Max size = "
+																<< FMaxSendSize
+																<< ". Sending "
+																<< nSize;
+
+	return MSendImpl(pData,nSize,aAddress);
+
 }
-CUDP::param_t const& CUDP::MGetInitParam() const
+CUDP::sent_state_t  CUDP::MSendImpl(void const* pData, size_t nSize,
+		struct sockaddr_in const& aAddress)
+{
+	int const _rval = sendto(MGetSocket().MGet(),
+			reinterpret_cast<raw_type_t const*>(pData), static_cast<int>(nSize), 0,
+			(struct sockaddr *) &aAddress, sizeof(aAddress));
+	LOG_IF(ERROR,_rval<0) << "Send error " << print_socket_error();
+	VLOG_IF(2,_rval>=0) << "Sent " << _rval << " bytes.";
+	bool _is = _rval > 0;
+	sent_state_t const _trval(
+			_is ? sent_state_t::E_SENDED :
+							sent_state_t::E_ERROR, nSize);
+
+	FDiagnostic.MSend(_trval);
+	return _trval;
+}
+CUDP::settings_t const& CUDP::MGetSetting() const
 {
 	return FParam;
+}
+NSHARE::CConfig CUDP::MSettings(void) const
+{
+	return MGetSetting().MSerialize();
 }
 const CSocket& CUDP::MGetSocket(void) const
 {
 	return FSock;
 }
-in_port_t CUDP::MGetPort() const
+network_port_t CUDP::MGetPort() const
 {
 	return FParam.FPort;
 }
 NSHARE::CConfig CUDP::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	_conf.MAdd(MGetInitParam().MSerialize());
-	_conf.MAdd("open",MIsOpen());
+	_conf.MAdd(MGetSetting().MSerialize());
+	_conf.MAdd("open", MIsOpen());
 	_conf.MAdd(FDiagnostic.MSerialize());
 	return _conf;
 }
@@ -332,54 +574,193 @@ std::ostream & CUDP::MPrint(std::ostream & aStream) const
 		aStream << NSHARE::NCONSOLE::eFG_RED << "Close.";
 	aStream << NSHARE::NCONSOLE::eNORMAL;
 	aStream << " Type: UDP. " << "Parameters: local port=" << FParam.FPort;
-	if (FParam.FAddr.MIs())
-		aStream << "; " << FParam.FAddr.MGetConst() << ".";
-	else
-		aStream<<"There is not sending ip.";
+
+	aStream<<"Send to:" <<FParam.FSendTo;
+
 	return aStream;
 }
+const CText CUDP::settings_t::NAME = "param";
+const CText CUDP::settings_t::UDP_PORT = "port";
+const CText CUDP::settings_t::ADDR_TO = "toip";
+const CText CUDP::settings_t::RECEIVE_FROM = "fromip";
+const CText CUDP::settings_t::TYPE = "type";
+const CText CUDP::settings_t::TYPE_UNICAST = "unicast";
+const CText CUDP::settings_t::TYPE_BROADCAST = "broadcast";
+const CText CUDP::settings_t::TYPE_MULTICAST = "multicast";
+const CText CUDP::settings_t::REMOVE_INVALID_SEND_IP = "remove_invalid_send_ip";
+const CText CUDP::settings_t::REPLACE_FULL_BROADCAST_ADDR = "replace_full_broadcast_addr";
 
-const CText CUDP::param_t::UDP_PORT = "port";
-const CText CUDP::param_t::ADDR_TO = "toip";
+CUDP::settings_t::settings_t(network_port_t aPort, net_address const& aParam,
+		eType const& aType) :
+		FType(aType),//
+		FFlags(E_DEFAULT_FLAGS)
+{
+	FPort = aPort;
 
-CUDP::param_t::param_t(in_port_t aPort, net_address const& aParam)
-{
-	FPort=aPort;
-	if(aParam.MIsValid())
-		FAddr=aParam;
+	MAddSendAddr(aParam);
 }
-CUDP::param_t::param_t()
+CUDP::settings_t::settings_t() :
+		FType(eUNICAST),//
+		FFlags(E_DEFAULT_FLAGS)
 {
-	FPort = std::numeric_limits<in_port_t>::max();
+	FPort = std::numeric_limits<network_port_t>::max();
 }
-CUDP::param_t::param_t(NSHARE::CConfig const& aConf)
+bool CUDP::settings_t::MRemoveSendAddr(net_address const&  aParam)
 {
-	FPort = std::numeric_limits<in_port_t>::max();
+	VLOG(2)<<"Removes address "<<aParam;
+	return FSendTo.erase(aParam)>0;
+}
+bool CUDP::settings_t::MRemoveReceiveAddr(network_ip_t const& aAddress)
+{
+	return FReceiveFrom.erase(aAddress)>0;;
+}
+bool CUDP::settings_t::MSetReceiveAddr(network_ip_t const& aNewAddress)
+{
+	FReceiveFrom.clear();
+	return FReceiveFrom.insert(aNewAddress).second;
+}
+bool CUDP::settings_t::MAddReceiveAddr(network_ip_t const& aNewAddress)
+{
+	switch (FType)
+	{
+	case eUNICAST:
+		if(!FReceiveFrom.empty())
+			return false;
+		break;
+	case eBROADCAST:
+		if(!FReceiveFrom.empty())
+			return false;
+		break;
+	case eMULTICAST:
+		break;
+	};
+	return FReceiveFrom.insert(aNewAddress).second;
+}
+bool CUDP::settings_t::MAddSendAddr(net_address aParam)
+{
+	switch (FType)
+	{
+	case eUNICAST:
+		if (aParam.MIsValid())
+		{
+			if (aParam.MIsIPValid())
+			{
+				if (aParam.FIp.MGetConst().rfind(net_address::BROAD_CAST_SUBADDR) != CText::npos)
+				{
+					LOG(INFO) << "The address is broadcast:"
+											<< aParam.FIp.MGetConst();
+
+					FType = eBROADCAST;
+				}
+			}
+			else if (!aParam.FIp.MIs())
+			{
+				FType = eBROADCAST;
+				aParam.FIp = net_address::BROAD_CAST_ADDR;
+				LOG(INFO) << "The set up broadcast ip:"
+										<< aParam.FIp.MGetConst();
+			}
+			else
+				return false;
+		}else
+			return false;
+		break;
+
+	case eBROADCAST:
+	case eMULTICAST:
+	{
+		if (!aParam.MIsValid())
+		{
+			aParam.FPort = FPort;
+			aParam.FIp = net_address::BROAD_CAST_ADDR;
+			LOG(INFO) << "The set up broadcast ip:"
+									<< aParam.FIp;
+		}
+		else
+		{
+			if (!aParam.FIp.MIs())
+			{
+				aParam.FIp = net_address::BROAD_CAST_ADDR;
+
+			}else if (!aParam.MIsIPValid())
+				return false;
+		}
+	}
+		break;
+	}
+	VLOG(2)<<"Adds address "<<aParam;
+	return FSendTo.insert(aParam).second;
+}
+CUDP::settings_t::settings_t(NSHARE::CConfig const& aConf) :
+		FType(eUNICAST),//
+		FFlags(E_REMOVE_INVALID_SEND_IP)
+{
+	FPort = std::numeric_limits<network_port_t>::max();
+
+	const CText _type=aConf.MValue(TYPE, TYPE_UNICAST);
+	if (_type == TYPE_UNICAST)
+		FType = eUNICAST;
+	else if (_type == TYPE_BROADCAST)
+		FType = eBROADCAST;
+	else if (_type == TYPE_MULTICAST)
+		FType = eMULTICAST;
+
+	FFlags.MSetFlag(E_REMOVE_INVALID_SEND_IP,
+			aConf.MValue(REMOVE_INVALID_SEND_IP,
+					FFlags.MGetFlag(E_REMOVE_INVALID_SEND_IP)));
+	FFlags.MSetFlag(E_REPLACE_FULL_BROADCAST_ADDR,aConf.MValue(REPLACE_FULL_BROADCAST_ADDR, FFlags.MGetFlag(E_REPLACE_FULL_BROADCAST_ADDR)));
 
 	if (aConf.MGetIfSet(UDP_PORT, FPort))
 	{
-		if (aConf.MIsChild(ADDR_TO))
 		{
-			net_address _addr(aConf.MChild(ADDR_TO));
-			if(_addr.MIsValid())
-				FAddr=_addr;
-			else
-				LOG(DFATAL)<<"Invalid param "<<aConf.MChild(ADDR_TO);
+			ConfigSet const _set = aConf.MChildren(ADDR_TO);
+			ConfigSet::const_iterator _it = _set.begin();
+			for (; _it != _set.end(); ++_it)
+			{
+				bool const _is = MAddSendAddr(net_address(*_it));
+				LOG_IF(DFATAL,!_is) << "Invalid param " << *_it;
+			}
+		}
+		{
+			ConfigSet const _set = aConf.MChildren(RECEIVE_FROM);
+			ConfigSet::const_iterator _it = _set.begin();
+			for (; _it != _set.end(); ++_it)
+			{
+				bool const _is = MAddReceiveAddr(_it->MValue());
+				LOG_IF(DFATAL,!_is) << "Invalid param " << *_it;
+			}
 		}
 	}
 }
-bool CUDP::param_t::MIsValid() const
+bool CUDP::settings_t::MIsValid() const
 {
-	return FPort!=std::numeric_limits<in_port_t>::max();
+	return FPort != std::numeric_limits<network_port_t>::max();
 }
-CConfig CUDP::param_t::MSerialize() const
+CConfig CUDP::settings_t::MSerialize() const
 {
-	CConfig _conf("param");
+	CConfig _conf(NAME);
 	if (MIsValid())
 	{
 		_conf.MSet(UDP_PORT, FPort);
-		if (FAddr.MIs())
-			_conf.MAdd(/*ADDR_TO,*/ FAddr.MGetConst().MSerialize());
+		if (!FReceiveFrom.empty())
+		{
+			NSHARE::network_ips_t::const_iterator _it(FReceiveFrom.begin()), _it_end(
+					FReceiveFrom.end());
+			for(;_it!=_it_end;++_it)
+				_conf.MAdd(RECEIVE_FROM,*_it);
+		}
+
+		if (!FSendTo.empty())
+		{
+			NSHARE::net_addresses_t::const_iterator _it(FSendTo.begin()), _it_end(
+					FSendTo.end());
+			for(;_it!=_it_end;++_it)
+				_conf.MAdd(ADDR_TO,_it->MSerialize());
+		}
+		_conf.MAdd(TYPE, FType);
+
+		_conf.MAdd(REMOVE_INVALID_SEND_IP, FFlags.MGetFlag(E_REMOVE_INVALID_SEND_IP));
+		_conf.MAdd(REPLACE_FULL_BROADCAST_ADDR, FFlags.MGetFlag(E_REPLACE_FULL_BROADCAST_ADDR));
 	}
 	return _conf;
 }

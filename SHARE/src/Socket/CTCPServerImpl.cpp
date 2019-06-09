@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <Socket/CLoopBack.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
@@ -65,29 +66,19 @@ bool IMPL::MOpenHostSocket()
 	MReUsePort(FHostSock);
 	MSettingSocket(FHostSock);
 
-	if (MBindSocket(FHostSock.MGet(), FHostAddr) < 0)
+	if (MSetLocalAddrAndPort(FHostSock.MGet(), FHostAddr) < 0)
 	{
-		net_address _addr;
-		FThis->MGetInitParam(&_addr);
-		LOG(ERROR)<<"Binding "<<_addr<<" failed "<<print_error();
+		LOG(ERROR)<<"Binding "<<FHostAddr<<" failed "<<print_error();
 
 		/*		if (errno!=EADDRINUSE)
 		 return false;*/
 		FHostSock.MClose();
 		return false;
 	}
-	if(!FHostAddr.sin_port)
+	if(FHostAddr.FPort==0)
 	{
-		sockaddr_in addr;
-		socklen_t len = sizeof(addr);
-		if (getsockname(FHostSock.MGet(), (struct sockaddr*) &addr, &len) == 0)
-		{
-			LOG(WARNING)<<"Tcp serve is used random port = "<<addr.sin_port;
-			FHostAddr.sin_port=addr.sin_port;
-		}
-		else
-		LOG(DFATAL)<<"Cannot open tcp server wuth random port";
-
+		FHostAddr=MGetLocalAddress(FHostSock.MGet());
+		LOG(WARNING)<<"Tcp serve is used random port = "<<FHostAddr.FPort;
 	}
 	return true;
 }
@@ -315,7 +306,7 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		return MSendTo(*_it, pData, nSize);
 	}
 	LOG(ERROR)<< "The client "<< (aTo)<<" is not exist.";
-	return sent_state_t(E_INVALID_VALUE,0);
+	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 }
 CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		NSHARE::CConfig const& aTo)
@@ -326,7 +317,7 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 	net_address _addr(aTo);
 	LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalide type of smart_addr";
 	if (!_addr.MIsValid())
-	return sent_state_t(E_INVALID_VALUE,0);
+	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 	for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
 			++_it)
 	if (_it->second.FAddr == _addr)
@@ -335,7 +326,7 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		return MSendTo(*_it, pData, nSize);
 	}
 	LOG(ERROR)<< "The client "<< aTo<<" is not exist.";
-	return sent_state_t(E_INVALID_VALUE,0);
+	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 }
 CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 {
@@ -348,14 +339,13 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 		VLOG(2) << "Send to  " << _it->second << " by " << _it->first;
 		_rval *= MSendTo(*_it, pData, nSize).MIs()?1:0;
 	}
-	return _rval != 0?sent_state_t(E_SENDED,nSize):sent_state_t(E_ERROR,0);
+	return _rval != 0?sent_state_t(sent_state_t::E_SENDED,nSize):sent_state_t(sent_state_t::E_ERROR,0);
 }
 CTCPServer::sent_state_t IMPL::MSendTo(clients_fd_t::value_type const& aVal, const void* pData,
 		size_t nSize)
 {
-	CTCPServer::sent_state_t const _state(CTcpImplBase::MSendTo(aVal.first,pData,nSize,aVal.second.FDiagnostic,false,aVal.second.FAgainError));
-	if(_state.FError==E_SENDED)
-	FDiagnostic.MSend(nSize);
+	CTCPServer::sent_state_t const _state(CTcpImplBase::MSendTo(aVal.first,pData,nSize,aVal.second.FDiagnostic,false,aVal.second.FAgainError));	
+	FDiagnostic.MSend(_state);
 	return _state;
 }
 eCBRval IMPL::sMConnect(void*, void*, void* pData)
@@ -388,9 +378,9 @@ net_address IMPL::MGetAddress(
 {
 	char buf[INET6_ADDRSTRLEN + 20];
 	net_address _addr;
-	_addr.port = ntohs(aAddr.sin_port);
+	_addr.FPort = ntohs(aAddr.sin_port);
 	if (inet_ntop(aAddr.sin_family, &aAddr.sin_addr, buf, sizeof(buf)) != NULL)
-	_addr.ip = buf;
+	_addr.FIp = buf;
 	else
 	LOG(ERROR)<< "Invalid address " << print_error();
 

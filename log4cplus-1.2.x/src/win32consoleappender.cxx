@@ -32,6 +32,7 @@
 #include <log4cplus/thread/syncprims-pub-impl.h>
 #include <log4cplus/streams.h>
 #include <sstream>
+#include <winerror.h>
 
 /* list of available colors which can be OR'ed together and provided as an INT in the config file, e.g.:
        log4cplus.appender.INFO_MSGS.TextColor=36

@@ -53,7 +53,7 @@ bool CUDPMainChannel::MOpen(IIOConsumer* aCustomer)
 }
 bool CUDPMainChannel::MIsConnected() const
 {
-	return MIsOpened() && FUdp.MGetInitParam().FAddr.MIs() && FIsConnected;
+	return MIsOpened() && !FUdp.MGetSetting().FSendTo.empty() && FIsConnected;
 }
 bool CUDPMainChannel::MIsOpened() const
 {
@@ -81,19 +81,22 @@ void CUDPMainChannel::MReceiver()
 		net_address _from;
 		if (FUdp.MReceiveData(&_from, &_data, 0.0) > 0)
 		{
-			if (!FUdp.MGetInitParam().FAddr.MIs())
+			if (FUdp.MGetSetting().FSendTo.empty())
 			{
 				LOG(ERROR)<< "The default address is not setting";
 				continue;
 			}
 
-			LOG_IF(ERROR,_from!=FUdp.MGetInitParam().FAddr.MGetConst()) << "Received " << _data.size()
-													<< " bytes from unknown host "
-													<< _from << ". Kernel ip "
-													<< FUdp.MGetInitParam().FAddr.MGetConst();
 
-			if (FUdp.MGetInitParam().FAddr.MGetConst() != _from)
+			if (FUdp.MGetSetting().FSendTo.end() ==
+					FUdp.MGetSetting().FSendTo.find(_from))
+			{
+				LOG(ERROR) << "Received " << _data.size()<< " bytes from unknown host "
+				<< _from << ". Kernel ip "
+				<< FUdp.MGetSetting().FSendTo;
+
 				continue;
+			}
 			VLOG(2) << "Receiver " << _data.size() << " bytes from "
 								<< _from;
 			ISocket::data_t const& _fix_data=_data;
@@ -137,9 +140,9 @@ void CUDPMainChannel::MHandleServiceDG(main_channel_param_t const* aP)
 	main_ch_param_t _sparam(deserialize<main_channel_param_t, main_ch_param_t>(aP, (routing_t*)NULL, (error_info_t*)NULL));	
 	CHECK_EQ(_sparam.FType, E_MAIN_CHANNEL_UDP);
 
-	LOG_IF(WARNING,FUdp.MGetInitParam().FAddr.MIs())
+	LOG_IF(WARNING,!FUdp.MGetSetting().FSendTo.empty())
 															<< "The default address has already been set to "
-															<< FUdp.MGetInitParam().FAddr.MGetConst();
+															<< FUdp.MGetSetting().FSendTo;
 	NSHARE::net_address _addr(_sparam.FValue);
 	CHECK(_addr.MIsValid());
 	
@@ -192,7 +195,7 @@ bool CUDPMainChannel::MSend(user_data_t & aVal2)
 	{
 		LOG(ERROR)<<"Send error";
 		net_address _kernel_ip;
-		LOG_IF(ERROR,!FUdp.MGetInitParam().FAddr.MIs())
+		LOG_IF(ERROR,FUdp.MGetSetting().FSendTo.empty())
 		<< "The kernel address is not setting";
 	}
 	return _is;

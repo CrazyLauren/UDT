@@ -894,8 +894,27 @@ NSHARE::CConfig main_ch_param_t::MSerialize() const
 	VLOG(5) << " " << _main.MToJSON(true);
 	return _main;
 }
-bool main_ch_param_t::MIsValid()const{
+bool main_ch_param_t::MIsValid()const
+{
 	return !FType.empty();
+}
+
+const NSHARE::CText auto_search_info_t::NAME = "auto_search_info";
+auto_search_info_t::auto_search_info_t(NSHARE::CConfig const& aConf) :
+		FProgramm(aConf.MChild(program_id_t::NAME))
+{
+}
+
+NSHARE::CConfig auto_search_info_t::MSerialize() const
+{
+	NSHARE::CConfig _conf(NAME);
+	_conf.MAdd(FProgramm.MSerialize());
+
+	return _conf;
+}
+bool auto_search_info_t::MIsValid() const
+{
+	return FProgramm.MIsValid();
 }
 
 }

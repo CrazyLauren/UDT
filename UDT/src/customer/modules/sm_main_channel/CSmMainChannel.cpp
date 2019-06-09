@@ -299,12 +299,12 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 		_mask.FData.FType = E_SM_DATA_INFO;
 		NSHARE::CSharedMemoryClient::eSendState _state = FSm.MSend(_data_buf,
 				false, _mask.FMask);
-		VLOG_IF(1,_state==NSHARE::CSharedMemoryClient::E_SENDED)
+		VLOG_IF(1,_state==NSHARE::sent_state_t::E_SENDED)
 																		<< _data_buf.size()
 																		<< " bytes sent successfully ";
 		switch (_state)
 		{
-		case NSHARE::CSharedMemoryClient::E_SENDED:
+		case NSHARE::sent_state_t::E_SENDED:
 		{
 			++_mask.FData.FCounter;
 			VLOG(2) << "Next counter=" << _mask.FData.FCounter;
@@ -313,12 +313,12 @@ bool CSmMainChannel::MSendInOnePart(const size_t _size,
 			return true;
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_ERROR:
+		case NSHARE::sent_state_t::E_ERROR:
 		{
 			return false;
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_AGAIN:
+		case NSHARE::sent_state_t::E_AGAIN:
 			VLOG(1) << "Try send again.";
 			NSHARE::CThread::sMYield();
 			break;
@@ -350,12 +350,12 @@ bool  CSmMainChannel::MSendInTwoParts(const size_t _size, const user_data_info_t
 				_is_info_sended ?
 						FSm.MSend(_data_buf, false, _mask.FMask) :
 						FSm.MSend(_buf, false, _mask.FMask);
-		VLOG_IF(1,_state==NSHARE::CSharedMemoryClient::E_SENDED)
+		VLOG_IF(1,_state==NSHARE::sent_state_t::E_SENDED)
 																		<< _data_buf.size()
 																		<< " bytes sent successfully ";
 		switch (_state)
 		{
-		case NSHARE::CSharedMemoryClient::E_SENDED:
+		case NSHARE::sent_state_t::E_SENDED:
 		{
 			++_mask.FData.FCounter;
 			VLOG(2) << "Next counter=" << _mask.FData.FCounter;
@@ -366,12 +366,12 @@ bool  CSmMainChannel::MSendInTwoParts(const size_t _size, const user_data_info_t
 				_is_info_sended = true;
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_ERROR:
+		case NSHARE::sent_state_t::E_ERROR:
 		{
 			return false;
 			break;
 		}
-		case NSHARE::CSharedMemoryClient::E_AGAIN:
+		case NSHARE::sent_state_t::E_AGAIN:
 			VLOG(1) << "Try send again.";
 			NSHARE::CThread::sMYield();
 			break;

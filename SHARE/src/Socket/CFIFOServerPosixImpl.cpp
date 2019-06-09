@@ -13,6 +13,7 @@
  */
 #ifndef _WIN32
 #include <deftype>
+#include <limits.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -365,7 +366,7 @@ ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::si
 	client_t _rht(aTo);
 	LOG_IF(DFATAL,!_rht.MIsValid()) << "Invalide type of smart_addr";
 	if (!_rht.MIsValid())
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	return MSend(aData, aSize, _rht.FClient);
 }
 ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::size_t aSize,
@@ -390,7 +391,7 @@ ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::si
 		DCHECK(_socket.MIsValid()) << "Unknown client " << aTo;
 
 		if (!_socket.MIsValid())
-			return sent_state_t(E_ERROR,0);
+			return sent_state_t(sent_state_t::E_ERROR,0);
 
 		int _err_count = 0;
 		for (HANG_INIT; aSize; HANG_CHECK)
@@ -418,7 +419,7 @@ ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::si
 				}
 				++_err_count;
 				if(_err_count>5)
-					return sent_state_t(E_ERROR,_full_size-aSize);
+					return sent_state_t(sent_state_t::E_ERROR,_full_size-aSize);
 			}
 			else
 			{
@@ -432,7 +433,7 @@ ISocket::sent_state_t CFIFOServer::CImpl::MSend(void const* const aData, std::si
 			break;
 		}
 	}
-	return sent_state_t(E_SENDED,_full_size-aSize);
+	return sent_state_t(sent_state_t::E_SENDED,_full_size-aSize);
 }
 
 const CSocket& CFIFOServer::CImpl::MGetSocket() const

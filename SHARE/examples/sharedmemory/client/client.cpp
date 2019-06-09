@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	{
 		NSHARE::CBuffer _buf= _client.MAllocate(_buf_size);
 
-		if(!_buf.empty()&& _client.MSend(_buf, false, _flags)== CSharedMemoryClient::E_SENDED)
+		if(!_buf.empty()&& _client.MSend(_buf, false, _flags)== sent_state_t::E_SENDED)
 			++_flags;
 	}
 	NSHARE::usleep(10000);

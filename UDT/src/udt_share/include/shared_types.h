@@ -501,6 +501,50 @@ struct UDT_SHARE_EXPORT main_ch_param_t
 	bool MIsValid()const;
 
 };
+
+/** Information needed for
+ * connection other kernel to the kernel
+ * which is sent the this info
+ *
+ */
+struct UDT_SHARE_EXPORT auto_search_info_t
+{
+	static const NSHARE::CText NAME;///< A serialization key
+
+	program_id_t FProgramm;///< Information about kernel
+
+	/** A default constructor
+	 *
+	 */
+	auto_search_info_t()
+	{
+		;
+	}
+
+	/*! @brief Deserialize object
+	 *
+	 * To check the result of deserialization,
+	 * used the MIsValid().
+	 * @param aConf Serialized object
+	 */
+	auto_search_info_t(NSHARE::CConfig const& aConf);
+
+	/*! @brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 * @return Serialized object.
+	 */
+	NSHARE::CConfig MSerialize() const;
+
+	/*! @brief Checks object for valid
+	 *
+	 * Usually It's used after deserializing object
+	 * @return true if it's valid.
+	 */
+	bool MIsValid()const;
+
+};
 //---------------
 
 }
@@ -821,6 +865,11 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::main_ch_param_t co
 	using namespace NUDT;
 	return aStream <<"Type:" <<aVal.FType << std::endl
 		<< aVal.FValue.MToJSON(true);
+}
+inline std::ostream& operator<<(std::ostream & aStream, NUDT::auto_search_info_t const& aVal)
+{
+	using namespace NUDT;
+	return aStream << aVal.FProgramm;
 }
 }
 #endif /* SHARED_TYPES_OF_SHARE_H_ */

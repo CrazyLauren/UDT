@@ -68,11 +68,11 @@ bool CResources::MStart()
  *\param aConf A passed configure information
  *\return true if put
  */
-bool CResources::MPutModule(NSHARE::CText const& aName,NSHARE::CConfig const& aConf)
+bool CResources::MPutModule(NSHARE::CText const& aName, NSHARE::CConfig aConf)
 {
 	VLOG(4) << "Push library " << aName;
-	module_t _mod(aName);
-	_mod.FConfig = aConf;
+	aConf.MAdd(module_t::LIBRARY_NAME, aName);
+	module_t _mod(aConf);
 	bool const _result= FModules.insert(_mod).second;
 
 	DLOG_IF(WARNING,!_result)<<"The library is not put as it's exist:"<<aName;
@@ -169,13 +169,33 @@ NSHARE::CConfig CResources::MSerialize() const
 	return _conf;
 }
 const NSHARE::CText CResources::module_t::NAME = "emod";
+const NSHARE::CText CResources::module_t::HAS_TO_BE_LOADED = "has_to_be_loaded";
+const NSHARE::CText CResources::module_t::MODULE_SETTING = "configure";
+const NSHARE::CText CResources::module_t::LIBRARY_NAME = "ename";
+const NSHARE::CText CResources::module_t::ERROR_CODE = "error_code";
 
 CResources::module_t::module_t(NSHARE::CText const& aName)://
 		FName(aName),//
 		FRegister(NULL),//
-		FError(E_NO_ERROR)
+		FError(E_NO_ERROR), //
+		FIsRequired(true)
 {
 	DCHECK(!NSHARE::CDynamicModule::sMIsNameOfLibrary(aName));
+}
+CResources::module_t::module_t(NSHARE::CConfig const& aConf) : //
+		FName(aConf.MValue(LIBRARY_NAME, NSHARE::CText())), //
+		FRegister(NULL), //
+		FConfig(aConf.MChild(MODULE_SETTING)),
+		FError(E_NO_ERROR), //
+		FIsRequired(true)
+{
+	FError = static_cast<eError>(aConf.MValue(ERROR_CODE, 0));
+	aConf.MGetIfSet(HAS_TO_BE_LOADED, FIsRequired);
+}
+bool CResources::module_t::MIsValid() const
+{
+	return !FName.empty(); //
+
 }
 bool CResources::module_t::operator<(module_t const& aRht) const
 {
@@ -190,12 +210,13 @@ bool CResources::module_t::operator<(module_t const& aRht) const
 NSHARE::CConfig CResources::module_t::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	_conf.MAdd("ename", FName);
+	_conf.MAdd(LIBRARY_NAME, FName);
 
 	if(!FConfig.MIsEmpty())
-		_conf.MAdd("configure",FConfig);
+		_conf.MAdd(MODULE_SETTING, FConfig);
 
-	_conf.MAdd("error_code",FError);
+	_conf.MAdd(ERROR_CODE, FError);
+	_conf.MAdd(HAS_TO_BE_LOADED, FIsRequired);
 
 	if (FDynamic.get())
 	{

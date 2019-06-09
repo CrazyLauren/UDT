@@ -55,6 +55,7 @@
 #include "services/CRoutingService.h"
 #include "services/CInfoService.h"
 #include "services/CPacketDivisor.h"
+#include "services/CAutoSearchByEthernet.h"
 
 using namespace NUDT;
 DECLARATION_VERSION_FOR(Kernel)
@@ -174,6 +175,16 @@ void initialize_extern_modules()
 {
 	NUDT::CResources::sMGetInstance().MLoad();
 }
+<<<<<<< HEAD
+=======
+
+CParserFactory* g_CParserFactory=NULL;
+CRoutingService* g_CRoutingService=NULL;
+CInfoService* g_CInfoService=NULL;
+CPacketDivisor* g_CPacketDivisor=NULL;
+CAutoSearchByEthernet* g_CAutoSearchByEthernet=NULL;
+
+>>>>>>> 80c7e21... See ChangeLog.txt
 void initialize_def_sevices()
 {
 <<<<<<< HEAD
@@ -186,6 +197,7 @@ void initialize_def_sevices()
 	g_CRoutingService=new CRoutingService();
 	g_CInfoService=new CInfoService();
 	g_CPacketDivisor=new CPacketDivisor();
+	g_CAutoSearchByEthernet=new CAutoSearchByEthernet();
 }
 void remove_def_sevices()
 {
@@ -200,7 +212,13 @@ void remove_def_sevices()
 
 	delete g_CParserFactory;
 	g_CParserFactory=NULL;
+<<<<<<< HEAD
 >>>>>>> 3b9273e... See ChangeLog.txt
+=======
+
+	delete g_CAutoSearchByEthernet;
+	g_CAutoSearchByEthernet=NULL;
+>>>>>>> 80c7e21... See ChangeLog.txt
 }
 
 void initialize_core(int argc, char* argv[])

@@ -18,11 +18,11 @@
 #include <time.h>
 #include <limits.h>
 
+
 #ifdef _WIN32
-#include <winsock2.h>                     // sockaddr_in
+#	include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>                      // htons, htonl
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <netinet/ip_icmp.h>
@@ -32,13 +32,143 @@
 #include <errno.h>
 
 #ifndef EOK
-#define EOK 0
+#	define EOK 0
 #endif
 
 #ifdef __QNX__
 #	define icmphdr icmp
 #endif
+#endif
 
+namespace NSHARE
+{
+extern bool is_ip_valid(const char* aIp,bool aBroadcast)
+{
+	unsigned  a,b,c,d;
+	return aIp!=NULL//
+			&& sscanf(aIp,"%d.%d.%d.%d", &a, &b, &c, &d) == 4//
+			&& (a<255 ||	(aBroadcast && (a==255) &&	(b==255) && (c==255) && (d==255)))//
+			&& (b<255 || 	(aBroadcast &&				(b==255) && (c==255) && (d==255)))//
+			&& (c<255 || 	(aBroadcast &&							(c==255) && (d==255)))//
+			&& (d<255 || 	(aBroadcast &&										 d==255))//
+			;
+}
+network_ip_t get_ip(uint32_t aIp)
+{
+	struct in_addr _addr;
+	_addr.s_addr = htonl(aIp);
+	return  get_ip(_addr);
+}
+network_ip_t get_ip(struct in_addr const& aIp)
+{
+#ifdef HAVE_INET_PTON
+	char _buf[INET_ADDRSTRLEN];
+	if (inet_ntop(AF_INET, aIp, _buf, sizeof(_buf)) != NULL)
+	{
+		return (const char*)_buf;
+	}
+	return network_ip_t();
+#else
+	return  inet_ntoa(aIp);
+#endif
+}
+extern uint32_t get_ip(network_ip_t const& aIP)
+{
+	return inet_addr( aIP.c_str());
+}
+bool is_mask_valid(uint32_t aVal)
+{
+	aVal ^= 0xffffffff;
+	for (; aVal & 0x1; aVal >>= 1)
+	;
+	return aVal == 0;
+}
+
+bool is_broadcast_ip(network_ip_t const& aIp)
+{
+	union
+	{
+		uint8_t _byte[4];
+		uint32_t _net_ip;
+	};
+	_net_ip=get_ip(aIp.c_str());
+	return _byte[0]==0xFF//
+			||_byte[1]==0xFF//
+			||_byte[2]==0xFF//
+			||_byte[3]==0xFF//
+			;
+}
+NSHARE::network_ip_t broadcast(NSHARE::network_ip_t const& aIP, NSHARE::network_ip_t const& aMask)
+{
+	uint32_t const _ip=inet_addr( aIP.c_str());
+	uint32_t const _mask=inet_addr( aMask.c_str());
+
+	struct in_addr _addr;
+	_addr.s_addr = broadcast(_ip, _mask);
+
+
+	return get_ip(_addr);
+}
+uint32_t broadcast(uint32_t aIP, uint32_t aMask)
+{
+	DCHECK(is_mask_valid(ntohl(aMask)));
+
+	uint32_t const _bits = aMask ^ 0xffffffff;
+	uint32_t const _bcast = aIP | _bits;
+
+	return _bcast;
+}
+int addresses(uint32_t aIP, uint32_t aMask, NSHARE::Strings* aTo)
+{
+	if (!is_mask_valid(ntohl(aMask)))
+	{
+		LOG(DFATAL) << "Invalid network mask";
+		return -1;
+	}
+	uint32_t const _bits = ntohl(aMask ^ 0xffffffff);
+	uint32_t const _base = ntohl(aIP & aMask);
+
+	uint32_t _ip;
+	for (uint32_t i = 1; i <= _bits; ++i)
+	{
+		_ip = _base | i;
+		if (((uint8_t) _ip) == 0x0 || ((uint8_t) _ip) == 0xFF)
+			continue;
+		struct in_addr _addr;
+		_addr.s_addr = htonl(_ip);
+		aTo->push_back(get_ip(_addr));
+	}
+	return _bits;
+}
+int addresses(NSHARE::network_ip_t const& aIP, NSHARE::network_ip_t const& aMask,
+		NSHARE::Strings* aTo)
+{
+	return addresses(inet_addr( aIP.c_str()),inet_addr( aMask.c_str()), aTo);
+}
+
+bool is_in(NSHARE::network_ip_t const& aIP, NSHARE::network_ip_t const& aSubNet,
+		NSHARE::network_ip_t const& aMask)
+{
+	struct in_addr _ip_subnet;
+	_ip_subnet.s_addr=inet_addr( aSubNet.c_str());
+
+	struct in_addr _mask;
+	_mask.s_addr=inet_addr( aMask.c_str());
+
+	if (!is_mask_valid(ntohl(_mask.s_addr)))
+	{
+		DLOG(ERROR)<<"Invalid mask "<<aMask;
+		return false;
+	}
+	struct in_addr _ip;
+	_ip.s_addr=inet_addr( aIP.c_str());
+
+	uint32_t const _bits = ntohl(_mask.s_addr ^ 0xffffffff);
+	uint32_t const _base = ntohl(_ip_subnet.s_addr & _mask.s_addr);
+	return (_base < ntohl(_ip.s_addr)) && (ntohl(_ip.s_addr) <= (_base | _bits));
+}
+}
+#ifdef HAVE_GETIFADDRS
 #define	DEFAULT_DATA_LEN	(64-ICMP_MINLEN)	/* default data length */
 #define SEQUENCE 12
 #define DEF_TIME 0.1
@@ -48,21 +178,11 @@ size_t const MAX_PACKET = 512;
 
 static int input(int const aSocket, double aTime);
 static uint16_t in_cksum(uint16_t *addr, size_t len);
-bool check_mask(uint32_t aVal)
-{
 
-	aVal = ntohl(aVal);
-	aVal ^= 0xffffffff;
-	for (; aVal & 0x1; aVal >>= 1)
-	;
-	return aVal == 0;
-
-}
 namespace NSHARE
 {
-	namespace NNet
-	{
-		int ping(NSHARE::CText aTarget, double aTime, unsigned aNumber)
+
+		int ping(NSHARE::network_ip_t aTarget, double aTime, unsigned aNumber)
 		{
 			int const _socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 			if (_socket <= 0)
@@ -99,68 +219,8 @@ namespace NSHARE
 			return _count;
 		}
 
-		NSHARE::CText broadcast(NSHARE::CText const& aIP, NSHARE::CText const& aMask)
-		{
-			char _str[INET_ADDRSTRLEN];
-			struct in_addr _ip;
-			if (inet_pton(AF_INET, aIP.c_str(), &_ip) <= 0)
-			return "";
-			struct in_addr _mask;
-			if (inet_pton(AF_INET, aMask.c_str(), &_mask) <= 0)
-			return "";
-			in_addr_t _addr = broadcast(_ip.s_addr, _mask.s_addr);
-			inet_ntop(AF_INET, &_addr, _str, INET_ADDRSTRLEN);
-			return _str;
-		}
-		uint32_t broadcast(uint32_t aIP, uint32_t aMask)
-		{
-			if (!check_mask(aMask))
-			{
-				errno= EINVAL;
-				return ULONG_MAX;
-			}
-			uint32_t _bits = aMask ^ 0xffffffff;
-			uint32_t _bcast = aIP | _bits;
 
-			return _bcast;
-		}
-		int addresses(uint32_t aIP, uint32_t aMask, NSHARE::Strings* aTo)
-		{
-			if (!check_mask(aMask))
-			{
-				errno= EINVAL;
-				return -1;
-			}
-			uint32_t const _bits = ntohl(aMask ^ 0xffffffff);
-			uint32_t const _base = ntohl(aIP & aMask);
-
-			char _str[INET_ADDRSTRLEN];
-			uint32_t _ip;
-			for (uint32_t i = 1; i <= _bits; ++i)
-			{
-				_ip = _base | i;
-				if (((uint8_t) _ip) == 0x0 || ((uint8_t) _ip) == 0xFF)
-				continue;
-				in_addr_t _addr = htonl(_ip);
-				inet_ntop(AF_INET, &_addr, _str, INET_ADDRSTRLEN);
-
-				aTo->push_back(_str);
-			}
-			return _bits;
-		}
-		int addresses(NSHARE::CText const& aIP, NSHARE::CText const& aMask,
-				NSHARE::Strings* aTo)
-		{
-			struct in_addr _ip;
-			if (inet_pton(AF_INET, aIP.c_str(), &_ip) <= 0)
-			return -1;
-			struct in_addr _mask;
-			if (inet_pton(AF_INET, aMask.c_str(), &_mask) <= 0)
-			return -1;
-
-			return addresses(_ip.s_addr, _mask.s_addr, aTo);
-		}
-		unsigned looking_for(NSHARE::CText const& aIP, NSHARE::CText const& aMask,
+		unsigned looking_for(NSHARE::network_ip_t const& aIP, NSHARE::network_ip_t const& aMask,
 				NSHARE::Strings* aTo, double aTime, unsigned aNumber)
 		{
 			//FIXME обяединить с поиском ip и ping. разбить на два потока- отправки и чтения
@@ -175,11 +235,12 @@ namespace NSHARE
 
 			return aTo->size();
 		}
-		int loocal_addr(interfaces_addr_t* aTo)
+		int loocal_addr_ip4(interfaces_addr_t* aTo)
 		{
-			struct ifaddrs *_ifaddr = NULL, *_ifa = NULL;
+			struct ifaddrs *_ifaddr = NULL,//
+					*_ifa = NULL;
 			int _rc = 0;
-			char _buf[INET6_ADDRSTRLEN];
+
 			interfaces_addr_t::value_type _temp;
 
 			_rc = getifaddrs(&_ifaddr);
@@ -190,41 +251,31 @@ namespace NSHARE
 				{
 					if (_ifa->ifa_addr == NULL)
 						continue;
-					int _family = _ifa->ifa_addr->sa_family;
-					void *_haddr = NULL;
-					if (_family == AF_INET)
-						_haddr = &((struct sockaddr_in *) _ifa->ifa_addr)->sin_addr;
-					else if (_family == AF_INET6)
-						_haddr = &((struct sockaddr_in6 *) _ifa->ifa_addr)->sin6_addr;
-					else
+
+					int const _family = _ifa->ifa_addr->sa_family;
+
+					if (_family != AF_INET)
 						continue;
 
-					if (inet_ntop(_family, _haddr, _buf, sizeof(_buf)) == NULL)
-						continue;
-					_temp.IP = _buf;
+					_temp.FIp = get_ip(((struct sockaddr_in *) _ifa->ifa_addr)->sin_addr);
+
 					if (_ifa->ifa_name)
-						_temp.Name = _ifa->ifa_name;
+						_temp.FName = _ifa->ifa_name;
 					else
-						_temp.Name = "";
+						_temp.FName = "";
 
-						_temp.Mask = "";
+					_temp.FMask = "";
 					if (_ifa->ifa_netmask != NULL)
 					{
-						_haddr = NULL;
-						if (_family == AF_INET)
-							_haddr =&((struct sockaddr_in *) _ifa->ifa_netmask)->sin_addr;
-						else if (_family == AF_INET6)
-							_haddr = &((struct sockaddr_in6 *) _ifa->ifa_netmask)->sin6_addr;
-
-						DCHECK_NOTNULL(_haddr);
-
-						if (inet_ntop(_ifa->ifa_netmask->sa_family, _haddr, _buf,
-										sizeof(_buf)) != NULL)
-						_temp.Mask = _buf;
-
+						_temp.FMask = get_ip(((struct sockaddr_in *) _ifa->ifa_netmask)->sin_addr);
 					}
-					aTo->push_back(_temp);
+					VLOG(2)<<"Push interface :"<<_temp;
+					if(_temp.FIp!=net_address::ALL_NETWORKS && _temp.FIp!=net_address::LOCAL_HOST)
+						aTo->push_back(_temp);
 				}
+			}else
+			{
+				LOG(DFATAL)<<"Cannot call getifaddrs error"<<errno<<"("<<strerror(errno)<<")";
 			}
 			freeifaddrs(_ifaddr);
 			return aTo->size();
@@ -233,7 +284,7 @@ namespace NSHARE
 				double aTime, unsigned aNumber)
 		{
 			interfaces_addr_t _ifaddr;
-			loocal_addr(&_ifaddr);
+			loocal_addr_ip4(&_ifaddr);
 
 			return looking_for(aTo, _ifaddr, aMaxCountAddrOfSubNet, aTime, aNumber);
 		}
@@ -254,44 +305,20 @@ namespace NSHARE
 			for (interfaces_addr_t::const_iterator _it = aAddr.begin();
 					_it != aAddr.end(); ++_it)
 			{
-				if (_it->Mask == "") //localhost
+				if (_it->FMask == "") //localhost
 				continue;
 				struct in_addr _mask;
-				if (inet_pton(AF_INET, _it->Mask.c_str(), &_mask) > 0)
+				if (inet_pton(AF_INET, _it->FMask.c_str(), &_mask) > 0)
 				{
 					uint32_t _new_mask = (htonl(aMaxCountAddrOfSubNet ^ 0xffffffff))
 					| _mask.s_addr;
 					char _str[INET_ADDRSTRLEN];
 					inet_ntop(AF_INET, &_new_mask, _str, INET_ADDRSTRLEN);
-					looking_for(_it->IP, _str, aTo, aTime, aNumber);
+					looking_for(_it->FIp, _str, aTo, aTime, aNumber);
 				}
 			}
 			return aTo->size();
 		}
-		bool is_in(NSHARE::CText const& aIP, NSHARE::CText const& aSubNet,
-				NSHARE::CText const& aMask)
-		{
-			struct in_addr _ip_subnet;
-			if (inet_pton(AF_INET, aSubNet.c_str(), &_ip_subnet) <= 0)
-			return false;
-			struct in_addr _mask;
-			if (inet_pton(AF_INET, aMask.c_str(), &_mask) <= 0)
-			return false;
-
-			if (!check_mask(_mask.s_addr))
-			{
-				errno= EINVAL;
-				return false;
-			}
-			struct in_addr _ip;
-			if (inet_pton(AF_INET, aIP.c_str(), &_ip) <= 0)
-			return false;
-
-			uint32_t const _bits = ntohl(_mask.s_addr ^ 0xffffffff);
-			uint32_t const _base = ntohl(_ip_subnet.s_addr & _mask.s_addr);
-			return (_base < ntohl(_ip.s_addr)) && (ntohl(_ip.s_addr) <= (_base | _bits));
-		}
-	} //namespace
 }
 int input(int const aSocket, double aTime)
 {
@@ -385,36 +412,60 @@ uint16_t in_cksum(uint16_t *addr, size_t len)
 	answer = ~sum; /* truncate to 16 bits */
 	return (answer);
 }
-#endif //#ifndef _WIN32
+#elif defined(HAVE_IPHLPAPI_H)
+#include <iphlpapi.h>
+
+#	ifdef HAVE_WINERROR_H
+#		include <winerror.h>
+#	else
+# 		error The header winerror.h is reuqurement
+#	endif
 namespace NSHARE
 {
-const CText net_address::NAME="addr";
-const CText net_address::PORT="port";
-const CText net_address::IP="ip";
+int loocal_addr_ip4(interfaces_addr_t* aTo)
+{
+	DCHECK_NOTNULL(aTo);
 
-net_address::net_address(NSHARE::CConfig const& aConf):port(-1)
-{
-	aConf.MGetIfSet(IP,ip);
-	aConf.MGetIfSet(PORT,port);
-}
-CConfig net_address::MSerialize() const
-{
-	CConfig _conf(NAME);
-	if (MIsValid())
+	void* buf = NULL;
+	ULONG bufSz = 0;
+
+	if (GetAdaptersInfo(NULL, &bufSz) == ERROR_BUFFER_OVERFLOW)
+		buf = malloc(bufSz);
+
+	DWORD const _error=GetAdaptersInfo((IP_ADAPTER_INFO*) buf, &bufSz);
+	if (_error== NO_ERROR)
 	{
+<<<<<<< HEAD
 		_conf.MUpdateIfSet(IP, ip);
 		_conf.MSet(PORT,port);
+=======
+		IP_ADAPTER_INFO* _p = (IP_ADAPTER_INFO*) buf;
+		for (; _p != NULL; _p = _p->Next)
+		{
+			net_interface_addr_t _addr;
+			_addr.FName = _p->AdapterName;
+
+			IP_ADDR_STRING* _addr_win=&_p->IpAddressList;
+			for(;_addr_win!=NULL;_addr_win=_addr_win->Next)
+			{
+				_addr.FIp = _addr_win->IpAddress.String;
+				_addr.FMask = _addr_win->IpMask.String;
+
+				if (_addr.FIp != net_address::ALL_NETWORKS && _addr.FIp!=net_address::LOCAL_HOST)
+					aTo->push_back(_addr);
+			}
+		}
+
+	}else
+	{
+		LOG(DFATAL)<<"Cannot call GetAdaptersInfo error:"<<_error;
+>>>>>>> 80c7e21... See ChangeLog.txt
 	}
-	return _conf;
-}
-void net_address::MSetIP(uint32_t aIp) {
-	struct in_addr _addr; //fixme inet_net_ntop()
-	_addr.s_addr = htonl(aIp);
-	ip = inet_ntoa(_addr);
-}
-net_address::net_address(uint32_t aIp, uint32_t aPort)
-{
-	MSetIP(aIp);
-	port = aPort;
+	free(buf);
+	return aTo->size();
 }
 }
+#else
+# 	error function loocal_addr_ip4 is not implemented for current platform
+#endif //#ifndef _WIN32
+

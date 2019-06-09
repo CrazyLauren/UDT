@@ -74,15 +74,43 @@ private:
 		};
 
 		static const NSHARE::CText NAME;///< A serializing key
+		static const NSHARE::CText HAS_TO_BE_LOADED; ///< A key for #FIsRequired field
+		static const NSHARE::CText MODULE_SETTING; ///< A key for #FConfig field
+		static const NSHARE::CText LIBRARY_NAME; ///< A key for #FName field
+		static const NSHARE::CText ERROR_CODE; ///< A key for #FError field
 
 
 		module_t(NSHARE::CText const& aName);
 
+
 		bool MLoad(NSHARE::CText const& aPath) const;
 
+		/*!\brief Deserialize object
+		 *
+		 * To check the result of deserialization,
+		 * used the MIsValid().
+		 *\param aConf Serialized object
+		 */
+		module_t(NSHARE::CConfig const& aConf);
+
+		/*!\brief Serialize object
+		 *
+		 * The key of serialized object is #NAME
+		 *
+		 *\return Serialized object.
+		 */
 		NSHARE::CConfig MSerialize() const;
 
+		/*!\brief Checks object for valid
+		 *
+		 * Usually It's used after deserializing object
+		 *\return true if it's valid.
+		 */
+		bool MIsValid() const;
+
 		bool operator<(module_t const& aRht) const;
+
+
 
 		NSHARE::CText const FName;///<A name of module without .so(dll)
 
@@ -92,11 +120,13 @@ private:
 
 		NSHARE::CConfig FConfig;///< passed configure information
 		mutable eError FError;///< Error Code
+		bool FIsRequired; ///< Has the  library to be loaded?
 	};
 	typedef std::set<module_t> mod_channels_t;
 
 	void MLookingForLibraries();
-	bool MPutModule(NSHARE::CText const& aName,NSHARE::CConfig const& aConf=NSHARE::CConfig());
+	bool MPutModule(NSHARE::CText const& aName, NSHARE::CConfig aConf =
+			NSHARE::CConfig());
 	//Load only channels
 	void MLoadLibraries();
 	void MUnloadLibraries();

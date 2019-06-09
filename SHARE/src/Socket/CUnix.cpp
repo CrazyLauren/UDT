@@ -186,14 +186,19 @@ const CText& CUnixDGRAM::MGetPathTo() const
 CUnixDGRAM::sent_state_t CUnixDGRAM::MSend(const void* const aData, std::size_t aSize)
 {
 	if (!MIsOpenTo())
-		return sent_state_t(E_NOT_OPENED,0);
+	{
+		FDiagnostic.MSend(sent_state_t(sent_state_t::E_NOT_OPENED,aSize));
+		return sent_state_t(sent_state_t::E_NOT_OPENED,aSize);
+	}
 
 
-	bool _is= sendto(FSockTo, aData, aSize, 0, (struct sockaddr *) &Impl->FAddrTo,
+	bool const _is= sendto(FSockTo, aData, aSize, 0, (struct sockaddr *) &Impl->FAddrTo,
 			sizeof(Impl->FAddrTo)) > 0;
-	if(_is)
-		FDiagnostic.MSend(aSize);
-	return _is?sent_state_t(E_SENDED,aSize):sent_state_t(E_ERROR,0);
+
+	sent_state_t const _rval(_is?sent_state_t::E_SENDED:sent_state_t::E_ERROR,aSize);
+	FDiagnostic.MSend(_rval);
+
+	return _rval;
 }
 ssize_t CUnixDGRAM::MReceiveData(data_t* aBuf, const float aTime)
 {

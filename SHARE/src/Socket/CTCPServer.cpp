@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <console.h>
 #include <Socket/CLoopBack.h>
 #include <UType/CDenyCopying.h>
@@ -40,7 +41,7 @@ CTCPServer::CTCPServer(NSHARE::CConfig const& aConf) :
 
 	net_address _param(aConf);
 	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for tcp server is not valid "<<aConf;
-	if (_param.port)
+	if (_param.FPort)
 		MOpen (_param);
 }
 CTCPServer::CTCPServer(const net_address& aParam) :
@@ -58,7 +59,7 @@ CTCPServer::~CTCPServer()
 bool CTCPServer::MOpen(const net_address& aAddr, int aFlags)
 {
 	VLOG(2) << "Open server  " << aAddr << ", aFlags:" << aFlags << this;
-	FImpl->MSetAddress(aAddr, &FImpl->FHostAddr);
+	FImpl->FHostAddr=aAddr;
 	return FImpl->MOpen();
 }
 bool CTCPServer::MReOpen()
@@ -137,14 +138,13 @@ net_address CTCPServer::MGetSetting() const
 }
 bool CTCPServer::MGetInitParam(net_address* aParam) const
 {
-	aParam->ip = inet_ntoa(FImpl->FHostAddr.sin_addr);
-	aParam->port = ntohs(FImpl->FHostAddr.sin_port);
+	*aParam=FImpl->FHostAddr;
 	return true;
 }
 
 bool CTCPServer::CImpl::MIsClient() const
 {
-	return FHostAddr.sin_addr.s_addr != INADDR_ANY ;
+	return FHostAddr.FIp.MIs();
 }
 bool CTCPServer::MCanReceive() const
 {

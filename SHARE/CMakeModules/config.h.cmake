@@ -14,7 +14,10 @@
 #cmakedefine HAVE_UNISTD_H
 #cmakedefine HAVE_SYMLINK
 #cmakedefine HAVE_STATEMENTS_WITH_INITIALIZER
-
+#cmakedefine HAVE_INET_NTOP
+#cmakedefine HAVE_IPHLPAPI_H
+#cmakedefine HAVE_WINERROR_H
+#cmakedefine HAVE_GETIFADDRS
 
 
 

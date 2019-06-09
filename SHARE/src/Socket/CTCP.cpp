@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <UType/CDenyCopying.h>
 #include <UType/CThread.h>
 #include <Socket/CTcpClientImpl.h>
@@ -64,7 +65,7 @@ bool CTCP::MOpen(net_address const& aAddr, int aFlags)
 {
 
 	CNetBase::MSetAddress(aAddr, &FClientImpl->FAddr); //FIXME asserts
-	if (aAddr.ip.MGetConst().empty())
+	if (aAddr.FIp.MGetConst().empty())
 		FClientImpl->FAddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK );
 	return MOpen();
 }

@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <Net.h>
+#include <Socket/CNetBase.h>
 #include <console.h>
 #include <Socket/CLoopBack.h>
 #include <UType/CDenyCopying.h>
@@ -36,7 +37,7 @@ namespace NSHARE
 {
 CSocket CTcpImplBase::MNewSocket()
 {
-	return static_cast<CSocket::socket_t>(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+	return CNetBase::MNewSocket(SOCK_STREAM,IPPROTO_TCP);
 }
 void CTcpImplBase::MWaitForSend(CSocket const & aTo) const
 {
@@ -61,7 +62,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 
 		LOG_IF(ERROR,!aSock.MIsValid()) << "try sending to invalide socket "<< aSock;
 		if(!aSock.MIsValid())
-		return ISocket::sent_state_t(ISocket::E_INVALID_VALUE,0);
+		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 #if defined(_WIN32)
 		int _val = send(aSock.MGet(), reinterpret_cast<char const*>(pData), static_cast<int>(nSize), 0);
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || (defined(__QNX__) && _NTO_VERSION>=640)||defined(__linux__)
@@ -117,7 +118,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 				case EFAULT:
 #	endif
 				LOG(ERROR)<<"Send invalid buffer by tcp(signsev)";
-				return ISocket::sent_state_t(ISocket::E_INVALID_VALUE,0);
+				return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
 				break;
 #endif
 #ifdef __QNX__
@@ -130,7 +131,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 					{
 						LOG(ERROR)<< "Cann't Send " << pData << " size=" << nSize << " to "
 						<< aSock << " as " << print_socket_error();
-						return ISocket::sent_state_t(ISocket::E_ERROR,_full_size-nSize);
+						return sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
 					}
 					else
 					{
@@ -151,14 +152,14 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 #endif
 				{
 					LOG(ERROR)<<"The msg to large "<<nSize<<" bytes";
-					return ISocket::sent_state_t(ISocket::E_TOO_LARGE,0);
+					return sent_state_t(sent_state_t::E_TOO_LARGE,0);
 					break;
 				}
 #ifdef EPIPE
 				case EPIPE:
 				{
 					VLOG(2)<<"Socket is closed.";
-					return ISocket::sent_state_t(ISocket::E_ERROR,_full_size-nSize);
+					return sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
 					break;
 				}
 #endif
@@ -183,7 +184,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 #ifdef WSANOTINITIALISED
 				case WSANOTINITIALISED:
 				LOG(FATAL) <<"WTF!? The WSA is not initialized";
-				return ISocket::sent_state_t(ISocket::E_ERROR,0);
+				return ISocket::sent_state_t(sent_state_t::E_ERROR,0);
 				break;
 #endif
 
@@ -191,7 +192,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 				{
 					LOG(ERROR)<< "Cann't Send " << pData << " size=" << nSize << " to "
 					<< aSock << " as " << print_socket_error();
-					return ISocket::sent_state_t(ISocket::E_ERROR,_full_size-nSize);
+					return ISocket::sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
 				}
 				break;
 			}
@@ -201,7 +202,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 			if(_val==0)
 			{
 				LOG(ERROR)<<"WTF? Send 0 bytes";
-				return ISocket::sent_state_t(ISocket::E_ERROR,_full_size-nSize);
+				return ISocket::sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
 			}
 			CHECK_GE((int)nSize,_val);
 			nSize-=_val;
@@ -210,10 +211,10 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 		}
 	}
 	if (_repeat_count == 0 || nSize > 0)
-		return ISocket::sent_state_t(ISocket::E_ERROR, _full_size - nSize);
+		return ISocket::sent_state_t(sent_state_t::E_ERROR, _full_size - nSize);
 
 	aDiag.MSend(_full_size - nSize);
-	return ISocket::sent_state_t(ISocket::E_SENDED, _full_size - nSize);
+	return ISocket::sent_state_t(sent_state_t::E_SENDED, _full_size - nSize);
 }
 int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 {

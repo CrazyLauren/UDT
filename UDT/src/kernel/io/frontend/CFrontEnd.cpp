@@ -245,7 +245,7 @@ void IMPL::MReceivedData(NSHARE::CBuffer& aData)
 }
 bool IMPL::MSend(const data_t& aVal)
 {
-	return FSocket!=NULL && FSocket->MSend(aVal).FError==ISocket::E_SENDED;
+	return FSocket!=NULL && FSocket->MSend(aVal).MIs();
 }
 
 bool IMPL::MSend(const user_data_t& aVal)
@@ -260,7 +260,7 @@ bool IMPL::MSend(const user_data_t& aVal)
 	CHECK(!aVal.FDataId.FSplit.MIsSplited());
 	const size_t _max_size=FSplit.FMaxSize;
 	const size_t _size=aVal.FData.size();
-	NSHARE::ISocket::eSendState _error=ISocket::E_SENDED;
+	NSHARE::sent_state_t _error(sent_state_t::E_SENDED,0);
 
 	if(FSplit.FType.MGetFlag(split_info::LIMITED) && _max_size<_size)
 	{
@@ -269,23 +269,23 @@ bool IMPL::MSend(const user_data_t& aVal)
 
 		size_t  _send_size=0;
 		for(;_begin!=_end && //
-				_error==ISocket::E_SENDED;_begin+=_send_size)
+				_error.MIs();_begin+=_send_size)
 		{
 			_send_size=std::min(_max_size,(size_t)(_end-_begin));
 			do
 			{
-				_error=FSocket->MSend(_begin,_send_size).FError;
-			}while(_error==ISocket::E_AGAIN && NSHARE::usleep(FRepeatTime));
+				_error=FSocket->MSend(_begin,_send_size);
+			}while(_error.MIs(sent_state_t::E_AGAIN) && NSHARE::usleep(FRepeatTime));
 		}
 	}
 	else
 	{
 		do
 		{
-			_error=FSocket->MSend(aVal.FData).FError;
-		}while(_error==ISocket::E_AGAIN && NSHARE::usleep(FRepeatTime));
+			_error=FSocket->MSend(aVal.FData);
+		}while(_error.MIs(sent_state_t::E_AGAIN) && NSHARE::usleep(FRepeatTime));
 	}
-	if(_error!=ISocket::E_SENDED)
+	if(!_error.MIs())
 	{
 		LOG(ERROR)<<"Cannot Send data From "<<aVal.FDataId<<" as "<<_error;
 		return false;

@@ -16,18 +16,14 @@
 #	include <netinet/in.h> // sockaddr_in
 #	include <sys/time.h>
 #else
-//typedef size_t ssize_t;
-typedef int in_port_t;
 #include <winsock2.h>
 #endif//#include <deftype>
 
 #include <deftype>
 #include <Socket/ISocket.h>
 #include <Socket/CSocket.h>
-#include <Socket/diagnostic_io_t.h>
 #include <Socket/CSelectSocket.h>
-#include <Socket/INet.h>
-#include <Socket/CNetBase.h>
+#include <Socket/net_address_t.h>
 #include <Socket/CUDP.h>
 #include <Socket/CTCP.h>
 #include <Socket/CTCPServer.h>

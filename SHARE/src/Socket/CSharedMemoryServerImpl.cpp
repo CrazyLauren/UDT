@@ -51,7 +51,7 @@ struct IMPL_CLASS::CClient: NSHARE::IIntrusived
 #ifdef _WIN32
 		FEvent.FSignalEvent.MFree();
 #else
-#	warning todo maybe freeing cleanup
+#	warning in linux, the named semaphore is not unlinked for smserver
 #endif
 	}
 	void MEventDisconnected()
@@ -104,12 +104,12 @@ struct IMPL_CLASS::CClient: NSHARE::IIntrusived
 		if (aVal.empty())
 		{
 			LOG(ERROR)<<"Send empty buffer to "<<FClient->FInfo.FId.MGetId();
-			return E_ERROR;
+			return sent_state_t::E_ERROR;
 		}
 		if (!FIsConnected)
 		{
 			LOG(ERROR)<<"It's not connected";
-			return E_ERROR;
+			return sent_state_t::E_ERROR;
 		}
 		NSHARE::CRAII<CMutex> _block(FLock);
 		VLOG(2)<<"Send buffer to "<<FClient->FInfo.FId.MGetId();
@@ -551,13 +551,13 @@ unsigned IMPL_CLASS::MSend(int aUserId, NSHARE::CBuffer & aVal,bool aBlock,CShar
 
 				switch(_state)
 				{
-					case E_SENDED:
+					case sent_state_t::E_SENDED:
 					++_count;
 					break;
-					case E_ERROR:
+					case sent_state_t::E_ERROR:
 					_is_error=true;
 					break;
-					case E_AGAIN:
+					case sent_state_t::E_AGAIN:
 					break;
 					default:
 					break;
@@ -633,20 +633,20 @@ CSharedMemoryBase::eSendState IMPL_CLASS::MSend(shared_identify_t const& aTo,
 	if (aVal.empty())
 	{
 		LOG(ERROR)<<"Send empty buffer to "<<aTo;
-		return E_ERROR;
+		return sent_state_t::E_ERROR;
 	}
 	VLOG(1)<<"Send "<<aVal.size()<<" bytes to "<<aTo;
-	eSendState _state=E_ERROR;
+	eSendState _state= sent_state_t::E_ERROR;
 	{
 		smart_client_t _client=MGetClientImpl(aTo);
 		if (!_client.MIs())
 		{
 			LOG(ERROR)<<aTo<<" is not exist in client list.";
-			return E_ERROR;
+			return sent_state_t::E_ERROR;
 		}
 		_state= _client->MSend(aVal,aBlock,aFlags);
 	}
-	if(_state==E_ERROR)
+	if(_state== sent_state_t::E_ERROR)
 	{
 		LOG(ERROR)<<"Send error "<<_state;
 		FSharedMemory.MCleanUp();

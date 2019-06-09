@@ -387,14 +387,14 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 		if (_delta < MGetOption(KEEP_ALIVE_REQUEST_TIME))
 		{
 			VLOG(2) << "Overload. Ignoring check connection... Delta="<<_delta<<" REQUEST TIME "<<MGetOption(KEEP_ALIVE_REQUEST_TIME);
-			return CSharedMemoryBase::E_AGAIN;
+			return sent_state_t::E_AGAIN;
 		}
 		else if (MCheckConnection(aFrom, aEvent))
-			return CSharedMemoryBase::E_AGAIN;
+			return sent_state_t::E_AGAIN;
 		else if(_read_time!=aEvent.FEvents->FFifo.FReadTime)//may be msg  is not still handled
-			return CSharedMemoryBase::E_AGAIN;
+			return sent_state_t::E_AGAIN;
 		else
-			return CSharedMemoryBase::E_ERROR;
+			return sent_state_t::E_ERROR;
 	}
 
 	//if the buffer has not been allocated into shared memory,
@@ -415,7 +415,7 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 	_info.FRecive.FBufferOffset = static_cast<CSharedAllocator::offset_t>(_offset);
 	VLOG(2) << "Offset is " << _offset;
 
-	CSharedMemoryBase::eSendState _state=CSharedMemoryBase::E_ERROR;
+	CSharedMemoryBase::eSendState _state=sent_state_t::E_ERROR;
 	if (!aBlockMode)
 	{
 		VLOG(2) << "Send by non-blocking mode.";
@@ -426,7 +426,7 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 		if (_is_send)
 		{
 			VLOG(2)<<"The data from "<<aFrom<<" sent successfully.";
-			_state=CSharedMemoryBase::E_SENDED;
+			_state=sent_state_t::E_SENDED;
 		}
 		else
 		{
@@ -434,10 +434,10 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 			if (_delta < MGetOption(KEEP_ALIVE_REQUEST_TIME))
 			{
 				VLOG(2) << "Overload. Ignoring check connection... Delta="<<_delta<<" REQUEST TIME "<<MGetOption(KEEP_ALIVE_REQUEST_TIME);
-				_state = CSharedMemoryBase::E_AGAIN;
+				_state = sent_state_t::E_AGAIN;
 			}
 			else if (MCheckConnection(aFrom, aEvent))
-				_state = CSharedMemoryBase::E_AGAIN;
+				_state = sent_state_t::E_AGAIN;
 		}
 	}
 	else
@@ -461,24 +461,22 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 		if (_is_send)
 		{
 			//aEvent.FLastConnectionTime=NSHARE::get_time();
-			_state= CSharedMemoryBase::E_SENDED;
+			_state= sent_state_t::E_SENDED;
 		}
 		else
-			_state=CSharedMemoryBase::E_ERROR;
+			_state=sent_state_t::E_ERROR;
 	}
-	if(_state!=CSharedMemoryBase::E_SENDED)
+	if(_state!=sent_state_t::E_SENDED)
 	{
 		VLOG(2) << "Reset the buffer in order to avoid memory leak.";
 		volatile CBuffer _reset(*_p_alloc, _offset,false);
 		(void) _reset;
-	}else
-	{
-		FDiagnostic.MSend(_info.FRecive.FSize);
 	}
-	if(_state==CSharedMemoryBase::E_ERROR)
+	if(_state==sent_state_t::E_ERROR)
 	{
 		LOG(ERROR)<<"Cannot send data to "<<aFrom;
 	}
+	FDiagnostic.MSend(sent_state_t(_state,_info.FRecive.FSize));
 	return  _state;
 }
 

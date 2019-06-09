@@ -213,7 +213,7 @@ size_t CFifo::CImpl::MAvailable() const
 CFIFOServer::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size_t aSize)
 {
 	if (!aData)
-		return sent_state_t(E_ERROR,0);
+		return sent_state_t(sent_state_t::E_ERROR,0);
 	double _time = NSHARE::get_time();
 	VLOG(2) << "Send data " << aData << " (size=" << aSize << "):" << this;
 
@@ -229,7 +229,7 @@ CFIFOServer::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size
 		{
 			VLOG(2) << "FIFO  not opened try opened for writing.";
 			if (!MOpen(2.0))
-				return sent_state_t(E_NOT_OPENED,0);
+				return sent_state_t(sent_state_t::E_NOT_OPENED,0);
 		}
 		uint8_t const* _send_buf=(uint8_t const*)aData;
 		DWORD _write=0;
@@ -253,7 +253,7 @@ CFIFOServer::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size
 				{
 					LOG(ERROR)<< "Write error " << _error;
 					MClose();
-					return sent_state_t(E_ERROR,_full_size-aSize);
+					return sent_state_t(sent_state_t::E_ERROR,_full_size-aSize);
 				}
 			}
 			if(!_write)
@@ -263,7 +263,7 @@ CFIFOServer::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size
 					DWORD err = GetLastError();
 					VLOG(2)<<" An error occurred "<<err;
 					MClose();
-					return sent_state_t(E_ERROR,_full_size-aSize);
+					return sent_state_t(sent_state_t::E_ERROR,_full_size-aSize);
 				}
 				CHECK_NE(_write,0);
 			}
@@ -274,7 +274,7 @@ CFIFOServer::sent_state_t CFifo::CImpl::MSend(const void* const aData, std::size
 	VLOG_IF(1,!aSize) << "Write all bytes to "
 								<< FThis.MGetSetting().FPath << " within "
 								<< (NSHARE::get_time() - _time) << "sec";
-	return sent_state_t(E_SENDED,aSize);
+	return sent_state_t(sent_state_t::E_SENDED,aSize);
 }
 ssize_t CFifo::CImpl::MReceiveData(data_t* aBuf, const float aTime)
 {

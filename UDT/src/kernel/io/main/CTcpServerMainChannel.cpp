@@ -44,7 +44,7 @@ static size_t f_calculate_size(user_data_t const& aWhat,void*)
 CTcpServerMainChannel::CTcpServerMainChannel() :
 		IMainChannel(NAME),FConnector(new CMainClientConnector)
 {
-	FAddr.port = 0;
+	FAddr.FPort = 0;
 	FIsOverload = false;
 	FBuffers.FSendSMBuffer = 0;
 
@@ -85,7 +85,7 @@ bool CTcpServerMainChannel::MStart()
 	}
 
 
-	if (_settings.MGetIfSet(PORT, FAddr.port))
+	if (_settings.MGetIfSet(PORT, FAddr.FPort))
 	{
 		VLOG(2) << "Tcp main channel is  using port " << FAddr;
 	}
@@ -373,13 +373,14 @@ bool CTcpServerMainChannel::MSend(data_t const& aVal, descriptor_t aFor)
 bool CTcpServerMainChannel::MSendImpl(const void* pData, size_t nSize,
 		const NSHARE::net_address& aAddr)
 {
-	CTCPServer::sent_state_t _state;
-	_state.FBytes=0;
+	sent_state_t _state;
+	HANG_INIT;
 	do
 	{
+		HANG_CHECK;
 		_state = FServer.MSend(pData, nSize, aAddr);
-		VLOG_IF(1,_state.FError==CTCPServer::E_AGAIN) << "Again " << _state;
-	}while(_state.FError==CTCPServer::E_AGAIN);
+		VLOG_IF(1,_state.MIs(sent_state_t::E_AGAIN)) << "Again " << _state;
+	}while(_state.MIs(sent_state_t::E_AGAIN));
 	LOG_IF(ERROR,!_state.MIs())<<"Cannot sent: "<<_state;
 	return _state.MIs();
 }
