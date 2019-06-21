@@ -42,14 +42,15 @@ struct IMPL_CLASS::CClient: NSHARE::IIntrusived
 	}
 	bool MInit()
 	{
-		return FThis->MInitSignalEvent(FEvent, &FClient->FInfo);
+		return FEvent.MInitSignalEvent( &FClient->FInfo);
 	}
 	~CClient()
 	{
 		VLOG(2) << "Client destroyed.";
 		NSHARE::CRAII<CMutex> _block(FLock);
 #ifdef _WIN32
-		FEvent.FSignalEvent.MFree();
+		//FEvent.FSignalEvent.MFree();
+		FEvent.MFree();
 #else
 #	warning in linux, the named semaphore is not unlinked for smserver
 #endif
@@ -169,10 +170,10 @@ bool IMPL_CLASS::MClose()
 
 	VLOG(2) << "Deallocate memory";
 	deallocate_object(FSharedMemory.MGetAllocator(), FServerInfo);
-	FServerInfo=NULL;
+	//FServerInfo=NULL;
+	FSharedMemory.MFinishCleanUp();
 	MFreeBase();
 
-	FSharedMemory.MFinishCleanUp();
 	return true;
 }
 bool IMPL_CLASS::MClose(shared_identify_t const& aId)
@@ -501,7 +502,7 @@ bool IMPL_CLASS::MCreateServer(void* _p,size_t const _server_size)
 	return _is;
 	FEv.FEvents = &_info->FInfo;
 	FServerInfo = _info;
-	_is = MCreateSignalEvent(FEv);
+	_is = FEv.MCreateSignalEvent();
 	if (!_is)
 	{
 		FServerInfo=NULL;

@@ -217,15 +217,12 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 
 	return _conf;
 }
-<<<<<<< HEAD
-=======
 bool user_data_info_t::MIsMsgExist() const
 {
 	static const uint8_t _fix_buf[sizeof(FWhat.FMessageHeader)]={0};
 
 	return memcmp(FWhat.FMessageHeader,_fix_buf,sizeof(FWhat.FMessageHeader))!=0;
 }
->>>>>>> f3da2cc... see changelog.txt
 bool user_data_info_t::MIsRaw() const
 {
 	return FProtocol.empty() || FProtocol == RAW_PROTOCOL_NAME;

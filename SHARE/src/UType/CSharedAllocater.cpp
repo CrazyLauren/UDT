@@ -193,13 +193,8 @@ struct CSharedAllocator::process_node_t
 //	bool MIsReservAllocated() const;
 //	void MSetReservAllocated( bool aVal);
 	void MSerialize(NSHARE::CConfig& aConfig) const;
-<<<<<<< HEAD
-	offset_t FNextNode; //The next process node
-	pid_type const FPid; //Process id
-=======
 
 	pid_type FPid; //Process id
->>>>>>> f3da2cc... see changelog.txt
 	volatile free_index_t FMinFreeIndex;//used to hold the index of array below which no a free number.
 										//FMinFreeIndex - is the first node of 'free index' linked list
 
@@ -2323,11 +2318,8 @@ bool CSharedAllocator::MReleaseHeap()
 			{
 				VLOG(2) << "Release heap  for " << _pid << " counter="
 									<< (unsigned) _p_process->FCount;
-<<<<<<< HEAD
-=======
 				_p_process->FPid=std::numeric_limits<pid_type>::max();///< Imitation of process killing.
 				//thus the resources of process were be cleaned up
->>>>>>> f3da2cc... see changelog.txt
 				MCleanUpImpl();
 			}
 			else if (FCurentProcess)

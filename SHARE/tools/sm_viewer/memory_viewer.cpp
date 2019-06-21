@@ -24,23 +24,29 @@ int main(int argc, char *argv[])
 	init_trace(argc, argv);
 
 	CSharedMemory _memory;
-	std::cout<<"View SM:"<<argv[1]<<std::endl;
-	bool _is = _memory.MOpen(argv[1],false);
+	std::cout << "View SM:" << argv[1] << std::endl;
+	bool _is = _memory.MOpen(argv[1], false);
 
-	CConfig _conf(argv[1]);
-	std::cout<<"serializing"<<std::endl;
-	_memory.MSerialize(_conf);
-	
-	std::cout<<"data output"<<std::endl;
-	std::stringstream output_stream;
-	_conf.MToJSON(output_stream,true);
-	std::cout<<output_stream.str()<<std::endl;
-	std::fstream _stream;
-	std::cout<<"saving to ./mem.json"<<std::endl;
-	_stream.open("./mem.json",std::ios_base::in | std::ios_base::out|std::ios_base::trunc);
-	_stream<<output_stream.str();
-	_stream.close();
-	std::cout<<"finish"<<std::endl;
+	if (!_is)
+		std::cerr << "Cannot open " << argv[1] << std::endl;
+	else
+	{
+		CConfig _conf(argv[1]);
+		std::cout << "serializing" << std::endl;
+		_memory.MSerialize(_conf);
+
+		std::cout << "data output" << std::endl;
+		std::stringstream output_stream;
+		_conf.MToJSON(output_stream, true);
+		std::cout << output_stream.str() << std::endl;
+		std::fstream _stream;
+		std::cout << "saving to ./mem.json" << std::endl;
+		_stream.open("./mem.json",
+				std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
+		_stream << output_stream.str();
+		_stream.close();
+		std::cout << "finish" << std::endl;
+	}
 	return 0;
 }
 

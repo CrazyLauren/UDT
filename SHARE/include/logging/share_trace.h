@@ -255,18 +255,12 @@
  *\param argv -argv ф-ии main
  *\param argc argc ф-ии main
  */
-<<<<<<< HEAD
-extern SHARE_EXPORT void init_trace(int argc, char *argv[]);
-
-/** \brief инициализация логирования
-=======
 extern SHARE_EXPORT void init_trace(int argc, char const *argv[]);
 inline void init_trace(int argc, char *argv[])
 {
 	init_trace (argc, (char const**)argv);
 }
 /**\brief инициализация логирования
->>>>>>> f3da2cc... see changelog.txt
  *
  *	Инициализация логирования без использования коммандной строки.
  *	Для "разбора" коммандной строки в части логирования
@@ -304,8 +298,8 @@ extern SHARE_EXPORT void parse_command_line_of_logging(int argc, const char* arg
  *\internal
  *\{
  */
-extern SHARE_EXPORT void init_trace_cplus(int argc, char *argv[]);
-extern SHARE_EXPORT void init_trace_glog(int argc, char *argv[]);
+extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName);
+extern SHARE_EXPORT void init_trace_glog(char const*aProgrammName);
 extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
 extern SHARE_EXPORT void log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();

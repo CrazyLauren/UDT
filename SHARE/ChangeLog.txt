@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 UDT SHARE 0.6
 -------------------
   - Change names of CAddress to CProgramGroup and  CRegistration to CProgramName
@@ -19,7 +17,6 @@ UDT SHARE 0.6
   - Fix bug creating posix thread 
   - Update CUdp socket, add full broadcast supported (multicast is not supported)
   
->>>>>>> 3a2b21d... see changelog
 UDT SHARE 0.5
 -------------------
   - Fixed virtual method called bug for static variables

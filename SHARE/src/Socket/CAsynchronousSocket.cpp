@@ -46,7 +46,10 @@ bool CAsyncSocket::MCancel()
 void CAsyncSocket::MStop()
 {
 	if (MCancel())
+	{
+		if(MGetSocket())MGetSocket()->MClose();
 		MJoin();
+	}
 	FIsWorking=false;
 }
 bool CAsyncSocket::MJoin()

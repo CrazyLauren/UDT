@@ -56,6 +56,10 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MSendTo(const NSHARE::CText& aProtocolName,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo, eSendToFlags);
 	int MSendTo(unsigned aNumber,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags);
 	int MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer, eSendToFlags);
+	int MSendTo(required_header_t const& aNumber, NSHARE::CText aProtocolName,
+			NSHARE::CBuffer & aBuffer, eSendToFlags);
+	int MSendTo(required_header_t const& aNumber, NSHARE::CText aProtocolName,
+			NSHARE::CBuffer & aBuffer, const NSHARE::uuid_t& aTo, eSendToFlags);
 
 	void MGetMyWishForMSG(std::vector<request_info_t>& aTo) const;
 	int MSettingDgParserFor(requirement_msg_info_t  aNumber,

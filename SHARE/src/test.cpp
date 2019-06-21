@@ -74,7 +74,7 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 		std::cerr << "CBuffer::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
-	if (!NSHARE::CRegistration::sMUnitTest())
+	if (!NSHARE::CProgramName::sMUnitTest())
 	{
 		std::cerr << "CAddress::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;

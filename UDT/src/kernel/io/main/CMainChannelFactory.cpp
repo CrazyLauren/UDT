@@ -35,6 +35,7 @@ CMainChannelFactory::CMainChannelFactory():ICore(NAME)
 
 CMainChannelFactory::~CMainChannelFactory()
 {
+	MRemoveAllFactories();
 }
 bool CMainChannelFactory::MStart()
 {

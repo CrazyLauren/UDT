@@ -666,7 +666,7 @@ int CHttpIOManger::MSettingDgParserFor(const NSHARE::CText& aReq,
 	FProtocolName.MToLowerCase();
 
 	demand_dgs_t::value_type _val;
-	_val.FNameFrom = NSHARE::CRegistration(aReq);
+	_val.FNameFrom = NSHARE::CProgramName(aReq);
 	_val.FProtocol = FProtocolName;
 	_val.FWhat = aNumber;
 

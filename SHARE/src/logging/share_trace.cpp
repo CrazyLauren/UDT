@@ -53,30 +53,6 @@
 #if defined(CPLUS_LOG)
 #	include <log4cplus/logger.h>
 #endif
-<<<<<<< HEAD
-#include <limits>
-#include <set>
-#include <UType/cb_t.h>
-#include <UType/CFlags.h>
-#include <UType/CMutex.h>
-#include <UType/CEvent.h>
-
-#include <UType/CConfig.h>
-#include <UType/CThread.h>
-#include <logging/CShareLogArgsParser.h>
-#include <tclap/CmdLine.h>
-namespace NSHARE
-{
-extern unsigned sleep(unsigned aVal);
-}
-extern SHARE_EXPORT void init_trace(int argc, char *argv[]);
-extern SHARE_EXPORT void init_share_trace(char const*aProgrammName);
-extern SHARE_EXPORT void init_trace_cplus(char const*aProgrammName);
-extern SHARE_EXPORT void init_trace_glog(char const*aProgrammName);
-extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
-extern "C" SHARE_EXPORT void install_failure_signal_handler();
-=======
->>>>>>> 7baa3fd... see ChangeLog
 
 #include <logging/CStackTrace.h>
 
@@ -99,7 +75,7 @@ void init_share_trace(char const *aProgrammName)
 	}
 }
 
-void init_trace(int argc, char *argv[])
+void init_trace(int argc, char const *argv[])
 {
 	if (!NSHARE::logging_impl::is_inited())
 	{

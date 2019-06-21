@@ -39,17 +39,34 @@ public:
 	struct event_cv_t
 	{
 		event_cv_t();
+		bool MCreateSignalEvent();
+		bool MInitSignalEvent(shared_info_t *);
+
 		void MCleanupLock() const;
 		bool MSafetyLock() const;
 		bool MLock() const;
 		bool MUnlock() const;
+		void MFree() const;
+		void MUnlink() const;
 
-		mutable NSHARE::CIPCSignalEvent FSignalEvent;
-		mutable NSHARE::CIPCSem FSignalSem;
+		bool MTimedwait(double const aTime) const;
+		bool MSignal() const;
+
 		shared_info_t* FEvents;
 		//time_t FReadTime;
 		//double FLastConnectionTime;
 		void  MSerialize(CConfig& aTo) const;
+		NSHARE::CText const& MGetMutexName() const
+		{
+			return FSignalSem.MName();
+		}
+		NSHARE::CText const& MGetSignalEventName() const
+		{
+			return FSignalEvent.MName();
+		}
+	private:
+		mutable NSHARE::CIPCSignalEvent FSignalEvent;
+		mutable NSHARE::CIPCSem FSignalSem;
 	};
 
 	CImpl();
@@ -67,7 +84,6 @@ public:
 	bool MWaitForEvent(event_cv_t& aFrom,event_info_t* aVal, double const aTime);
 	bool MCreateEventHandler(event_cv_t & aEvent);
 	bool MCreateSignalEvent(event_cv_t &);
-	bool MInitSignalEvent(event_cv_t &, shared_info_t *);
 	bool MInvokeEventTo(event_cv_t & aEv, event_info_t* _info) const;
 	void MStopEventHandlerForce();
 	void MUnlockReceivingForce();

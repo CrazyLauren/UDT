@@ -444,7 +444,7 @@ extern UDT_SHARE_EXPORT int init_id(char const *aName, eProgramType aType, const
 	if (g_is_inited)
 		return 0;
 	VLOG(2)<<"Name="<<aName<<" aType="<<aType;
-	if (!NSHARE::CRegistration::sMIsValid(aName) || !NSHARE::CRegistration(aName).MIsName())
+	if (!NSHARE::CProgramName::sMIsValid(aName) || !NSHARE::CProgramName(aName).MIsName())
 	{
 		LOG(ERROR)<<"Name '"<<aName<<"' is not valid";
 		return -1;

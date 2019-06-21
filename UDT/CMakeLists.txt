@@ -113,18 +113,8 @@ ENDIF()
 ################################################################################
 add_subdirectory(src)
 add_subdirectory(tools)
-<<<<<<< HEAD
-<<<<<<< HEAD
 add_subdirectory(examples)
-=======
-#add_subdirectory(examples)
-=======
-add_subdirectory(examples)
->>>>>>> f3da2cc... see changelog.txt
 add_subdirectory(tests)
-<<<<<<< HEAD
->>>>>>> 3a2b21d... see changelog
-=======
 
 FIND_PACKAGE(Doxygen)
 if(DOXYGEN_FOUND)	
@@ -140,4 +130,3 @@ if(DOXYGEN_FOUND)
 else()
 	MESSAGE(WARNING "WARNING: cannot create documentation as doxygen is not found.")	
 endif()
->>>>>>> bd5a830... before fixing

@@ -150,10 +150,10 @@ void CRoutingService::MHandleNewDemands(descriptor_t aFrom,
 {
 	VLOG(2) << "New demands  " << aDemands << " From: " << aFrom; //<<" to "<<aRoute;
 
-	demand_dgs_for_t _new_receiver;
-	w_route_access _access = FRouteData.MGetWAccess();
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _new_receiver;
 	{
-		{
+		w_route_access _access = FRouteData.MGetWAccess();
+		{//todo что это?
 			const CDescriptors::d_list_t _list =
 					CDescriptors::sMGetInstance().MGetAll(E_CONSUMER);
 			CDescriptors::d_list_t::const_iterator _jt = _list.begin(), _jt_end(
@@ -161,7 +161,7 @@ void CRoutingService::MHandleNewDemands(descriptor_t aFrom,
 
 			for (; _jt != _jt_end; ++_jt)
 			{
-				_new_receiver.insert(
+				_new_receiver.first.insert(
 						demand_dgs_for_t::value_type(
 								_jt->second.MGetConst().FProgramm.FId,
 								demand_dgs_for_t::mapped_type()));
@@ -174,25 +174,29 @@ void CRoutingService::MHandleNewDemands(descriptor_t aFrom,
 				aDemands.end());
 		for (; _it != _it_end; ++_it)
 		{
-			demand_dgs_for_t const _added_to(
-					_route.FRequiredDG.MSetDemandsDGFor(_it->first, _it->second).first);
-			if (!_added_to.empty() && !_new_receiver.empty())
+			std::pair<demand_dgs_for_t, demand_dgs_for_t> const _added_to(
+					_route.FRequiredDG.MSetDemandsDGFor(_it->first, _it->second));
+
+			if (!_added_to.first.empty() && !_new_receiver.first.empty())
 			{
-				set_intersection(_new_receiver, _added_to);
+				set_intersection(_new_receiver.first, _added_to.first);
+			}
+
+			if (!_added_to.second.empty() && !_new_receiver.second.empty())
+			{
+				set_intersection(_new_receiver.second, _added_to.second);
 			}
 		}
 	}
-	if (!_new_receiver.empty())
-	{
-		MInformNewReceiver(_new_receiver);
-	}
+	MInformNewReceiver(&_new_receiver);
+
 }
 void CRoutingService::MHandleNewId(bool, program_id_t const& aFor,
 		kern_links_t const& aNew)
 {
 	VLOG(2) << "New For: " << aFor;
 	VLOG(5) << "id " << aNew;
-	demand_dgs_for_t _new_receiver;
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _update;
 	{
 		w_route_access _access = FRouteData.MGetWAccess();
 		_route_t & _route = _access.MGet();
@@ -208,7 +212,7 @@ void CRoutingService::MHandleNewId(bool, program_id_t const& aFor,
 				case E_KERNEL:
 					break;
 				case E_CONSUMER:
-					_new_receiver = _route.FRequiredDG.MAddClient(
+					_update = _route.FRequiredDG.MAddClient(
 							_it->FProgramm.FId);
 					break;
 				}
@@ -217,8 +221,7 @@ void CRoutingService::MHandleNewId(bool, program_id_t const& aFor,
 
 	}
 
-	if (!_new_receiver.empty())
-		MInformNewReceiver(_new_receiver);
+	MInformNewReceiver(&_update);
 
 	VLOG(2) << "Handled";
 }
@@ -228,6 +231,7 @@ void CRoutingService::MHandleCloseId(bool aIs, program_id_t const& aFor,
 {
 	VLOG(2) << "Close: " << aFor;
 	VLOG(5) << "id " << aOld;
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _update;
 	{
 		w_route_access _access = FRouteData.MGetWAccess();
 		_route_t & _route = _access.MGet();
@@ -240,68 +244,33 @@ void CRoutingService::MHandleCloseId(bool aIs, program_id_t const& aFor,
 			case E_KERNEL:
 				break;
 			case E_CONSUMER:
-				_route.FRequiredDG.MRemoveClient(_it->FProgramm.FId.FUuid);
+				_update=_route.FRequiredDG.MRemoveClient(_it->FProgramm.FId.FUuid);
 				break;
 			}
 		}
 //		if(aIs)
 //			_route.FRequiredDG.MRemoveClient(aFor.FId.FUuid);
 	}
+	MInformNewReceiver(&_update);
 }
 
-int CRoutingService::sMHandleDiff(CHardWorker* WHO, args_data_t* WHAT,
-		void* YOU_DATA)
-{
-	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
-	CHECK_NOTNULL(_this);
-	CHECK_EQ(kernel_infos_diff_t::NAME, WHAT->FType);
-	kernel_infos_diff_t const* _p =
-			reinterpret_cast<kernel_infos_diff_t*>(WHAT->FPointToData);
-	CHECK_NOTNULL(_p);
-	_this->MHandleDiff(_p);
-	return 0;
-}
-int CRoutingService::sMHandleDemands(CHardWorker* WHO, args_data_t* WHAT,
-		void* YOU_DATA)
-{
-	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
-	CHECK_NOTNULL(_this);
-	CHECK_EQ(demand_dgs_for_by_id_t::NAME, WHAT->FType);
-	demand_dgs_for_by_id_t const* _p =
-			reinterpret_cast<demand_dgs_for_by_id_t*>(WHAT->FPointToData);
-	CHECK_NOTNULL(_p);
-	_this->MHandleNewDemands(_p->FId, _p->FVal);
-	return 0;
-}
-int CRoutingService::sMHandleDemandId(CHardWorker* WHO, args_data_t* WHAT,
-		void* YOU_DATA)
-{
-	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
-	CHECK_NOTNULL(_this);
-	CHECK_EQ(demands_id_t::NAME, WHAT->FType);
-	demands_id_t const* _p = reinterpret_cast<demands_id_t*>(WHAT->FPointToData);
-	CHECK_NOTNULL(_p);
-	_this->MHandleFrom(&_p->FVal, _p->FId);
-	return 0;
-}
 void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 {
 	VLOG(2) << "New demands  " << *aP << " From: " << aFrom;
 	std::pair<descriptor_info_t, bool> _info =
 			CDescriptors::sMGetInstance().MGet(aFrom);
-	demand_dgs_for_t _new_receiver;
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _receivers;
 	{
 		w_route_access _access = FRouteData.MGetWAccess();
 
 		VLOG_IF(2,!_info.second) << aFrom << " has been removed already.";
 		if (_info.second)
 		{
-			_new_receiver = _access->FRequiredDG.MSetDemandsDGFor(
-					_info.first.FProgramm.FId, *aP).first;
+			_receivers = _access->FRequiredDG.MSetDemandsDGFor(
+					_info.first.FProgramm.FId, *aP);
 		}
 	}
-	if (!_new_receiver.empty())
-		MInformNewReceiver(_new_receiver);
+	MInformNewReceiver(&_receivers);
 
 	uuids_t _inform_array(CInfoService::sMGetInstance().MGetOtherKernelds());
 	if (!_inform_array.empty())
@@ -323,19 +292,6 @@ void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 	{
 		VLOG(2) << "No another kernels";
 	}
-}
-int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
-		void* YOU_DATA)
-{
-	CRoutingService* _this = reinterpret_cast<CRoutingService*>(YOU_DATA);
-	CHECK_NOTNULL(_this);
-	CHECK_EQ(routing_user_data_t::NAME, WHAT->FType);
-	CHECK_NOTNULL(WHAT->FPointToData);
-	routing_user_data_t & _p =
-			*reinterpret_cast<routing_user_data_t*>(WHAT->FPointToData);
-
-	_this->MHandleFrom(_p);
-	return 0;
 }
 
 namespace
@@ -451,8 +407,6 @@ void CRoutingService::MFillMsgHandlersFor(user_datas_t & aFrom,
 	_rdg.MFillMsgHandlersFor(aFrom, aTo, aError);
 
 }
-<<<<<<< HEAD
-=======
 /*!\brief Devides the data into to group
  * the data which have routing info
  * the data which havn't routing info
@@ -471,25 +425,20 @@ void CRoutingService::MClassifyMessages(user_datas_t* const aData,
 	user_datas_t& _recv_data(*aData);
 	user_datas_t& _to_not_routed(*aNotRouted);
 	user_datas_t& _to_routed(*aRouted);
->>>>>>> f3da2cc... see changelog.txt
 
-void CRoutingService::MClassifyMessages(routing_user_data_t& aData,
-		user_datas_t& aNotRouted, user_datas_t& aRouted) const
-{
-	//divide into two group from consumer and other.
 	//the sequence is not broken
-	for (user_datas_t& _recv_data = aData.FData; !_recv_data.empty();)
+	for (; !_recv_data.empty();)
 	{
 		if (_recv_data.front().FDataId.FRouting.empty())
 		{
 			VLOG(3) << " It's from consumer " << _recv_data.front().FDataId;
-			aNotRouted.splice(aNotRouted.end(), _recv_data,
+			_to_not_routed.splice(_to_not_routed.end(), _recv_data,
 					_recv_data.begin());
 		}
 		else
 		{
 			VLOG(3) << " It's from kernel " << _recv_data.front().FDataId;
-			aRouted.splice(aRouted.end(), _recv_data, _recv_data.begin());
+			_to_routed.splice(_to_routed.end(), _recv_data, _recv_data.begin());
 		}
 	}
 }
@@ -519,8 +468,6 @@ void CRoutingService::MSwapEndianIfNeed(user_datas_t & aFrom,user_datas_t& aTo,
 			aTo.splice(aTo.end(),aFrom,_rit++);//only post increment!!!
 	}
 }
-<<<<<<< HEAD
-=======
 /*!\brief Distributes messages to output descriptors
  * on basis of theirs routes
  *
@@ -537,14 +484,9 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 	user_datas_t& _to(*aHasNotRoute);
 	output_user_data_t& _send_to_desc(*aSendToDescriptors);
 	fail_send_array_t& _errors_list(*aErrorList);
->>>>>>> f3da2cc... see changelog.txt
 
-void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
-		user_datas_t& aTo,
-		output_user_data_t& aSendToDescriptors,fail_send_array_t& _errors_list) const
-{
-	user_datas_t::iterator _it = aFrom.begin();
-	for (; _it != aFrom.end();)
+	user_datas_t::iterator _it = _from.begin();
+	for (; _it != _from.end();)
 	{
 		user_data_t& _data = *_it;
 		unsigned _error = E_NO_ERROR;
@@ -558,16 +500,16 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
 			output_decriptors_for_t _descr;
 			routing_t _has_not_route;
 
-			MGetOutputDescriptors(_data.FDataId.FRouting, _has_not_route, _descr);
+			MGetOutputDescriptors(&_data.FDataId.FRouting, &_has_not_route, &_descr);
 
 			if (!_descr.empty())
 			{
 				if (!_has_not_route.empty())//it's not fatal error
 				{
-					aTo.push_back(_data);
-					aTo.back().FDataId.FRouting.swap(_has_not_route);
+					_to.push_back(_data);
+					_to.back().FDataId.FRouting.swap(_has_not_route);
 
-					fail_send_t _sent(aTo.back().FDataId);
+					fail_send_t _sent(_to.back().FDataId);
 					_sent.MSetError(E_NO_ROUTE);
 					_errors_list.push_back(_sent);
 				}
@@ -582,7 +524,7 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
 
 				if (!_ouput.empty())
 				{
-					MSortedSplice(_ouput, aSendToDescriptors);
+					MSortedSplice(_ouput, _send_to_desc);
 				}
 				else
 				{
@@ -612,7 +554,7 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t& aFrom,
 			++_it;
 		}
 		else
-			aTo.splice(aTo.end(), aFrom, _it++);//only post increment!!!
+			_to.splice(_to.end(), _from, _it++);//only post increment!!!
 	}
 }
 inline void CRoutingService::MRoutingMsgToDescriptor(user_data_t const & aMsg,
@@ -655,9 +597,6 @@ void CRoutingService::MSortedSplice(output_user_data_t& aWhat, output_user_data_
 
 	CHECK(aWhat.empty());
 }
-<<<<<<< HEAD
-void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_datas_t & aTo) const
-=======
 /*!\brief Moves the data that has to be swapped
  *
  *\param [in] aFrom - moved from
@@ -665,10 +604,12 @@ void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_dat
  *
  */
 void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t *const aFrom,user_datas_t *const aTo) const
->>>>>>> f3da2cc... see changelog.txt
 {
-	user_datas_t::iterator _rit = aFrom.begin();
-	for (; _rit != aFrom.end();)
+	user_datas_t & _from(*aFrom);
+	user_datas_t & _to(*aTo);
+
+	user_datas_t::iterator _rit = _from.begin();
+	for (; _rit != _from.end();)
 	{
 		user_data_t& _data = *_rit;
 
@@ -697,23 +638,19 @@ void CRoutingService::MExtractMsgThatHasToBeSwaped(user_datas_t *const aFrom,use
 			VLOG(1)<<"The byte endian for "<<_has_to_swaped_for<< " has to swapped." ;
 
 			if(_routing_to.empty())
-				aTo.splice(aTo.end(),aFrom,_rit++); //only post increment!!!
+				_to.splice(_to.end(),_from,_rit++); //only post increment!!!
 			else
 			{
-				aTo.push_back(_data);
+				_to.push_back(_data);
 				 ++_rit;
 			}
 
-			aTo.back().FDataId.FRouting.swap(_has_to_swaped_for);
+			_to.back().FDataId.FRouting.swap(_has_to_swaped_for);
 		}else
 			 ++_rit;
 	}
 }
 
-<<<<<<< HEAD
-void CRoutingService::MSendMessages(user_datas_t& aFrom,
-		user_datas_t& _has_not_route, fail_send_array_t& _errors_list)
-=======
 /*!\brief Sends the data
  *
  *\param [in] aFrom - the data which has to be sent
@@ -723,27 +660,27 @@ void CRoutingService::MSendMessages(user_datas_t& aFrom,
  */
 void CRoutingService::MSendMessages(user_datas_t*const aFrom,
 		user_datas_t*const aHasNotRoute, fail_send_array_t*const aErrorList)
->>>>>>> f3da2cc... see changelog.txt
 {
+	user_datas_t &_from(*aFrom);
+	user_datas_t &_has_not_route(*aHasNotRoute);
+	fail_send_array_t &_errors_list(*aErrorList);
+
 	output_user_data_t _send_to_descriptors;
-	MDistributeMsgByDescriptors(aFrom, _has_not_route,
-			_send_to_descriptors, _errors_list);
+	MDistributeMsgByDescriptors(&_from, &_has_not_route,
+			&_send_to_descriptors, &_errors_list);
 	//when for all send data
 	if (!_send_to_descriptors.empty())
 	{
 		CKernelIo::sMGetInstance().MSendTo(_send_to_descriptors, _errors_list,
 				_has_not_route);
 	}
-	DCHECK(aFrom.empty());
+	DCHECK(_from.empty());
 }
 
-<<<<<<< HEAD
-=======
 /*!\brief Filling routing info  and sending the received data
  *
  *
  */
->>>>>>> f3da2cc... see changelog.txt
 void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 {
 	DCHECK(!aData.FData.empty());
@@ -755,20 +692,22 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	user_datas_t _has_route;
 	user_datas_t _has_to_swaped;
 
-	MClassifyMessages(aData, _has_not_route, _has_route);
+	MClassifyMessages(&aData.FData, &_has_not_route, &_has_route);
+
+	DCHECK(aData.FData.empty());
 
 	if (!_has_not_route.empty())
 			MFillMsgReceivers(_has_not_route, _has_route, _errors_list);
 
-	MExtractMsgThatHasToBeSwaped(_has_route,_has_to_swaped);
+	MExtractMsgThatHasToBeSwaped(&_has_route,&_has_to_swaped);
 
 	if (!_has_route.empty())
-		MSendMessages(_has_route, _has_not_route, _errors_list);
+		MSendMessages(&_has_route, &_has_not_route, &_errors_list);
 
 	if (!_has_to_swaped.empty())
 	{
 		MSwapEndianIfNeed(_has_to_swaped,_has_route,_errors_list);
-		MSendMessages(_has_route, _has_not_route, _errors_list);
+		MSendMessages(&_has_route, &_has_not_route, &_errors_list);
 	}
 
 	if (!_errors_list.empty())
@@ -783,8 +722,6 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		aData.FData.swap(_has_not_route);
 	}
 }
-<<<<<<< HEAD
-=======
 /*!\brief Return whither the data has to be sent that
  * it will be delivery to uuid
  *
@@ -799,12 +736,8 @@ void CRoutingService::MGetOutputDescriptors(routing_t*const aTo, routing_t*const
 	routing_t& _to(*aTo);
 	routing_t& _not_route(*aNotRoute);
 	output_decriptors_for_t& _descr(*aOutput);
->>>>>>> f3da2cc... see changelog.txt
 
-void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
-		output_decriptors_for_t& _descr) const
-{
-	for (uuids_t::iterator _it = aFrom.begin(); _it != aFrom.end();
+	for (uuids_t::iterator _it = _to.begin(); _it != _to.end();
 			)
 	{
 		std::vector<descriptor_t> const _d =
@@ -817,7 +750,7 @@ void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
 			{
 				_jt = _descr.insert(
 						output_decriptors_for_t::value_type(_d.front(),
-								routing_t(aFrom.FFrom, uuids_t()))).first;
+								routing_t(_to.FFrom, uuids_t()))).first;
 			}
 			_jt->second.push_back(*_it);
 
@@ -826,9 +759,9 @@ void CRoutingService::MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
 		else
 		{
 			LOG(ERROR)<<"No route to "<<(*_it);
-			aTo.push_back(*_it);
+			_not_route.push_back(*_it);
 
-			_it=aFrom.erase(_it);
+			_it=_to.erase(_it);
 		}
 	}
 }
@@ -870,28 +803,56 @@ NSHARE::CConfig CRoutingService::MSerialize() const
 	}
 	return _conf;
 }
-void CRoutingService::MInformNewReceiver(demand_dgs_for_t & aNewRecveiver)
+void CRoutingService::MInformNewReceiver(std::pair<demand_dgs_for_t, demand_dgs_for_t> * const aWhat)
 {
-	VLOG(2) << "Inform";
-	demand_dgs_for_t::iterator _it = aNewRecveiver.begin(), _it_end(
-			aNewRecveiver.end());
-	for (; _it != _it_end; ++_it)
+	DCHECK_NOTNULL(aWhat);
 	{
-		descriptor_t const _to = CDescriptors::sMGetInstance().MGet(
-				_it->first.FUuid);
-		if (CDescriptors::sMIsValid(_to))
+		demand_dgs_for_t & _new(aWhat->first);
+
+		demand_dgs_for_t::iterator _it = _new.begin(), _it_end(_new.end());
+		for (; _it != _it_end; ++_it)
 		{
-			demand_dgs_for_t _copy;
-			_copy[_it->first].swap(_it->second);
-			DCHECK_EQ(
-					CDescriptors::sMGetInstance().MGet(_to).first.FProgramm.FType,
-					E_CONSUMER);
-			CKernelIo::sMGetInstance().MSendTo(_to, _copy);
+			descriptor_t const _to = CDescriptors::sMGetInstance().MGet(
+					_it->first.FUuid);
+			if (CDescriptors::sMIsValid(_to))
+			{
+				demand_dgs_for_t _copy;
+				_copy[_it->first].swap(_it->second);
+				DCHECK_EQ(
+						CDescriptors::sMGetInstance().MGet(_to).first.FProgramm.FType,
+						E_CONSUMER);
+				CKernelIo::sMGetInstance().MSendTo(_to, _copy);
+			}
+		}
+	}
+	{
+		demand_dgs_for_t & _removed(aWhat->second);
+
+		demand_dgs_for_t::iterator _it = _removed.begin(), _it_end(_removed.end());
+		for (; _it != _it_end; ++_it)
+		{
+			descriptor_t const _to = CDescriptors::sMGetInstance().MGet(
+					_it->first.FUuid);
+			if (CDescriptors::sMIsValid(_to))
+			{
+				demand_dgs_for_t _copy;
+				_copy[_it->first].swap(_it->second);
+				DCHECK_EQ(
+						CDescriptors::sMGetInstance().MGet(_to).first.FProgramm.FType,
+						E_CONSUMER);
+				demand_dgs_t::iterator
+				_jt=_copy.begin()->second.begin(),_jt_end(_copy.begin()->second.end());
+
+				for(;_jt!=_jt_end;++_jt)
+				{
+					_jt->FFlags.MSetFlag(demand_dg_t::E_REMOVED,true);
+				}
+
+				CKernelIo::sMGetInstance().MSendTo(_to, _copy);
+			}
 		}
 	}
 }
-<<<<<<< HEAD
-=======
 int CRoutingService::sMHandleDiff(CHardWorker* WHO, args_data_t* WHAT,
 		void* YOU_DATA)
 {
@@ -943,5 +904,4 @@ int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
 	_this->MHandleFrom(_p);
 	return 0;
 }
->>>>>>> f3da2cc... see changelog.txt
 } /* namespace NUDT */

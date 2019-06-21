@@ -270,13 +270,13 @@ void CInfoService::MHandleOpen(const descriptor_t& aFrom,
 		{
 		case E_CONSUMER:
 		{
-			LOG(INFO)<< " The consumer has been connected.";
+			LOG(INFO)<< " The consumer has been connected."<<aInfo.FProgramm.FId;
 			_sent_to = _d_info.FAllDescriptors;	//send net to all
 		}
 		break;
 		case E_KERNEL:
 		{
-			LOG(INFO)<< " The kernel has been connected.";
+			LOG(INFO)<< " The kernel has been connected."<<aInfo.FProgramm.FId;
 			if(MAddKernel(aInfo, aFrom, _d_info, _diff))
 			_sent_to.push_back(aFrom);
 			else

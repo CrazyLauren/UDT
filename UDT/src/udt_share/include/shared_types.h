@@ -122,10 +122,6 @@ struct UDT_SHARE_EXPORT demand_dg_t
 
 	enum eFlags
 	{
-<<<<<<< HEAD
-		E_REGISTRATOR=0x1<<0,
-		E_IS_BIG_ENDIAN=0x1<<1,
-=======
 		E_REGISTRATOR=0x1<<0,///< it's set if demands is from registrar
 		E_IS_BIG_ENDIAN=0x1<<1,///< it's set if the message is requirement in big endian byte order.
 		E_AS_INHERITANCE=0x1<<2,///< it's set if demands has been added as
@@ -140,17 +136,17 @@ struct UDT_SHARE_EXPORT demand_dg_t
 						 //than the order@com is included only order@com.ru.people
 						 //and order@com.ru.kremlin
 		E_REMOVED=0x1<<5,///< set up if subscriber was removed
->>>>>>> f3da2cc... see changelog.txt
 #ifdef SHARE_LITTLEENDIAN
 		E_DEMAND_DEFAULT_FLAGS=0,
 #else
 		E_DEMAND_DEFAULT_FLAGS=E_IS_BIG_ENDIAN,
 #endif
+
 	};
 	handler_priority_t FHandlerPriority;
 	required_header_t FWhat;
 	//NSHARE::CText FNameRegExp;	//from
-	NSHARE::CRegistration FNameFrom;
+	NSHARE::CProgramName FNameFrom;
 	NSHARE::smart_field_t<NSHARE::uuid_t> FUUIDFrom;
 	NSHARE::CText FProtocol;
 	event_handler_t FHandler;
@@ -221,6 +217,7 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
 	bool MIsRaw() const;
+	bool MIsMsgExist() const;
 
 	//id_t FFrom;//from.FName - Depreciated
 	uint32_t FPacketNumber;

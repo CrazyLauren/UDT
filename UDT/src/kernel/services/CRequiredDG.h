@@ -22,42 +22,13 @@ namespace NUDT
 class CRequiredDG
 {
 public:
-	struct msg_handlers_t:std::vector<demand_dg_t::event_handler_t>
-	{
-		msg_handlers_t():FNumberOfRealHandlers(0)
-		{
-
-		}
-		bool MIsRegistrarExist() const;
-
-
-		NSHARE::version_t FVersion;
-		int FNumberOfRealHandlers;
-		//see demands_dg_t::FFlags.
-		//If At least one handler is not registrator than The consumer is not registator.
-	};
-	struct uuids_of_receiver_t:std::map<NSHARE::uuid_t,msg_handlers_t >
-	{
-		uuids_of_receiver_t():FNumberOfRealReceivers(0u)
-		{
-
-		}
-		unsigned FNumberOfRealReceivers;//!< the number of registrar is size()-FNumberOfRealReceivers
-	};
-	typedef std::set<NSHARE::uuid_t> unique_uuids_t;
-	//typedef std::map<NSHARE::CText,unique_uuids_t> uuids_of_t;
-	typedef std::map<required_header_t, uuids_of_receiver_t, CReqHeaderFastLessCompare> uuids_of_expecting_dg_t;
-	struct data_routing_t
-	{
-		NSHARE::CBuffer FBufferedData;
-		uuids_of_expecting_dg_t FExpected;
-	};
-	typedef std::map<NSHARE::CText, data_routing_t,
-			NSHARE::CStringFastLessCompare> protocols_t;
-
-	typedef std::map<NSHARE::uuid_t, protocols_t> protocol_of_uuid_t;
+	typedef std::map<NSHARE::uuid_t,unsigned> unique_uuids_t;//1 - uuid, second - group depth
+	typedef std::set<id_t> unique_id_t;
 
 	static const NSHARE::CText NAME;
+	static const unsigned DEFAULT_MAX_INHERITANCE_DEPTH;
+
+
 	CRequiredDG();
 	 ~CRequiredDG();
 
@@ -83,18 +54,12 @@ public:
 	 *
 	 *	It adds a new client and generate the subscriber's
 	 *	list on published client's messages.
-<<<<<<< HEAD
-	 *
-	 *	\return list of subscribers on published client's
-	 *	 messages
-=======
 
 	*\return first - list of subscribers on messages
 	 *					which client is published
 	 *			second - list of unsubscribed messages
->>>>>>> f3da2cc... see changelog.txt
 	 */
-	demand_dgs_for_t MAddClient(id_t const& aId );
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> MAddClient(id_t const& aId );
 
 	/*! \brief Removing the client from the publisher-
 	 * subscribe list
@@ -102,15 +67,11 @@ public:
 	 *	It removes the client and unsubscribe the other
 	 *	clients to the published client's messages
 	 *
-<<<<<<< HEAD
-	 *	\return list of unsubscribed messages
-=======
 	*\return first - lis of a new subscribers
 	 *			second - list of unsubscribers on messages
 	 *					which client has been published
->>>>>>> f3da2cc... see changelog.txt
 	 */
-	demand_dgs_for_t MRemoveClient(NSHARE::uuid_t const& aUUID);
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> MRemoveClient(NSHARE::uuid_t const& aUUID);
 
 
 	/*! \brief  Split packet to messages and
@@ -145,11 +106,6 @@ public:
 	/* !< \brief get uuids that satisfy the
 	 * Identification name
 	 *
-<<<<<<< HEAD
-	 * 	\param aName Identification name
-	 *
-	 * 	\return Uuids
-=======
 	 *\param aName Identification name
 	 *\param isInvertGroup if the value (isInvertGroup) is true then the program order@com.ru.putin
 	 * 						 is not enter into the order@com.ru(aName),
@@ -160,10 +116,8 @@ public:
 	unique_uuids_t  MGetUUIDFor(NSHARE::CProgramName const& aName,bool isInvertGroup=false) const;
 
 	/*!\brief Gets info about the requirement messages
->>>>>>> f3da2cc... see changelog.txt
 	 *
 	 */
-	unique_uuids_t  MGetUUIDFor(NSHARE::CRegistration const& aName) const;
 	demand_dgs_for_t const& MGetDemands() const;
 
 	/*!< \brief Make valid the message's byte order
@@ -175,10 +129,6 @@ public:
 	 *		  The message header  stay not valid.
 	 */
 	static unsigned sMSwapEndian( user_data_t& aData);
-<<<<<<< HEAD
-	NSHARE::CConfig MSerialize() const;
-private:
-=======
 
 	/*!\brief serializes object
 	 *
@@ -366,11 +316,6 @@ private:
 		demand_for_info_t FTo;
 	};
 	typedef std::vector<way_info_t> array_of_demand_for_t;
-<<<<<<< HEAD
-	struct unique_compare_t;
->>>>>>> f3da2cc... see changelog.txt
-=======
->>>>>>> 57aaf6a... see Changelog
 
 	bool MFillRouteAndDestanationInfo(uuids_of_receiver_t const& aRoute,
 			user_data_info_t* const aInfo,
@@ -381,29 +326,30 @@ private:
 	inline void MFillByRawProtocol(user_datas_t*const aFrom,user_datas_t*const aTo,
 			fail_send_array_t * const aFail) const;
 
-	inline void MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
+	bool MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 			NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
-			demand_dgs_for_t* aNew /*is null - registrator*/);
-	inline void MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
-			NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
-			demand_dgs_for_t* aOld /*is null - registrator*/);
+			demand_dgs_for_t* const aNew,
+			demand_dgs_for_t* const aRemoved);
+	bool MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
+			NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved);
 
-	void MRemoveDemandsFor(NSHARE::uuid_t const& aFor,demand_dgs_t const& aFrom,demand_dgs_for_t* aRemoved);
-	void MAddDemandsFor(NSHARE::uuid_t const& aFor,const demand_dgs_t& aReqDgs, demand_dgs_for_t* aNew);
+	void MRemoveSendersOfMsgFor(NSHARE::uuid_t const& aFor,demand_dgs_t const& aFrom,demand_dgs_for_t* const  aNew,demand_dgs_for_t* const aRemoved);
+	void MAddSendersOfMsgFor(NSHARE::uuid_t const& aFor,const demand_dgs_t& aReqDgs, demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved);
 
-	void MAddReceiversFor(id_t const& aId,demand_dgs_for_t& aNew);
-	bool MRemoveReceiversFor(NSHARE::uuid_t const&,demand_dgs_for_t* aRemoved);
+	void MAddReceiversOfMsgsFrom(id_t const& aFrom,demand_dgs_for_t* const aNew,demand_dgs_for_t *const aRemoved);
+	bool MRemoveAllSendersOfMsgsFor(NSHARE::uuid_t const& aFrom,demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved);
 
-	bool MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew, demand_dgs_t& aRem,demand_dgs_t& aAdd);
-	bool MDoesIdConformTo(id_t const& aFor,NSHARE::CRegistration const&) const;
-	uint32_t MNextMsgMask() const;
+	bool MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew,
+			demand_dgs_t* const aRemoved, demand_dgs_t* const aAdded) const;
+	unsigned MDoesIdConformTo(id_t const& aFor,NSHARE::CProgramName const&,bool isInvertGroup) const;
+	uint32_t MNextPacketNumberMask() const;
+
 	bool MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
 			const NSHARE::uuid_t& aFrom, const NSHARE::uuid_t& aTo,
-			uuids_of_expecting_dg_t* const _uuids, demand_dgs_for_t* aNew);
+			uuids_of_expecting_dg_t* const _uuids, demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
 	bool MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 			NSHARE::uuid_t const &  aFrom, NSHARE::uuid_t const &aTo,
-			 uuids_of_expecting_dg_t* const aUuids,
-			demand_dgs_for_t* aOld);
+			 uuids_of_expecting_dg_t* const aUuids,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
 	bool MCheckVersion(const NSHARE::version_t& _req_version,
 			const NSHARE::uuid_t& _uuid,  user_data_info_t& aInfo) const;
 	void MAddUUIDToRoute(msg_handlers_t const&  _kt,
@@ -418,35 +364,20 @@ private:
 			user_datas_t *const aFrom, user_datas_t *const aTo, fail_send_array_t *const aFail) const;
 	inline void MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 			user_datas_t* const aFrom, user_datas_t * const aTo,
-			uuids_of_expecting_dg_t const& aUUIDs, IExtParser const& _p,
-			fail_send_array_t* aFail) const;
+			uuids_of_expecting_dg_t const& aUUIDs, 	fail_send_array_t* aFail) const;
 	inline NSHARE::CBuffer MParseData(IExtParser::result_t* _msgs,
 			user_data_t& _data, IExtParser& _p) const;
 	data_routing_t& MGetOrCreateExpectedListFor(NSHARE::uuid_t const & aFrom,
 			NSHARE::CText const & aProtocol) const;
-<<<<<<< HEAD
-	inline bool MAddHandler(demand_dg_t const & aWhat,
-			msg_handlers_t& _handlers) const;
-	inline bool MRemoveHandler(demand_dg_t const & aWhat,
-			msg_handlers_t& _handlers) const;
-=======
 
->>>>>>> 57aaf6a... see Changelog
 	inline bool MGetValidHeader(const demand_dg_t& aWhat,demand_dg_t * aTo) const;
 	inline uuids_of_receiver_t const& MGetUUIDsOfReceivers(uuids_of_expecting_dg_t const & aUUIDs,	required_header_t const & _msg) const;
-	inline uuids_of_receiver_t & MGetOrCreateUUIDsOfReceivers(uuids_of_expecting_dg_t & aUUIDs,	required_header_t const & _msg);
-	inline void MAppendBufferedData(data_routing_t& _routing,
-			user_data_t& _data) const;
-	inline bool MBufferingDataIfNeed(data_routing_t& _routing,NSHARE::CBuffer const & _tail	) const;
-	inline static bool sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_header_t* aTo);
+	inline uuids_of_receiver_t & MGetOrCreateUUIDsOfReceivers(uuids_of_expecting_dg_t *const aTo,	required_header_t const & _msg);
+	inline bool MAppendBufferedData(data_routing_t *const aBufferedData,
+			user_data_t *const aTo) const;
+	inline bool MBufferingDataIfNeed(data_routing_t* const aTo,NSHARE::CBuffer const & aData) const;
+	inline static bool sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_header_t* const aTo);
 	inline static bool sMSwapMessageEndian(NSHARE::CText const & aProtocol,
-<<<<<<< HEAD
-			required_header_t const& aType, NSHARE::CBuffer* aTO);
-	msg_handlers_t const* MGetHandlers(user_data_info_t & aFrom) const;
-
-	inline void MInitializeMsgInheritance();//todo
-
-=======
 			required_header_t const& aType, NSHARE::CBuffer* const aTO);
 	msg_handlers_t const* MGetHandlers(user_data_info_t const & aFrom) const;
 
@@ -488,28 +419,15 @@ private:
 	demand_dg_t MGetChildDemand(const demand_dg_t& aWhat,
 			inheritance_msg_header_t const& aChildHeader) const;
 
-<<<<<<< HEAD
-	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo);
->>>>>>> 5d2f97a... see ChangeLog.txt
-=======
 	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo,bool aParentCheck=false);
->>>>>>> 57aaf6a... see Changelog
 
 	mutable protocol_of_uuid_t FWhatIsSendingBy;
-<<<<<<< HEAD
-	demand_dgs_for_t FDGs;
-	std::set<id_t> FIds;
-	mutable uint16_t FMsgID;
-=======
 	demand_dgs_for_t FDGs;///< list of the requirement messages for uuid
 	unique_id_t FIds;
 	mutable uint16_t FMsgID;
 	msg_inheritances_t FMsgsGenealogy;
 	unsigned FMaxInheritanceDepth;
 	nearest_info_t FNearestInfo;///< contains current "group depth" of demand
-<<<<<<< HEAD
->>>>>>> f3da2cc... see changelog.txt
-=======
 	static msg_heritance_t const sFEmptyHeritance;/*!< Is used for optimization
 													return value of function
 													where is requirement to return
@@ -526,15 +444,11 @@ private:
 	std::ostream& operator<<(std::ostream & aStream,
 			inheritance_msg_header_t const& aVal);
 
->>>>>>> 57aaf6a... see Changelog
 };
 inline bool CRequiredDG::msg_handlers_t::MIsRegistrarExist() const
 {
 	return !FHandlers.empty() && FNumberOfRealHandlers!=FHandlers.size();
 }
-<<<<<<< HEAD
-
-=======
 /** Returns list of message handles
  *
  * @return list of message handles
@@ -581,7 +495,6 @@ inline std::ostream& operator<<(std::ostream & aStream,
 {
 	return aStream <<"Protocol:" <<aVal.FProtcol<<", header:"<<aVal.FHeader<< std::endl;
 }
->>>>>>> 57aaf6a... see Changelog
 } /* namespace NUDT */
 namespace std
 {

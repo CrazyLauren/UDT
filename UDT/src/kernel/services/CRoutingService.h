@@ -108,20 +108,20 @@ private:
 
 	void MHandleNewDemands( descriptor_t aFrom, const demand_dgs_for_t&);
 
-	void MGetOutputDescriptors(routing_t& aFrom, routing_t& aTo,
-			output_decriptors_for_t& _descr) const;
-	void MInformNewReceiver(demand_dgs_for_t &);
-	void MClassifyMessages(routing_user_data_t& aData,
-			user_datas_t& aCustomers, user_datas_t& aKernels) const;
-	void MDistributeMsgByDescriptors(user_datas_t& aHasRoute,
-			user_datas_t& aHasNotRoute,
-			output_user_data_t& _route_by_desc, fail_send_array_t& _errors_list) const;
+	void MGetOutputDescriptors(routing_t*const aTo, routing_t*const aNotRoute,
+			output_decriptors_for_t *const aOutput) const;
+	void MInformNewReceiver(std::pair<demand_dgs_for_t, demand_dgs_for_t> * const);
+	void MClassifyMessages(user_datas_t*const aData,
+			user_datas_t*const aNotRouted, user_datas_t*const aRouted) const;
+	void MDistributeMsgByDescriptors(user_datas_t* const aWhat,
+			user_datas_t * const aHasNotRoute,
+			output_user_data_t * const _route_by_desc, fail_send_array_t* const _errors_list) const;
 	inline void MRoutingMsgToDescriptor(user_data_t const & aMsg,output_decriptors_for_t const& aDesc, output_user_data_t *const aTo) const;
 	inline void MSortedSplice(output_user_data_t& aWhat,output_user_data_t& aTo) const;
-	inline void MExtractMsgThatHasToBeSwaped(user_datas_t & aFrom,user_datas_t & aTo) const;
+	inline void MExtractMsgThatHasToBeSwaped(user_datas_t *const aFrom,user_datas_t *constaTo) const;
 	inline void MSwapEndianIfNeed(user_datas_t & aFrom,user_datas_t& aTo,fail_send_array_t& _errors_list) const;
-	void MSendMessages(user_datas_t& aFrom, user_datas_t& aTo,
-			fail_send_array_t& _errors_list);
+	void MSendMessages(user_datas_t*const aFrom, user_datas_t*const aHasNotRoute,
+			fail_send_array_t*const aErrorList);
 
 	route_data_t FRouteData;
 };
@@ -130,7 +130,7 @@ inline void CRoutingService::MSendTo(routing_t& aTo,routing_t & aNotSend, const 
 {
 	VLOG(2)<<"Routing to "<<aTo;
 	output_decriptors_for_t _descr;
-	MGetOutputDescriptors(aTo, aNotSend, _descr);
+	MGetOutputDescriptors(&aTo, &aNotSend, &_descr);
 
 	LOG_IF(ERROR, _descr.empty()) << "There are not descriptors. WTF?";
 

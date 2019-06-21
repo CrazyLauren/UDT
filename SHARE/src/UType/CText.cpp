@@ -19,6 +19,7 @@
 #include <locale>
 
 #include <UType/CText.h>
+#include <random_value.h>
 // Start of NSHARE namespace section
 namespace NSHARE
 {
@@ -2272,6 +2273,7 @@ CText& CText::MMakeRandom(size_t aLen, ICodeConv const& aType)
 	MGrow(aLen);
 	MSetLen(aLen);
 
+	generate_seed_if_need();
 	uint64_t _val = get_uuid().FVal;
 	for (unsigned i = 0; aLen != 0;)	//aLen всегда >0
 	{
@@ -2279,7 +2281,7 @@ CText& CText::MMakeRandom(size_t aLen, ICodeConv const& aType)
 		ptr()[--aLen] = _alphanum[_pos % _alphanum_size];
 		if(++i==sizeof(_val))
 		{
-			_val = get_uuid().FVal;
+			_val = rand();
 			i=0;
 		}
 	}

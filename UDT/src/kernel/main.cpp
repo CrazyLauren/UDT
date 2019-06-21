@@ -62,10 +62,12 @@ DECLARATION_VERSION_FOR(Kernel)
 static NSHARE::version_t const g_version(MAJOR_VERSION_OF(Kernel), MINOR_VERSION_OF(Kernel), REVISION_OF(Kernel));
 
 void initialize_def_main_channels();
+void remove_def_main_channels();
 void initialize_def_links();
 void initialize_def_io_managers();
 void initialize_extern_modules();
 void initialize_def_sevices();
+void remove_def_sevices();
 void initialize_core(int argc, char* argv[]);
 void perpetual_loop();
 void start();
@@ -93,10 +95,16 @@ int main(int argc, char *argv[])
 
 	start();
 	perpetual_loop();
+//	remove_extern_modules();
+//	remove_def_def_links();
+//	remove_def_io_managers();
+	remove_def_main_channels();
+	remove_def_sevices();
 
 	return EXIT_SUCCESS;
 }
 
+CMainChannelFactory* g_main_channel_factory=NULL;
 void initialize_def_main_channels()
 {
 	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
@@ -120,16 +128,12 @@ void initialize_def_main_channels()
 			CMainFactoryRegisterer<CTcpClientMainChannel>().MRegisterFactory();
 	}
 		
-<<<<<<< HEAD
-	new CMainChannelFactory();
-=======
 	g_main_channel_factory=new CMainChannelFactory();
 }
 void remove_def_main_channels()
 {
 	delete g_main_channel_factory;
 	g_main_channel_factory = NULL;
->>>>>>> 3b9273e... See ChangeLog.txt
 }
 void initialize_def_links()
 {
@@ -175,8 +179,6 @@ void initialize_extern_modules()
 {
 	NUDT::CResources::sMGetInstance().MLoad();
 }
-<<<<<<< HEAD
-=======
 
 CParserFactory* g_CParserFactory=NULL;
 CRoutingService* g_CRoutingService=NULL;
@@ -184,15 +186,8 @@ CInfoService* g_CInfoService=NULL;
 CPacketDivisor* g_CPacketDivisor=NULL;
 CAutoSearchByEthernet* g_CAutoSearchByEthernet=NULL;
 
->>>>>>> 80c7e21... See ChangeLog.txt
 void initialize_def_sevices()
 {
-<<<<<<< HEAD
-	new CParserFactory(); //todo IState
-	new CRoutingService();
-	new CInfoService();
-	new CPacketDivisor();
-=======
 	g_CParserFactory=new CParserFactory(); //todo IState
 	g_CRoutingService=new CRoutingService();
 	g_CInfoService=new CInfoService();
@@ -212,15 +207,10 @@ void remove_def_sevices()
 
 	delete g_CParserFactory;
 	g_CParserFactory=NULL;
-<<<<<<< HEAD
->>>>>>> 3b9273e... See ChangeLog.txt
-=======
 
 	delete g_CAutoSearchByEthernet;
 	g_CAutoSearchByEthernet=NULL;
->>>>>>> 80c7e21... See ChangeLog.txt
 }
-
 void initialize_core(int argc, char* argv[])
 {
 	using namespace NSHARE;
@@ -296,7 +286,9 @@ void initialize_core(int argc, char* argv[])
 
 void perpetual_loop()
 {
-	for (;; NSHARE::sleep(10000))
+	std::cout << "Press any key ..." << std::endl;
+	getchar();
+	//for (;; NSHARE::sleep(10000))
 		;
 }
 void start()

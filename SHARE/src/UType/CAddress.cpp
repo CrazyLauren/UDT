@@ -14,34 +14,34 @@
 #include <deftype>
 namespace NSHARE
 {
-const char CRegistration::SEPERATOR = '@';
-const char CAddress::SEPERATOR = '.';
-const NSHARE::CText CRegistration::NAME = "name";
-COMPILE_ASSERT(static_cast<utf32>(CRegistration::SEPERATOR) == 64u,
+const char CProgramName::SEPERATOR = '@';
+const char CProgramGroup::SEPERATOR = '.';
+const NSHARE::CText CProgramName::NAME = "name";
+COMPILE_ASSERT(static_cast<utf32>(CProgramName::SEPERATOR) == 64u,
 		WtfInvalidSymbolAt);
 COMPILE_ASSERT(static_cast<utf32>('.') == 46u, WtfInvalidSymbolPoint);
-CRegistration::CRegistration()
+CProgramName::CProgramName()
 {
 
 }
-CRegistration::CRegistration(const char* aRaw) :
+CProgramName::CProgramName(const char* aRaw) :
 		FName(aRaw)
 {
 	DCHECK(sMIsValid(aRaw));
 }
-CRegistration::CRegistration(NSHARE::CText const& aRaw) :
+CProgramName::CProgramName(NSHARE::CText const& aRaw) :
 		FName(aRaw)
 {
 	DCHECK(sMIsValid(aRaw));
 }
-CRegistration::CRegistration(NSHARE::CText const& aName, CAddress const&aGroup) :
+CProgramName::CProgramName(NSHARE::CText const& aName, CProgramGroup const&aGroup) :
 		FName(aName)
 {
 	DCHECK(sMIsValid(aName));
 	MAddTo(aGroup);
 }
 
-CRegistration::CRegistration(NSHARE::CConfig const& aConf)
+CProgramName::CProgramName(NSHARE::CConfig const& aConf)
 {
 	VLOG(3) << "Create CRegistration from " << aConf;
 	if (!aConf.MValue().empty())
@@ -55,15 +55,15 @@ CRegistration::CRegistration(NSHARE::CConfig const& aConf)
 	VLOG(4) << "Value = " << FName;
 
 }
-NSHARE::CConfig CRegistration::MSerialize() const
+NSHARE::CConfig CProgramName::MSerialize() const
 {
 	return CConfig(NAME, FName);
 }
-bool CRegistration::MIsValid() const
+bool CProgramName::MIsValid() const
 {
 	return !FName.empty();
 }
-bool CRegistration::MSetRaw(NSHARE::CText const&aName)
+bool CProgramName::MSetRaw(NSHARE::CText const&aName)
 {
 	VLOG(3) << "Change " << FName << " to " << aName;
 	DCHECK(sMIsValid(aName));
@@ -72,18 +72,18 @@ bool CRegistration::MSetRaw(NSHARE::CText const&aName)
 	FName = aName;
 	return true;
 }
-void CRegistration::MAddTo(CAddress const& aGroup)
+void CProgramName::MAddTo(CProgramGroup const& aGroup)
 {
 
 	MSet(MGetName(), aGroup);
 }
-void CRegistration::MSet(NSHARE::CText const& aName, CAddress const& aGroup)
+void CProgramName::MSet(NSHARE::CText const& aName, CProgramGroup const& aGroup)
 {
 	DCHECK(sMIsValid(aName));
 	FName = sMRegister(aName, aGroup);
 }
-NSHARE::CText CRegistration::sMRegister(NSHARE::CText const& aName,
-		CAddress const& aGroup)
+NSHARE::CText CProgramName::sMRegister(NSHARE::CText const& aName,
+		CProgramGroup const& aGroup)
 {
 	DCHECK(sMIsNameValid(aName));
 	VLOG(3) << aName << " added to  " << aGroup;
@@ -91,7 +91,7 @@ NSHARE::CText CRegistration::sMRegister(NSHARE::CText const& aName,
 		return aName;
 	return aName + SEPERATOR + aGroup.MGetRaw();
 }
-void CRegistration::MChangeName(NSHARE::CText const& aNewName)
+void CProgramName::MChangeName(NSHARE::CText const& aNewName)
 {
 	VLOG(3) << "Change name from " << FName << " to " << aNewName;
 	DCHECK(sMIsNameValid(aNewName));
@@ -106,7 +106,7 @@ void CRegistration::MChangeName(NSHARE::CText const& aNewName)
 			FName.replace(0, _pos, aNewName);
 	}
 }
-NSHARE::CText CRegistration::MGetName() const
+NSHARE::CText CProgramName::MGetName() const
 {
 	CText::size_type const _pos = FName.find(SEPERATOR);
 	if (_pos == CText::npos) //no group
@@ -114,11 +114,11 @@ NSHARE::CText CRegistration::MGetName() const
 	else
 		return FName.substr(0, _pos);
 }
-NSHARE::CText const& CRegistration::MGetRawName() const
+NSHARE::CText const& CProgramName::MGetRawName() const
 {
 	return FName;
 }
-NSHARE::CText CRegistration::MGetAddressText() const
+NSHARE::CText CProgramName::MGetAddressText() const
 {
 	CText::size_type const _pos = FName.find(SEPERATOR);
 	if (_pos == CText::npos) //no group
@@ -129,39 +129,44 @@ NSHARE::CText CRegistration::MGetAddressText() const
 		return FName.substr(_pos + 1);
 	}
 }
-CAddress CRegistration::MGetAddress() const
+CProgramGroup CProgramName::MGetAddress() const
 {
 	const CText _gr = MGetAddressText();
 	if (_gr.empty())
-		return CAddress();
+		return CProgramGroup();
 	else
-		return CAddress(_gr);
+		return CProgramGroup(_gr);
 }
-bool CRegistration::MIsFrom(CAddress const& aGroup) const
+unsigned CProgramName::MIsFrom(CProgramGroup const& aGroup) const
 {
-	return aGroup.MIsSubpathOf(*this);
+	return aGroup.MIsSubGroupOf(*this);
 }
-bool CRegistration::MIsFrom(NSHARE::CText const& aGroup) const
+unsigned CProgramName::MIsFrom(NSHARE::CText const& aGroup) const
 {
-	const CAddress _gr = MGetAddress();
-	return _gr.MIsPathOf(aGroup);
+	const CProgramGroup _gr = MGetAddress();
+	return _gr.MIsInGroup(aGroup);
 }
-bool CRegistration::MIsForMe(NSHARE::CText const& aWhat) const
+unsigned CProgramName::MIsForMe(CProgramName const& aWhat) const
 {
-	return sMIsMeImpl(aWhat,MGetRawName());
+	return MIsForMe(aWhat.MGetRawName());
 }
-bool CRegistration::sMIsMeImpl(NSHARE::CText const& aFor, NSHARE::CText const& aWhat)
+unsigned CProgramName::MIsForMe(NSHARE::CText const& aWhat) const
 {
-	if (aWhat.empty() || aFor.empty())
-		return false;
+	return sMCompare(aWhat,MGetRawName());
+}
 
-	if (aWhat.length() > aFor.length())
-		return false;
+unsigned CProgramName::sMCompare(NSHARE::CText const& aWhat, NSHARE::CText const& aWith)
+{
+	if (aWith.empty() || aWhat.empty())
+		return 0;
 
-	CText::const_iterator _it(aWhat.begin()), _it_end(aWhat.end());
+	if (aWith.length() > aWhat.length())
+		return 0;
 
-	CText::const_iterator _jt(aFor.begin()), _jt_end(
-			aFor.end());
+	CText::const_iterator _it(aWith.begin()), _it_end(aWith.end());
+
+	CText::const_iterator _jt(aWhat.begin()), _jt_end(
+			aWhat.end());
 
 	bool _is_sep = false;
 
@@ -169,30 +174,44 @@ bool CRegistration::sMIsMeImpl(NSHARE::CText const& aFor, NSHARE::CText const& a
 			*_it == *_jt; ++_it, ++_jt)
 		if (*_it == SEPERATOR)
 			_is_sep = true;
+
 	VLOG(5) << " IsSep=" << _is_sep << " end=" << (_it == _it_end)
 						<< " jt_end=" << (_jt == _jt_end);
-	if (_it != _it_end)
-		return false;
-	else if	( _jt == _jt_end)//full equal
-		return true;
-	else if(*_jt==CRegistration::SEPERATOR)//only name
-		return true;
-	else if (_is_sep && *_jt == CAddress::SEPERATOR) //more shorter address
-		return true;
-	else
-		VLOG(5)<<"Next  "<<*_jt;
 
-	return false;
+	if (_it != _it_end)//some char of path is not equal
+		return 0;
+	else if	( _jt == _jt_end)//full equal
+		return 1;
+	else if(*_jt==CProgramName::SEPERATOR)//aWith does not have group
+			//aWhat have group, thus aWith is related with  aWhat
+		return std::numeric_limits<unsigned>::max();
+	else if (_is_sep && *_jt == CProgramGroup::SEPERATOR)
+	{
+		//The Names are equal and group of aWith is
+		//subgroup of aWhat
+
+		unsigned _level=1;//minimal level 1
+
+		for (; _jt != _jt_end; ++_jt)
+			if (*_jt == CProgramGroup::SEPERATOR)
+				++_level;
+		return _level;
+	}
+	else
+	{
+		VLOG(5)<<"The group is not equal  "<<*_jt;
+		return 0;
+	}
 }
-bool CRegistration::MIsMe(NSHARE::CText const& aWhat) const
+unsigned CProgramName::MIsMe(NSHARE::CText const& aWhat) const
 {
-	return sMIsMeImpl(MGetRawName(),aWhat);
+	return sMCompare(MGetRawName(),aWhat);
 }
-bool CRegistration::MIsMe(CRegistration const& aWhat) const
+unsigned CProgramName::MIsMe(CProgramName const& aWhat) const
 {
 	return MIsMe(aWhat.MGetRawName());
 }
-bool CRegistration::MIsNameEqual(CRegistration const& aWho) const
+bool CProgramName::MIsNameEqual(CProgramName const& aWho) const
 {
 
 	CText::const_iterator _it(aWho.MGetRawName().begin()), _it_end(
@@ -213,44 +232,44 @@ bool CRegistration::MIsNameEqual(CRegistration const& aWho) const
 	else
 		return false;
 }
-bool CRegistration::MIsName() const
+bool CProgramName::MIsName() const
 {
 	return !FName.empty() && (*FName.begin() != SEPERATOR);
 }
-bool CRegistration::MIsAddress() const
+bool CProgramName::MIsAddress() const
 {
 	bool const _res = FName.find(SEPERATOR) != CText::npos;
 	CHECK((!_res) || ((utf32 )SEPERATOR != *FName.end()));
 	return _res;
 }
-bool CRegistration::operator<(const CRegistration&aRht) const
+bool CProgramName::operator<(const CProgramName&aRht) const
 {
 	return std::less<CText>()(FName, aRht.FName);
 }
-bool CRegistration::operator==(const CRegistration& aRht) const
+bool CProgramName::operator==(const CProgramName& aRht) const
 {
 	return std::equal_to<CText>()(FName, aRht.FName);
 }
 
-CAddress::CAddress()
+CProgramGroup::CProgramGroup()
 {
 
 }
-CAddress::CAddress(const char* aGroup) :
+CProgramGroup::CProgramGroup(const char* aGroup) :
 		FAddress(aGroup)
 {
 	DCHECK(sMIsValid(aGroup));
 }
-CAddress::CAddress(NSHARE::CText const& aGroup) :
+CProgramGroup::CProgramGroup(NSHARE::CText const& aGroup) :
 		FAddress(aGroup)
 {
 	DCHECK(sMIsValid(aGroup));
 }
-CAddress::CAddress(std::vector<NSHARE::CText> const& aGroups)
+CProgramGroup::CProgramGroup(std::vector<NSHARE::CText> const& aGroups)
 {
 	MSet(aGroups);
 }
-bool CAddress::MSet(NSHARE::CText const& aGroups)
+bool CProgramGroup::MSet(NSHARE::CText const& aGroups)
 {
 	DCHECK(sMIsValid(aGroups));
 	if (!sMIsValid(aGroups))
@@ -259,7 +278,7 @@ bool CAddress::MSet(NSHARE::CText const& aGroups)
 	VLOG(3) << "Change group from " << FAddress << " to " << aGroups;
 	return true;
 }
-void CAddress::MSet(std::vector<NSHARE::CText> const& aGroups)
+void CProgramGroup::MSet(std::vector<NSHARE::CText> const& aGroups)
 {
 	FAddress.clear();
 	if (!aGroups.empty())
@@ -271,17 +290,17 @@ void CAddress::MSet(std::vector<NSHARE::CText> const& aGroups)
 	}
 	VLOG(2) << "Result=" << FAddress;
 }
-CAddress& CAddress::operator+=(NSHARE::CText const& aName)
+CProgramGroup& CProgramGroup::operator+=(NSHARE::CText const& aName)
 {
 	return MAddPath(aName);
 }
-CAddress& CAddress::operator+=(const char* aName)
+CProgramGroup& CProgramGroup::operator+=(const char* aName)
 {
 	return MAddPath(aName);
 }
-CAddress& CAddress::MAddPath(NSHARE::CText const& aName)
+CProgramGroup& CProgramGroup::MAddPath(NSHARE::CText const& aName)
 {
-	DCHECK(sMIsNameValid(aName));
+	DCHECK(sMIsGroupNameValid(aName));
 	if (FAddress.empty())
 		FAddress = aName;
 	else if (!aName.empty())
@@ -290,7 +309,7 @@ CAddress& CAddress::MAddPath(NSHARE::CText const& aName)
 		LOG(ERROR)<<"Cannot add empty subgroup to "<<FAddress;
 	return *this;
 }
-CAddress& CAddress::MRemoveLastPath()
+CProgramGroup& CProgramGroup::MRemoveLastPath()
 {
 	CText::size_type const _pos = FAddress.find_last_of(SEPERATOR);
 	if (_pos == CText::npos)
@@ -303,11 +322,11 @@ CAddress& CAddress::MRemoveLastPath()
 	VLOG(2) << "Result:" << FAddress;
 	return *this;
 }
-NSHARE::CText const& CAddress::MGetRaw() const
+NSHARE::CText const& CProgramGroup::MGetRaw() const
 {
 	return FAddress;
 }
-std::vector<NSHARE::CText> CAddress::MGetPath() const
+std::vector<NSHARE::CText> CProgramGroup::MGetPath() const
 {
 
 	std::vector<NSHARE::CText> _rval;
@@ -330,102 +349,96 @@ std::vector<NSHARE::CText> CAddress::MGetPath() const
 	}
 	return _rval;
 }
-bool CAddress::MIsSubpathOfForRegistration(CText const& aName) const
+inline unsigned CProgramGroup::sMIsSubGroupOf(CText const& aWhat,CText const& aWith)
 {
-	if (MIsEmpty())
-		return true;
+	CText::size_type  _group_pos = aWhat.find(CProgramName::SEPERATOR);
 
-	CText::size_type const _pos = aName.find(CRegistration::SEPERATOR);
-	if (_pos == CText::npos) //no group
-		return false;
-	CText::size_type const _size_gr= aName.length()-_pos-1;
-	if(_size_gr < MGetRaw().length())
-		return false;
+	if (_group_pos == CText::npos) //no group
+		_group_pos=0;
+	else
+		++_group_pos; ///skips SEPERATOR
 
-	return aName.compare(_pos+1,MGetRaw().length(),MGetRaw())==0 &&//
-			(_size_gr == MGetRaw().length()
-					|| aName[_pos + 1 + MGetRaw().length()]
-							== CAddress::SEPERATOR);
-}
-bool CAddress::MIsSubpathOf(CRegistration const& aName) const
-{
-	if (MIsEmpty())
-		return true;
-	return MIsSubpathOfForRegistration(aName.MGetRawName());
-}
-bool CAddress::MIsSubpathOf(CAddress const& aVal) const
-{
-	return MIsSubpathOf(aVal.MGetRaw());
-}
-bool CAddress::MIsSubpathOf(CText const& _gr) const
-{
-	if (MIsEmpty())
-		return true;
+	if(aWith.empty())
+		return aWhat.empty()?1:std::numeric_limits<unsigned>::max();//empty group is max
 
-	if (_gr.empty() || _gr.length() < MGetRaw().length())
-		return false;
-	return _gr.compare(0, MGetRaw().length(), MGetRaw()) == 0 &&//
-			(_gr.length() == MGetRaw().length()
-					|| _gr[MGetRaw().length()] == CAddress::SEPERATOR);
+	CText::size_type const _size_gr= aWhat.length()-_group_pos;
+	if(aWhat.empty() || _size_gr < aWith.length())//too small
+		return 0;
+
+	size_t const _end_of_group=_group_pos + aWith.length();
+	bool const _is_equal=aWhat.compare(_group_pos,aWith.length(),aWith)==0&&//
+			(_size_gr == aWith.length()
+								|| aWhat[_end_of_group]
+										== CProgramGroup::SEPERATOR);
+	if (_is_equal)
+	{
+		size_t _level = 1; //minimal level 1
+
+		for (size_t i = _end_of_group; i < aWhat.length(); ++i)
+			if (aWhat[i] == CProgramGroup::SEPERATOR)
+				++_level;
+		return (unsigned)_level;
+	}
+	else
+		return 0;
 }
-bool CAddress::MIsPathOf(NSHARE::CText const& aRawGroup) const
+unsigned CProgramGroup::MIsSubGroupOf(CText const& aName) const
 {
-	if (aRawGroup.empty())
+	return sMIsSubGroupOf(aName,MGetRaw());
+}
+unsigned CProgramGroup::MIsSubGroupOf(CProgramName const& aName) const
+{
+	return MIsSubGroupOf(aName.MGetRawName());
+}
+unsigned CProgramGroup::MIsSubGroupOf(CProgramGroup const& aVal) const
+{
+	return MIsSubGroupOf(aVal.MGetRaw());
+}
+unsigned CProgramGroup::MIsInGroup(NSHARE::CText const& aRawGroup) const
+{
+	return sMIsSubGroupOf(MGetRaw(),aRawGroup);
+/*	if (aRawGroup.empty())
 		return true;
 
 	if (MGetRaw().empty() || MGetRaw().length() < aRawGroup.length())
 		return false;
 	return MGetRaw().compare(0, aRawGroup.length(), aRawGroup) == 0 && //
 			(MGetRaw().length() == aRawGroup.length()
-					|| MGetRaw()[aRawGroup.length()] == CAddress::SEPERATOR);
+					|| MGetRaw()[aRawGroup.length()] == CProgramGroup::SEPERATOR);*/
 
 }
-bool CAddress::MIsPathOf(CAddress const& aVal) const
+unsigned CProgramGroup::MIsInGroup(CProgramGroup const& aVal) const
 {
-	return MIsPathOf(aVal.MGetRaw());
+	return sMIsSubGroupOf(MGetRaw(),aVal.MGetRaw());
 }
-bool CAddress::MIsPathOf(CRegistration const& aReg) const
+unsigned CProgramGroup::MIsInGroup(CProgramName const& aReg) const
 {
-	return MIsPathOfForRegistration(aReg.MGetRawName());
+	return sMIsSubGroupOf(MGetRaw(),aReg.MGetRawName());
 }
-bool CAddress::MIsPathOfForRegistration(CText const& aName) const
-{
-	if (aName.empty())
-		return true;
 
-	CText::size_type const _pos = aName.find(CRegistration::SEPERATOR);
-	if (_pos == CText::npos) //no group
-		return true;
-	CText::size_type const _size_gr= aName.length()-_pos-1;
-	if(MGetRaw().length()<_size_gr)
-		return false;
-	return MGetRaw().compare(0, _size_gr, aName, _pos + 1, _size_gr) == 0 && //
-			(_size_gr == MGetRaw().length()
-					|| MGetRaw()[_pos + 1 + _size_gr] == CAddress::SEPERATOR);
-}
-bool CAddress::MIsEmpty() const
+bool CProgramGroup::MIsEmpty() const
 {
 	return FAddress.empty();
 }
-bool CAddress::operator<(const CAddress&aRht) const
+bool CProgramGroup::operator<(const CProgramGroup&aRht) const
 {
 	return std::less<NSHARE::CText>()(FAddress, aRht.FAddress);
 }
-bool CAddress::operator==(const CAddress& aRht) const
+bool CProgramGroup::operator==(const CProgramGroup& aRht) const
 {
 	return std::equal_to<CText>()(FAddress, aRht.FAddress);
 }
 
-bool CRegistration::sMIsValid(NSHARE::CText const& aName)
+bool CProgramName::sMIsValid(NSHARE::CText const& aName)
 {
 	if (aName.empty())
 		return true;
 	if (/**aName.begin() == CAddress::SEPERATOR || // ".some"*/
-	*(--aName.end()) == CAddress::SEPERATOR || //"s@some."
-			*(--aName.end()) == CRegistration::SEPERATOR || //some@
-			(*aName.begin() == CRegistration::SEPERATOR && aName.size() == 1) || // "@"
-			(*aName.begin() == CRegistration::SEPERATOR
-					&& aName[1] == CAddress::SEPERATOR) //"@.some"
+	*(--aName.end()) == CProgramGroup::SEPERATOR || //"s@some."
+			*(--aName.end()) == CProgramName::SEPERATOR || //some@
+			(*aName.begin() == CProgramName::SEPERATOR && aName.size() == 1) || // "@"
+			(*aName.begin() == CProgramName::SEPERATOR
+					&& aName[1] == CProgramGroup::SEPERATOR) //"@.some"
 			)
 		return false;
 
@@ -437,18 +450,18 @@ bool CRegistration::sMIsValid(NSHARE::CText const& aName)
 	--_prev_gr_it;
 
 	for (; _it != _it_end; ++_it)
-		if (*_it == CRegistration::SEPERATOR)
+		if (*_it == CProgramName::SEPERATOR)
 		{
 			if (_is_name_sep) //"some@some@"
 				break;
 			else
 			{
 				_is_name_sep = true;
-				if (*(_it + 1) == CAddress::SEPERATOR) //some@.some
+				if (*(_it + 1) == CProgramGroup::SEPERATOR) //some@.some
 					break;
 			}
 		}
-		else if (*_it == CAddress::SEPERATOR)
+		else if (*_it == CProgramGroup::SEPERATOR)
 		{
 			if (_is_name_sep)
 			{
@@ -459,24 +472,24 @@ bool CRegistration::sMIsValid(NSHARE::CText const& aName)
 		}
 	return _it == _it_end;
 }
-bool CAddress::sMIsValid(NSHARE::CText const& aName)
+bool CProgramGroup::sMIsValid(NSHARE::CText const& aName)
 {
 	if (aName.empty())
 		return true;
-	if (*aName.begin() == CAddress::SEPERATOR || // ".some"
-			*(--aName.end()) == CAddress::SEPERATOR || //"some."
-			*(--aName.end()) == CRegistration::SEPERATOR || //
-			(*aName.begin() == CRegistration::SEPERATOR && aName.size() == 1) || // "@"
-			(*aName.begin() == CRegistration::SEPERATOR
-					&& aName[1] == CAddress::SEPERATOR) //"@.some"
+	if (*aName.begin() == CProgramGroup::SEPERATOR || // ".some"
+			*(--aName.end()) == CProgramGroup::SEPERATOR || //"some."
+			*(--aName.end()) == CProgramName::SEPERATOR || //
+			(*aName.begin() == CProgramName::SEPERATOR && aName.size() == 1) || // "@"
+			(*aName.begin() == CProgramName::SEPERATOR
+					&& aName[1] == CProgramGroup::SEPERATOR) //"@.some"
 			)
 		return false;
 	const NSHARE::CText _double(2, SEPERATOR); //..
 
 	return aName.find(_double) == CText::npos
-			&& aName.find(CRegistration::SEPERATOR) == CText::npos;
+			&& aName.find(CProgramName::SEPERATOR) == CText::npos;
 }
-bool CRegistration::sMIsNameValid(NSHARE::CText const& aName)
+bool CProgramName::sMIsNameValid(NSHARE::CText const& aName)
 {
 	CText::const_iterator _it = aName.begin(), _it_end(aName.end());
 
@@ -485,42 +498,58 @@ bool CRegistration::sMIsNameValid(NSHARE::CText const& aName)
 		;
 	return _it == _it_end;
 }
-bool CAddress::sMIsNameValid(NSHARE::CText const& aName)
+bool CProgramGroup::sMIsGroupNameValid(NSHARE::CText const& aName)
 {
 	CText::const_iterator _it = aName.begin(), _it_end(aName.end());
 
 	for (; _it != _it_end && //
-			*_it != CRegistration::SEPERATOR && //
-			*_it != CAddress::SEPERATOR; ++_it)
+			*_it != CProgramName::SEPERATOR && //
+			*_it != CProgramGroup::SEPERATOR; ++_it)
 		;
 	return _it == _it_end;
 }
-bool CRegistration::sMUnitTest()
+bool CProgramName::sMUnitTest()
 {
 	{
-		CRegistration const _m("raw@q.w.e.r.t");
-		CAddress const _g("q.w.e.r.t");
-		CRegistration const _m2("raw", _g);
+		CProgramName const _m("raw@q.w.e.r.t");
+		CProgramGroup const _g("q.w.e.r.t");
+		CProgramName const _m2("raw", _g);
 		CHECK(_m == _m2);
 
-		CAddress _g2;
+		CProgramGroup _g2;
 		_g2.MAddPath("q").MAddPath("w").MAddPath("e").MAddPath("r");
 		_g2 += "t";
 		CHECK(_g2 == _g);
 
 		CHECK(_m.MIsFrom(_g));
-		CHECK(_g.MIsSubpathOf(_m));
+		CHECK(_g.MIsSubGroupOf(_m));
 		_g2.MRemoveLastPath();
 
-		CHECK(_g.MIsPathOf(_g2));
+		CHECK(_g.MIsInGroup(_g2));
+		CHECK(_g2.MIsSubGroupOf(_g));
 		_g2 += "f";
-		CHECK(!_g.MIsPathOf(_g2));
+		CHECK(!_g.MIsInGroup(_g2));
 		CHECK(!_m.MIsFrom(_g2));
 
-		CHECK(_m.MIsFrom(CAddress()));
 
-		CRegistration const _m3("@q.w.e.r.t");
+		CHECK(_m.MIsFrom(CProgramGroup()));
+
+		CProgramName const _m3("@q.w.e.r.t");
 		CHECK(_m3.MIsFrom(_g));
+
+		CProgramName const _m4("raw",CProgramGroup("q.w.e.r"));
+		CHECK_EQ(_m4.MIsForMe(_m),2);
+		CHECK_EQ(_m.MIsMe(_m4),2);
+		CHECK_EQ(_m.MIsMe(_m2),1);
+
+		CProgramName const _m5("raw");
+		CHECK_EQ(_m.MIsMe(_m5),std::numeric_limits<unsigned>::max());
+
+		CProgramName const _m6("raw@q");
+		CHECK_EQ(_m.MIsMe(_m6),5);
+
+		CProgramName const _m7("raw@q.w.e.r.t.y");
+		CHECK_EQ(_m.MIsMe(_m7),0);
 	}
 	return true;
 }

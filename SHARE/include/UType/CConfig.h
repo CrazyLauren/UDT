@@ -246,17 +246,6 @@ public:
 				++_it)
 			MAdd(*_it);
 	}
-#ifdef SMART_FIELD_EXIST
-	template<typename T>
-	void MUpdateIfSet(const CText& key, const smart_field_t<T>& opt)
-	{
-		if (opt.MIs())
-		{
-			MRemove(key);
-			MAdd(key, to_string<T>(opt.MGetConst()));
-		}
-	}
-#endif
 	template<typename T>
 	CConfig& MUpdate(const CText& key, const T& value)
 	{
@@ -269,6 +258,7 @@ public:
 #endif
 
 	}
+
 
 	CConfig& MUpdate(const CConfig& conf)
 	{
@@ -322,8 +312,6 @@ public:
 		}		
 	}
 
-<<<<<<< HEAD
-=======
 	/*!\brief Update the Value if key is exist
 	 *
 	 *\return true if updated
@@ -351,7 +339,6 @@ public:
 			return false;
 	}
 #endif
->>>>>>> f3da2cc... see changelog.txt
 	// remove everything from (this) that also appears in rhs
 	CConfig operator -(const CConfig& rhs) const;
 	std::ostream& MPrint(std::ostream & aStream) const;
@@ -402,18 +389,18 @@ void CConfig::MAddIfSet<CConfig>(const CText& key,
 }
 
 template<> inline
-void CConfig::MUpdateIfSet<CConfig>(const CText& key,
-		const smart_field_t<CConfig>& opt)
+bool CConfig::MUpdateIfSet<CConfig>(const CText& key, const CConfig& value)
 {
-	if (opt.MIs())
+	CConfig* _child = MMutableChild(key);
+	if (_child==NULL ||_child->MValue().empty())
+		return false;
+	else
 	{
-		MRemove(key);
-		CConfig conf = opt.MGetConst();
-		conf.MKey() = key;
-		MAdd(conf);
+		CConfig const _new(key,value);
+		*_child=_new;
+		return true;
 	}
 }
-
 template<> inline
 bool CConfig::MGetIfSet<CConfig>(const CText& key,
 		smart_field_t<CConfig>& output) const

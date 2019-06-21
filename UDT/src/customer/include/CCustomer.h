@@ -34,19 +34,7 @@ class CCustomer;
  */
 struct requirement_msg_info_t
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	NSHARE::CText FProtocolName; //Name of protocol
-	required_header_t FRequired;
-	enum eFLags{
-		E_NO_FLAGS=0,
-		E_REGISTRATOR=0x1<<0
-	} FFlags;
-=======
-	/*! \brief Collection of bitwise flags for change
-=======
 	/*!\brief Collection of bitwise flags for change
->>>>>>> f3da2cc... see changelog.txt
 	 * subscription behavior
 	 *
 	 */
@@ -67,7 +55,6 @@ struct requirement_msg_info_t
 						 than the order@com is included only order@com.ru.people
 						 and order@com.ru.kremlin*/
 	};
->>>>>>> 3a2b21d... see changelog
 
 	NSHARE::CText 		FProtocolName; ///<Type of message protocol
 	required_header_t 	FRequired;///< Header of requirement message
@@ -177,9 +164,6 @@ struct customers_updated_args_t
 	std::set<program_id_t> FDisconnected;///< list of connected program
 	std::set<program_id_t> FConnected;///< list of disconnected program
 };
-<<<<<<< HEAD
-struct new_receiver_args_t
-=======
 
 /*!\brief Information about requirement message for
  *
@@ -190,7 +174,6 @@ struct new_receiver_args_t
  *  Non-POD type.
  */
 struct subcribe_receiver_args_t
->>>>>>> 3a2b21d... see changelog
 {
 	/*!\brief what requirement
 	 *
@@ -419,35 +402,8 @@ struct request_info_t
 class CUSTOMER_EXPORT CCustomer: public NSHARE::CSingleton<CCustomer>
 {
 public:
-<<<<<<< HEAD
-<<<<<<< HEAD
-	static const NSHARE::CText DEFAULT_IO_MANAGER;
-	static const NSHARE::CText RAW_PROTOCOL;
-	static const NSHARE::CText ENV_CONFIG_PATH;
-	static const NSHARE::CText CONFIG_PATH;
-	static const NSHARE::CText MODULES;
-	static const NSHARE::CText MODULES_PATH;
-	static const NSHARE::CText DOING_MODULE;
-	static const NSHARE::CText RRD_NAME;
-	static const NSHARE::CText THREAD_PRIORITY;
-	static const NSHARE::CText NUMBER_OF_THREAD;
-
-	//events
-	//for receive dg from fixed Custom, using its name as key
-	static const NSHARE::CText EVENT_RAW_DATA;
-	static const NSHARE::CText EVENT_CONNECTED;
-	static const NSHARE::CText EVENT_DISCONNECTED;
-	static const NSHARE::CText EVENT_CUSTOMERS_UPDATED;
-	static const NSHARE::CText EVENT_FAILED_SEND;
-	static const NSHARE::CText EVENT_NEW_RECEIVER;
-	static const NSHARE::CText EVENT_READY;
-=======
-	static const NSHARE::CText ENV_CONFIG_PATH;//!< environment name used for specification
-												//!<path to the config file
-=======
 	static const NSHARE::CText ENV_CONFIG_PATH;/*!< environment name used for specification
 												path to the config file*/
->>>>>>> f3da2cc... see changelog.txt
 
 	/// \name Keys using in configure file
 	/// \{
@@ -493,7 +449,6 @@ public:
 														 did not want to receive the message from you (publisher).
 														 Each callback is passed  subcribe_receiver_args_t structure.*/
 	/// \}
->>>>>>> bd5a830... before fixing
 
 	typedef std::vector<NSHARE::CText> modules_t;///< An information about modules
 	typedef std::set<program_id_t> customers_t;///< An information about program
@@ -585,24 +540,7 @@ public:
 	 */
 	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),const NSHARE::CText& aConfPath="default_customer_config.xml");
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-		}
-		NSHARE::CText FKey;
-		callback_t FCb;
-	};
-	///@brief initialization library
-	///@param argc - The number of entries in the argv array
-	///@param argv - An array of pointers to strings that contain the arguments to the program
-	///@param aName - Name of Customer
-	///@param aConf - Config
-	static int sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& =NSHARE::version_t(),const NSHARE::CText& aConfPath="");
-	static int sMInit(int argc, char* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConf);
-=======
-	/*! \brief Initialize library
-=======
 	/*!\brief Initialize library
->>>>>>> f3da2cc... see changelog.txt
 	 *
 	 *	Initialize the library and create singleton for this type
 	 *
@@ -614,12 +552,7 @@ public:
 	*\return 0 - EOK
 	 *			else bitwise error code
 	 */
-<<<<<<< HEAD
-	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConf);
->>>>>>> bd5a830... before fixing
-=======
 	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const& aProgrammVersion,	const NSHARE::CConfig& aConfPath);
->>>>>>> f3da2cc... see changelog.txt
 
 	/*!\brief deinitialization library
 	 *
@@ -781,46 +714,6 @@ public:
 	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 			const NSHARE::uuid_t& aTo, eSendToFlags aFlags= E_NO_SEND_FLAGS);
 
-<<<<<<< HEAD
-	///@brief Send data to customer
-	///@param aProtocolName The fixed protocol name that refers to the  sending buffer. there is default Protocol - raw
-	///@param aNumber The number off sending buffer.
-	///If you don't want to create own protocol, using send with aNumber argument. The protocol will  created automatically as "raw"
-	///protocol with number aNumber
-	///@param aBuffer Pointer to the data
-	///@param aSize size of data
-	///@param aTo Name of customer
-	///@return  <0 if error, 0 -if loopback, else ID of sent packet
-	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize, eSendToFlags = E_NO_SEND_FLAGS);
-	int MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer, eSendToFlags = E_NO_SEND_FLAGS);
-
-	int MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
-			const NSHARE::uuid_t& aTo, eSendToFlags = E_NO_SEND_FLAGS);
-	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
-			const NSHARE::uuid_t& aTo, eSendToFlags = E_NO_SEND_FLAGS);
-
-<<<<<<< HEAD
-	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
-=======
-	///@brief Send message to customer
-	///@param aNumber The number off sending buffer.
-	///@param aPacket Pointer to the packet
-	///@param aTo Name of customer
-	///@return  <0 if error, 0 -if loopback, else ID of sent packet
-	int MSend(unsigned aNumber, NSHARE::CBuffer & aPacket,
->>>>>>> 3a2b21d... see changelog
-			NSHARE::version_t const& = NSHARE::version_t(), eSendToFlags =
-					E_NO_SEND_FLAGS);
-	int MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
-			const NSHARE::uuid_t& aTo, NSHARE::version_t const& =
-					NSHARE::version_t(), eSendToFlags = E_NO_SEND_FLAGS);
-
-	///@brief Add a parser callback entry to a handle list
-	///@param aFrom Name of Parsing  customer
-	///@param aHeader Parsing a header type
-	///@param aCB Callback handler
-	///@return  <0 if error, else handler ID
-=======
 	/*!\overload
 	 *
 	 *\param aBuffer A pointer to the buffer that you want to parse and send. (It will moved!)
@@ -928,7 +821,6 @@ public:
 	 *\see CCustomer
 	 *
 	 */
->>>>>>> f3da2cc... see changelog.txt
 	int MIWantReceivingMSG(const requirement_msg_info_t& aMSGHeader,
 			const callback_t& aHandler);
 

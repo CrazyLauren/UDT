@@ -20,20 +20,14 @@
 namespace NUDT
 {
 const NSHARE::CText CRequiredDG::NAME = "demands";
-<<<<<<< HEAD
-=======
 const unsigned CRequiredDG::DEFAULT_MAX_INHERITANCE_DEPTH = 20;
 const CRequiredDG::msg_heritance_t CRequiredDG::sFEmptyHeritance;
->>>>>>> 57aaf6a... see Changelog
 //todo using hash algorithm
 //todo cache
 CRequiredDG::CRequiredDG()
 {
 	FMsgID = 0;
-<<<<<<< HEAD
-=======
 	FMaxInheritanceDepth = DEFAULT_MAX_INHERITANCE_DEPTH; //todo to config
->>>>>>> 5d2f97a... see ChangeLog.txt
 }
 
 CRequiredDG::~CRequiredDG()
@@ -48,34 +42,25 @@ std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
 	if (aReqDgs.empty())
 	{
 		VLOG(2) << "no demands";
-		MRemoveReceiversFor(aFor.FUuid, &_rval.second);
+		MRemoveAllSendersOfMsgsFor(aFor.FUuid,&_rval.first, &_rval.second);
 		return _rval;
 	}
 	demand_dgs_t _added;
 	demand_dgs_t _removed;
-	MGetDiffDemandsDG(aFor, aReqDgs, _removed, _added);
+	MGetDiffDemandsDG(aFor, aReqDgs, &_removed, &_added);
 	FDGs[aFor] = aReqDgs;
 
 	if (!_removed.empty())
-		MRemoveDemandsFor(aFor.FUuid, _removed, &_rval.second);
+		MRemoveSendersOfMsgFor(aFor.FUuid, _removed,&_rval.first, &_rval.second);
 	if (!_added.empty())
-		MAddDemandsFor(aFor.FUuid, _added, &_rval.first);
+		MAddSendersOfMsgFor(aFor.FUuid, _added, &_rval.first,&_rval.second);
 	return _rval;
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Adds the new handlers for the message
  *
 *\return true if it the first "real" handler
  */
-<<<<<<< HEAD
->>>>>>> f3da2cc... see changelog.txt
-bool CRequiredDG::MAddHandler(demand_dg_t const & aWhat,
-		msg_handlers_t& _handlers) const
-=======
 bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
->>>>>>> 57aaf6a... see Changelog
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 
@@ -131,16 +116,14 @@ bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
 
 		return false;
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Changes the byte order of a message header
  *
  *\return true - if no error
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_header_t* aTo)
 {
+	DCHECK_NOTNULL(aTo);
+
 	IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(aProtocol);
 	if (!_p)
 	{
@@ -154,8 +137,6 @@ bool CRequiredDG::sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_h
 	}
 	return true;
 }
-<<<<<<< HEAD
-=======
 
 /*!\brief Changes the byte order of a message
  *
@@ -165,10 +146,11 @@ bool CRequiredDG::sMSwapHeaderEndian(NSHARE::CText const & aProtocol, required_h
  *
  *\return true - if no error
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::sMSwapMessageEndian(NSHARE::CText const & aProtocol,
 		required_header_t const& aType, NSHARE::CBuffer* aTo)
 {
+	DCHECK_NOTNULL(aTo);
+
 	IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
 			aProtocol);
 	if (!_p)
@@ -186,16 +168,15 @@ bool CRequiredDG::sMSwapMessageEndian(NSHARE::CText const & aProtocol,
 	}
 	return true;
 }
-<<<<<<< HEAD
-=======
 
 /*!\brief Returns the valid message header
  *
  *\return true - no error
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MGetValidHeader(const demand_dg_t& aWhat,demand_dg_t * aTo) const
 {
+	DCHECK_NOTNULL(aTo);
+
 	*aTo=aWhat;
 	if (!aWhat.MIsValidEndian())
 	{
@@ -207,23 +188,20 @@ bool CRequiredDG::MGetValidHeader(const demand_dg_t& aWhat,demand_dg_t * aTo) co
 	}
 	return true;
 }
-<<<<<<< HEAD
-=======
 /*!\brief Adds the receiver to the list
  * of the message's receiver
  *
  *\return true - if the receiver
  * receives the message for the first time
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
 		const NSHARE::uuid_t& aFrom, const NSHARE::uuid_t& aTo,
-		uuids_of_expecting_dg_t* const aUUIds, demand_dgs_for_t* aNew)
+		uuids_of_expecting_dg_t* const aUUIds, demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld)
 {
 	DCHECK(aWhat.MIsValidEndian());
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 
-	uuids_of_receiver_t& _r_uuid = MGetOrCreateUUIDsOfReceivers(*aUUIds,
+	uuids_of_receiver_t& _r_uuid = MGetOrCreateUUIDsOfReceivers(aUUIds,
 			aWhat.FWhat);
 
 	VLOG_IF(2,_r_uuid.empty()) << "The Packet has not been received of yet.";
@@ -234,40 +212,31 @@ bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
 	if (!_is_registator)
 		++_r_uuid.FNumberOfRealReceivers;
 
-<<<<<<< HEAD
-	bool const _is_first_real = MAddHandler(aWhat, _r_uuid[aTo]);
-=======
 	bool const _is_first_real = _r_uuid[aTo].MAddHandler(aWhat);
->>>>>>> 57aaf6a... see Changelog
 
-	LOG_IF(INFO,_is_first_real) << "Now The packet:" << aWhat << " from "
+	LOG_IF(INFO,_is_first_real) << "\n===> Now The packet:" << aWhat << " from "
 										<< aFrom << " is received of by "
 										<< aTo;
-	LOG_IF(INFO,!_is_first_real) << "The packet has been received twice of by "
+	LOG_IF(INFO,!_is_first_real) << "\n===> The packet:"<< aWhat.FWhat <<" from "<<aFrom<<" has been received twice of by "
 											<< aTo;
-
-	if (_is_first_real && aNew) //не верно, могут быть другие callbacks типа регистратор
+	if (_is_first_real) //не верно, могут быть другие callbacks типа регистратор
 	{
-		demand_dg_t _new(aWhat);
-		_new.FUUIDFrom.MSet(aTo);
-		(*aNew)[id_t(aFrom)].push_back(_new);
+		if (aNew)
+		{
+			demand_dg_t _new(aWhat);
+			_new.FUUIDFrom.MSet(aTo);
+			(*aNew)[id_t(aFrom)].push_back(_new);
+		}
+		return true;
 	}
-	return true;
+	else
+		return false;
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Removes the handler for the message
  *
  *\return true if it was the last handler
  */
-<<<<<<< HEAD
->>>>>>> f3da2cc... see changelog.txt
-bool CRequiredDG::MRemoveHandler(demand_dg_t const & aWhat,
-		msg_handlers_t& _handlers) const
-=======
 bool CRequiredDG::msg_handlers_t::MRemoveHandler(demand_dg_t const & aWhat)
->>>>>>> 57aaf6a... see Changelog
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 	bool _rval = false;
@@ -297,25 +266,27 @@ bool CRequiredDG::msg_handlers_t::MRemoveHandler(demand_dg_t const & aWhat)
 	return _rval;
 }
 
-<<<<<<< HEAD
-=======
 /*!\brief Removes the receiver from the list
  * of the message's receiver
  *
  *\return true - if the receiver will not more
  * receive the message.
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 		NSHARE::uuid_t const & aFrom, NSHARE::uuid_t const & aTo,
-		uuids_of_expecting_dg_t* const aUUIds, demand_dgs_for_t* aOld)
+		uuids_of_expecting_dg_t* const aUUIds,demand_dgs_for_t* const aNew,  demand_dgs_for_t* const aOld)
 {
 	DCHECK(aWhat.MIsValidEndian());
 	bool const _is_registator =aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 
-	uuids_of_receiver_t& _r_uuid = MGetOrCreateUUIDsOfReceivers(*aUUIds,
-			aWhat.FWhat);
+	uuids_of_expecting_dg_t::iterator _it_expect = aUUIds->find(aWhat.FWhat);
+	if(_it_expect==aUUIds->end())
+	{
+		LOG(DFATAL)<<"The packet: "<<aWhat.FWhat<<" is not sent by "<<aFrom;
+		return false;
+	}
 
+	uuids_of_receiver_t& _r_uuid = _it_expect->second;
 	if (_r_uuid.empty())
 	{
 		LOG(ERROR)<<"The packet: "<<aWhat.FWhat<<" is not sent by "<<aFrom;
@@ -333,42 +304,43 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 	if (!_is_registator)
 		--_r_uuid.FNumberOfRealReceivers;
 
-<<<<<<< HEAD
-	bool const _is_last_real = MRemoveHandler(aWhat, _list_it->second);
-=======
 	bool const _is_last_real = _list_it->second.MRemoveHandler(aWhat);
->>>>>>> 57aaf6a... see Changelog
 
-	LOG_IF(INFO,_is_last_real) << "Now The packet:" << aWhat.FWhat
+	LOG_IF(INFO,_is_last_real) << "\n===x Now The packet:" << aWhat.FWhat
 										<< " from " << aFrom
 										<< " is not received of by " << aTo;
 
-	LOG_IF(INFO,!_is_last_real) << "The packet:" << aWhat.FWhat << " from "
+	LOG_IF(INFO,!_is_last_real) << "\n===x The packet:" << aWhat.FWhat << " from "
 										<< aFrom << " still received of by "
 										<< aTo;
 	//cleanup maps
 	if (_list_it->second.MGetHandlers().empty())
 		_r_uuid.erase(_list_it);
 
+	if(_r_uuid.empty())
+		aUUIds->erase(_it_expect);
+
+
 //	if (_r_uuid.empty())
 //		aUUIds->erase(_msg);
 
-	if (_is_last_real && aOld)
+	if (_is_last_real)
 	{
-		demand_dg_t _tmp_dem(aWhat);
-		_tmp_dem.FUUIDFrom.MSet(aTo);
-		(*aOld)[id_t(aFrom)].push_back(_tmp_dem);
+		if (aOld)
+		{
+			demand_dg_t _tmp_dem(aWhat);
+			_tmp_dem.FUUIDFrom.MSet(aTo);
+			(*aOld)[id_t(aFrom)].push_back(_tmp_dem);
+		}
+		return true;
 	}
-	return true;
+	return false;
 }
-<<<<<<< HEAD
-=======
 /*!\brief Get or Create the list of customer uuids
  * which is expected of messages from aFrom.
  *
  *\return the list
  */
->>>>>>> f3da2cc... see changelog.txt
 CRequiredDG::data_routing_t& CRequiredDG::MGetOrCreateExpectedListFor(
 		NSHARE::uuid_t const & aFrom, NSHARE::CText const & aProtocol) const
 {
@@ -396,14 +368,7 @@ CRequiredDG::data_routing_t& CRequiredDG::MGetOrCreateExpectedListFor(
 	return _prot_it->second;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-/** \brief Adding receiver(aTo) for message (aWhat)
-=======
-/*!\brief Returns child of message
-=======
 /** Returns parents of message if exist
->>>>>>> 57aaf6a... see Changelog
  *
  * @param aMsgProtocol  A protocol of the message
  * @param aMsgType A message type
@@ -602,26 +567,42 @@ unsigned CRequiredDG::MUnincludeMessageChildren(NSHARE::uuid_t const & aFrom,
 }
 
 /**\brief Adding receiver(aTo) for message (aWhat)
->>>>>>> f3da2cc... see changelog.txt
  * 		   which was sent by user (aFrom)
  *
 *\return if it's the first request of message
  *			by receiver then to New will be added aWhat
  */
-void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
+bool CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 		NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
-		demand_dgs_for_t* aNew)
+		demand_dgs_for_t* const aNew,
+		demand_dgs_for_t* const aRemoved)
 {
 	VLOG(2) << "Send " << aWhat << " from " << aFrom << " to " << aTo;
 
 	uuids_of_expecting_dg_t& _expected = MGetOrCreateExpectedListFor(aFrom,
 			aWhat.FProtocol).FExpected;
 	demand_dg_t _msg;
-	if (MGetValidHeader(aWhat, &_msg))
-		MRegisteringReceiverForMsg(_msg, aFrom, aTo, &_expected, aNew);
-	else
-		LOG(DFATAL)<<"The message header is not valid.";//todo send error
 
+
+	if (MGetValidHeader(aWhat, &_msg))
+	{
+		unsigned _count=0;
+		{
+			bool const _is = MRegisteringReceiverForMsg(_msg, aFrom, aTo,
+					&_expected,aNew,aRemoved);
+
+			_count = _is ? _count + 1 : _count;
+
+		}
+		_count += MIncludeMessageChildren(aFrom, aTo, _msg, &_expected, aNew,aRemoved);
+
+		return _count>0;
+	}
+	else
+	{
+		LOG(DFATAL)<<"The message header is not valid."; //todo send error
+		return false;
+	}
 }
 
 /**\brief Remove receiver(aTo) for message (aWhat)
@@ -630,31 +611,40 @@ void CRequiredDG::MSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 *\return if it's the last request of message
  *			by receiver then to aOld will be added aWhat
  */
-void CRequiredDG::MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
+bool CRequiredDG::MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 		NSHARE::uuid_t const& aTo, demand_dg_t const& aWhat,
-		demand_dgs_for_t* aOld)
+		demand_dgs_for_t* const aNew, demand_dgs_for_t* const aRemoved)
 {
 	VLOG(2) << "Unsent " << aWhat << " from " << aFrom << " to " << aTo;
 
 	uuids_of_expecting_dg_t& _uuids = MGetOrCreateExpectedListFor(aFrom,
 			aWhat.FProtocol).FExpected;
 	demand_dg_t _msg;
+
 	if (MGetValidHeader(aWhat, &_msg))
-		MUnRegisteringReceiverForMsg(_msg, aFrom, aTo, &_uuids, aOld);
+	{
+		unsigned _count=0;
+		{
+			bool const _is = MUnRegisteringReceiverForMsg(_msg, aFrom, aTo,
+					&_uuids,aNew,aRemoved);
+
+			_count = _is ? _count + 1 : _count;
+		}
+		_count += MUnincludeMessageChildren(aFrom, aTo, _msg, &_uuids,aNew, aRemoved);
+		return _count>0;
+	}
 	else
+	{
 		LOG(WARNING)<<"The message header is not valid.";
+		return false;
+	}
 }
-<<<<<<< HEAD
-void CRequiredDG::MAddDemandsFor(NSHARE::uuid_t const& aFor,
-		const demand_dgs_t& aAdded, demand_dgs_for_t* aNew)
-=======
 /*!\brief Requests senders sends the requirement messages to aFor
  *
  *
  */
 void CRequiredDG::MAddSendersOfMsgFor(NSHARE::uuid_t const& aFor,
 		const demand_dgs_t& aAdded, demand_dgs_for_t* const aNew,demand_dgs_for_t* const aRemoved)
->>>>>>> f3da2cc... see changelog.txt
 {
 	//update protocol_of_uuid_t
 	//1) find MSGs which are required to aFor from existing UUID
@@ -663,10 +653,6 @@ void CRequiredDG::MAddSendersOfMsgFor(NSHARE::uuid_t const& aFor,
 	for (; _req_it != aAdded.end(); ++_req_it)
 	{
 		VLOG(2) << "Try received " << *_req_it;
-<<<<<<< HEAD
-		unique_uuids_t const _uuids = MGetUUIDFor(_req_it->FNameFrom);
-		//todo here has to checked message inheritance
-=======
 		bool const _is_nearest=_req_it->FFlags.MGetFlag(demand_dg_t::E_NEAREST);
 		bool const _is_invert=_req_it->FFlags.MGetFlag(demand_dg_t::E_INVERT_GROUP);
 		unique_uuids_t _uuids = MGetUUIDFor(_req_it->FNameFrom,_is_invert);
@@ -683,19 +669,14 @@ void CRequiredDG::MAddSendersOfMsgFor(NSHARE::uuid_t const& aFor,
 				FNearestInfo[aFor][_req_it->FHandler]=_uuids.begin()->second;
 			else
 				FNearestInfo[aFor][_req_it->FHandler]=std::numeric_limits<unsigned>::max();
->>>>>>> f3da2cc... see changelog.txt
 
-		//VLOG(2) << " Founded uuids: " << _uuids;
+		}
 
 		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
 		for (; _uuid_it != _uuids.end(); ++_uuid_it)
-			MSendPacketFromTo(*_uuid_it, aFor, *_req_it, aNew);
+			MSendPacketFromTo(_uuid_it->first, aFor, *_req_it,aNew,aRemoved);
 	}
 }
-<<<<<<< HEAD
-void CRequiredDG::MRemoveDemandsFor(NSHARE::uuid_t const& aTo,
-		demand_dgs_t const& aWhat, demand_dgs_for_t* aRemoved)
-=======
 
 /*!\brief Requests senders does not send
  * the requirement messages to aFor
@@ -704,36 +685,30 @@ void CRequiredDG::MRemoveDemandsFor(NSHARE::uuid_t const& aTo,
  */
 void CRequiredDG::MRemoveSendersOfMsgFor(NSHARE::uuid_t const& aTo,
 		demand_dgs_t const& aWhat,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aRemoved)
->>>>>>> f3da2cc... see changelog.txt
 {
 	demand_dgs_t::const_iterator _jt = aWhat.begin(), _jt_end(aWhat.end());
 	for (; _jt != _jt_end; ++_jt)
 	{
-		unique_uuids_t const _uuids = MGetUUIDFor(_jt->FNameFrom);
+		bool const _is_nearest=_jt->FFlags.MGetFlag(demand_dg_t::E_NEAREST);
+		bool const _is_invert=_jt->FFlags.MGetFlag(demand_dg_t::E_INVERT_GROUP);
+		unique_uuids_t _uuids = MGetUUIDFor(_jt->FNameFrom,_is_invert);
 
-<<<<<<< HEAD
-		//VLOG(2) << " Founded uuids: " << _uuids;
-=======
+		if (_is_nearest)
+		{
+			MGetOnlyNearestUUIDFor(&_uuids);
+
 			//remove info about current level
 			const size_t _num=FNearestInfo[aTo].erase(_jt->FHandler);
 
 			DCHECK_NE(_num,0);///<check for logical error
 		}
->>>>>>> f3da2cc... see changelog.txt
 
 		unique_uuids_t::const_iterator _uuid_it = _uuids.begin();
 		for (; _uuid_it != _uuids.end(); ++_uuid_it)
-		{
-			MUnSendPacketFromTo(*_uuid_it, aTo, *_jt, aRemoved);
-		}
+			MUnSendPacketFromTo(_uuid_it->first, aTo, *_jt,aNew,aRemoved);
+
 	}
 }
-<<<<<<< HEAD
-demand_dgs_for_t const& CRequiredDG::MGetDemands() const
-{
-	return FDGs;
-}
-=======
 
 
 /*!\brief Gets list of added and removed demands
@@ -741,36 +716,36 @@ demand_dgs_for_t const& CRequiredDG::MGetDemands() const
  *\param [out] aRemoved list of removed (has not to be null)
  *\param [out] aAdded list of added (has not to be null)
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew,
-		demand_dgs_t& aRemoved, demand_dgs_t& aAdd)
+		demand_dgs_t* const aRemoved, demand_dgs_t* const aAdded) const
 {
-	demand_dgs_for_t::iterator _it = FDGs.find(aFor);
-	if (_it != FDGs.end())
+	DCHECK_NOTNULL(aAdded);
+	DCHECK_NOTNULL(aRemoved);
+
+	demand_dgs_for_t const& _demands=MGetDemands();
+
+	demand_dgs_t & _add=*aAdded;
+	demand_dgs_t & _removed=*aRemoved;
+	demand_dgs_for_t::const_iterator _it = _demands.find(aFor);
+	if (_it != _demands.end())
 	{
-		aRemoved = _it->second;
-		aAdd = aNew;
+		_removed = _it->second;
+		_add = aNew;
 
 		//search old
-		demand_dgs_t::reverse_iterator _jt = aAdd.rbegin();
-		for (; _jt != aAdd.rend();)
+		demand_dgs_t::reverse_iterator _jt = _add.rbegin();
+		for (; _jt != _add.rend();)
 		{
-			demand_dgs_t::reverse_iterator _kt = aRemoved.rbegin(), _kt_end(
-					aRemoved.rend());
+			demand_dgs_t::reverse_iterator _kt = _removed.rbegin(), _kt_end(
+					_removed.rend());
 			bool _is_found = false;
 			for (; _kt != _kt_end; ++_kt)
 			{
 				if (*_kt == *_jt)
 				{
-<<<<<<< HEAD
-					aRemoved.erase(_kt.base());
-					_jt = demand_dgs_t::reverse_iterator(
-							aAdd.erase(_jt.base()));
-=======
 					_removed.erase((_kt+1).base());
 					_jt = demand_dgs_t::reverse_iterator(
 							_add.erase((_jt+1).base()));
->>>>>>> 5d2f97a... see ChangeLog.txt
 					_is_found = true;
 					break;
 				}
@@ -781,33 +756,53 @@ bool CRequiredDG::MGetDiffDemandsDG(id_t const& aFor, demand_dgs_t const& aNew,
 	}
 	else
 	{
-		aAdd = aNew;
+		_add = aNew;
 	}
 	return true;
 }
 
-demand_dgs_for_t CRequiredDG::MAddClient(id_t const& aId)
+std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MAddClient(id_t const& aId)
 {
-	VLOG(2) << "Add new client " << aId;
+	LOG(INFO) << "Adding new client " << aId;
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _rval;
+
+	MAddReceiversOfMsgsFrom(aId,& _rval.first,&_rval.second);
+
 	const bool _is = FIds.insert(aId).second;
 	CHECK(_is);
-	demand_dgs_for_t _new;
-	MAddReceiversFor(aId, _new);
-	return _new;
+	return _rval;
 }
-demand_dgs_for_t CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
-{
-	demand_dgs_for_t _old;
-	VLOG(2) << "Remove " << aUUID;
 
-	if (size_t _val = FIds.erase(id_t(aUUID)))
+id_t const& CRequiredDG::MGetIdBy(NSHARE::uuid_t const & aUUID) const
+{
+	unique_id_t::const_iterator _it = FIds.find(id_t(aUUID));
+	if (_it != FIds.end())
 	{
+		DCHECK_EQ(_it->FUuid,aUUID);
+		return *_it;
+	}
+	else
+	{
+		static id_t const _fix;
+		return _fix;
+	}
+}
+
+std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MRemoveClient(NSHARE::uuid_t const& aUUID)
+{
+	std::pair<demand_dgs_for_t, demand_dgs_for_t> _rval;
+	VLOG(2) << "Remove " << aUUID;
+	id_t const _id=MGetIdBy(aUUID);
+	if (_id.MIsValid())
+	{
+		MRemoveAllSendersOfMsgsFor(_id.FUuid,&_rval.first, &_rval.second);
+		MRemoveAllReceiversForMsgsFrom(_id,&_rval.first, &_rval.second);
+
+		size_t const _val = FIds.erase(_id);
 		VLOG(2) << "Erased " << _val;
 		CHECK_EQ(_val, 1);
-		MRemoveReceiversFor(aUUID, &_old);
-		FWhatIsSendingBy.erase(aUUID);
 	}
-	return _old;
+	return _rval;
 }
 /**\brief Looking for message's receivers
  * 		   and adding theirs to list of message's receivers
@@ -866,32 +861,18 @@ void CRequiredDG::MFillByRawProtocol(user_datas_t*const aFrom, user_datas_t*cons
 	}
 
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-CRequiredDG::msg_handlers_t const* CRequiredDG::MGetHandlers(user_data_info_t & _data_info) const
-=======
-/*!\brief Returns the list of message handlers of the customer
-=======
 
 /*!@brief Returns the list of message handlers of the subcriber
->>>>>>> 57aaf6a... see Changelog
  * or null.
  *
  * @param aMsgInfo
  * @return
  */
 CRequiredDG::msg_handlers_t const* CRequiredDG::MGetHandlers(user_data_info_t const & aMsgInfo) const
->>>>>>> f3da2cc... see changelog.txt
 {
-<<<<<<< HEAD
-	required_header_t & _header=_data_info.FWhat;
-	NSHARE::uuid_t const& _from = _data_info.FRouting.FFrom.FUuid;
-	NSHARE::uuid_t const& _for = _data_info.FRouting.back();
-=======
 	required_header_t const & _header=aMsgInfo.FWhat;
->>>>>>> 57aaf6a... see Changelog
 	NSHARE::CText const _protocol =
-			_data_info.MIsRaw() ? RAW_PROTOCOL_NAME : _data_info.FProtocol;
+			aMsgInfo.MIsRaw() ? RAW_PROTOCOL_NAME : aMsgInfo.FProtocol;
 
 
 	NSHARE::uuid_t const& _from = aMsgInfo.FRouting.FFrom.FUuid;
@@ -1091,14 +1072,10 @@ void CRequiredDG::MFillMsgReceivers(user_datas_t * const aFrom,
 	VLOG(3) << "Move back failed packets";
 	_from.splice(_from.end(), _fail_packets);
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Check for correction version of the sent
  * message and the requirement message's version.
  *
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MCheckVersion(const NSHARE::version_t& _req_version,
 		const NSHARE::uuid_t& _uuid, user_data_info_t& aInfo) const
 {
@@ -1244,10 +1221,6 @@ bool CRequiredDG::MFillRouteAndDestanationInfo(
 	return !_data_info.FRouting.empty();
 }
 
-<<<<<<< HEAD
-
-uint32_t CRequiredDG::MNextMsgMask() const
-=======
 /*!\brief Returns next "inner" number
  *
  * If the user sent a few message into one
@@ -1256,7 +1229,6 @@ uint32_t CRequiredDG::MNextMsgMask() const
  * the packet number for all messages into packet.
  */
 uint32_t CRequiredDG::MNextPacketNumberMask() const
->>>>>>> f3da2cc... see changelog.txt
 {
 	return (++FMsgID) << (sizeof(FMsgID) * 8);
 }
@@ -1340,13 +1312,14 @@ user_datas_t::iterator CRequiredDG::MExtractMessages(IExtParser::result_t const 
 
 			user_data_t _new_packet;
 			_new_packet.FDataId = aWhat->FDataId;
-			_new_packet.FDataId.FPacketNumber |= MNextMsgMask();
+			_new_packet.FDataId.FPacketNumber |= MNextPacketNumberMask();
 			_new_packet.FDataId.FWhat = _msg.FType;
-			_new_packet.FDataId.FDataOffset=aP.MDataOffset(_msg.FType);
+			_new_packet.FDataId.FDataOffset=static_cast<unsigned>(aP.MDataOffset(_msg.FType));
+			DCHECK_LT(_new_packet.FDataId.FDataOffset,1000);
 
 			CHECK_LT(_msg.FBegin, _msg.FEnd);
 
-			_new_packet.FData = NSHARE::CBuffer(_msg.FBegin, _msg.FEnd,3.0);
+			_new_packet.FData = NSHARE::CBuffer(_msg.FBegin, _msg.FEnd);
 			aTo->push_back(_new_packet);
 
 			VLOG(2) << "Split big packet " << (_msg.FEnd - _msg.FBegin)
@@ -1357,16 +1330,14 @@ user_datas_t::iterator CRequiredDG::MExtractMessages(IExtParser::result_t const 
 	}else
 	{
 		aWhat->FDataId.FWhat= _msgs.front().FType;
-		aWhat->FDataId.FDataOffset=aP.MDataOffset(_msgs.front().FType);
+		aWhat->FDataId.FDataOffset=static_cast<unsigned>(aP.MDataOffset(_msgs.front().FType));
+		DCHECK_LT(aWhat->FDataId.FDataOffset,1000);
 
 		aTo->splice(aTo->end(),*aFrom,aWhat++);//warning only postincrement
 	}
 	DCHECK(!aTo->empty());
 	return aWhat;
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Returns customer uuids list which is expected
  * the message
  *
@@ -1376,14 +1347,13 @@ user_datas_t::iterator CRequiredDG::MExtractMessages(IExtParser::result_t const 
  *\return list of uuids or empty list.
  *
  */
->>>>>>> f3da2cc... see changelog.txt
 CRequiredDG::uuids_of_receiver_t const& CRequiredDG::MGetUUIDsOfReceivers(
-		uuids_of_expecting_dg_t const & aUUIDs,
-		required_header_t const & _msg) const
+		uuids_of_expecting_dg_t const & aMap,
+		required_header_t const & aMsg) const
 {
-	uuids_of_expecting_dg_t::const_iterator _jt = aUUIDs.find(_msg);
+	uuids_of_expecting_dg_t::const_iterator _jt = aMap.find(aMsg);
 
-	if(_jt!=aUUIDs.end())
+	if(_jt!=aMap.end())
 		return _jt->second;
 	else
 	{
@@ -1391,23 +1361,24 @@ CRequiredDG::uuids_of_receiver_t const& CRequiredDG::MGetUUIDsOfReceivers(
 		return _fix;
 	}
 }
-<<<<<<< HEAD
-=======
 /*!\brief returns customer uuids list which is expected
  * the message, if the list is not exist, it will created
  *
  */
->>>>>>> f3da2cc... see changelog.txt
 CRequiredDG::uuids_of_receiver_t& CRequiredDG::MGetOrCreateUUIDsOfReceivers(
-		uuids_of_expecting_dg_t & aUUIDs,
-		required_header_t const & _msg)
+		uuids_of_expecting_dg_t * const aTo,
+		required_header_t const & aMsg)
 {
-	uuids_of_expecting_dg_t::iterator _jt = aUUIDs.find(_msg);
+	DCHECK_NOTNULL(aTo);
 
-	if(_jt==aUUIDs.end())
+	uuids_of_expecting_dg_t &_uuids(*aTo);
+
+	uuids_of_expecting_dg_t::iterator _jt = _uuids.find(aMsg);
+
+	if(_jt==_uuids.end())
 	{
-		_jt = aUUIDs.insert(
-						std::make_pair(_msg, uuids_of_receiver_t())).first;
+		_jt = _uuids.insert(
+						std::make_pair(aMsg, uuids_of_receiver_t())).first;
 	}
 	return _jt->second;
 }
@@ -1418,7 +1389,7 @@ CRequiredDG::uuids_of_receiver_t& CRequiredDG::MGetOrCreateUUIDsOfReceivers(
  */
 void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 		user_datas_t* aFrom, user_datas_t * const aTo,
-		uuids_of_expecting_dg_t const& aUUIDs, IExtParser const& _p,
+		uuids_of_expecting_dg_t const& aUUIDs,
 		fail_send_array_t* const aFail) const
 {
 	IExtParser::result_t::const_iterator _mt = _msgs.begin(), _mt_end(
@@ -1445,9 +1416,6 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 		}
 		else
 		{
-<<<<<<< HEAD
-			LOG(INFO)<< "Packet " << _p.MToConfig(_msg.FType).MToJSON(true) << " from " << _handling_data.FDataId.FRouting.FFrom.FUuid << " does not required. Ignoring ...";
-=======
 			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)<<"Only registrars are exist!!!";
 			LOG(INFO) << "Packet "
 									<< serialize_head(_msg.FType,
@@ -1456,19 +1424,14 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 									<< _handling_data.FDataId.FRouting.FFrom.FUuid
 									<< " does not required. Ignoring ...";
 			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)<<"As only registrars are exist!!!";
->>>>>>> 38a6ae7... see changelog
 			aTo->splice(aTo->end(),*aFrom,_it_buf++);//only postincrement
 		}
 	}
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief Extracts messages from buffer
  *
  *\return not handled part of buffer.
  */
->>>>>>> f3da2cc... see changelog.txt
 NSHARE::CBuffer CRequiredDG::MParseData(IExtParser::result_t* aMsgs,
 		user_data_t& _data, IExtParser& _p) const
 {
@@ -1513,8 +1476,6 @@ NSHARE::CBuffer CRequiredDG::MParseData(IExtParser::result_t* aMsgs,
 	}
 	return _rval;
 }
-<<<<<<< HEAD
-=======
 /*!\brief Appends the buffered data
  * to beginning of the buffer.
  * The buffer will be freed.
@@ -1530,11 +1491,7 @@ bool CRequiredDG::MAppendBufferedData(
 
 	data_routing_t& _routing(*aBufferedData);
 	user_data_t& _data(*aTo);
->>>>>>> f3da2cc... see changelog.txt
 
-void CRequiredDG::MAppendBufferedData(
-		data_routing_t& _routing, user_data_t& _data) const
-{
 	NSHARE::CBuffer& _buffered_data = _routing.FBufferedData;
 	VLOG(2) << "Buffer size= " << _buffered_data.size();
 	bool const _was_buffered = !_buffered_data.empty();
@@ -1547,10 +1504,8 @@ void CRequiredDG::MAppendBufferedData(
 		_data.FData = _buffered_data;
 		_buffered_data.release();
 	}
+	return _was_buffered;
 }
-<<<<<<< HEAD
-
-=======
 /*!\brief is buffering the data
  *
  *\param aTo - where the data will buffering
@@ -1558,19 +1513,19 @@ void CRequiredDG::MAppendBufferedData(
  *
  *\return true if data was buffered
  */
->>>>>>> f3da2cc... see changelog.txt
 bool CRequiredDG::MBufferingDataIfNeed(
-		data_routing_t& _routing,NSHARE::CBuffer const & _tail) const
+		data_routing_t* const aTo,NSHARE::CBuffer const & aData) const
 {
+	data_routing_t& _routing(*aTo);
 	NSHARE::CBuffer& _buffered_data = _routing.FBufferedData;
 
-	if (!_tail.empty())
+	if (!aData.empty())
 	{
 		///< copy data from shared memory to private memory if need
 		if (_buffered_data.MIsAllocatorEqual(NSHARE::CBuffer::sMDefAllaocter()))
-			_buffered_data = _tail;
+			_buffered_data = aData;
 		else
-			_buffered_data.deep_copy(_tail);
+			_buffered_data.deep_copy(aData);
 
 		return true;
 	}
@@ -1608,22 +1563,32 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 			continue;
 		}
 
-		IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
-				_data.FDataId.FProtocol);
-		if (!_p)
+		IExtParser::result_t _msgs_headers;
+		user_datas_t _msgs;
+		if (!_data.FDataId.MIsMsgExist())
 		{
-			LOG(DFATAL)<< "Parsing module for " << _data.FDataId.FProtocol<< " is not exist";
-			if (aFail)
-			{
-				fail_send_t _sent(_data.FDataId, _data.FDataId.FDestination,
-						E_PARSER_IS_NOT_EXIST);
-				aFail->push_back(_sent);
-			}
 
-<<<<<<< HEAD
-			aTo->splice(aTo->end(),_sent_datas,_ut++);//warning must only  postincrement
-			continue;
-=======
+			IExtParser* const _p = CParserFactory::sMGetInstance().MGetFactory(
+					_data.FDataId.FProtocol);
+			if (!_p)
+			{
+				LOG(DFATAL) << "Parsing module for " << _data.FDataId.FProtocol
+										<< " is not exist";
+				if (aFail)
+				{
+					fail_send_t _sent(_data.FDataId, _data.FDataId.FDestination,
+							E_PARSER_IS_NOT_EXIST);
+					aFail->push_back(_sent);
+				}
+			}
+			else
+			{
+				MAppendBufferedData(&_routing, &_data);
+
+				NSHARE::CBuffer const _tail = MParseData(&_msgs_headers, _data, *_p);
+
+				MBufferingDataIfNeed(&_routing, _tail);
+
 				if (!_msgs_headers.empty())
 				{
 					_ut = MExtractMessages(_msgs_headers, &_sent_datas, _ut, &_msgs, *_p); ///< here increment iterator
@@ -1631,75 +1596,59 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 					MRemoveDataWithUserErrors(&_msgs_headers, &_msgs, aTo, aFail);
 				}
 			}
->>>>>>> f3da2cc... see changelog.txt
 		}
-		MAppendBufferedData(_routing, _data);
-
-		IExtParser::result_t _msgs;
-		NSHARE::CBuffer const _tail = MParseData(&_msgs, _data, *_p);
-
-		MBufferingDataIfNeed(_routing, _tail);
-
-		if (!_msgs.empty())
+		else
 		{
-			user_datas_t _to;
-			_ut=MExtractMessages(_msgs,&_sent_datas,_ut, &_to, *_p);//!< here increment iterator
+			NSHARE::CBuffer const& _buf = _data.FData;
+			IExtParser::obtained_dg_t _dg;
+			_dg.FType = _data.FDataId.FWhat;
+			_dg.FErrorCode = 0;
+			_dg.FBegin = (uint8_t const *) (_buf.ptr_const());
+			_dg.FEnd = _dg.FBegin + _buf.size();
+			_msgs_headers.push_back(_dg);
 
-<<<<<<< HEAD
-			MRemoveDataWithUserErrors(&_msgs, &_to, aTo, aFail);
+			_data.FDataId.FDataOffset=0;
 
-			MAddReceiversForMessages(_msgs,  &_to,aTo,_routing.FExpected,
-					*_p, aFail);
+			_msgs.splice(_msgs.end(),_sent_datas,_ut++);//warning only postincrement
+		}
 
-			if(!_to.empty())
-				_sent_datas.splice(_ut,_to);
-=======
+		if (!_msgs_headers.empty())
+		{
+
 			MAddReceiversForMessages(_msgs_headers,  &_msgs,aTo,_routing.FExpected, aFail);
 			if(!_msgs.empty())
 				_sent_datas.splice(_ut,_msgs);
->>>>>>> 5d2f97a... see ChangeLog.txt
 		}
-		else
+		else if(_ut!=_sent_datas.end())
 		{
 			DLOG(WARNING)<<"No messages";
 			aTo->splice(aTo->end(),_sent_datas,_ut++);//only post increment
 		}
 	}
 }
-<<<<<<< HEAD
-
-bool CRequiredDG::MRemoveReceiversFor(NSHARE::uuid_t const& aUUID,
-		demand_dgs_for_t * aRemoved)
-=======
 /*!\brief Removes receivers for messages
  * which has been sent to aFrom
  *
  */
 bool CRequiredDG::MRemoveAllSendersOfMsgsFor(NSHARE::uuid_t const& aUUID,
 		demand_dgs_for_t* aNew,demand_dgs_for_t * aRemoved)
->>>>>>> f3da2cc... see changelog.txt
 {
 	VLOG(2) << "Remove receivers for " << aUUID;
-
 	id_t _id;
-	_id.FUuid = aUUID; //id_t comapred by it uuid only
+	_id.FUuid = aUUID; //id_t is  compared by uuid only
 
 	demand_dgs_for_t::iterator _it = FDGs.find(_id);
 	if (_it != FDGs.end())
 	{
-		demand_dgs_t _remove_list;
-		_remove_list.swap(_it->second);
+		demand_dgs_t _removed_list;
+		_removed_list.swap(_it->second);
 		FDGs.erase(_it);
 
-		MRemoveDemandsFor(aUUID, _remove_list, aRemoved);
+		MRemoveSendersOfMsgFor(aUUID, _removed_list,aNew, aRemoved);
 		return true;
 	}
 	return false;
 }
-<<<<<<< HEAD
-
-void CRequiredDG::MAddReceiversFor(id_t const& aUId, demand_dgs_for_t& aNew)
-=======
 /*!\brief Returns demands which are corresponded to the handlers
  *
  *\param aHandlers - the handlers
@@ -1710,18 +1659,11 @@ void CRequiredDG::MAddReceiversFor(id_t const& aUId, demand_dgs_for_t& aNew)
 inline unsigned CRequiredDG::sMGetDemandsByHandlers(
 		msg_handlers_t const & aHandlers, demand_dgs_t const & aDemand,
 		demand_dgs_t* aTo)
->>>>>>> f3da2cc... see changelog.txt
 {
-	//update protocol_of_uuid_t
-	//1) find DGs which are required from aUUID
-	//2) add all demands to protocol_of_uuid_t
+	DCHECK_NOTNULL(aTo);
+	unsigned _count=0;
+	demand_dgs_t& _what(*aTo);
 
-<<<<<<< HEAD
-	typedef std::vector<std::pair<id_t, demand_dg_t> > dgs_t;
-	dgs_t _demands;
-	dgs_t _registrator;
-	//todo here has to checked message inheritance
-=======
 	msg_handlers_t::handler_id_array_t::const_iterator _jt = aHandlers.MGetHandlers().begin(),
 			_jt_end(aHandlers.MGetHandlers().end());
 	for (; _jt != _jt_end; ++_jt)
@@ -1731,56 +1673,19 @@ inline unsigned CRequiredDG::sMGetDemandsByHandlers(
 				_it_hand != aDemand.end() //
 				&& _it_hand->FHandler != *_jt; ++_it_hand)
 			;
->>>>>>> 57aaf6a... see Changelog
 
-	for (demand_dgs_for_t::const_iterator _it = FDGs.begin(); _it != FDGs.end();
-			++_it)
-	{
-		demand_dgs_t::const_iterator _dem_it = _it->second.begin();
-		for (; _dem_it != _it->second.end(); ++_dem_it)
+		if (_it_hand != aDemand.end())
 		{
-			if (MDoesIdConformTo(aUId, _dem_it->FNameFrom))
-			{
-				VLOG(2) << *_dem_it << " from " << aUId.FUuid
-									<< " is required of by " << _it->first;
-				std::pair<id_t, demand_dg_t> _val(_it->first, *_dem_it);
-				if (_dem_it->FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR))
-					_registrator.push_back(_val);
-				else
-					_demands.push_back(_val);
-			}
+			_what.push_back(*_it_hand);
+			++_count;
 		}
 	}
-//fixme раньше было не закомментировано
-//	if (!_demands.empty())
-//	{
-	for (dgs_t::const_iterator _it = _demands.begin(); _it != _demands.end();
-			++_it)
-		MSendPacketFromTo(aUId.FUuid, _it->first.FUuid, _it->second, &aNew);
+	return _count;
+}
 
-	for (dgs_t::const_iterator _it = _registrator.begin();
-			_it != _registrator.end(); ++_it)
-		MSendPacketFromTo(aUId.FUuid, _it->first.FUuid, _it->second, NULL);
-//	}
-}
-bool CRequiredDG::MDoesIdConformTo(id_t const& _id,
-		NSHARE::CRegistration const& _reg) const
+unsigned CRequiredDG::MGetWhatMsgSentFrom(NSHARE::uuid_t const & aFrom,
+		demand_dgs_for_t* aTo) const
 {
-	VLOG(4) << "Id " << _id << " reg " << _reg;
-	bool const _is_name = _reg.MIsName();
-	VLOG(4) << "Is name =" << _is_name;
-	bool const _has_sended =
-			((_is_name && _reg.MIsForMe(_id.FName)) || //
-					(!_is_name
-							&& _reg.MGetAddress().MIsSubpathOfForRegistration(
-									_id.FName)));
-	return _has_sended;
-}
-CRequiredDG::unique_uuids_t CRequiredDG::MGetUUIDFor(
-		NSHARE::CRegistration const& aName) const
-{
-<<<<<<< HEAD
-=======
 	DCHECK_NOTNULL(aTo);
 
 	unsigned _count=0;
@@ -2316,42 +2221,38 @@ CRequiredDG::unique_uuids_t CRequiredDG::MGetUUIDFor(
 {
 	unique_id_t const& _uuids=MGetUniquieID();
 
->>>>>>> f3da2cc... see changelog.txt
 	VLOG(2) << "Get uuids for " << aName;
-	VLOG(4) << " Size=" << FIds.size();
+	DVLOG(4) << " Size=" << _uuids.size();
 	unique_uuids_t _res;
-	std::set<id_t>::const_iterator _it = FIds.begin(), _it_end(FIds.end());
+
+	unique_id_t::const_iterator _it = _uuids.begin(), _it_end(_uuids.end());
 	for (; _it != _it_end; ++_it)
 	{
-		if (MDoesIdConformTo(*_it, aName))
-			_res.insert(_it->FUuid);
+		const unsigned _val = MDoesIdConformTo(*_it, aName, isInvertGroup);
+		if (_val != 0)
+			_res[_it->FUuid] = _val;
 	}
+
 	VLOG_IF(1,_res.empty()) << "No clients for " << aName;
 	return _res;
 }
-<<<<<<< HEAD
-
-NSHARE::CConfig CRequiredDG::MSerialize() const
-=======
 /*!\brief serialize info about messages which
  * are expected by programs
  *
  */
 void CRequiredDG::MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const
->>>>>>> f3da2cc... see changelog.txt
 {
-	NSHARE::CConfig _conf(NAME);
+	DCHECK_NOTNULL(aTo);
+	NSHARE::CConfig& _conf(*aTo);
 	protocol_of_uuid_t::const_iterator _it = FWhatIsSendingBy.begin(), _it_end(
 			FWhatIsSendingBy.end());
-
 	for (; _it != _it_end; ++_it)
 	{
 		protocols_t::const_iterator _prot_it = _it->second.begin(),
 				_prot_it_end(_it->second.end());
 		for (; _prot_it != _prot_it_end; ++_prot_it)
-
 		{
-			NSHARE::CText const& _protocol =
+			NSHARE::CText const & _protocol =
 					_prot_it->first.empty() ?
 							RAW_PROTOCOL_NAME : _prot_it->first;
 			NSHARE::CConfig const _from = _it->first.MSerialize();
@@ -2364,7 +2265,6 @@ void CRequiredDG::MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const
 				_prot.MAdd(_from);
 				_prot.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, _protocol);
 				_prot.MAdd(serialize_head(_jt->first, _protocol));
-
 				for (uuids_of_receiver_t::const_iterator _kt =
 						_jt->second.begin(); _kt != _jt->second.end(); ++_kt)
 				{
@@ -2373,15 +2273,15 @@ void CRequiredDG::MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const
 					_to.MAdd(_kt->second.MGetVersion().MSerialize());
 					_to.MAdd("is_registrator", _kt->second.MIsRegistrarExist());
 					_to.MAdd("is_real", _kt->second.FNumberOfRealHandlers != 0);
-
 					_prot.MAdd(_to);
 				}
 				_conf.MAdd(_prot);
 			}
-
-<<<<<<< HEAD
 		}
-=======
+	}
+
+}
+
 NSHARE::CConfig CRequiredDG::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
@@ -2514,15 +2414,6 @@ inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
 				 */
 				{
 
-<<<<<<< HEAD
-					if (!_children_of_my_child.empty())
-						_children.insert(_children.end(),
-								_children_of_my_child.begin(),
-								_children_of_my_child.end());
-				}
->>>>>>> f3da2cc... see changelog.txt
-
-=======
 					 /** 2.1.0 If child is not exist in the genealogical tree adds it.
 					  */
 
@@ -2569,47 +2460,15 @@ inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
 			_direct_child_info.erase(_it++);//warning! only postincrement
 		else
 			++_it;
->>>>>>> 57aaf6a... see Changelog
 	}
-	//_conf.MAdd(FDGs.MSerialize());
-	return _conf;
+	return _depth;
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-inline void CRequiredDG::MInitializeMsgInheritance()//todo
-=======
-/*!\brief Fills parent info for message hierarchy
-=======
 
 /** @brief Fills parent info of genealogical tree
->>>>>>> 57aaf6a... see Changelog
  *
  * @param aTo [in,out] filled genealogical tree
  * @return true if successfully
  */
-<<<<<<< HEAD
-void CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
->>>>>>> f3da2cc... see changelog.txt
-{
-	typedef std::map<NSHARE::CText,IExtParser::inheritances_info_t> inheritances_t;
-
-	inheritances_t _tree;
-	{//read all Inheritance info
-		CParserFactory::factory_its_t _i =
-				CParserFactory::sMGetInstance().MGetIterator();
-		for (; _i.FBegin != _i.FEnd; ++_i.FBegin)
-		{
-			IExtParser::inheritances_info_t const _val =
-					_i.FBegin->second->MGetInheritances();
-			_tree[_i.FBegin->first] = _val;
-		}
-	}
-<<<<<<< HEAD
-	typedef std::set<required_header_t, CReqHeaderFastLessCompare> msg_children_t;
-	typedef std::map<required_header_t, msg_children_t,
-			CReqHeaderFastLessCompare> msg_inheritance_tree_t;
-=======
-=======
 bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 {
 	DCHECK_NOTNULL(aTo);
@@ -2668,7 +2527,6 @@ bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 		}
 	}
 	return true;
->>>>>>> 57aaf6a... see Changelog
 }
 bool CRequiredDG::MInitializeMsgInheritance()
 {
@@ -2692,18 +2550,8 @@ bool CRequiredDG::MInitializeMsgInheritance()
 	}
 	return true;
 }
->>>>>>> f3da2cc... see changelog.txt
 
-<<<<<<< HEAD
-	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;
-
-<<<<<<< HEAD
-	msg_inheritances_t _inheritances;
-=======
-/*!\brief Checks correction of genealogy tree
-=======
 /*!\brief genealogical tree validation
->>>>>>> 57aaf6a... see Changelog
  *
  *\param aWhat - A genealogical tree
  *\param aTo - if not NULL, than here is saved incorrect hierarchies
@@ -2722,20 +2570,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 	msg_inheritances_t::const_iterator _it = aWhat.begin(), _it_end(
 			aWhat.end());
 	for (; _it != _it_end; ++_it)
->>>>>>> f3da2cc... see changelog.txt
 	{
-<<<<<<< HEAD
-		inheritances_t::const_iterator _it=_tree.begin(),_it_end(_tree.end());
-		for(;_it!=_it_end;++_it)
-		{
-			msg_inheritance_tree_t& _current=_inheritances[_it->first];
-
-			IExtParser::inheritances_info_t const& _process=_it->second;
-			IExtParser::inheritances_info_t::const_iterator _jt =
-					_process.begin(), _jt_end = _process.end();
-
-			for(;_jt!=_jt_end;++_jt)
-=======
 		NSHARE::CText const& _protocol=_it->first;
 
 		///A protocol name hasn''t to be empty
@@ -2758,16 +2593,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 			msg_heritance_t const& _parent = _hierarchy.MGetParrents();
 
 			if (!_child.empty())
->>>>>>> 57aaf6a... see Changelog
 			{
-<<<<<<< HEAD
-				//доделать
-				//1) нужно найти всех потомков и родителей
-				//2) подумать как хранить типы протоколов
-				//3) customer должен получать в качестве указателя блок начала данных
-				msg_children_t& _children=_current[*_jt];
-				_children.insert(_jt->FChildHeader);
-=======
 				for (msg_heritance_t::const_iterator _kt = _child.begin();
 						_kt != _child.end() && _is_correct; ++_kt)
 				{
@@ -2880,9 +2706,24 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 				++_amount_of;
 				if (aTo != NULL)
 					(*aTo)[_it->first][_jt->first] = _hierarchy;
->>>>>>> 5a6713c... Add inheritance test
 			}
 		}
+
+	}
+	return _amount_of;
+}
+demand_dgs_t const& CRequiredDG::MGetDemandFor(NSHARE::uuid_t const& aUUid) const
+{
+	demand_dgs_for_t const& _dgs=MGetDemands();
+	const id_t _id(aUUid); //id_t is  compared by uuid only
+
+	demand_dgs_for_t::const_iterator _it_dem = _dgs.find(_id);
+	if (_it_dem != _dgs.end())
+		return _it_dem->second;
+	else
+	{
+		static demand_dgs_t const _fix;
+		return _fix;
 	}
 }
 

@@ -435,10 +435,6 @@ int loocal_addr_ip4(interfaces_addr_t* aTo)
 	DWORD const _error=GetAdaptersInfo((IP_ADAPTER_INFO*) buf, &bufSz);
 	if (_error== NO_ERROR)
 	{
-<<<<<<< HEAD
-		_conf.MUpdateIfSet(IP, ip);
-		_conf.MSet(PORT,port);
-=======
 		IP_ADAPTER_INFO* _p = (IP_ADAPTER_INFO*) buf;
 		for (; _p != NULL; _p = _p->Next)
 		{
@@ -459,7 +455,6 @@ int loocal_addr_ip4(interfaces_addr_t* aTo)
 	}else
 	{
 		LOG(DFATAL)<<"Cannot call GetAdaptersInfo error:"<<_error;
->>>>>>> 80c7e21... See ChangeLog.txt
 	}
 	free(buf);
 	return aTo->size();

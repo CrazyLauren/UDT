@@ -57,7 +57,7 @@ void IMPL_CLASS::MCreateClient(IAllocater* _alloc,int aUserId)
 	if(aUserId>=0) FMyInfo->FInfo.FId.FUserID = aUserId;
 	FEv.FEvents= &FMyInfo->FInfo;
 	VLOG(2) << "Events ptr =" << FEv.FEvents;
-	MCreateSignalEvent(FEv);
+	FEv.MCreateSignalEvent();
 }
 bool IMPL_CLASS::MReOpen()
 {
@@ -126,7 +126,7 @@ bool IMPL_CLASS::MOpenServer(void* _p)
 		LOG(ERROR)<<"Cannot initialize semaphore.";
 		return false;
 	}
-	_is = MInitSignalEvent(FServerSignalEvent, &_info->FInfo);
+	_is = FServerSignalEvent.MInitSignalEvent(&_info->FInfo);
 	FServerInfo = _info;
 	VLOG(2)<<"Opened";
 	return true;
@@ -293,16 +293,14 @@ bool IMPL_CLASS::MClose()
 	FIsOpened = false;
 
 	VLOG(2) << "Deallocate memory";
-	FServerSignalEvent.FSignalEvent.MFree();
-	FServerSignalEvent.FSignalSem.MFree();
+	FServerSignalEvent.MFree();
 	if(FMyInfo->FInfo.FId.FUniqueID==0)//the server is handled disconnect
 		deallocate_object(FSharedMemory.MGetAllocator(), FMyInfo);
 
 	FMyInfo = NULL;
 	if(MFreeBase())
 	{
-		FServerSignalEvent.FSignalEvent.MUnlink();
-		FServerSignalEvent.FSignalSem.MUnlink();
+		FServerSignalEvent.MUnlink();
 	}
 	return true;
 }

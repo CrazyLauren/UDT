@@ -527,9 +527,8 @@ void CControlByTCP::MClose()
 	MCloseMain();
 
 	NSHARE::CRAII<NSHARE::CMutex> _block(FControlLock);
-	MStop();
 
-	FTcpSocket->MClose();
+	MStop();
 
 	FKernelId.MUnSet();
 //!<\todo close idiom

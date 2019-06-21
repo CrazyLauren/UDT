@@ -13,13 +13,15 @@
  */
 #include <deftype>
 #include <boost/uuid/uuid_generators.hpp>
+#include <random_value.h>
 
 namespace NSHARE
 {
 static uint64_t uuid_generate_time(CText const& aText = CText())
 {
+	generate_seed_if_need();
+
 	uint8_t out[8];
-	srand(NSHARE::get_unix_time()%std::numeric_limits<unsigned>::max());
 	uint64_t time = NSHARE::get_unix_time();
 	out[0] = (uint8_t) (time >> 56) | (uint8_t) (time);
 	out[1] = (uint8_t) (time >> 48) ^ (uint8_t) (time >> 8);

@@ -74,7 +74,7 @@ bool IMPL::MWaitForEvent(event_cv_t& aFrom,event_info_t* aVal, double const aTim
 	bool _is = !aFrom.FEvents->FFifo.MEmpty();
 	VLOG_IF(2,_is) << "Events queue is not empty.";
 	if (!_is)
-		_is = (aTime>0)?aFrom.FSignalEvent.MTimedwait(&aFrom.FSignalSem, aTime):aFrom.FSignalEvent.MTimedwait(&aFrom.FSignalSem);
+		_is = aFrom.MTimedwait(aTime);
 	if (!_is)
 	{
 		VLOG(2) << "Timedwait error";
@@ -103,9 +103,10 @@ bool IMPL::MInvokeEventTo(event_cv_t & aFrom, event_info_t* _info) const
 		LOG(WARNING)<<"The queue "<<aFrom.FEvents->FFifo.FSignalEvent<< "is full. Msg "<<*_info;
 		return false;
 	}
-	if(_is_empty) aFrom.FSignalEvent.MSignal();
+	if(_is_empty) aFrom.MSignal();
 	return true;
 }
+
 bool IMPL::MRemoveEvent(event_info_t const* _info,event_cv_t& aFrom)
 {
 	if(!aFrom.FEvents)
@@ -230,7 +231,7 @@ void IMPL::MEventHandler(event_info_t* aEv)
 void IMPL::MEventHandler()
 {
 	FEventDone = false;
-	VLOG(2) << "Event handler is started." << FEv.FSignalEvent.MName();
+	VLOG(2) << "Event handler is started." << FEv.MGetSignalEventName();
 	for (; !FEventDone;)
 	{
 		event_info_t _event;
@@ -260,55 +261,8 @@ bool IMPL::MInitSharedSem(server_info_t * aInfo)
 	return FSharedSem.MInit(aInfo->FMutex,sizeof(aInfo->FMutex), 1, CIPCSem::E_HAS_EXIST);
 
 }
-bool IMPL::MCreateSignalEvent(event_cv_t & aEvent)
-{
-	bool _is;
-	{
 
-		_is = aEvent.FSignalEvent.MInit(
-				 aEvent.FEvents->FFifo.FSignalEvent,sizeof(aEvent.FEvents->FFifo.FSignalEvent),
-				CIPCSignalEvent::E_HAS_TO_BE_NEW);
-		LOG_IF(DFATAL,!_is) << "Cannot create event " << aEvent.FSignalEvent.MName();
-		if (!_is)
-			return false;
-		VLOG(2) << "Signal event=" << aEvent.FSignalEvent.MName();
-	}
-	{
-		_is = aEvent.FSignalSem.MInit(
-				aEvent.FEvents->FFifo.FSignalMutex,sizeof(aEvent.FEvents->FFifo.FSignalMutex), 1,
-				CIPCSem::E_HAS_TO_BE_NEW);
 
-		LOG_IF(DFATAL,!_is) << "Cannot create mutex " << aEvent.FEvents->FFifo.FSignalMutex;
-		if (!_is)
-		{
-			aEvent.FSignalEvent.MFree();
-			return false;
-		}
-	}
-	aEvent.FEvents->FFifo.MFillCRC();
-
-	return _is;
-}
-bool IMPL::MInitSignalEvent(event_cv_t & aEvent,
-		shared_info_t *aFifo)
-{
-	CHECK_NOTNULL(aFifo);
-	VLOG(2)<<"Initialize signal event";
-	bool _is = aEvent.FSignalEvent.MInit(aFifo->FFifo.FSignalEvent,sizeof(aFifo->FFifo.FSignalEvent),
-			CIPCSignalEvent::E_HAS_EXIST);
-	if (!_is)
-		return false;
-
-	_is = aEvent.FSignalSem.MInit(aFifo->FFifo.FSignalMutex,sizeof(aFifo->FFifo.FSignalMutex),
-			CIPCSignalEvent::E_HAS_EXIST);
-	if (!_is)
-	{
-		aEvent.FSignalEvent.MFree();
-		return false;
-	}
-	aEvent.FEvents=aFifo;
-	return true;
-}
 //;
 bool IMPL::MCreateEventHandler(event_cv_t & aEvent)
 {
@@ -421,7 +375,7 @@ CSharedMemoryBase::eSendState IMPL::MSend(
 		VLOG(2) << "Send by non-blocking mode.";
 		_is_send = MInvokeEventTo(aEvent, &_info);
 		LOG_IF(ERROR,!_is_send) << "Cannot send data to "
-										<< aEvent.FSignalSem.MName();
+										<< aEvent.MGetSignalEventName();
 		//const double _time=NSHARE::get_time();
 		if (_is_send)
 		{
@@ -542,7 +496,7 @@ bool IMPL::MCheckConnection(shared_port_t const& aFrom,event_cv_t &aEvent)
 		return false;
 	}
 	//aEvent.FLastConnectionTime=NSHARE::get_time();
-	VLOG(2) << aEvent.FSignalEvent.MName() << " is connected.";
+	VLOG(2) << aEvent.MGetSignalEventName() << " is connected.";
 	return true;
 }
 void IMPL::MEventDataConfiramtionImpl(shared_identify_t const& aId,
@@ -759,7 +713,10 @@ void IMPL::MStopEventHandlerForce()
 {
 	VLOG(2) << "Stopping event handler...";
 	FEventDone = true;
-	FEv.FSignalEvent.MSignal();
+	{
+		CRAII<event_cv_t> _block(FEv);
+		FEv.MSignal();
+	}
 	//FSignalHandler.MCancel();
 	VLOG(2) << "Wait for cancel";
 	FSignalHandler.MJoin();
@@ -779,11 +736,9 @@ bool IMPL::MFreeBase()
 	{
 		//CRAII<CSharedMemoryBase> _block(*this);
 		FEv.FEvents = NULL;
-		FEv.FSignalEvent.MFree();
-		FEv.FSignalSem.MFree();
+		FEv.MFree();
+		FEv.MUnlink();//fixme maybe error( if the server is using event. What will happen)!!!!!!!!!!!!!!
 
-		FEv.FSignalEvent.MUnlink();//fixme maybe error( if the server is using event. What will happen)!!!!!!!!!!!!!!
-		FEv.FSignalSem.MUnlink();//fixme maybe error!!!!!!!!!!!!!!
 
 		FBuffers.clear();
 		FSharedSem.MFree();
@@ -801,21 +756,32 @@ bool IMPL::MFreeBase()
 bool IMPL::MLock() const
 {
 	const unsigned _pid = get_pid_optimized();
-	bool _is = FSharedSem.MWait();
+	bool const _is = FSharedSem.MWait();
 	if (_is)
 	{
 		CHECK_NOTNULL(FServerInfo);
-		VLOG(2) << "Lock Sem by " << _pid << "; previous="
+		VLOG(2) << "Lock Sem"<<FSharedSem.MName() <<" by " << _pid << "; previous="
 							<< FServerInfo->FPIDOfLockedMutex;
 		FServerInfo->FPIDOfLockedMutex = _pid;
+	}
+	else
+	{
+		LOG(DFATAL)<<"Cannot lock sem "<<FSharedSem.MName();
 	}
 	return _is;
 }
 bool IMPL::MUnlock() const
 {
 	CHECK_NOTNULL(FServerInfo);
+	DCHECK_EQ(FServerInfo->FPIDOfLockedMutex,get_pid_optimized());
+
 	FServerInfo->FPIDOfLockedMutex = 0;
-	return FSharedSem.MPost();
+	const bool _is=FSharedSem.MPost();
+
+	VLOG_IF(2,_is) << "Unlock Sem"<<FSharedSem.MName()<<" by "<< get_pid_optimized();
+	LOG_IF(DFATAL,!_is)<<"Cannot lock sem "<<FSharedSem.MName();
+
+	return _is;
 }
 void IMPL::MCleanupLock() const
 {
@@ -846,7 +812,7 @@ bool IMPL::MSafetyLock() const
 void IMPL::event_cv_t::MCleanupLock() const
 {
 	CHECK_NOTNULL(FEvents);
-	unsigned _process = FEvents->FFifo.FPIDOfLockedMutex;
+	unsigned const _process = FEvents->FFifo.FPIDOfLockedMutex;
 	if (_process)
 		if (!is_process_exist(_process))
 		{
@@ -875,36 +841,134 @@ void IMPL::event_cv_t::MSerialize(CConfig& aTo) const
 }
 bool IMPL::event_cv_t::MSafetyLock() const
 {
-	CHECK_NOTNULL(FEvents);
-	unsigned _process = FEvents->FFifo.FPIDOfLockedMutex;
-	if (_process)
-		if (!is_process_exist(_process))
-		{
-			LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FSignalSem.MName()
-			<<"still is locked by"<< FEvents->FFifo.FPIDOfLockedMutex<<". Unlocking immediately ...";
-			FEvents->FFifo.FPIDOfLockedMutex = 0;
-			FSignalSem.MPost();
-		}
+	MCleanupLock();
 	return MLock();
 }
 bool IMPL::event_cv_t::MLock() const
 {
 	const unsigned _pid = get_pid_optimized();
-	bool _is = FSignalSem.MWait();
+	bool const _is = FSignalSem.MWait();
 	if (_is)
 	{
 		CHECK_NOTNULL(FEvents);
-		VLOG(2) << "Lock Sem by " << _pid << "; previous="
+		VLOG(2) << "Lock Sem"<<FSignalSem.MName()<<" by " << _pid << "; previous="
 							<< FEvents->FFifo.FPIDOfLockedMutex;
 		FEvents->FFifo.FPIDOfLockedMutex = _pid;
+	}else
+	{
+		LOG(DFATAL)<<"Cannot lock sem "<<FSignalSem.MName();
 	}
 	return _is;
 }
 bool IMPL::event_cv_t::MUnlock() const
 {
 	CHECK_NOTNULL(FEvents);
+	DCHECK_EQ(FEvents->FFifo.FPIDOfLockedMutex,get_pid_optimized());
+
 	FEvents->FFifo.FPIDOfLockedMutex = 0;
-	return FSignalSem.MPost();
+	bool const _is =  FSignalSem.MPost();
+
+	VLOG_IF(2,_is) << "Unlock Sem"<<FSignalSem.MName()<<" by "<< get_pid_optimized();
+	LOG_IF(DFATAL,!_is)<<"Cannot lock sem "<<FSignalSem.MName();
+
+	return _is;
+}
+bool IMPL::event_cv_t::MTimedwait( double const aTime) const
+{
+	/*! В функции MTimedwait of Condvar, Mutex блокируется и разблокируется
+	 * Поэтому необходимо внести изменения в FEvents->FFifo.FPIDOfLockedMutex
+	 *
+	 */
+	CHECK_NOTNULL(FEvents);
+	DCHECK_EQ(FEvents->FFifo.FPIDOfLockedMutex,get_pid_optimized());
+
+
+	VLOG(3)<<"Timed wait of "<<FSignalEvent.MName()<<" mutex:"<<FSignalSem.MName();
+
+	FEvents->FFifo.FPIDOfLockedMutex = 0;
+
+	bool const _is=(aTime>0)?FSignalEvent.MTimedwait(&FSignalSem, aTime):FSignalEvent.MTimedwait(&FSignalSem);
+
+	FEvents->FFifo.FPIDOfLockedMutex = get_pid_optimized();
+
+	VLOG_IF(2,_is) <<"Timed wait finished successful for "<<FSignalEvent.MName()
+			<<" The mutex "<<FSignalSem.MName()<<" was locked by "<<get_pid_optimized();
+
+	VLOG_IF(2,!_is)<<"Timed wait finished unsuccessful for "<<FSignalEvent.MName()
+					<<" The mutex "<<FSignalSem.MName()<<" was locked by "<<get_pid_optimized();
+
+	return _is;
+}
+void IMPL::event_cv_t::MFree() const
+{
+	FSignalEvent.MFree();
+	FSignalSem.MFree();
+}
+void IMPL::event_cv_t::MUnlink() const
+{
+	FSignalEvent.MUnlink();
+	FSignalSem.MUnlink();
+}
+bool IMPL::event_cv_t::MCreateSignalEvent()
+{
+	bool _is;
+	{
+
+		_is = FSignalEvent.MInit(
+				 FEvents->FFifo.FSignalEvent,sizeof(FEvents->FFifo.FSignalEvent),
+				CIPCSignalEvent::E_HAS_TO_BE_NEW);
+		LOG_IF(DFATAL,!_is) << "Cannot create event " << FSignalEvent.MName();
+		if (!_is)
+			return false;
+		VLOG(2) << "Signal event=" << FSignalEvent.MName();
+	}
+	{
+		_is = FSignalSem.MInit(
+				FEvents->FFifo.FSignalMutex,sizeof(FEvents->FFifo.FSignalMutex), 1,
+				CIPCSem::E_HAS_TO_BE_NEW);
+
+		LOG_IF(DFATAL,!_is) << "Cannot create mutex " << FEvents->FFifo.FSignalMutex;
+		if (!_is)
+		{
+			FSignalEvent.MFree();
+			return false;
+		}
+	}
+	FEvents->FFifo.MFillCRC();
+
+	return _is;
+}
+bool IMPL::event_cv_t::MInitSignalEvent(
+		shared_info_t *aFifo)
+{
+	CHECK_NOTNULL(aFifo);
+	VLOG(2)<<"Initialize signal event";
+	bool _is = FSignalEvent.MInit(aFifo->FFifo.FSignalEvent,sizeof(aFifo->FFifo.FSignalEvent),
+			CIPCSignalEvent::E_HAS_EXIST);
+	if (!_is)
+		return false;
+
+	_is = FSignalSem.MInit(aFifo->FFifo.FSignalMutex,sizeof(aFifo->FFifo.FSignalMutex),
+			CIPCSignalEvent::E_HAS_EXIST);
+	if (!_is)
+	{
+		FSignalEvent.MFree();
+		return false;
+	}
+	FEvents=aFifo;
+	return true;
+}
+bool IMPL::event_cv_t::MSignal() const
+{
+	CHECK_NOTNULL(FEvents);
+	DCHECK_EQ(FEvents->FFifo.FPIDOfLockedMutex,get_pid_optimized());
+
+	bool const _is=FSignalEvent.MSignal();
+	VLOG_IF(2,_is) <<"Signal successful for "<<FSignalEvent.MName()<<" by "<<get_pid_optimized();
+
+	VLOG_IF(2,!_is)<<"Signal finished unsuccessful for "<<FSignalEvent.MName()
+					<<"  by "<<get_pid_optimized();
+	return _is;
 }
 void IMPL::MSetOption(CSharedMemoryBase::eSettings aSetting, unsigned aVal)
 {
