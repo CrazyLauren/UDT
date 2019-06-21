@@ -10,4 +10,8 @@ revision.c
 *.kdev4
 .kdev4/
 .project
+<<<<<<< HEAD
 /doc
+=======
+/doc
+>>>>>>> 702fe920... see ChangeLog.txt
