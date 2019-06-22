@@ -128,7 +128,7 @@ inline program_id_t deserialize_impl<program_id_t>(NSHARE::CConfig  const& aConf
 template<class aKdTypeY,class Tto>
 inline Tto deserialize(aKdTypeY const* aP,routing_t* aRoute,error_info_t *aError)
 {
-	VLOG(2) << "Deserializing DG  "<<aKdTypeY::MSG_TYPE;
+	VLOG(2) << "Deserializing DG  "<<(unsigned)aKdTypeY::MSG_TYPE;
 
 	NSHARE::utf8 const* _begin = (NSHARE::utf8 const*) aP->MStrBegin();
 	size_t const _str_size=aP->MGetStrSize();
