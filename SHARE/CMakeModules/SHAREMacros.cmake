@@ -99,7 +99,7 @@ macro(configure_version _TARGET _FILE_PATH _MAJOR _MINOR )
 			STRING(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" ${_PREFIX}_PATH "${VERSION}")
 			STRING(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" ${_PREFIX}_REVISION_VERSION "${VERSION}")
 		ELSE(NOT VERSION  MATCHES  "-NOTFOUND")
-			message("Cannot get revisiob from git:" "${VERSION}" ) 
+			message(STATUS "Cannot get revision from git:" "${VERSION}" ) 
 		ENDIF (NOT VERSION  MATCHES  "-NOTFOUND")
 	ENDIF (${_PREFIX}_EMBED_GIT_SHA)
 
@@ -113,7 +113,7 @@ macro(configure_version _TARGET _FILE_PATH _MAJOR _MINOR )
 		SET(${_PREFIX}_SOVERSION  ${_SOVERSION} CACHE INTERNAL "" FORCE)
 	endif()
 	
-	message ("Version of " ${_PREFIX} " is " ${${_PREFIX}_VERSION} " from " ${${_PREFIX}_PATH})
+	message (STATUS "Version of " ${_PREFIX} " is " ${${_PREFIX}_VERSION} " from " ${${_PREFIX}_PATH})
 
 	SET(CONF_VERSION_MAJOR ${${_PREFIX}_MAJOR_VERSION} CACHE INTERNAL "" FORCE)
 	SET(CONF_VERSION_MINOR ${${_PREFIX}_MINOR_VERSION} CACHE INTERNAL "" FORCE)

@@ -753,7 +753,7 @@ class  CPODBuffer
 {
 public:
 	typedef CBuffer::offset_pointer_t offset_pointer_t;
-	typedef buf_val_t<TPod> value_type;
+	typedef /*buf_val_t<*/TPod/*>*/ value_type;
 	typedef value_type* pointer;
 	typedef const value_type* const_pointer;
 	typedef value_type& reference;
