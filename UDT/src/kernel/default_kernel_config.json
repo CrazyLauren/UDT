@@ -114,12 +114,23 @@ plugins.
 			},
 			"tcp":{}
 		},
-		"tcp_io_manager":{
+		"tcp_io_manager":
+		{
+			/** The own port number.
+			* By default is 18011.
+			*
+			*/
+			//"port":"18011",
+			
+			/** Maximal timeout
+			* for handel new connection
+			* in ms. By default 2000 ms.  
+			*
+			*/
+			//"timeout":"2000",			
 			"consumer":{
 				"channel_for":{
-					"default":"sm",
-					"uex@guex":"sm",
-					"uex2@guex":"sm"
+					"default":"sm"
 				}
 			},
 			"udt_server":{
@@ -129,8 +140,32 @@ plugins.
 			},
 			"protocol":["consumer","udt_server"]
 		},
-		"tcp_client_io_manager":{
+		/** The kernel can connect to the other 
+		*	kernel by TCP. To do this
+		*	need to specify the port (tcp_io_manager.port
+		* 	of the kernel config) and ip
+		*	of the other kernel. 
+		*/
+		"tcp_client_io_manager":
+		{
+			/** The own port number.
+			* By default is 18015.
+			*
+			*/
+			//"port":"18015",
 			
+			/** The other kernel info.
+			*	For each the kernel
+			* 	need specify the follow 
+			*	parametres. 			
+			*/
+			/* "cl":{
+				"addr":{
+					"ip":"127.0.0.1",
+					"port":"18011"//equal of tcp_io_manager.port
+				},
+				"protocol":"udt_client"
+			} */
 		},
 		"front_end_io_manager":
 		{

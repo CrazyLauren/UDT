@@ -14,6 +14,7 @@
 #include <udt_share_macros.h>
 #include <programm_id.h>
 #include <udt_types.h>
+#include <Socket/net_address_t.h>
 namespace NUDT
 {
 typedef uint32_t error_type;
@@ -325,6 +326,12 @@ struct UDT_SHARE_EXPORT kernel_link
 		return !operator==(aRht);
 	}
 };
+/** Lost of program ID
+ *
+ * The program ID is unique for each programs thus
+ * the std::set container is used for save ID.
+ *
+ */
 struct UDT_SHARE_EXPORT progs_id_t:std::set<program_id_t>
 {
 	static const NSHARE::CText NAME;
@@ -498,7 +505,54 @@ struct UDT_SHARE_EXPORT main_ch_param_t
 	bool MIsValid()const;
 
 };
+/** An information about network channel
+ *
+ */
+struct UDT_SHARE_EXPORT network_channel_t
+{
+	static const NSHARE::CText NAME;	///< A serialization key
+	static const NSHARE::CText PROTOCOL;	///< A key of type #FProtocolType
+	static const NSHARE::CText AUTO_REMOVE;	///< A key of type #FIsAutoRemoved
 
+	NSHARE::net_address FAddress;	///< An address
+	NSHARE::CText FProtocolType;	///< A type of protocol
+	bool FIsAutoRemoved;/*!< If value true and the connection is dropped
+	 then channel will removed without
+	 attempts to reconnect
+	 */
+
+	/** A default constructor
+	 *
+	 */
+	network_channel_t() :	//
+			FIsAutoRemoved(false)
+	{
+		;
+	}
+
+	/*! @brief Deserialize object
+	 *
+	 * To check the result of deserialization,
+	 * used the MIsValid().
+	 * @param aConf Serialized object
+	 */
+	network_channel_t(NSHARE::CConfig const& aConf);
+
+	/*! @brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 * @return Serialized object.
+	 */
+	NSHARE::CConfig MSerialize() const;
+
+	/*! @brief Checks object for valid
+	 *
+	 * Usually It's used after deserializing object
+	 * @return true if it's valid.
+	 */
+	bool MIsValid() const;
+};
 /** Information needed for
  * connection other kernel to the kernel
  * which is sent the this info
@@ -506,9 +560,10 @@ struct UDT_SHARE_EXPORT main_ch_param_t
  */
 struct UDT_SHARE_EXPORT auto_search_info_t
 {
-	static const NSHARE::CText NAME;///< A serialization key
+	static const NSHARE::CText NAME;	///< A serialization key
 
 	program_id_t FProgramm;///< Information about kernel
+	network_channel_t FChannel;	///< A channel info
 
 	/** A default constructor
 	 *
@@ -866,7 +921,14 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::main_ch_param_t co
 inline std::ostream& operator<<(std::ostream & aStream, NUDT::auto_search_info_t const& aVal)
 {
 	using namespace NUDT;
-	return aStream << aVal.FProgramm;
+	return aStream << aVal.MSerialize().MToJSON(true);
 }
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::network_channel_t const& aVal)
+{
+	using namespace NUDT;
+	return aStream << aVal.MSerialize().MToJSON(true);
+}
+
 }
 #endif /* SHARED_TYPES_OF_SHARE_H_ */

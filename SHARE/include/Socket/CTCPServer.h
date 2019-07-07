@@ -54,80 +54,245 @@
 #endif
 namespace NSHARE
 {
-
+/** @brief TCP Server
+ *
+ * The TCP server have two event. When the client is connected to the server
+ * the event #CTCPServer::EVENT_CONNECTED is called respectively
+ * When it is disconnected the event #CTCPServer::EVENT_DISCONNECTED
+ * is called. The argument of this events is pointer to #CTCPServer::client_t type
+ * object. To disconnect the client You can call #CTCPServer::MCloseClient
+ * Of course, for receiving data you has to be call #CTCPServer::MReceiveData
+ * method. There two types of this method: The first method can return info
+ * about the data sender, the other - no.
+ * To send data you could call #CTCPServer::MSend method. Just like MReceiveData
+ * It divides to the two types: The first method sends data to the specified
+ * client, the other sends data to the all connected clients.
+ *
+ */
 class SHARE_EXPORT CTCPServer: public ISocket, NSHARE::CDenyCopying, public NSHARE::CEvents<
 		NSHARE::CText>
 {
 public:
-	static const NSHARE::CText NAME;
-	static version_t sMGetVersion();
+	static const NSHARE::CText NAME;///< A serialization key
+	static version_t sMGetVersion();///< The version of TCP server class
 
-	typedef NSHARE::CEvents<NSHARE::CText> events_t;
+	typedef NSHARE::CEvents<NSHARE::CText> events_t;///< A type of events used
+
+	/** @brief Connected client information
+	 *
+	 */
 	struct SHARE_EXPORT client_t
 	{
-		net_address FAddr;
-		time_t FTime;
+		net_address FAddr;///< A network address of client
+		time_t FTime;///< The connection time
+
 		bool operator==(client_t const& aRht) const;
 		bool operator==(net_address const& aRht) const;
 	};
+	typedef std::vector<client_t> list_of_clients;///< List of clients
+
+	/** @brief Information about the data received  from client
+	 *
+	 */
 	struct  recv_t
 	{
-		client_t FClient;
-		data_t::iterator FBufBegin;
-		data_t::difference_type FSize;
+		client_t FClient;///< From whom the data.
+		data_t::iterator FBufBegin;///< The pointer to the first byte of the data
+		data_t::difference_type FSize;///< The size of the received data
 	};
-	typedef std::vector<recv_t> recvs_t;
+	typedef std::vector<recv_t> recvs_t;///< List of received data
 
-	//arg event type is client_t
-	static events_t::key_t const EVENT_CONNECTED;
-	static events_t::key_t const EVENT_DISCONNECTED;
-	//static long const DEF_TCP_BUF_SIZE;
+	static events_t::key_t const EVENT_CONNECTED;/*!< It event is called when client is connected.
+													* The argument of the event is pointer to the
+													* CTCPServer::client_t object.
+	 	 	 	 	 	 	 	 	 	 	 	 	*/
+	static events_t::key_t const EVENT_DISCONNECTED;/*!< It event is called when client is disconected.
+													* The argument of the event is pointer to the
+													* CTCPServer::client_t object.
+													*/
 
+	/** @brief Create TCP server
+	 *
+	 * If You pass a valid port to aParam
+	 *  then the TCP server begins to wait for clients.
+	 * @param aParam The port of TCP server
+	 */
 	CTCPServer(const net_address& aParam = net_address());
+
+	/** @brief Create TCP server
+	 *
+	 * If You pass a valid serialized port to aConf
+	 *  then the TCP server begins to wait for clients.
+	 * @param aConf The serialized port of TCP server (@see NSHARE::net_address)
+	 */
 	CTCPServer(NSHARE::CConfig const& aConf);
+
+	/** @brief The destruction  of the object
+	 *
+	 * During the destruction of the object all clients are
+	 * disconnecting.
+	 */
 	virtual ~CTCPServer();
+
+	/** @brief Changes the TCP port and begins to wait for clients
+	 *
+	 * @param aParam The port of TCP server
+	 * @param aFlags not used
+	 *
+	 */
 	virtual bool MOpen(const net_address& aParam, int aFlags = 0);
 
+	/** @brief  Closes the TCP server
+	 *
+	 */
 	virtual void MClose();
-	void MCloseAllClients();
-	bool MCloseClient(const net_address&);
 
-	bool MGetInitParam(net_address*) const;//deprecated using MGetSetting
-	net_address MGetSetting() const;
-	NSHARE::CConfig MSettings(void) const
-	{
-		net_address _addr;
-		MGetInitParam(&_addr);
-		return _addr.MSerialize();
-	}
-	sent_state_t MSend(const void* pData, size_t nSize, const net_address&);
+	/** @brief Disconnects specified client
+	*
+	*	@param aClient A ip address of the client
+	*	@return true if disconneceted
+	*/
+	bool MClose(const client_t& aClient);
+
+	/** @brief Disconnects specified client
+	*
+	*	@param aIP A ip address of the client
+	*	@return true if disconneceted
+	*/
+	bool MCloseClient(const net_address& aIP);
+
+	/** @brief Disconnects all clients
+	 *
+	 */
+	void MCloseAllClients();
+
+	/** @brief Returns reference to settings of TCP Server
+	 *
+	 *	@return settings
+	 */
+	net_address const& MGetSetting() const;
+
+	/** @brief Returns serialized settings of TCP Server
+	 *
+	 *  @return Serialized object.
+	 */
+	NSHARE::CConfig MSettings(void) const;
+
+	/**	@brief Send to specified addresses
+	 *
+	 * @param aTo A send to IP and port
+	 * @param pData A pointer to data
+	 * @param nSize A size of data
+	 * @return information about sent to the address
+	 */
+	sent_state_t MSend(const void* pData, size_t nSize, const net_address& aTo);
+
+	/**	@brief Send to all connected clietns
+	 *
+	 * @param pData A pointer to data
+	 * @param nSize A size of data
+	 * @return information about sent
+	 * If during  of sending at least one error is occured then E_ERROR
+	 * is returned
+	 *
+	 */
 	virtual sent_state_t MSend(const void* pData, size_t nSize);
+
+	/**	@brief Send to specified addresses
+	 *
+	 * @param aTo A send to IP and port
+	 * @param pData A pointer to data
+	 * @param nSize A size of data
+	 * @return information about sent to the address
+	 */
 	virtual sent_state_t MSend(const void* pData, size_t nSize, NSHARE::CConfig  const& aTo);
-	sent_state_t MSendLoopBack(data_t const& aData);
+
+	/** @brief Force unlocks of the receiving loop
+	 *
+	 */
+	void MForceUnLock();
 
 	bool MIsOpen() const;
 	bool MReOpen();
 
-	ssize_t MReceiveData(recvs_t*, data_t*, const float aTime);
-	ssize_t MReceiveData(data_t* aData, const float aTime)
-	{
-		return MReceiveData(NULL, aData, aTime);
-	}
-	ssize_t MReceiveData(data_t*, const float aTime, recvs_from_t* aFrom);
+	/** @brief Receives data from all clients
+	 *
+	 *
+	 * @param aFrom [out] From whom the data is received
+	 * @param aBuf [out] A pointer to a buffer where can store the message.
+	 * @param aTime [in] not used
+	 * @return amount of received bytes
+	 */
+	ssize_t MReceiveData(recvs_t* aFrom, data_t* aBuf, const float aTime);
 
+	/** @brief Receives data from all clients
+	 *
+	 *
+	 * @param aBuf [out] A pointer to a buffer where can store the message.
+	 * @param aTime [in] not used
+	 * @return amount of received bytes
+	 */
+	ssize_t MReceiveData(data_t* aBuf, const float aTime);
+
+	/** @brief Receives data from all clients
+	 *
+	 *
+	 * @param aFrom [out] From whom the data is received
+	 * @param aBuf [out] A pointer to a buffer where can store the message.
+	 * @param aTime [in] not used
+	 * @return amount of received bytes
+	 */
+	ssize_t MReceiveData(data_t* aBuf, const float aTime, recvs_from_t* aFrom);
+
+	/** Prints to stream state of tcp server port
+	 *
+	 * @param aStream Print to
+	 * @return aStream
+	 */
 	std::ostream& MPrint(std::ostream& aStream) const;
-	size_t MAvailable() const;
-	//size_t MAvailable(CSocket const&) const;
 
-	bool MCanReceive() const;
+	/** Returns amount of available bytes to read
+	 *
+	 * @return amount of bytes
+	 */
+	size_t MAvailable() const;
+
+	/** Returns true if clients are exist
+	 *
+	 * @return true if at least one client is exist
+	 */
 	bool MIsClients() const;
-	bool MIsConnected() const
-	{
-		return MIsClients();
-	}
+
+	/** @brief Returns info about connected clients
+	 *
+	 * @return list of connected clients
+	 */
+	list_of_clients MGetClientInfo() const;
+
 	const CSocket& MGetSocket(void) const;
+
+	/*!	@brief Serialize object
+	 *
+	 * The key of serialized object is #NAME
+	 *
+	 * @return Serialized object.
+	 */
 	NSHARE::CConfig MSerialize() const;
-	std::pair<size_t,size_t> MBufSize()const;//first send
+
+	/** @brief Returns information about receive and send
+	 * buffer size
+	 *
+	 * @return first - the send buffer size \n
+	 * 		   second - the receive buffer size
+	 */
+	std::pair<size_t,size_t> MBufSize()const;
+
+	/** Returns diagnostic information about
+	 * socket
+	 *
+	 * @return reference to object
+	 */
+	diagnostic_io_t const& MGetDiagnosticState() const;
 private:
 
 

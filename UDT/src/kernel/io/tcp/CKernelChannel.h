@@ -15,27 +15,53 @@
 namespace NUDT
 {
 
-//todo Only one receive thread for all Clients
-//todo обдумать reopen и close когда и вкаких случаях
-//их вызвать
+/** @brief Class realization TCP client channel for one client
+ *
+ *	@todo обдумать reopen и close когда и вкаких случаях их вызвать
+ *	@todo Only one receive thread for all Clients
+ */
 struct CKernelIOByTCPClient::CKernelChannel: public ILinkBridge
 {
-	static const NSHARE::CText NAME;
-	static const NSHARE::CText LINK_TYPE;
-	static const NSHARE::CText ADDR;
-	enum eState //don't use pattern
-	//as it's  difficult for the class
+	static const NSHARE::CText NAME; ///< A serialization key
+
+	/** @brief The Current state of connection
+	 *
+	 *	@note For debug only
+	 */
+	enum eState
 	{
-		E_CLOSED,	//
-		E_SERVICE_CONNECTED,	//
-		E_SETTING,	//
-		E_CONNECTED	//
+		E_CLOSED,				///< No connection
+		E_SERVICE_CONNECTED,	///< Connected only service channel
+		E_CONNECTED				///< The channel is established
 	};
 
+	/** Create a new channel
+	 *
+	 * @param aSetting - A channel setting
+	 * @param aThis - A reference to base class
+	 */
+	CKernelChannel(network_channel_t const& aSetting,
+			CKernelIOByTCPClient& aThis);
 
-	CKernelChannel(CConfig const& aWhat,CKernelIOByTCPClient& aThis);
+	~CKernelChannel();
+	/** Disconnect (Close) from server
+	 *
+	 */
 	void MClose();
-	void MOpen(const void* aP);
+
+	/** Start TCP client
+	 *
+	 */
+	void MOpen();
+
+	/** Determine if the settings is corresponding to this client
+	 *
+	 * @param aSetting
+	 * @return true is corresponding
+	 */
+	bool MIs(network_channel_t const& aSetting) const;
+
+	descriptor_t MGetDescriptor() const;
 	virtual bool MCloseRequest(descriptor_t aId);
 	virtual bool MInfo(NSHARE::CConfig & aTo);
 	NSHARE::net_address MGetAddr()const;
@@ -77,17 +103,25 @@ private:
 	void MReceivingForNewLink(const data_t::const_iterator& aBegin,
 			const data_t::const_iterator& aEnd);
 
-	eState FState;	//for debuging only
+	eState FState;	///< Current state (for debug only)
 	NSHARE::CB_t FCBServiceConnect;
 	NSHARE::CB_t FCBServiceDisconncet;
 
 	smart_link_t FLink;
 	NSHARE::CTCP FTcp;
-	CKernelIOByTCPClient& FThis;
-	CConfig FConfig;
-	NSHARE::CText const FLinkType;
+	CKernelIOByTCPClient& FThis;	///<A reference to base class
+	network_channel_t const FSetting;
 	handler_t FConnectionHandler;
 	descriptor_t Fd;
+	NSHARE::CMutex FLockToRemove;/*!< The mutex is protected against to remove
+	 Object before receive thread is finished (sMReceiver) */
 };
+inline descriptor_t CKernelIOByTCPClient::CKernelChannel::MGetDescriptor() const
+{
+	if (FLink)
+		return FLink->MGetID();
+	else
+		return Fd;
+}
 } /* namespace NUDT */
 #endif /* CKERNELCHANNEL_H_ */

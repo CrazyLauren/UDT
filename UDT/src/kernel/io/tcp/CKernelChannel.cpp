@@ -35,26 +35,42 @@ namespace NUDT
 #define IMPL CKernelIOByTCPClient::CKernelChannel
 
 NSHARE::CText const IMPL::NAME = "cl";
-NSHARE::CText const IMPL::LINK_TYPE = "protocol";
-NSHARE::CText const CKernelIOByTCPClient::CKernelChannel::ADDR = "addr";
 
-CKernelIOByTCPClient::CKernelChannel::CKernelChannel(CConfig const& aWhat,
+CKernelIOByTCPClient::CKernelChannel::CKernelChannel(
+		network_channel_t const& aWhat,
 		CKernelIOByTCPClient& aThis) :
 		FState(E_CLOSED),	//
-		FTcp(aWhat.MChild(ADDR)),	//
 		FThis(aThis),	//
-		FConfig(aWhat),	//
-		FLinkType(FConfig.MValue(LINK_TYPE)),	//
+		FSetting(aWhat),	//
 		Fd(-1)
 
 {
+	VLOG(3) << "Create object " << FSetting;
+
 	FCBServiceConnect = NSHARE::CB_t(sMConnect, this);
 	FCBServiceDisconncet = NSHARE::CB_t(sMDisconnect, this);
 
 	FTcp += CTCPServer::value_t(CTCP::EVENT_CONNECTED, FCBServiceConnect);
 	FTcp += CTCPServer::value_t(CTCP::EVENT_DISCONNECTED, FCBServiceDisconncet);
 }
+IMPL ::~CKernelChannel()
+{
+	MClose();
 
+	VLOG(1)<<"Wait for thread stopped";
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FLockToRemove);
+}
+void IMPL::MClose()
+{
+	VLOG(2) << "Close client.";
+	FTcp.MClose();
+}
+void IMPL::MOpen()
+{
+	FTcp.MOpen(FSetting.FAddress);
+	NSHARE::operation_t _op(CKernelChannel::sMReceiver, this, NSHARE::operation_t::IO);
+	CDataObject::sMGetInstance().MPutOperation(_op);
+}
 NSHARE::eCBRval IMPL::sMConnect(void* aWho, void* aWhat, void* aThis)
 {
 	CHECK_NOTNULL(aWhat);
@@ -87,7 +103,7 @@ void IMPL::MConnect(NSHARE::net_address* aVal)
 	Fd = CDescriptors::sMGetInstance().MCreate();
 	VLOG(2) << "Connected to " << *aVal << ", " << NSHARE::get_unix_time();
 
-	IConnectionHandlerFactory* _factory = CConnectionHandlerFactory::sMGetInstance().MGetFactory(FLinkType);
+	IConnectionHandlerFactory* _factory = CConnectionHandlerFactory::sMGetInstance().MGetFactory(FSetting.FProtocolType);
 
 	CHECK_NOTNULL(_factory);
 	IConnectionHandler* _p = _factory->MCreateHandler(Fd, NSHARE::get_unix_time(), this);
@@ -111,7 +127,7 @@ void IMPL::MDisconnect(NSHARE::net_address* aVal)
 	if(FLink)
 	{
 		VLOG(2)<<"Closing link...";
-		FThis.MRemoveChannel(this,FLink->MGetID());
+		FThis.MRemoveChannel(this);
 		FLink->MClose();
 		FLink.MRelease();
 	}
@@ -126,6 +142,11 @@ void IMPL::MDisconnect(NSHARE::net_address* aVal)
 		CDescriptors::sMGetInstance().MClose(Fd);
 	}
 	Fd=-1;
+
+	if(FSetting.FIsAutoRemoved)
+	{
+		FThis.MRemoveClient(FSetting);
+	}
 }
 
 NSHARE::eCBRval IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
@@ -137,10 +158,11 @@ NSHARE::eCBRval IMPL::sMReceiver(NSHARE::CThread const* WHO, NSHARE::operation_t
 void IMPL::MServiceReceiver()
 {
 	VLOG(2) << "Async receive";
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FLockToRemove);
 
 	ISocket::data_t _data;
 	LOG_IF(FATAL, !FTcp.MIsOpen()) << "Port is closed";
-	for (HANG_INIT; FTcp.MIsOpen(); HANG_CHECK)
+	for (/*HANG_INIT*/; FTcp.MIsOpen(); /*HANG_CHECK*/)
 	{
 		_data.clear();
 		if (FTcp.MReceiveData( &_data, 0.0) > 0)
@@ -164,7 +186,7 @@ void IMPL::MReceivingForNewLink(
 
 		NSHARE::net_address _addr;
 		FTcp.MGetInitParam(&_addr);
-		LOG(ERROR)<<"The  client "<<_addr<<" cannot connect as  the protocol "<<FLinkType<<" is invalid.";
+			LOG(ERROR)<<"The  client "<<_addr<<" cannot connect as  the protocol "<<FSetting.FProtocolType<<" is invalid.";
 		FTcp.MReOpen();
 		break;
 	}
@@ -230,7 +252,7 @@ bool IMPL::MAddNewLink()
 NSHARE::CConfig const& IMPL::MBufSettingFor(
 		NSHARE::CConfig const& aFrom) const
 {
-	NSHARE::CConfig const& _io = aFrom.MChild(FLinkType);
+	NSHARE::CConfig const& _io = aFrom.MChild(FSetting.FProtocolType);
 	if (!_io.MIsEmpty())
 	{
 		if(FLink.MIs())
@@ -250,16 +272,6 @@ NSHARE::CConfig const& IMPL::MBufSettingFor(
 	return NSHARE::CConfig::sMGetEmpty();
 }
 
-void IMPL::MClose()
-{
-	VLOG(2) << "Close client.";
-	FTcp.MClose();
-}
-void IMPL::MOpen(const void* aP)
-{
-	NSHARE::operation_t _op(CKernelChannel::sMReceiver, this, NSHARE::operation_t::IO);
-	CDataObject::sMGetInstance().MPutOperation(_op);
-}
 bool IMPL::MCloseRequest(descriptor_t aId)
 {
 	FThis.MCloseRequest(aId);
@@ -280,7 +292,7 @@ bool IMPL::MInfo(NSHARE::CConfig & aTo)
 }
 bool IMPL::MConfig(NSHARE::CConfig & aTo)
 {
-	aTo=FConfig;
+	aTo=FSetting.MSerialize().MChild(network_channel_t::NAME);
 	return true;
 }
 
@@ -302,9 +314,12 @@ NSHARE::CConfig IMPL::MSerialize() const
 	if(FLink.MIs())
 		_conf.MAdd(FLink->MSerializeRef());
 	_conf.MAdd(FTcp.MSerialize());
-	_conf.MAdd("conf",FConfig);
-	_conf.MAdd("type",FLinkType);
+	_conf.MAdd(FSetting.MSerialize());
 	_conf.MAdd("id",Fd);
 	return _conf;
+}
+bool IMPL::MIs(network_channel_t const& aSetting) const
+{
+	return FSetting.FAddress==aSetting.FAddress;
 }
 } /* namespace NUDT */

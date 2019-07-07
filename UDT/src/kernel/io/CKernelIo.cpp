@@ -20,9 +20,6 @@
 #include "../services/CRoutingService.h"
 #include "../services/CPacketDivisor.h"
 
-template<>
-NUDT::CKernelIo::singleton_pnt_t NUDT::CKernelIo::singleton_t::sFSingleton =
-		NULL;
 //#define NO_PACKET_DIVISOR
 namespace NUDT
 {

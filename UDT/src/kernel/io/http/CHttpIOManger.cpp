@@ -29,7 +29,7 @@
 namespace NUDT
 {
 using namespace NSHARE;
-//CHttpIOManger::NAME is definition in CHttpIOManagerRegister.
+NSHARE::CText const CHttpIOManger::NAME = "http_gui";
 NSHARE::CText const CHttpIOManger::PORT = "port";
 NSHARE::CText const CHttpIOManger::BUF_MAX_SIZE="maxbuf";
 NSHARE::CText const CHttpIOManger::PARSER_ERROR = "par_fail";

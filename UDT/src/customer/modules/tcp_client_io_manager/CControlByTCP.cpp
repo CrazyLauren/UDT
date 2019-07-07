@@ -36,7 +36,7 @@ DECLARATION_VERSION_FOR(tcp_client_io_manager)
 namespace NUDT
 {
 NSHARE::CText const CControlByTCP::NAME = "tcp_client_io_manager";
-NSHARE::CText const CControlByTCP::PORT = "Port";
+NSHARE::CText const CControlByTCP::PORT = NSHARE::net_address::PORT;
 NSHARE::CText const CControlByTCPRegister::NAME = "tcp_client_io_manager";
 const double CControlByTCP::WAIT_ANSWER_BY_KERNEL = 0.1;
 using namespace NSHARE;

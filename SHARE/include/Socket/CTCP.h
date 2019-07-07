@@ -17,6 +17,12 @@
 #endif 
 namespace NSHARE
 {
+/** @brief TCP client
+ *
+ * It try connection during operation send or receive
+ * Thus, until the operation send or receive isn't called
+ * TCP client will not connected to server
+ */
 class SHARE_EXPORT CTCP: public ISocket, NSHARE::CDenyCopying, public NSHARE::CEvents<
 		NSHARE::CText>
 {
@@ -28,7 +34,20 @@ public:
 	static events_t::key_t const EVENT_CONNECTED;
 	static events_t::key_t const EVENT_DISCONNECTED;
 
+	/** @brief Create TCP client
+	 *
+	 * If IP server isn't valid then it TCP client has to be opened (MOpen()).
+	 *
+	 *	@param aParam the IP address of server
+	 */
 	CTCP(net_address const& aParam = net_address());
+
+	/** @brief Create TCP client
+	 *
+	 * If IP server is valid then it opens TCP client too.
+	 *
+	 *	@param aParam the serialized  IP address of server
+	 */
 	CTCP(NSHARE::CConfig const& aConf);
 	virtual ~CTCP();
 	virtual bool MOpen(net_address const& aParam, int aFlags = 0);

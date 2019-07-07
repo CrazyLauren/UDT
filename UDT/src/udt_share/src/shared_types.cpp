@@ -895,10 +895,34 @@ bool main_ch_param_t::MIsValid()const
 {
 	return !FType.empty();
 }
+const NSHARE::CText network_channel_t::NAME = "network_channel_info";
+const NSHARE::CText network_channel_t::PROTOCOL = "protocol";
+const NSHARE::CText network_channel_t::AUTO_REMOVE = "auto_remove";
+network_channel_t::network_channel_t(NSHARE::CConfig const& aConf) : //
+		FAddress(aConf.MChild(net_address::NAME)), //
+		FIsAutoRemoved(false)
+{
+	aConf.MGetIfSet(PROTOCOL, FProtocolType);
+	aConf.MGetIfSet(AUTO_REMOVE, FIsAutoRemoved);
+}
+NSHARE::CConfig network_channel_t::MSerialize() const
+{
+	NSHARE::CConfig _conf(NAME);
+	_conf.MAdd(FAddress.MSerialize());
+	_conf.MAdd(PROTOCOL, FProtocolType);
+	_conf.MAdd(AUTO_REMOVE, FIsAutoRemoved);
+	return _conf;
+}
+bool network_channel_t::MIsValid() const
+{
+	return FAddress.MIsValid() //
+			&& !FProtocolType.empty();
+}
 
 const NSHARE::CText auto_search_info_t::NAME = "auto_search_info";
 auto_search_info_t::auto_search_info_t(NSHARE::CConfig const& aConf) :
-		FProgramm(aConf.MChild(program_id_t::NAME))
+		FProgramm(aConf.MChild(program_id_t::NAME)), //
+		FChannel(aConf.MChild(network_channel_t::NAME))
 {
 }
 
@@ -906,12 +930,13 @@ NSHARE::CConfig auto_search_info_t::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
 	_conf.MAdd(FProgramm.MSerialize());
-
+	_conf.MAdd(FChannel.MSerialize());
 	return _conf;
 }
 bool auto_search_info_t::MIsValid() const
 {
-	return FProgramm.MIsValid();
+	return FProgramm.MIsValid() //
+	&& FChannel.MIsValid();
 }
 
 }

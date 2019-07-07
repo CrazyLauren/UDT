@@ -92,14 +92,14 @@ macro(configure_version _TARGET _FILE_PATH _MAJOR _MINOR )
 	
 	IF (${_PREFIX}_EMBED_GIT_SHA)
 		include(GetGitRevisionDescription)
-		git_describe(VERSION --tags --dirty=-d)
+		git_describe(VERSION --always)
 
 	#parse the version information into pieces.
 		IF(NOT VERSION  MATCHES  "-NOTFOUND")
 			STRING(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" ${_PREFIX}_PATH "${VERSION}")
 			STRING(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" ${_PREFIX}_REVISION_VERSION "${VERSION}")
 		ELSE(NOT VERSION  MATCHES  "-NOTFOUND")
-			message(STATUS "Cannot get revision from git:" "${VERSION}" ) 
+			message("Cannot get revision from git:" "${VERSION}" ) 
 		ENDIF (NOT VERSION  MATCHES  "-NOTFOUND")
 	ENDIF (${_PREFIX}_EMBED_GIT_SHA)
 

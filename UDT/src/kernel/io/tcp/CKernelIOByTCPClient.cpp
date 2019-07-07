@@ -35,12 +35,9 @@ namespace NUDT
 {
 NSHARE::CText const CKernelIOByTCPClient::NAME = "tcp_client_io_manager";
 
-
-
 CKernelIOByTCPClient::CKernelIOByTCPClient() :
 		ITcpIOManager(NAME)
 {
-
 	FIo = NULL;
 }
 
@@ -65,9 +62,12 @@ void CKernelIOByTCPClient::MClose(const descriptor_t& aFrom)
 {
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::iterator _it=FActiveChannels.find(aFrom);
-		if(_it!=FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access(
+				FActiveChannels.MGetRAccess());
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aFrom);
+		if (_it != _ch.end())
 		{
 			_channel=(_it->second);
 		}
@@ -79,12 +79,44 @@ void CKernelIOByTCPClient::MClose(const descriptor_t& aFrom)
 }
 void CKernelIOByTCPClient::MClose()
 {
-	for (unsigned i = 0; i < FChannels.size(); ++i)
+	thread_safety_channels_t::WAccess<> _access(FChannels.MGetWAccess());
+	channels_t & _ch = _access;
+
+	for (unsigned i = 0; i < _ch.size(); ++i)
 	{
-		FChannels[i]->MClose();
+		_ch[i]->MClose();
 	}
 }
 
+bool CKernelIOByTCPClient::MAddClient(network_channel_t const& aWhat)
+{
+	LOG(INFO) << "Create client " << aWhat;
+	thread_safety_channels_t::WAccess<> _access(FChannels.MGetWAccess());
+	channels_t & _ch = _access;
+
+	smart_channel_t _channel(new CKernelChannel(aWhat, *this));
+	_ch.push_back(_channel);
+	_channel->MOpen();
+	return true;
+}
+bool CKernelIOByTCPClient::MRemoveClient(network_channel_t const& aWhat)
+{
+	thread_safety_channels_t::WAccess<> _access(FChannels.MGetWAccess());
+	channels_t & _ch = _access;
+	channels_t::iterator _it = _ch.begin();
+
+	for (; _it != _ch.end(); ++_it)
+	{
+		if ((*_it)->MIs(aWhat))
+		{
+			LOG(INFO) << "Remove client " << aWhat;
+			_ch.erase(_it);
+			break;
+		}
+	}
+
+	return true;
+}
 bool CKernelIOByTCPClient::MOpen(const void* aP)
 {
 	VLOG(2) << "Open KernelIOByTcp";
@@ -100,9 +132,7 @@ bool CKernelIOByTCPClient::MOpen(const void* aP)
 		for (; _it != _it_end; ++_it)
 		{
 			VLOG(2) << "Adding new client " << *_it;
-			smart_channel_t _channel(new CKernelChannel(*_it, *this));
-			FChannels.push_back(_channel);
-			_channel->MOpen(aP);
+			MAddClient(*_it);
 		}
 	}
 	return true;
@@ -115,9 +145,12 @@ void CKernelIOByTCPClient::MReceivedData(data_t::const_iterator aBegin,
 
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::iterator _it = FActiveChannels.find(aFrom);
-		if (_it != FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access =
+				FActiveChannels.MGetRAccess();
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aFrom);
+		if (_it != _ch.end())
 		{
 			_channel = (_it->second);
 		}
@@ -131,9 +164,12 @@ bool CKernelIOByTCPClient::MSend(const data_t& aVal, descriptor_t const& aTo)
 		return false;
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::iterator _it = FActiveChannels.find(aTo);
-		if (_it != FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access(
+				FActiveChannels.MGetRAccess());
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aTo);
+		if (_it != _ch.end())
 		{
 			_channel = (_it->second);
 		}
@@ -152,9 +188,12 @@ inline bool CKernelIOByTCPClient::MSendImpl(const T& _id,
 		return false;
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::iterator _it = FActiveChannels.find(aTo);
-		if (_it != FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access(
+				FActiveChannels.MGetRAccess());
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aTo);
+		if (_it != _ch.end())
 		{
 			_channel = (_it->second);
 		}
@@ -172,9 +211,12 @@ inline bool CKernelIOByTCPClient::MSendImpl(const user_data_t& _id,
 		return false;
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::iterator _it = FActiveChannels.find(aTo);
-		if (_it != FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access(
+				FActiveChannels.MGetRAccess());
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aTo);
+		if (_it != _ch.end())
 		{
 			_channel = (_it->second);
 		}
@@ -214,14 +256,19 @@ bool CKernelIOByTCPClient::MSend(const user_data_t& aVal,
 
 bool CKernelIOByTCPClient::MIsOpen() const
 {
-	return !FActiveChannels.empty();
+	th_safety_active_channels_t::RAccess<> const _access(
+			FActiveChannels.MGetRAccess());
+	active_channels_t const & _ch = _access;
+	return !_ch.empty();
 }
 CKernelIOByTCPClient::descriptors_t CKernelIOByTCPClient::MGetDescriptors() const
 {
-	CRAII<CMutex> _blocked(FMutex);
+	th_safety_active_channels_t::RAccess<> const _access(
+			FActiveChannels.MGetRAccess());
+	active_channels_t const & _ch = _access;
+
 	descriptors_t _buf;
-	active_channels_t::const_iterator _it = FActiveChannels.begin(), _it_end(
-			FActiveChannels.end());
+	active_channels_t::const_iterator _it = _ch.begin(), _it_end(_ch.end());
 
 	for (; _it!=_it_end; ++_it)
 	{
@@ -233,17 +280,36 @@ bool CKernelIOByTCPClient::MIs(descriptor_t aVal) const
 {
 	if (!CDescriptors::sMIsValid(aVal))
 		return false;
-	CRAII<CMutex> _blocked(FMutex);
-	return FActiveChannels.find(aVal)!=FActiveChannels.end();
+	th_safety_active_channels_t::RAccess<> const _access(
+			FActiveChannels.MGetRAccess());
+	active_channels_t const & _ch = _access;
+	return _ch.find(aVal) != _ch.end();
 }
-bool CKernelIOByTCPClient::MRemoveChannel(CKernelChannel* aWhat,descriptor_t aId)
+
+/** @brief Inner function which is called when TCP client
+ * is disconnected from Server
+ *
+ * @param aWhat Who is disconnected
+ * @return true no error
+ */
+bool CKernelIOByTCPClient::MRemoveChannel(CKernelChannel* aWhat)
 {
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		FActiveChannels.erase(aId);
+		th_safety_active_channels_t::WAccess<> _access(
+				FActiveChannels.MGetWAccess());
+		active_channels_t & _ch = _access;
+
+		active_channels_t::iterator _it = _ch.find(aWhat->MGetDescriptor());
+		DCHECK(_it != _ch.end());
+
+		if (_it != _ch.end())
+		{
+			_channel = _it->second;
+			_ch.erase(_it);
+		}
 	}
-	FIo->MRemoveChannelFor(aId, this);
+	FIo->MRemoveChannelFor(aWhat->MGetDescriptor(), this);
 	return true;
 }
 
@@ -252,9 +318,14 @@ bool CKernelIOByTCPClient::MAddChannel(CKernelChannel* aWhat,descriptor_t aId,sp
 	VLOG(2)<<"Add channel for "<<aId<<" "<<aWhat->MSerialize().MToJSON(true);
 	smart_channel_t _channel(aWhat);
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		CHECK(FActiveChannels.find(aId)==FActiveChannels.end());
-		FActiveChannels[aId]=_channel;
+		th_safety_active_channels_t::WAccess<> _access(
+				FActiveChannels.MGetWAccess());
+
+		active_channels_t & _ch = _access;
+
+		DCHECK(_ch.find(aId) == _ch.end());
+
+		_ch[aId] = _channel;
 	}
 	FIo->MAddChannelFor(aId, this,aLimits);
 	return true;
@@ -264,9 +335,12 @@ NSHARE::CConfig const& CKernelIOByTCPClient::MBufSettingFor(const descriptor_t& 
 {
 	smart_channel_t _channel;
 	{
-		CRAII<CMutex> _blocked(FMutex);
-		active_channels_t::const_iterator _it = FActiveChannels.find(aFor);
-		if (_it != FActiveChannels.end())
+		th_safety_active_channels_t::RAccess<> const _access(
+				FActiveChannels.MGetRAccess());
+		active_channels_t const & _ch = _access;
+
+		active_channels_t::const_iterator _it = _ch.find(aFor);
+		if (_it != _ch.end())
 			_channel = _it->second;
 	}
 	if (_channel.MIs())
@@ -287,9 +361,12 @@ NSHARE::CConfig const& CKernelIOByTCPClient::MBufSettingFor(const descriptor_t& 
 NSHARE::CConfig CKernelIOByTCPClient::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	CRAII<CMutex> _blocked(FMutex);
-	active_channels_t::const_iterator _it = FActiveChannels.begin(), _it_end(
-			FActiveChannels.end());
+
+	th_safety_active_channels_t::RAccess<> const _access(
+			FActiveChannels.MGetRAccess());
+	active_channels_t const & _ch = _access;
+
+	active_channels_t::const_iterator _it = _ch.begin(), _it_end(_ch.end());
 	for (; _it != _it_end; ++_it)
 	{
 		_conf.MAdd((_it->second)->MSerialize());

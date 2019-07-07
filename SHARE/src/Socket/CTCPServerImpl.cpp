@@ -86,7 +86,7 @@ bool IMPL::MOpenHostSocket()
 bool IMPL::MOpenLoopSocket()
 {
 	bool _rval = FLoopBack->FLoop.MOpen();
-	CHECK(_rval);
+	DCHECK(_rval);
 	FSelectSock.MAddSocket(FLoopBack->FLoop.MGetSocket());
 	return _rval;
 }
@@ -196,7 +196,7 @@ void IMPL::MCalculateDataBegin(recvs_t*aFrom, data_t*aBuf)
 bool IMPL::MCloseClient(const net_address& aTo)
 {
 	VLOG(1) << "Close client " << aTo;
-	LOG_IF(WARNING,!FThis->MIsClients()) << "No clients.";
+	LOG_IF(WARNING,!MIsClients()) << "No clients.";
 	CSocket _tmp;
 	{
 		CRAccsess _r = FClients.MGetRAccess();
@@ -239,7 +239,7 @@ void IMPL::MCloseClient(CSocket& aSocket)
 
 	FThis->MCall(EVENT_DISCONNECTED, &_p);
 	aSocket.MClose();
-	LOG_IF(ERROR,!MCanReceive() && FThis->MIsClients())
+	LOG_IF(ERROR,!MCanReceive() && MIsClients())
 	<< "The socket and clients list is not equal.";
 }
 void IMPL::MCloseAllClients()
@@ -296,7 +296,7 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		const net_address&aTo)
 {
 	VLOG(1) << "Send " << pData << " size=" << nSize << " to " << (aTo);
-	LOG_IF(WARNING,!FThis->MIsClients()) << "No clients.";
+	LOG_IF(WARNING,!MIsClients()) << "No clients.";
 	CRAccsess _r = FClients.MGetRAccess();
 	for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
 			++_it)
@@ -312,7 +312,7 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		NSHARE::CConfig const& aTo)
 {
 	VLOG(1) << "Send " << pData << " size=" << nSize << " to " << aTo;
-	LOG_IF(WARNING,!FThis->MIsClients()) << "No clients.";
+	LOG_IF(WARNING,!MIsClients()) << "No clients.";
 	CRAccsess _r = FClients.MGetRAccess();
 	net_address _addr(aTo);
 	LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalide type of smart_addr";
@@ -622,6 +622,17 @@ size_t IMPL::MAvailable() const
 	VLOG(2) << _rval << " bytes available for reading from all clients";
 	return _rval;
 }
-
+bool IMPL::MIsClient() const
+{
+	return FHostAddr.FIp.MIs();
+}
+bool IMPL::MCanReceive() const
+{
+	return FSelectSock.MIsSetUp();
+}
+bool IMPL::MIsClients() const
+{
+	return !FClients.MGetRAccess().MGet().empty();
+}
 }
 

@@ -12,18 +12,36 @@
 #ifndef CLINK_KENREL_SERVER_H_
 #define CLINK_KENREL_SERVER_H_
 
+#include <io/CLinkDiagnostic.h>
+#include "../ILinkBridge.h"
+
 namespace NUDT
 {
 class IMainChannel;
 class CKernelIOByTCP;
 
+/** @brief Realization of the communications protocol
+ * between two kernels by TCP
+ *
+ *	The name of protocol is CKernelServerLink::NAME.
+ *	There are two type of "channels". The first is used for transmission
+ *	the services messages, the other is used only for transmission data
+ *	which is sent by user program.
+ *	The type of service channel is TCP.
+ *	The type of channel for user data (main channel) is defined in
+ *	configuration file by key CKernelServerLink::MAIN_CHANNEL_TYPE,
+ *	if it's not defined when is used CKernelServerLink::DEFAULT_MAIN main channel
+ *
+ */
 class CKernelServerLink: public ILink,NSHARE::CDenyCopying
 {
 public:
-	static NSHARE::CText const MAIN_CHANNEL_TYPE;
-	static NSHARE::CText const DEFAULT;
-	static NSHARE::CText const DEFAULT_MAIN;
-	static const NSHARE::CText NAME;
+	static const NSHARE::CText NAME; ///< A name of protocol
+
+	static NSHARE::CText const MAIN_CHANNEL_TYPE; ///< A key in for definition main channel type
+	static NSHARE::CText const DEFAULT; ///<A key in for definition default main channel type
+	static NSHARE::CText const DEFAULT_MAIN; ///< A default main channel type
+
 	CKernelServerLink(descriptor_t aFD, uint64_t FTime,
 			ILinkBridge*,program_id_t const & aKernel);
 	virtual ~CKernelServerLink();

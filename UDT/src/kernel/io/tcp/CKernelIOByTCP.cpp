@@ -641,6 +641,10 @@ NSHARE::CConfig CKernelIOByTCP::MSerialize() const
 	}
 	return _conf;
 }
+NSHARE::net_address CKernelIOByTCP::MGetAddress() const
+{
+	return FTcpServiceSocket.MGetSetting();
+}
 CKernelIOByTCPRegister::CKernelIOByTCPRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 3))
 {
@@ -663,4 +667,5 @@ bool CKernelIOByTCPRegister::MIsAlreadyRegistered() const
 	return false;
 
 }
+
 }

@@ -59,6 +59,8 @@ CTCPServer::~CTCPServer()
 bool CTCPServer::MOpen(const net_address& aAddr, int aFlags)
 {
 	VLOG(2) << "Open server  " << aAddr << ", aFlags:" << aFlags << this;
+	if(MIsOpen())
+		return false;
 	FImpl->FHostAddr=aAddr;
 	return FImpl->MOpen();
 }
@@ -76,6 +78,10 @@ ssize_t CTCPServer::MReceiveData(recvs_t*aFrom, data_t*aBuf, const float aTime)
 	return FImpl->MReceiveData(aFrom, aBuf, aTime);
 }
 
+ssize_t CTCPServer::MReceiveData(data_t* aData, const float aTime)
+{
+	return MReceiveData(NULL, aData, aTime);
+}
 ssize_t CTCPServer::MReceiveData(data_t* aBuf, const float aTime,
 		recvs_from_t* aFrom)
 {
@@ -100,6 +106,10 @@ bool CTCPServer::MCloseClient(const net_address& aTo)
 {
 	return FImpl->MCloseClient(aTo);
 }
+bool CTCPServer::MClose(const client_t& aClient)
+{
+	return FImpl->MCloseClient(aClient.FAddr);
+}
 void CTCPServer::MCloseAllClients()
 {
 	return FImpl->MCloseAllClients();
@@ -108,9 +118,9 @@ void CTCPServer::MClose()
 {
 	return FImpl->MClose();
 }
-CTCPServer::sent_state_t CTCPServer::MSendLoopBack(data_t const& aData)
+void CTCPServer::MForceUnLock()
 {
-	return FImpl->FLoopBack->FLoop.MSend(aData);
+	return FImpl->MUnLockSelect();
 }
 
 CTCPServer::sent_state_t CTCPServer::MSend(const void* pData, size_t nSize)
@@ -130,47 +140,34 @@ bool CTCPServer::MIsOpen() const
 {
 	return FImpl->FHostSock.MIsValid();
 }
-net_address CTCPServer::MGetSetting() const
+net_address const& CTCPServer::MGetSetting() const
 {
-	net_address _addr;
-	MGetInitParam(&_addr);
-	return _addr;
+	return FImpl->FHostAddr;
 }
-bool CTCPServer::MGetInitParam(net_address* aParam) const
+NSHARE::CConfig CTCPServer::MSettings(void) const
 {
-	*aParam=FImpl->FHostAddr;
-	return true;
+	return MGetSetting().MSerialize();
 }
 
-bool CTCPServer::CImpl::MIsClient() const
-{
-	return FHostAddr.FIp.MIs();
-}
-bool CTCPServer::MCanReceive() const
-{
-	return FImpl->MCanReceive();
-}
-bool CTCPServer::CImpl::MCanReceive() const
-{
-	return FSelectSock.MIsSetUp();
-}
 bool CTCPServer::MIsClients() const
 {
-	return !FImpl->FClients.MGetRAccess().MGet().empty();
+	return FImpl->MIsClients();
 }
+
 
 const CSocket& CTCPServer::MGetSocket(void) const
 {
 	return FImpl->FHostSock;
 }
+diagnostic_io_t const& CTCPServer::MGetDiagnosticState() const
+{
+	return FImpl->FDiagnostic;
+}
 NSHARE::CConfig CTCPServer::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	{
-		net_address _addr;
-		MGetInitParam(&_addr);
-		_conf.MAdd(_addr.MSerialize());
-	}
+	_conf.MAdd(MSettings());
+
 	_conf.MAdd(FImpl->FDiagnostic.MSerialize());
 	{
 		CImpl::CRAccsess _r = FImpl->FClients.MGetRAccess();
@@ -192,10 +189,25 @@ NSHARE::CConfig CTCPServer::MSerialize() const
 	}
 	return _conf;
 }
+CTCPServer::list_of_clients CTCPServer::MGetClientInfo() const
+{
+	list_of_clients _rval;
+	CImpl::CRAccsess const _r = FImpl->FClients.MGetRAccess();
+
+	VLOG(2) << _r->size() << " clients and "
+						<< FImpl->FSelectSock.MGetSockets().size()
+						<< " sock now.";
+
+	CImpl::clients_fd_t::const_iterator _it = _r->begin(), _it_end(_r->end());
+	for (;_it!=_it_end;++_it)
+	{
+		_rval.push_back(_it->second);
+	}
+	return _rval;
+}
 std::ostream& CTCPServer::MPrint(std::ostream& aStream) const
 {
-	net_address _addr;
-	MGetInitParam(&_addr);
+	net_address const& _addr(MGetSetting());
 	if (MIsOpen())
 		aStream << NSHARE::NCONSOLE::eFG_GREEN << "Opened.";
 	else

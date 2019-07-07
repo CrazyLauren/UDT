@@ -43,10 +43,15 @@ public:
 	bool MStart();
 private:
 	typedef CInParser<CAutoSearchByEthernet,NSHARE::net_address> parser_t;///< type of protcol parser
+	typedef std::vector<auto_search_info_t> list_of_kernels_t; ///< A list of NUDT::auto_search_info_t type
 
 	inline void MInit();
 	static NSHARE::eCBRval sMMainLoop(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	void MMainLoop();
+	static NSHARE::eCBRval sMNewKernelHandler(NSHARE::CThread const* WHO,
+			NSHARE::operation_t * WHAT, void*);
+	void MHandleConncections();
+
 	void MSendBroadcast();
 	void MReceiveLoop();
 
@@ -54,9 +59,14 @@ private:
 	template<class DG_T>
 	void MProcess(DG_T const* aP, parser_t*);
 
+	void MConnectTo(auto_search_info_t const&);
+	void MWaitForServerStarted();
 
 	NSHARE::CUDP FUdp;///< A broadcast port
 	parser_t FProtocolParse;///<A protocol parser
+	list_of_kernels_t FListOfNotHandledKernel; ///< A list of new kernel which hasn't handled yet
+	NSHARE::CMutex FMutex; ///< A mutex for lock FListOfNotHandledKernel
+	list_of_kernels_t FListOfID; ///< List of known program, the first is the own search info
 
 	friend class CInParser<CAutoSearchByEthernet,NSHARE::net_address> ;
 };

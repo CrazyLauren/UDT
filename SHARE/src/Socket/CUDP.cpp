@@ -421,12 +421,13 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 			VLOG(2) << "Available " << _size << " bytes";
 			VLOG_IF(1,!_size) << "No data on socket " << MGetSocket();
 			aBuf->resize(_befor + _size);
-			CHECK_GT(aBuf->size(), 0);
-			CHECK_GE(aBuf->size(), _size);
+			DCHECK_GT(aBuf->size(), 0);
+			DCHECK_GE(aBuf->size(), _size);
 			data_t::value_type* _pbegin = aBuf->ptr() + (aBuf->size() - _size);
 
 			_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) _pbegin, (int) _size,
 					0, (struct sockaddr*) &_addr, &_len);
+			DCHECK_GT(_recvd, 0);
 
 			VLOG(2) << "Recvd=" << _recvd;
 			if (aFrom)

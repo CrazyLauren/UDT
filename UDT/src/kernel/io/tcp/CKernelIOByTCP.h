@@ -55,6 +55,11 @@ public:
 	NSHARE::CConfig MSerialize() const;
 	NSHARE::CConfig const&  MBufSettingFor(const descriptor_t&,
 			NSHARE::CConfig const& aFrom) const;
+
+	/** @brief Returns Network port
+	 *
+	 */
+	NSHARE::net_address MGetAddress() const;
 private:
 	class CConnectionHandler;
 	class CServerBridge;

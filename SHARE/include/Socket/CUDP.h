@@ -237,14 +237,14 @@ public:
 	 */
 	sent_state_t MSend(void const* pData, size_t nSize);
 
-	/**	@brief Send to addresses which specified in #settings_t::FSendTo
-	 * field
+	/**	@brief Send to specified addresses
 	 *
+	 * @param aTo A send to IP and port
 	 * @param pData A pointer to data
 	 * @param nSize A size of data
-	 * @return information about sent to one address
-	 * @note #settings_t::FSendTo if field is contained more than one address
-	 * 		return send state of last address
+	 * @return information about sent to the address
+	 * @warning if is sending to broadcast address(.255) and
+	 * 			socket type is not setting_t::eBROADCAST the data can be not send
 	 */
 	sent_state_t MSend(void const* pData, size_t nSize,NSHARE::CConfig  const& aTo);
 
@@ -319,7 +319,6 @@ public:
 
 	/** @brief Receives message
 	 *
-	 * @param aFrom [out] From whom the data is received
 	 * @param aBuf [out] A pointer to a buffer where can store the message.
 	 * @param aTime [in] not used
 	 * @return amount of received bytes
@@ -350,7 +349,6 @@ public:
 
 	/** Returns amount of available bytes to read
 	 *
-	 * @param aSocket A reference to socket
 	 * @return amount of bytes
 	 */
 	size_t MAvailable() const;
@@ -374,6 +372,13 @@ public:
 	 * @return list of broadcast addresses
 	 */
 	static list_of_broadcast_addr_t sMGetBroadcast();
+
+	/** Returns diagnostic information about
+	 * socket
+	 *
+	 * @return reference to object
+	 */
+	diagnostic_io_t const& MGetDiagnosticState() const;
 private:
 
 	typedef	std::vector<struct sockaddr_in> send_to_t;

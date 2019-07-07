@@ -68,7 +68,7 @@ struct CTCPServer::CImpl:public CTcpImplBase, IIntrusived
 	int MReceiveFromAllSocket(data_t* aBuf, CSelectSocket::socks_t &,
 			recvs_t* aFrom);
 	void MCalculateDataBegin(recvs_t*aFrom, data_t*aBuf);
-
+	bool MIsClients() const;
 
 	CSocket FHostSock;
 	CSelectSocket FSelectSock;

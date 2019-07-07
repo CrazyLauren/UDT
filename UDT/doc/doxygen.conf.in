@@ -70,7 +70,8 @@ INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/"\
 						 "@CMAKE_CURRENT_SOURCE_DIR@/tests/"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/tools/"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/examples/"\
-						"@SHARE_INCLUDES@"
+						"@SHARE_INCLUDES@"\
+						"@CMAKE_CURRENT_SOURCE_DIR@/doc/"
 						
 FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox
 RECURSIVE              = YES

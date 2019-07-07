@@ -15,13 +15,17 @@
 #include <deftype>
 #include <core/CDataObject.h>
 #include <core/CConfigure.h>
+#include <io/CIOManagerFactory.h>
+#include <io/tcp/CKernelIOByTCPClient.h>
+#include <io/tcp/CKernelIOByTCP.h>
 
 #include <internel_protocol.h>
 #include "receive_from_autosearchbyethernet.h"
 #include <parser_in_protocol.h>
 
-
 #include "CAutoSearchByEthernet.h"
+
+#include <io/tcp/kernel/CKernelServerLink.h>
 
 template<>
 NUDT::CAutoSearchByEthernet::singleton_pnt_t NUDT::CAutoSearchByEthernet::singleton_t::sFSingleton =
@@ -43,6 +47,7 @@ CAutoSearchByEthernet::CAutoSearchByEthernet()://
 
 CAutoSearchByEthernet::~CAutoSearchByEthernet()
 {
+	FUdp.MClose();
 }
 bool CAutoSearchByEthernet::MStart()
 {
@@ -90,7 +95,6 @@ NSHARE::eCBRval CAutoSearchByEthernet::sMMainLoop(NSHARE::CThread const* WHO,
 	reinterpret_cast<CAutoSearchByEthernet*>(aData)->MMainLoop();
 	return E_CB_REMOVE;
 }
-
 /** Infinite loop of receiving message
  * from new kernel
  *
@@ -108,6 +112,35 @@ void CAutoSearchByEthernet::MReceiveLoop()
 
 	}
 }
+/** @brief Wait for our TCP server is able to
+ * connect the other kernels
+ *
+ */
+void CAutoSearchByEthernet::MWaitForServerStarted()
+{
+	auto_search_info_t _info;
+	_info.FProgramm = get_my_id();
+	_info.FChannel.FProtocolType = CKernelServerLink::NAME;
+	_info.FChannel.FIsAutoRemoved = true;
+	
+	for (;;)
+	{
+		const CKernelIOByTCP* _p =
+			dynamic_cast<const CKernelIOByTCP*>(CIOManagerFactory::sMGetInstance().MGetFactory(
+					CKernelIOByTCP::NAME));
+		if (_p)
+			_info.FChannel.FAddress = _p->MGetAddress();
+
+		if (_info.FChannel.FAddress.MIsValid())
+			break;
+		else
+		{
+			VLOG(1) << "Wait for 1 second ...";
+			NSHARE::sleep(1);
+		}
+	}
+	FListOfID.push_back(_info);
+}
 
 /** @brief Loop of receive data
  *
@@ -117,7 +150,7 @@ void CAutoSearchByEthernet::MMainLoop()
 	VLOG(2) << "Async receive";
 
 	LOG_IF(FATAL, !FUdp.MIsOpen()) << "Port is closed";
-
+	MWaitForServerStarted();
 	MSendBroadcast();
 	MReceiveLoop();
 
@@ -133,11 +166,9 @@ template<>
 void CAutoSearchByEthernet::MFill<auto_search_dg_t>(ISocket::data_t* aTo)
 {
 	VLOG(2) << "Create main channel param DG";
-
-	auto_search_info_t _param;
-	_param.FProgramm = get_my_id();
-
-	serialize<auto_search_dg_t, auto_search_info_t>(aTo, _param, routing_t(), error_info_t());
+	DCHECK(FListOfID.front().MIsValid());
+	serialize<auto_search_dg_t, auto_search_info_t>(aTo, FListOfID.front(),
+			routing_t(), error_info_t());
 
 }
 
@@ -151,11 +182,64 @@ void CAutoSearchByEthernet::MFill<auto_search_dg_t>(ISocket::data_t* aTo)
 template<>
 void CAutoSearchByEthernet::MProcess(auto_search_dg_t const* aP, parser_t* aThis)
 {
-	auto_search_info_t const _sparam(
+	auto_search_info_t _sparam(
 			deserialize<auto_search_dg_t, auto_search_info_t>(aP,
 					(routing_t*) NULL, (error_info_t*) NULL));
 	LOG(INFO)<<"Receive info from "<<aThis->FUserData<<" about :"<<_sparam;
+	DCHECK(
+			!_sparam.FChannel.FAddress.FIp.MIs()
+					|| _sparam.FChannel.FAddress.FIp == aThis->FUserData.FIp);
+	_sparam.FChannel.FAddress.FIp = aThis->FUserData.FIp;
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FMutex);
+		FListOfNotHandledKernel.push_back(_sparam);
+	}
+	/** Start thread of receive data. */
+	NSHARE::operation_t _op(CAutoSearchByEthernet::sMNewKernelHandler, this);
+	CDataObject::sMGetInstance().MPutOperation(_op);
 }
+
+/** Handler the new connection
+ *
+ * @param aInfo A connect to
+ */
+void CAutoSearchByEthernet::MConnectTo(auto_search_info_t const& aInfo)
+{
+
+	list_of_kernels_t::iterator _it = FListOfID.begin();
+	bool _is_exist = false;
+	for (; _it != FListOfID.end();)
+	{
+		if (_it->FProgramm == aInfo.FProgramm)
+		{
+			LOG(INFO) << "The " << aInfo.FProgramm
+									<< " has been added early";
+			DCHECK_NE(_it->FChannel.FAddress, aInfo.FChannel.FAddress);
+			_is_exist = true;
+		}
+
+		if (aInfo.FChannel.FAddress == _it->FChannel.FAddress)
+		{
+			LOG(WARNING) << aInfo.FProgramm << " have equal up with "
+									<< _it->FProgramm;
+			_it = FListOfID.erase(_it);
+			//todo check for _it->FProgramm is not connected to me
+		}
+		else
+			++_it;
+	}
+
+
+	if (!_is_exist)
+	{
+		FListOfID.push_back(aInfo);
+		CKernelIOByTCPClient const *_p =
+				dynamic_cast<CKernelIOByTCPClient const *>(CIOManagerFactory::sMGetInstance().MGetFactory(
+						CKernelIOByTCPClient::NAME));
+		//_p->MAddClient(aWhat)
+	}
+}
+
 /** Send information about me
  * to all kernel
  *
@@ -167,13 +251,45 @@ void CAutoSearchByEthernet::MSendBroadcast()
 
 	LOG(INFO)<<"Send info about me to: "<<FUdp.MGetSetting().FSendTo;
 
-	ISocket::sent_state_t const _error= FUdp.MSend(_buf);
+	ISocket::sent_state_t const _error = FUdp.MSend(_buf);
 
-	LOG_IF(DFATAL,!_error.MIs())<<"Cannot send broadcast info as "<<_error;
+	LOG_IF(DFATAL,!_error.MIs()) << "Cannot send broadcast info as " << _error;
+}
+/** The static method of thread pool
+ *
+ * @param WHO
+ * @param WHAT
+ * @param aData
+ * @return The operation has to be removed
+ */
+NSHARE::eCBRval CAutoSearchByEthernet::sMNewKernelHandler(
+		NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void* aData)
+{
+	reinterpret_cast<CAutoSearchByEthernet*>(aData)->MHandleConncections();
+	return E_CB_REMOVE;
+}
+/** @brief Loop for handle FIFO queue
+ *
+ */
+void CAutoSearchByEthernet::MHandleConncections()
+{
+	VLOG(2) << "New conncetions";
+
+	for (;;)
+	{
+		auto_search_info_t _info;
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _lock(FMutex);
+			if (FListOfNotHandledKernel.empty())
+				break;
+			_info = FListOfNotHandledKernel.back();
+			FListOfNotHandledKernel.pop_back();
+		}
+		MConnectTo(_info);
+	}
 }
 inline void CAutoSearchByEthernet::MInit()
 {
-	//FUdp.MOpen()
 }
 NSHARE::CConfig CAutoSearchByEthernet::MSerialize() const
 {

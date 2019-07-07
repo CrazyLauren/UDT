@@ -18,6 +18,9 @@
 namespace NUDT
 {
 using namespace NSHARE;
+/** @brief Client of TCP communication
+ *
+ */
 class CKernelIOByTCPClient:public ITcpIOManager
 {
 public:
@@ -27,6 +30,21 @@ public:
 	~CKernelIOByTCPClient();
 
 	void MInit(CKernelIo *);
+
+	/** Adds the new client
+	 *
+	 * @param aWhat The client you want to add
+	 * @return true if added
+	 */
+	bool MAddClient(network_channel_t const& aWhat);
+
+	/** Removes client
+	 *
+	 * @param aWhat A removed client
+	 * @return true if removed
+	 */
+	bool MRemoveClient(network_channel_t const& aWhat);
+
 	bool MOpen(const void* = NULL);
 	bool MIsOpen() const;
 	void MClose();
@@ -51,8 +69,12 @@ public:
 private:
 	struct CKernelChannel;
 	typedef NSHARE::intrusive_ptr<CKernelChannel> smart_channel_t;
-	typedef std::vector<smart_channel_t> channels_t;
-	typedef std::map<descriptor_t,smart_channel_t> active_channels_t;
+
+	typedef std::vector<smart_channel_t> channels_t; ///< list of Channels
+	typedef NSHARE::CSafeData<channels_t> thread_safety_channels_t; ///<  RW lock for type channels_t
+
+	typedef std::map<descriptor_t, smart_channel_t> active_channels_t; ///< list of connected channels
+	typedef NSHARE::CSafeData<active_channels_t> th_safety_active_channels_t; ///<  RW lock for type active_channels_t
 
 
 
@@ -62,13 +84,11 @@ private:
 			descriptor_t const& aTo);
 
 	bool MAddChannel(CKernelChannel*,descriptor_t aId,split_info const& aLimits);
-	bool MRemoveChannel(CKernelChannel*,descriptor_t aId);
+	bool MRemoveChannel(CKernelChannel*);
 
 	CKernelIo * FIo;
-	channels_t FChannels;
-	active_channels_t FActiveChannels;
-
-	mutable NSHARE::CMutex FMutex;
+	thread_safety_channels_t FChannels;
+	th_safety_active_channels_t FActiveChannels;
 };
 class CKernelIOByTCPClientRegister:public NSHARE::CFactoryRegisterer
 {

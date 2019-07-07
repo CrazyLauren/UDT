@@ -118,7 +118,7 @@ public:
 	 *
 	 * @return reference to object
 	 */
-	virtual diagnostic_io_t const& MGetDiagnosticState()
+	virtual diagnostic_io_t const& MGetDiagnosticState() const
 	{
 		static const diagnostic_io_t _no_diagnostic;
 		return _no_diagnostic;

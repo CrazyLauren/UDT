@@ -13,15 +13,14 @@
 #define CKERNELIO_H_
 
 #include <core/ICore.h>
-#include "IIOManager.h"
-#include "CKernelIo.h"
+#include "CIOManagerFactory.h"
 #include "CBuffering.h"
 namespace NUDT
 {
 //todo remove IOManager
 //Now supposing that the IOManger will not removed
 //make IOmanger using smart pointer
-class CKernelIo: public NSHARE::CFactoryManager<IIOManager>,public ICore
+class CKernelIo: public CIOManagerFactory, public ICore
 {
 public:
 	static CKernelIo& sMGetInstance();

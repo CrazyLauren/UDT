@@ -21,7 +21,6 @@
 #include <core/CConfigure.h>
 #include <io/ILink.h>
 #include <io/CKernelIo.h>
-#include <io/CLinkDiagnostic.h>
 #include <io/main/CMainChannelFactory.h>
 #include "../ILinkBridge.h"
 #include "../CConnectionHandlerFactory.h"

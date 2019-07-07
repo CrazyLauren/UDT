@@ -71,7 +71,10 @@ bool net_address::operator==(net_address const& aRht) const
 {
 	if (FIp.MIs() && aRht.FIp.MIs())
 		return aRht.FIp == FIp && FPort == aRht.FPort;
-	return operator==(aRht.FPort);
+	else if (!FIp.MIs() && !aRht.FIp.MIs())
+		return operator==(aRht.FPort);
+	else
+		return false;
 }
 bool  net_address::operator==(network_port_t const& aRht) const
 {
