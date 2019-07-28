@@ -18,6 +18,7 @@
 #cmakedefine HAVE_IPHLPAPI_H
 #cmakedefine HAVE_WINERROR_H
 #cmakedefine HAVE_GETIFADDRS
+#cmakedefine HAVE_WINSOCK_H
 
 
 

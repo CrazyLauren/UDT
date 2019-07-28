@@ -44,7 +44,7 @@ namespace NSHARE
 {
 extern bool is_ip_valid(const char* aIp,bool aBroadcast)
 {
-	unsigned  a,b,c,d;
+	int  a,b,c,d;
 	return aIp!=NULL//
 			&& sscanf(aIp,"%d.%d.%d.%d", &a, &b, &c, &d) == 4//
 			&& (a<255 ||	(aBroadcast && (a==255) &&	(b==255) && (c==255) && (d==255)))//

@@ -56,6 +56,7 @@
 #include <programm_id.h>
 #include <CCustomer.h>
 #include <UType/IFactory.h>
+#include <UType/CMutex.h>
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
 

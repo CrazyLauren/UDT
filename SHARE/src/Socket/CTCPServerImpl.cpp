@@ -44,15 +44,17 @@ static inline char const* print_error()
 	return print_socket_error().c_str();
 }
 CTCPServer::CImpl::CImpl(CTCPServer * aThis) :
-		FMutex(CMutex::MUTEX_NORMAL),//
-		FLoopBack(new loop_back_t/*(this)*/),//
-		FThis(aThis), //
-		FTestMsg(4u, 0)
+		FConnectMutex(CMutex::MUTEX_NORMAL),//
+		FThis(aThis)
 {
 	VLOG(2) << "Create impl for " << aThis;
-	FThread += NSHARE::CB_t(sMConnect, this);
-	FIsWorking = false;
+	FConnectThread += NSHARE::CB_t(sMListenThread, this);
+	FIsAccepting = 0;
 }
+/** Open TCP server port
+ *
+ * @return true if is open
+ */
 bool IMPL::MOpenHostSocket()
 {
 	LOG_IF(WARNING, FHostSock.MIsValid())
@@ -63,135 +65,117 @@ bool IMPL::MOpenHostSocket()
 		LOG(ERROR)<< FHostSock << print_error();
 		return false;
 	}
-	MReUsePort(FHostSock);
-	MSettingSocket(FHostSock);
+	MSettingSocket(FHostSock,MGetSetting().FSocketSetting);
 
-	if (MSetLocalAddrAndPort(FHostSock.MGet(), FHostAddr) < 0)
+	if (MSetLocalAddrAndPort(FHostSock.MGet(), FSettings.FServerAddress) < 0)
 	{
-		LOG(ERROR)<<"Binding "<<FHostAddr<<" failed "<<print_error();
+		LOG(ERROR)<<"Binding "<<FSettings.FServerAddress<<" failed "<<print_error();
 
-		/*		if (errno!=EADDRINUSE)
-		 return false;*/
 		FHostSock.MClose();
 		return false;
 	}
-	if(FHostAddr.FPort==0)
+	if(FSettings.FServerAddress.FPort==net_address::RANDOM_NETWORK_PORT)
 	{
-		FHostAddr=MGetLocalAddress(FHostSock.MGet());
-		LOG(WARNING)<<"Tcp serve is used random port = "<<FHostAddr.FPort;
+		FSettings.FServerAddress=MGetLocalAddress(FHostSock.MGet());
+		LOG(WARNING)<<"Tcp serve is used random port = "<<FSettings.FServerAddress.FPort;
 	}
 	return true;
 }
 
-bool IMPL::MOpenLoopSocket()
+bool IMPL::MIsOpen() const
 {
-	bool _rval = FLoopBack->FLoop.MOpen();
-	DCHECK(_rval);
-	FSelectSock.MAddSocket(FLoopBack->FLoop.MGetSocket());
-	return _rval;
+	return FHostSock.MIsValid() && CTCPSelectReceiver::MIsOpen();//fixme
 }
 
+/** Starts listening for incoming client connections.
+ *
+ */
+void IMPL::MStartConnectionThread()
+{
+	CRAII<CMutex> _mutex(FConnectMutex);
+	FIsAccepting=1;
+	FConnectThread.MCreate();
+//	FConnectCondVar.MBroadcast();
+}
 bool IMPL::MOpen()
 {
-	if (FThis->MIsOpen())
+	if (MIsOpen())
 	{
 		LOG(WARNING)<< "The Port has been opened already.";
 		return false;
 	}
 
 	if (!MOpenHostSocket())
-	return false;
+		return false;
 
 	VLOG(2) << "Starting loop back";
-	MOpenLoopSocket();
-	CRAII<CMutex> _mutex(FMutex);
-	VLOG(2) << "Synchronized starting";
-	FIsWorking = true;
-	FThread.MCreate();
-	FCond.MBroadcast();
+	MOpenSelectReceiver();
 
-	VLOG(1) << "The server has been opened successfully.";
+	MStartConnectionThread();
 	return true;
 }
-eCBRval IMPL::sMCleanupMutex(void*, void*, void* aP)
+/** Updates info about from whom the data has been received
+ *
+ * @param aFrom [out] Fill info to
+ * @param aBuf [in] The received data (doesn't change, non-const as return iterator to data)
+ * @param aFirstByte A index of first byte of received data
+ * @param aSockets The sockets from whom the data has been received
+ * @return true if no error
+ */
+bool IMPL::MUpdateClientInfo(recvs_t*aFrom, data_t& aBuf,size_t aFirstByte,read_data_from_t const& aSockets)
 {
-	CRAII<CMutex> *_block = reinterpret_cast<CRAII<CMutex>*>(aP);
-	_block->MUnlock();
-	return E_CB_SAFE_IT;
+	read_data_from_t::const_iterator _it(aSockets.begin()),_it_end(aSockets.end());
+
+	data_t::iterator _data_it = aBuf.begin()+aFirstByte;
+	CRAccsess _r = FClients.MGetRAccess();
+
+	for(;//
+			_it!=_it_end//
+					&& _data_it!=aBuf.end();//
+			_data_it+=_it->FSize,//
+					++_it//
+			)
+	{
+		DCHECK_GT(_it->FSize, 0);
+		DCHECK(_data_it<=aBuf.end()) << "WTF? invalid data iterator";
+
+		clients_fd_t::const_iterator _cit = _r->find(_it->FSocket);
+
+		DLOG_IF(FATAL,_cit==_r->end()) << "WTF? Cannot find socket:"<<_it->FSocket;
+
+		if(_cit!=_r->end())
+		{
+			_cit->second.FDiagnostic+=_it->FDiagnostic;
+
+			if(aFrom)
+			{
+				recvs_t::value_type _val;
+				_val.FClient = _cit->second;
+				_val.FBufBegin=_data_it;
+				_val.FSize = _it->FSize;
+				aFrom->push_back(_val);
+			}
+		}else
+			return false;
+	}
+	return true;
 }
-void IMPL::MMakeNonBlocking(CSocket& aSocket)
+ssize_t IMPL::MReceiveData(recvs_t*aFrom, data_t*aBuf,
+		const float aTime)
 {
-	CHECK(aSocket.MIsValid());
-#if defined(unix) || defined(__QNX__) ||defined( __linux__)
-	int flags = fcntl(aSocket.MGet(), F_GETFL, 0);
-	if (flags < 0)
-	{
-		LOG(DFATAL)<<"Fail getting status flags of "<<aSocket<<"."<<print_error();
-		return;
-	}
-	if (fcntl(aSocket.MGet(), F_SETFL, flags | O_NONBLOCK) < 0)
-	{
-		LOG(DFATAL)<<"Fail setting NONBLOCK flag to "<<aSocket<<"."<<print_error();
-		return;
-	}
-#elif defined(_WIN32)
-	unsigned long _on = 1;
-	if (ioctlsocket(aSocket.MGet(), FIONBIO, &_on) < 0)
-	{
-		LOG(DFATAL)<<"Fail setting NONBLOCK flag to "<<aSocket;
-		return;
-	}
-#else
-#	error Target not supported
-#endif
+	const size_t _size=aBuf->size();
 
-	VLOG(2) << aSocket << " is NON BLOCKING";
-}
+	read_data_from_t _info;
+	ssize_t const _recvd=CTCPSelectReceiver::MReceiveData(&_info,aBuf,aTime);
+	VLOG(3)<<"Receive:"<<_info;
 
-void IMPL::MExpectConnection()
-{
-	VLOG(0) << "Not connected,expect signal ";
-	CRAII<CMutex> _mutex(FMutex);
-
-	FThread.MPutCleanUp(NSHARE::CB_t(sMCleanupMutex, &_mutex));
-	for (HANG_INIT; !MCanReceive() && FIsWorking;HANG_CHECK)
-	{
-		VLOG(0) << "Wait for.";
-		FCond.MTimedwait(&FMutex);
-		LOG_IF(ERROR,!MCanReceive()) << "No clients.";
-	}
-	FThread.MRemoveAllCleanUp();
-}
-void IMPL::MReserveMemory(data_t* aBuf,
-		CSelectSocket::socks_t const& _to)
-{
-	//const size_t _avalable = MAvailable(aSock);
-	size_t _available = 0;
-	CSelectSocket::socks_t::const_iterator _it = _to.begin();
-	for (; _it != _to.end(); ++_it)
-	{
-		_available +=_it->MIsValid()? CNetBase::MAvailable(*_it):0;
-	}
-
-	VLOG(2) << "Available for reading " << _available << ", The capacity is "
-	<< aBuf->capacity();
-	_available += aBuf->size();
-	if (_available > aBuf->capacity())
-	aBuf->reserve(_available);
-}
-
-void IMPL::MCalculateDataBegin(recvs_t*aFrom, data_t*aBuf)
-{
-	recvs_t::reverse_iterator _it = aFrom->rbegin();
-	data_t::iterator _data_it = aBuf->end();
-	for (; _it != aFrom->rend(); ++_it)
-	{
-		//_data_it!=aBuf->begin()
-		CHECK(_data_it>=aBuf->begin()) << "WTF? invalid data iterator";
-		CHECK_GT(_it->FSize, 0);
-		_data_it -= _it->FSize;
-		_it->FBufBegin = _data_it;
-	}
+	if(!aBuf->empty() //
+			&& !MUpdateClientInfo(aFrom,*aBuf,_size,_info))
+		{
+			aBuf->resize(_size);
+			return -1;
+		}
+	return _recvd;
 }
 bool IMPL::MCloseClient(const net_address& aTo)
 {
@@ -200,110 +184,136 @@ bool IMPL::MCloseClient(const net_address& aTo)
 	CSocket _tmp;
 	{
 		CRAccsess _r = FClients.MGetRAccess();
-		for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
-				++_it)
-		if (_it->second == aTo)
+		client_by_ip_t const& _by_ip = FClientsByIP.MGetRAccess().MGet();
+		client_by_ip_t::const_iterator _jt=_by_ip.find(aTo);
+
+		if(_jt!=_by_ip.end())
 		{
-			VLOG(2) << "The socket of " << (aTo) << " is " << _it->first;
-			_tmp = _it->first;
-			break;
+			_tmp=_jt->second->first;
 		}
+#ifndef NDEBUG
+		else
+		{
+			for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
+					++_it)
+			CHECK (!(_it->second == aTo));
+		}
+#endif
+
 	}
 	if (_tmp.MIsValid())
 	{
-		MCloseClient(_tmp);
+		MRemoveClient(_tmp);
 		return true;
 	}
 
 	LOG(INFO)<< "The client "<< (aTo)<<" is not exist.";
 	return false;
 }
-void IMPL::MCloseClient(CSocket& aSocket)
+CTCPServer::client_t IMPL::MRemoveSocket(CSocket const& aSocket)
 {
-	VLOG(1) << "Close socket " << aSocket;
-	LOG_IF(WARNING, !aSocket.MIsValid()) << "Socket is invalid";
-	if (!aSocket.MIsValid())
-	return;
+	client_t _fd;
 
-	FSelectSock.MRemoveSocket(aSocket);
-
-	LOG_IF(WARNING, !FLoopBack->FLoop.MGetSocket().MIsValid())
-	<< "Very interesting!, The Inside loop socket is closed, but  it is impossible";
-	CHECK_NE(FLoopBack->FLoop.MGetSocket(), aSocket);
-	client_t _p;
 	{
-		CWAccsess _r = FClients.MGetWAccess();
-		_p = (*_r)[aSocket];
-		_r->erase(aSocket);
-	}
+		clients_fd_t& _r = FClients.MGetWAccess().MGet();
 
-	FThis->MCall(EVENT_DISCONNECTED, &_p);
+		clients_fd_t::iterator _it = _r.find(aSocket);
+		if(_it!=_r.end())
+		{
+			_fd=_it->second;
+
+			VLOG(2)<<"Remove client "<<_fd.MSerialize().MToJSON(true);
+
+			{
+				client_by_ip_t& _by_ip = FClientsByIP.MGetWAccess().MGet();
+				if(_by_ip.erase(_fd.FAddr)==0)
+				{
+					DLOG(FATAL)<<"No address for socket :"<<aSocket<<" addr "<<_fd;
+				}
+
+			}
+			_r.erase(_it);
+		}
+	}
+	return _fd;
+}
+/** Handles removing socket from select list
+ *
+ * @param aSocket
+ */
+void IMPL::MClientIsRemoved(CSocket& aSocket)
+{
+	client_t _fd(MRemoveSocket(aSocket));
+
 	aSocket.MClose();
-	LOG_IF(ERROR,!MCanReceive() && MIsClients())
-	<< "The socket and clients list is not equal.";
-}
-void IMPL::MCloseAllClients()
-{
-	clients_fd_t _fd;
-	{
-		CRAccsess _r = FClients.MGetRAccess();
-		_fd=_r.MGet();
-	}
-	clients_fd_t::iterator _it = _fd.begin();
-	for (; _it != _fd.end(); ++_it)
-	{
-		CSocket _tmp = _it->first;
-		MCloseClient(_tmp);
-	}
-}
-void IMPL::MClose()
-{
-	VLOG(1) << "Close all sockets ";
-	FIsWorking = false;
 
+	if(_fd.MIsValid())
 	{
-		CRAII<CMutex> _mutex(FMutex);
-		FCond.MBroadcast();
+		VLOG(2) << "Calling the Event disconnected...";
+		FThis->MCall(EVENT_DISCONNECTED, &_fd);
+		VLOG(2) << "The 'event disconnected' has been called.";
+		FInfoAboutOldClient.push_back(_fd);
 	}
-	MCloseAllClients();
+}
+/** Stop accept thread
+ *
+ */
+void IMPL::MStopConnectionThread()
+{
+	CRAII<CMutex> _mutex(FConnectMutex);
+	FIsAccepting=0;
+//	FConnectCondVar.MBroadcast();
+}
+/** Wait for accept thread stopped
+ *
+ */
+void IMPL::MWaitForConnectionThread()
+{
+	VLOG(2) << "Wait for connect thread will be stopped.";
+
+	if (FConnectThread.MCancel())
+		FConnectThread.MJoin();
+	else
+		VLOG(2) << "Cancel failed";
+}
+/** Close host
+ *
+ */
+void IMPL::MCloseHostSocket()
+{
 	VLOG(2) << "Try close host socket." << FHostSock;
 	if (FHostSock.MIsValid())
 	{
-		//#if defined(_WIN32)
-		//		closesocket(FHostSock.MGet());
-		//#else
 		FHostSock.MClose();
-		//#endif
 	}
-	if (FLoopBack->FLoop.MGetSocket().MIsValid())
-	FSelectSock.MRemoveSocket(FLoopBack->FLoop.MGetSocket());
-	FLoopBack->FLoop.MClose();
+	DCHECK(!FHostSock.MIsValid());
+}
+void IMPL::MClose()
+{
+	VLOG(1) << "Stopping server ";
 
-	usleep(1); //waitfor receive end;
+	MStopConnectionThread();
 
-	CHECK(!FHostSock.MIsValid());
-	CHECK(!FSelectSock.MIsSetUp());
-	CHECK(FSelectSock.MGetSockets().empty());
+	CTCPSelectReceiver::MClose();
 
-	VLOG(2) << "Wait for connect thread will be stopped.";
-	if (FThread.MCancel())
-	FThread.MJoin();
-	else
-	VLOG(2) << "Cancel failed";
+	MCloseHostSocket();
+
+	MWaitForConnectionThread();
 	VLOG(2) << "Server stopped successfully.";
 }
 CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		const net_address&aTo)
 {
 	VLOG(1) << "Send " << pData << " size=" << nSize << " to " << (aTo);
-	LOG_IF(WARNING,!MIsClients()) << "No clients.";
-	CRAccsess _r = FClients.MGetRAccess();
-	for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
-			++_it)
-	if (_it->second == aTo)
+	DLOG_IF(WARNING,!MIsClients()) << "No clients.";
+
 	{
-		VLOG(2) << "The socket of " << (aTo) << " is " << _it->first;
-		return MSendTo(*_it, pData, nSize);
+		client_by_ip_t const& _by_ip = FClientsByIP.MGetRAccess().MGet();
+		client_by_ip_t::const_iterator _jt=_by_ip.find(aTo);
+		if(_jt!=_by_ip.end())
+		{
+			return MSendTo(*_jt->second, pData, nSize);///todo проверить на взаимную блокировку
+		}
 	}
 	LOG(ERROR)<< "The client "<< (aTo)<<" is not exist.";
 	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
@@ -312,21 +322,25 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize,
 		NSHARE::CConfig const& aTo)
 {
 	VLOG(1) << "Send " << pData << " size=" << nSize << " to " << aTo;
-	LOG_IF(WARNING,!MIsClients()) << "No clients.";
-	CRAccsess _r = FClients.MGetRAccess();
-	net_address _addr(aTo);
-	LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalide type of smart_addr";
-	if (!_addr.MIsValid())
-	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
-	for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
-			++_it)
-	if (_it->second.FAddr == _addr)
+
+	net_address  _addr(aTo);
+	if(aTo.MKey()==net_address::NAME)
 	{
-		VLOG(2) << "The socket of " << aTo << " is " << _it->first;
-		return MSendTo(*_it, pData, nSize);
+		_addr=net_address(aTo);
+		LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalid address:"<<aTo.MToJSON(true);
+	}else if(aTo.MKey()==CTCPServer::client_t::NAME)
+	{
+		_addr=net_address(aTo.MChild(net_address::NAME));
+		LOG_IF(DFATAL,!_addr.MIsValid()) << "Invalid address:"<<aTo.MToJSON(true);
+	}else
+	{
+		LOG(DFATAL)<<"Cannot deserialize net address";
 	}
-	LOG(ERROR)<< "The client "<< aTo<<" is not exist.";
-	return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
+
+	if (!_addr.MIsValid())
+		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
+
+	return MSend(pData,nSize,_addr);
 }
 CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 {
@@ -344,295 +358,207 @@ CTCPServer::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 CTCPServer::sent_state_t IMPL::MSendTo(clients_fd_t::value_type const& aVal, const void* pData,
 		size_t nSize)
 {
-	CTCPServer::sent_state_t const _state(CTcpImplBase::MSendTo(aVal.first,pData,nSize,aVal.second.FDiagnostic,false,aVal.second.FAgainError));	
-	FDiagnostic.MSend(_state);
-	return _state;
+	return CTcpImplBase::MSendTo(aVal.first,pData,nSize,aVal.second.FDiagnostic,false);
 }
-eCBRval IMPL::sMConnect(void*, void*, void* pData)
+/** Handles adding socket to select list
+ *
+ * @param aSocket
+ */
+void IMPL::MClientIsAdded(CSocket& aSocket)
 {
-	reinterpret_cast<CImpl*>(pData)->MAccept();
+	client_t _fd(MGetSocketInfo(aSocket));
+
+	if(_fd.MIsValid())
+	{
+		VLOG(2) << "Calling the Event connected...";
+		FThis->MCall(EVENT_CONNECTED, &_fd);
+		VLOG(2) << "The 'event connected' has been called.";
+	}
+}
+
+/** Returns info about socket
+ *
+ * @param aSocket Info about socket
+ * @return Info about socket
+ */
+CTCPServer::client_t IMPL::MGetSocketInfo(CSocket const& aSocket) const
+{
+	clients_fd_t const& _r = FClients.MGetRAccess().MGet();
+	clients_fd_t::const_iterator _it = _r.find(aSocket);
+
+	if(_it!=_r.end())
+		return _it->second;
+
+	return client_t();
+}
+bool IMPL::MAddSocket(CSocket const& aSocket,client_t const& aClient)
+{
+	clients_fd_t& _r = FClients.MGetWAccess().MGet();
+	clients_fd_t::iterator _it = _r.find(aSocket);
+
+	if(_it!= _r.end())
+	{
+		LOG(ERROR) << "WTF? The socket " << aSocket<< " is exist in the clients list. The socket is at "<< _it->second;
+		return false;
+	}
+	clients_fd_t::const_iterator const _gt=
+			_r.insert(_it,clients_fd_t::value_type(aSocket, aClient));
+	{
+		client_by_ip_t& _by_ip = FClientsByIP.MGetWAccess().MGet();
+		_by_ip[aClient.FAddr]=_gt;
+	}
+	return true;
+}
+bool IMPL::MAddClient(CSocket& aSocket,const net_address& aAddress)
+{
+	client_t const _fd(aAddress);
+
+	MSettingSocket(aSocket,MGetSetting().FSocketSetting);
+	MMakeNonBlocking(aSocket);
+
+	if(MAddSocket(aSocket,_fd))
+	{
+		if(CTCPSelectReceiver::MAddClient(aSocket))
+		{
+			VLOG(1)<<"Add new client "<<aAddress<<" socket "<<aSocket;
+		}
+		else
+		{
+			DLOG(FATAL)<<"Cannot add client "<<aAddress;
+
+			MRemoveSocket(aSocket);
+			return false;
+		}
+
+		return true;
+	}
+	else
+	{
+		DLOG(FATAL)<<"Cannot add client";
+		return false;
+	}
+
+}
+eCBRval IMPL::sMListenThread(void*, void*, void* pData)
+{
+	reinterpret_cast<CImpl*>(pData)->MListen();
 	return E_CB_SAFE_IT;
 }
-#ifdef _WIN32
-static const char* inet_ntop(int af, const void* src, char* dst, int cnt)
+
+/** Listen the socket
+ *
+ * @return true if no error
+ */
+bool IMPL::MListenSocket()
 {
-
-	struct sockaddr_in srcaddr;
-
-	memset(&srcaddr, 0, sizeof(struct sockaddr_in));
-	memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
-
-	srcaddr.sin_family = af;
-	if (WSAAddressToString((struct sockaddr*) &srcaddr,
-			sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0)
+	if (listen(FHostSock, FSettings.FListenQueue) < 0)
 	{
-		DWORD rv = WSAGetLastError();
-		LOG(ERROR)<<"WSAAddressToString() : "<< rv;
-		return NULL;
+		LOG(ERROR) << "Listening error" << print_error();
+		return false;
 	}
-	return dst;
-}
-#endif
-net_address IMPL::MGetAddress(
-		const struct sockaddr_in& aAddr) const
-{
-	char buf[INET6_ADDRSTRLEN + 20];
-	net_address _addr;
-	_addr.FPort = ntohs(aAddr.sin_port);
-	if (inet_ntop(aAddr.sin_family, &aAddr.sin_addr, buf, sizeof(buf)) != NULL)
-	_addr.FIp = buf;
-	else
-	LOG(ERROR)<< "Invalid address " << print_error();
-
-	LOG_IF(DFATAL,
-			(aAddr.sin_family != AF_INET && aAddr.sin_family != AF_INET6))
-	<< "Unknown type of Address network "
-	<< aAddr.sin_family;
-
-	VLOG(2) << "Net addr " << _addr;
-	return _addr;
-}
-IMPL::cl_t IMPL::MNewClient_t(
-		net_address const & _net_addr) const
-{
-	cl_t _val;
-	_val.FTime = ::time(NULL);
-	_val.FAddr = _net_addr;
-	return _val;
-}
-IMPL::cl_t IMPL::MAddNewClient(CSocket& _sock,
-		struct sockaddr_in& _addr)
-{
-	//VLOG(2) << " Is loop " << _is_loop << ", after " << FIsLoopConnected;
-	MMakeNonBlocking(_sock);
-	MSettingSocket(_sock);
-	FSelectSock.MAddSocket(_sock);
-
-	net_address _net_addr = MGetAddress(_addr);
-	VLOG(2) << "Address " << _net_addr;
-	cl_t _ptr = MNewClient_t(_net_addr);
-	{
-		CWAccsess _r = FClients.MGetWAccess();
-		clients_fd_t::iterator _it = _r->find(_sock);
-		LOG_IF(ERROR, _it!= _r->end()) << "WTF? The socket " << _sock
-		<< " is exist in the clients list. The socket is at "
-		<< _it->second;
-		_r->insert(std::make_pair(_sock, _ptr));
-	}
-	return _ptr;
+	return true;
 }
 
-void IMPL::MUnLockSelect()
-{
-	sent_state_t const _val = FLoopBack->FLoop.MSend(FTestMsg);
-
-	VLOG_IF(1,_val.MIs()) << "Select unlocked successfully. ";
-	LOG_IF(WARNING,!_val.MIs()) << "Cannot unlock select. ";
-}
-void IMPL::MAccept()
+/** Listener a new connection
+ *
+ */
+void IMPL::MListen()
 {
 	VLOG(2) << "Accepting";
 	{
-		CRAII<CMutex> _mutex(FMutex);
+		CRAII<CMutex> _mutex(FConnectMutex);// wait for opened
 	}
 	VLOG(2) << "After start synchronize.";
-	if (listen(FHostSock, 1) < 0)
+
+	if(!MListenSocket())
 	{
-		LOG(ERROR)<< "Listening error" << print_error();
 		MClose();
+		DCHECK(false);
 		return;
 	}
-	LOG_IF(ERROR,MIsClient()) << "The client list is not empty";
 
-	for (HANG_INIT; FIsWorking;HANG_CHECK)
+	for (HANG_INIT; FIsAccepting.MIsOne();HANG_CHECK)
 	{
 		struct sockaddr_in _addr;
 		socklen_t addrlen = sizeof(_addr);
 
 		VLOG(2) << "Accepting";
 		CSocket _sock (static_cast<CSocket::socket_t>(accept(FHostSock, (struct sockaddr *) &(_addr),
-				&addrlen)));
+								&addrlen)));
 		VLOG(2) << "New client: " << _sock << "; host " << FHostSock;
-		if (!FHostSock.MIsValid())
+
+		if (FIsAccepting.MIsOne()) ///< As accept is lock thread checking the current state
 		{
-			VLOG(2) << "Ivalid host socket.May be server is stopped.";
-			continue;
-		}
 
-		LOG_IF(ERROR,!_sock.MIsValid()) << "Invalid Socket ";
+			LOG_IF(ERROR,!_sock.MIsValid()) << "Invalid Socket ";
 
-		if (_sock.MIsValid())
-		{
-			net_address _net_addr = MGetAddress(_addr);
-			LOG(INFO)<< "New Client form " << _net_addr<<"; Socket: "<<_sock;
+			if (_sock.MIsValid())
+			{
+				net_address const _net_addr(_addr);
 
-			client_t _ptr = MAddNewClient(_sock, _addr);
-			MUnLockSelect();
+				LOG(INFO)<< "New Client form " << _net_addr<<"; Socket: "<<_sock;
+				MAddClient(_sock, _addr);
+			}
 
-			VLOG(2) << "Calling the Event connected...";
-			FThis->MCall(EVENT_CONNECTED, &_ptr);
-			VLOG(2) << "The 'event connected' has been called.";
-		}
-
+		}else
+			VLOG(2) << "May be server is stopped.";
 	}
 }
-ssize_t IMPL::MReceiveData(recvs_t*aFrom, data_t*aBuf,
-		const float aTime)
-{
-	if (!FIsWorking)
-	{
-		LOG(ERROR)<< "The server is not working";
-		return 0;
-	}
-	VLOG(2) << "Receive data to " << aBuf << ", max time " << aTime;
-	FIsReceive = true;
-	int _recvd = 0;
-	for (HANG_INIT; FIsWorking && /*_recvd <= 0*/_recvd == 0; )
-	{
-		if (MCanReceive())
-		{
-			VLOG(2) << "It connected.";
-			FTo.clear();
-			int _val = FSelectSock.MWaitData(FTo, aTime);
-			VLOG(2) << "Wait status " << _val;
 
-			if (_val == 0) //timeout
-			{
-				VLOG(2) << "Timeout";
-				return 0;
-			}
-			else if (_val < 0)
-			{
-				LOG(ERROR) << "Unknown error:" << print_error();
-				continue;
-			}
-			else //if (_val > 0)
-			{
-
-				CHECK(FLoopBack.MIs());
-				bool _is_loopback=false;
-				unsigned _num_fail_sockets=0;
-				{
-					//the client can be closed
-					CRAccsess _r = FClients.MGetRAccess();
-					clients_fd_t::const_iterator const _end=_r->end();
-					CSelectSocket::socks_t::iterator _it = FTo.begin();
-					for (; _it != FTo.end();++_it)
-					{
-						if(!_is_loopback && (FLoopBack->FLoop.MGetSocket() == *_it)) //looking for loopback socket
-						{
-							VLOG(1) << "It's internal msg";
-							_is_loopback = true;
-							FLoopBack->FLoop.MReadAll();
-							//_it=FTo.erase(_it);
-							*_it=CSocket();
-							++_num_fail_sockets;
-						}
-						else if(_r->find(*_it) == _end)
-						{
-							VLOG(1) <<*_it<< " has been closed already.";
-							*_it=CSocket();
-							++_num_fail_sockets;
-						}
-					}
-				}
-				bool const _is_empty=_num_fail_sockets==FTo.size();
-				if( _is_empty&& _is_loopback)
-				{
-					VLOG(2)<<"Only internal MSG has been received.";
-					continue;
-				}
-				if(!_is_empty)
-				{
-					MReserveMemory(aBuf,FTo);
-					_recvd=MReceiveFromAllSocket(aBuf,FTo,aFrom);
-				}
-				else
-					_recvd=-1;
-				VLOG(1) << "Resultant:Reads " << _recvd << " bytes";
-			}
-		}
-		else
-		{
-			MExpectConnection();
-			HANG_CHECK;
-		}
-	}
-	FIsReceive = false;
-	VLOG(2) << "End Receive";
-	return _recvd;
-}
-int IMPL::MReceiveFromAllSocket(data_t* aBuf,
-		CSelectSocket::socks_t & _to, recvs_t* aFrom)
-{
-	CSelectSocket::socks_t::iterator _it = _to.begin();
-	int _recvd = 0;
-	for (; _it != _to.end(); ++_it)
-	{
-		if(_it->MIsValid())
-		{
-			DCHECK_NE(*_it, FLoopBack->FLoop.MGetSocket());
-			int _size = MReadData(aBuf, *_it);
-			if(_size<=0)
-			{
-				MCloseClient(*_it);
-			}
-			else
-			{
-				_recvd += _size;
-				if ( aFrom)
-				{
-					CRAccsess _r = FClients.MGetRAccess();
-
-					clients_fd_t::const_iterator _cit = _r->find(*_it);
-					LOG_IF(FATAL,_cit==_r->end()) << "WTF?";
-
-					_cit->second.FDiagnostic.MRecv(_size);
-
-					recvs_t::value_type _val;
-					client_t const _saddr(_cit->second);
-
-					_val.FClient = _saddr; //TODO
-//			_val.FBufBegin=aBuf->end()-_size;//vector can be allocated to other heap
-					_val.FSize = _size;
-					//CHECK(_val.FBufBegin==(aBuf->begin()+_recvd-_size))<<"WTF? The container is damage.";
-					aFrom->push_back(_val);
-				}
-			}
-		}
-	}
-	FDiagnostic.MRecv(_recvd);
-
-	if(_recvd>0 && aFrom)
-	{
-		//vector can be allocated to other heap thus
-		//FBufBegin is to calculated after data reading
-		MCalculateDataBegin(aFrom,aBuf);
-	}
-	return _recvd > 0 ? _recvd : -1;
-}
-
-size_t IMPL::MAvailable() const
-{
-	size_t _rval = 0;
-	CRAccsess _r = FClients.MGetRAccess();
-	for (clients_fd_t::const_iterator _it = _r->begin(); _it != _r->end();
-			++_it)
-	_rval += CNetBase::MAvailable(_it->first);
-	VLOG(2) << _rval << " bytes available for reading from all clients";
-	return _rval;
-}
-bool IMPL::MIsClient() const
-{
-	return FHostAddr.FIp.MIs();
-}
-bool IMPL::MCanReceive() const
-{
-	return FSelectSock.MIsSetUp();
-}
 bool IMPL::MIsClients() const
 {
 	return !FClients.MGetRAccess().MGet().empty();
+}
+bool IMPL::MIsClient(const net_address& aIP) const
+{
+	client_by_ip_t const& _by_ip = FClientsByIP.MGetRAccess().MGet();
+	client_by_ip_t::const_iterator _jt=_by_ip.find(aIP);
+	return _jt!=_by_ip.end();
+}
+bool IMPL::MSetAddress(const net_address& aParam)
+{
+	if(MIsOpen())
+		return false;///FIXME change address
+	FSettings.FServerAddress=aParam;
+	return true;
+}
+diagnostic_io_t const& IMPL::MGetDiagnosticState() const
+{
+	diagnostic_io_t _rval;
+	{
+		CRAccsess const _r = FClients.MGetRAccess();
+
+		clients_fd_t::const_iterator _it = _r->begin(),_it_end(_r->end());
+		for (;_it!=_it_end;++_it)
+		{
+			_rval+=_it->second.FDiagnostic;
+		}
+	}
+	{
+		list_of_clients::const_iterator _it=FInfoAboutOldClient.begin(),
+				_it_end=FInfoAboutOldClient.end();
+		for(;_it!=_it_end;++_it)
+			_rval+=_it->FDiagnostic;
+	}
+	FCurrentDiagnostic=_rval;
+	return FCurrentDiagnostic;
+}
+
+CTCPServer::list_of_clients IMPL::MGetConnectedClientInfo() const
+{
+	list_of_clients _rval;
+	CRAccsess const _r = FClients.MGetRAccess();
+
+	clients_fd_t::const_iterator _it = _r->begin(), _it_end(_r->end());
+	for (;_it!=_it_end;++_it)
+	{
+		_rval.push_back(_it->second);
+	}
+	return _rval;
+}
+CTCPServer::list_of_clients const&  IMPL::MGetDisconnectedClientInfo() const
+{
+	return FInfoAboutOldClient;
 }
 }
 

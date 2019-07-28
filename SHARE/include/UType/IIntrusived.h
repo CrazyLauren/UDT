@@ -109,7 +109,7 @@ inline int IIntrusived::sMUnref(T* aP)
 	}
 	if (_val == 0)
 	{
-		CHECK_NOTNULL(_tmp);
+		DCHECK_NOTNULL(_tmp);
 		((IIntrusived*)_tmp)->MDelete();
 	}
 	return _val;

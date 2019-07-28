@@ -16,43 +16,47 @@
 #include <fcntl.h>
 #include <Socket/CNetBase.h>
 
-#if !defined(_WIN32)
+#if !defined(HAVE_WINSOCK_H)
 #	include <sys/socket.h>
 #	include <netinet/in.h>                     // sockaddr_in
 #	include <arpa/inet.h>                      // htons, htonl
 #	include <sys/sysctl.h>
 #	include <sys/ioctl.h>
 #	include <fcntl.h>
-#		ifdef __QNX__
-#			include <netinet/tcp_var.h>//only BSD
-#		endif
-#if 	defined( __linux__)
-#			include <netinet/tcp.h>
-#		endif
-#else
-#	include <ws2tcpip.h>
-#		ifndef SIO_KEEPALIVE_VALS
+#	ifdef __QNX__
+#		include <netinet/tcp_var.h>//only BSD
+#	endif
+#	if defined( __linux__)
+#		include <netinet/tcp.h>
+#	endif
+#elif defined(HAVE_WINSOCK_H)
 
+#	include <ws2tcpip.h>
+#
+#	ifndef SIO_KEEPALIVE_VALS
 struct tcp_keepalive
 {
 	ULONG onoff;
 	ULONG keepalivetime;
 	ULONG keepaliveinterval;
 };
-#		define SIO_KEEPALIVE_VALS _WSAIOW(IOC_VENDOR,4)
+#	define SIO_KEEPALIVE_VALS _WSAIOW(IOC_VENDOR,4)
+
 #	endif
+#else
+#	error The target is not supported
 #endif //#ifndef WIN32
 
 #include <Socket/print_socket_error.h>
 
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 typedef char raw_type_t;
 #else
 typedef void raw_type_t;
 #endif
 namespace NSHARE
 {
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 extern bool init_wsa()
 {
 	WSADATA _wsaData;
@@ -61,11 +65,14 @@ extern bool init_wsa()
 }
 #endif
 
-long const CNetBase::DEF_BUF_SIZE = 2 * std::numeric_limits<uint16_t>::max(); //2 max packet
+long const socket_setting_t::DEF_BUF_SIZE = 2 * std::numeric_limits<uint16_t>::max(); //2 max packet
+unsigned const socket_setting_t::DEF_KEEPALIVE_TIME = 5;
+unsigned const socket_setting_t::DEF_KEEPALIVE_COUNT = 3;
+
 
 CNetBase::CNetBase()
 {
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 	if (!init_wsa())
 	{
 		LOG(FATAL)<<"Cannot init wsa";
@@ -167,7 +174,7 @@ bool CNetBase::MReUsePort(CSocket& aSocket)
 	VLOG(2) << "Reuse port " << aSocket;
 
 	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 	return MReUseAddr(aSocket);
 #else
 	int optval = 1;
@@ -182,7 +189,7 @@ bool CNetBase::MReUseAddr(CSocket& aSocket)
 	LOG_IF(ERROR, !aSocket.MIsValid()) << "Invalid socket";
 	int optval = 1;
 
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 	return setsockopt(aSocket.MGet(), SOL_SOCKET, SO_REUSEADDR,
 			(raw_type_t*)&optval, sizeof optval)==0;
 #elif defined(SO_REUSEPORT) && !defined(__linux__)
@@ -196,7 +203,7 @@ bool CNetBase::MReUseAddr(CSocket& aSocket)
 size_t CNetBase::MAvailable(CSocket const& aSocket)
 {
 
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 	unsigned long count_buf = 0;
 	int _val = ioctlsocket(aSocket.MGet(), FIONREAD, &count_buf);
 	LOG_IF(ERROR,_val<0) << "ioctlsocket error";
@@ -210,7 +217,7 @@ size_t CNetBase::MAvailable(CSocket const& aSocket)
 	VLOG(2) << count_buf << " bytes available for reading from " << aSocket;
 	return count_buf;
 }
-int CNetBase::MSetAddress(net_address const& aAddress,
+void CNetBase::MSetAddress(net_address const& aAddress,
 		struct sockaddr_in *aSa)
 {
 	memset(aSa, 0, sizeof(*aSa));
@@ -219,48 +226,48 @@ int CNetBase::MSetAddress(net_address const& aAddress,
 	if (aAddress.FIp.MIs() && !aAddress.FIp.MGetConst().empty() && aAddress.FIp.MGetConst()!=net_address::ALL_NETWORKS)
 	{
 		aSa->sin_addr.s_addr = inet_addr(aAddress.FIp.MGetConst().c_str());
-		if (aSa->sin_addr.s_addr == INADDR_NONE && aAddress.FIp.MGetConst()!=net_address::BROAD_CAST_ADDR) return -1;
+		if (aSa->sin_addr.s_addr == INADDR_NONE && aAddress.FIp.MGetConst()!=net_address::BROAD_CAST_ADDR)
+			return;
 	}
 	else
 		aSa->sin_addr.s_addr = htonl(INADDR_ANY );
 
 	aSa->sin_port = htons(aAddress.FPort);
-
-	return 0;
 }
-void CNetBase::MSettingSocket(CSocket& aSocket)
+void CNetBase::MSettingSocket(CSocket& aSocket,socket_setting_t const& aSetting)
 {
 	VLOG(2) << "Set up " << aSocket;
 	CHECK(aSocket.MIsValid());
 
-	MSettingBufSize(aSocket);
-	MSettingKeepAlive(aSocket);
-	/*
-	 #if defined( __linux__)
-	 int on = 1;
-	 setsockopt(aSocket.MGet(), SOL_SOCKET, SO_NOSIGPIPE, (void*) &on,
-	 sizeof(on));
-	 #endif
-	 */
+	if(aSetting.FFlags.MGetFlag(socket_setting_t::E_REUSE_PORT))
+			MReUsePort(aSocket);
+
+	if(aSetting.FFlags.MGetFlag(socket_setting_t::E_SET_BUF_SIZE))
+		MSettingBufSize(aSocket,aSetting);
+	if(aSetting.FFlags.MGetFlag(socket_setting_t::E_KEEPALIVE))
+		MSettingKeepAlive(aSocket,aSetting);
 }
-void CNetBase::MSettingKeepAlive(CSocket& aSocket)
+void CNetBase::MSettingKeepAlive(CSocket& aSocket,socket_setting_t const& aSetting)
 {
-	static const int _sec = 5;
+	const int _sec = aSetting.FKeepAliveTime;
 	VLOG(2)
 			<< "Enable the periodic " << _sec
 					<< "sec transmission of messages on a connected socket.(KEEPALIVE)"
 					<< aSocket;
 
-	CHECK(aSocket.MIsValid());
+	DCHECK(aSocket.MIsValid());
 
-#ifdef _WIN32
+#ifdef HAVE_WINSOCK_H
 	struct tcp_keepalive _alive;
 	_alive.onoff = 1;
-	_alive.keepalivetime = 1000;
+	_alive.keepalivetime =_sec* 1000;
 	_alive.keepaliveinterval = _sec * 1000;
 	DWORD _ret;
-	WSAIoctl(aSocket, SIO_KEEPALIVE_VALS, &_alive, sizeof(_alive), NULL, 0,
-			&_ret, NULL, NULL);
+	if(WSAIoctl(aSocket, SIO_KEEPALIVE_VALS, &_alive, sizeof(_alive), NULL, 0,
+			&_ret, NULL, NULL)!=0)
+	{
+		DLOG(ERROR)<<"Failed to set SIO_KEEPALIVE_VALS on fd:"<<aSocket;
+	}
 	int on = 1;
 	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (const raw_type_t*) &on,
 			sizeof(on));
@@ -273,13 +280,13 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 	mib[1] = AF_INET;
 	mib[2] = IPPROTO_TCP;
 	mib[3] = TCPCTL_KEEPCNT;
-	ival = 5;
+	ival = aSetting.FKeepAliveCount;
 	sysctl(mib, 4, NULL, NULL, &ival, sizeof(ival));
 	mib[0] = CTL_NET;
 	mib[1] = AF_INET;
 	mib[2] = IPPROTO_TCP;
 	mib[3] = TCPCTL_KEEPINTVL;
-	ival = 1;
+	ival = _sec*2;
 	sysctl(mib, 4, NULL, NULL, &ival, sizeof(ival));
 	memset(&tval, 0, sizeof(tval));
 	tval.tv_sec = _sec;
@@ -292,8 +299,8 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 	setsockopt(aSocket.MGet(), SOL_SOCKET, SO_KEEPALIVE, (raw_type_t*) &on, sizeof(on));
 
 #	ifdef TCP_KEEPCNT
-	int keepcnt = 3;
-	int keepidle = 1;
+	int keepcnt = aSetting.FKeepAliveCount;
+	int keepidle = _sec;
 	int keepintvl = _sec;
 
 	setsockopt(aSocket.MGet(), IPPROTO_TCP, TCP_KEEPCNT, &keepcnt,
@@ -310,18 +317,18 @@ void CNetBase::MSettingKeepAlive(CSocket& aSocket)
 #	error Target not supported
 #endif
 }
-void CNetBase::MSettingBufSize(CSocket& aSocket)
+void CNetBase::MSettingBufSize(CSocket& aSocket,socket_setting_t const& aSetting)
 {
 	CHECK(aSocket.MIsValid());
 	VLOG(2)
 			<< "Setting the TCP  normal buffer size for output and input equal "
-					<< DEF_BUF_SIZE;
-	int const _protocol_size = std::numeric_limits<uint16_t>::max();
+					<< aSetting.FSendBufferSize;
+	unsigned const _protocol_size = std::numeric_limits<uint16_t>::max();
 	{
-		long _max = DEF_BUF_SIZE; //128 kb
-		for (HANG_INIT;
+		unsigned _max = aSetting.FSendBufferSize;
+		for (;
 				!MSettingSendBufSize(aSocket, _max) && _max > _protocol_size;
-				HANG_CHECK)
+				)
 		{
 			LOG(WARNING)<<"Invalid max send buffer = "<<_max;
 			_max =(long)(_max/ 1.1);
@@ -329,17 +336,17 @@ void CNetBase::MSettingBufSize(CSocket& aSocket)
 	}
 	{
 		//try maximal
-		long _max = (long)(1.5 * DEF_BUF_SIZE); //192 kb
-		for (HANG_INIT;
+		unsigned _max = aSetting.FRecvBufferSize;
+		for (;
 				!MSettingRecvBufSize(aSocket, _max) && _max > _protocol_size;
-				HANG_CHECK)
+				)
 		{
 			LOG(WARNING)<<"Invalid max recv buffer = "<<_max;
 			_max =(long)(_max/ 1.1);
 		}
 	}
 }
-size_t CNetBase::MGetSendBufSize(CSocket& aSocket)
+size_t CNetBase::MGetSendBufSize(CSocket const& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 	long aValue=0;
@@ -362,7 +369,7 @@ bool CNetBase::MSettingSendBufSize(CSocket& aSocket, long aValue)
 	VLOG_IF(1,_rval==0) << "The normal buffer sizes  for output " << aValue;
 	return _rval == 0;
 }
-size_t CNetBase::MGetRecvBufSize(CSocket& aSocket)
+size_t CNetBase::MGetRecvBufSize(CSocket const& aSocket)
 {
 	CHECK(aSocket.MIsValid());
 	long aValue=0;
@@ -385,23 +392,6 @@ bool CNetBase::MSettingRecvBufSize(CSocket& aSocket, long aValue)
 	return _rval == 0;
 }
 
-int CNetBase::MGetSendBufSize(CSocket const& aSocket)
-{
-	CHECK(aSocket.MIsValid());
-	long _size = 0;
-	socklen_t _len = sizeof(_size);
-	int _rval = getsockopt(aSocket.MGet(), SOL_SOCKET, SO_SNDBUF,
-			(raw_type_t*) &_size, &_len);
-
-	VLOG_IF(1,_rval==0) << "The send buffer sizes  for output " << _size;
-	if (_rval > 0)
-	{
-		CHECK(_size);
-		return _size;
-	}
-	else
-		return -1;
-}
 bool CNetBase::MMakeAsBroadcast(CSocket& aSocket)
 {
 	int _on = 1;
@@ -465,7 +455,7 @@ bool CNetBase::MMakeNonBlocking(CSocket& aSocket)
 		LOG(DFATAL)<<"Fail setting NONBLOCK flag to "<<aSocket<<"."<<print_socket_error();
 		return false;
 	}
-#elif defined(_WIN32)
+#elif defined(HAVE_WINSOCK_H)
 	unsigned long _on = 1;
 	if (ioctlsocket(aSocket.MGet(), FIONBIO, &_on) < 0)
 	{
@@ -479,4 +469,65 @@ bool CNetBase::MMakeNonBlocking(CSocket& aSocket)
 	VLOG(2) << aSocket << " is NON BLOCKING";
 	return true;
 }
+const CText socket_setting_t::NAME="socket";
+const CText socket_setting_t::KEY_SEND_BUFFER_SIZE="send_buf";
+const CText socket_setting_t::KEY_RECV_BUFFER_SIZE="recv_buf";
+const CText socket_setting_t::KEY_KEEPALIVE_TIME="ka_time";
+const CText socket_setting_t::KEY_KEEP_ALIVE_COUNT="ka_count";
+
+const CText socket_setting_t::ENABLE_KEEPALIVE="ka_on";
+const CText socket_setting_t::SET_BUF_SIZE="buf_size_on";
+const CText socket_setting_t::ENABLE_REUSE_PORT="reuse_on";
+
+socket_setting_t::socket_setting_t():
+		FSendBufferSize(DEF_BUF_SIZE),//
+		FRecvBufferSize((long)(1.5*DEF_BUF_SIZE)),//
+		FKeepAliveTime(DEF_KEEPALIVE_TIME),//
+		FKeepAliveCount(DEF_KEEPALIVE_COUNT),//
+		FFlags(E_DEFAULT_FLAGS)
+{
+
+}
+socket_setting_t::socket_setting_t(NSHARE::CConfig const& aConf) :
+				FSendBufferSize(DEF_BUF_SIZE),//
+				FRecvBufferSize((long)(1.5*DEF_BUF_SIZE)),//
+				FKeepAliveTime(DEF_KEEPALIVE_TIME),//
+				FKeepAliveCount(DEF_KEEPALIVE_COUNT),//
+				FFlags(E_DEFAULT_FLAGS)
+{
+	FFlags.MSetFlag(E_KEEPALIVE,
+			aConf.MValue(ENABLE_KEEPALIVE,
+					FFlags.MGetFlag(E_KEEPALIVE)));
+	FFlags.MSetFlag(E_SET_BUF_SIZE,aConf.MValue(SET_BUF_SIZE, FFlags.MGetFlag(E_SET_BUF_SIZE)));
+	FFlags.MSetFlag(E_REUSE_PORT,aConf.MValue(ENABLE_REUSE_PORT, FFlags.MGetFlag(E_REUSE_PORT)));
+
+	aConf.MGetIfSet(KEY_SEND_BUFFER_SIZE, FSendBufferSize);
+	aConf.MGetIfSet(KEY_RECV_BUFFER_SIZE, FRecvBufferSize);
+	aConf.MGetIfSet(KEY_KEEPALIVE_TIME, FKeepAliveTime);
+	aConf.MGetIfSet(KEY_KEEP_ALIVE_COUNT, FKeepAliveCount);
+
+}
+bool socket_setting_t::MIsValid() const
+{
+	return FSendBufferSize >= std::numeric_limits<uint16_t>::max()&&//
+			FRecvBufferSize >= std::numeric_limits<uint16_t>::max()&&//
+			FKeepAliveTime<2*60*60&&//
+			FKeepAliveCount<100//
+			;
+}
+CConfig socket_setting_t::MSerialize() const
+{
+	CConfig _conf(NAME);
+	_conf.MAdd(ENABLE_KEEPALIVE, FFlags.MGetFlag(E_KEEPALIVE));
+	_conf.MAdd(SET_BUF_SIZE, FFlags.MGetFlag(E_SET_BUF_SIZE));
+	_conf.MAdd(ENABLE_REUSE_PORT, FFlags.MGetFlag(E_REUSE_PORT));
+
+	_conf.MAdd(KEY_SEND_BUFFER_SIZE,FSendBufferSize);
+	_conf.MAdd(KEY_RECV_BUFFER_SIZE,FRecvBufferSize);
+	_conf.MAdd(KEY_KEEPALIVE_TIME,FKeepAliveTime);
+	_conf.MAdd(KEY_KEEP_ALIVE_COUNT,FKeepAliveCount);
+
+	return _conf;
+}
+
 } /* namespace NSHARE */

@@ -40,7 +40,6 @@ NSHARE::CText const CKernelServerLink::MAIN_CHANNEL_TYPE = "channel_for";
 NSHARE::CText const CKernelServerLink::DEFAULT = "default";
 NSHARE::CText const CKernelServerLink::DEFAULT_MAIN = "tcpser";
 NSHARE::CText const CKernelServerLink::NAME = "udt_server";
-static const NSHARE::CText NEW_NAME = CKernelServerLink::NAME;
 
 CKernelServerLink::CKernelServerLink(descriptor_t aFD, uint64_t aTime,
 		ILinkBridge* aKer, program_id_t const & aKernel) :
@@ -587,7 +586,7 @@ class CNewConnection: public IConnectionHandlerFactory
 {
 public:
 	CNewConnection() :
-			IConnectionHandlerFactory(NEW_NAME)
+			IConnectionHandlerFactory(CKernelServerLink::NAME)
 	{
 
 	}
@@ -613,7 +612,7 @@ CKernelServerLinkRegister::CKernelServerLinkRegister() :
 }
 void CKernelServerLinkRegister::MUnregisterFactory() const
 {
-	CConnectionHandlerFactory::sMGetInstance().MRemoveFactory(NEW_NAME);
+	CConnectionHandlerFactory::sMGetInstance().MRemoveFactory(CKernelServerLink::NAME);
 }
 void CKernelServerLinkRegister::MAdding() const
 {
@@ -623,7 +622,7 @@ bool CKernelServerLinkRegister::MIsAlreadyRegistered() const
 {
 	if (CConnectionHandlerFactory::sMGetInstancePtr())
 		return CConnectionHandlerFactory::sMGetInstance().MIsFactoryPresent(
-				NEW_NAME);
+				CKernelServerLink::NAME);
 	return false;
 
 }

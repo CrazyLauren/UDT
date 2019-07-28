@@ -75,7 +75,7 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
 				}
 				break;
 			case E_MSG_SWAP_BYTE_TEST:

@@ -15,6 +15,7 @@
 #ifndef UDP_SOCKET_EXIST
 #	define UDP_SOCKET_EXIST
 #endif 
+#include <Socket/socket_setting_t.h>
 
 namespace NSHARE
 {
@@ -54,6 +55,9 @@ public:
 			eMULTICAST,///< A multicast UDP socket
 		};
 
+		/** Flags
+		 *
+		 */
 		enum eFlags
 		{
 			E_REMOVE_INVALID_SEND_IP=0x1<<0, ///< If set invalid send ip will be ignored
@@ -145,6 +149,7 @@ public:
 		net_addresses_t  FSendTo;///< Send to address
 		eType FType;///< A type of socket
 		flags_t FFlags;///< Flags see #eFlags
+		socket_setting_t FSocketSetting;///< Socket setting of course flag E_SET_BUF_SIZE is not used
 
 	};
 	typedef network_ips_t list_of_broadcast_addr_t;///< info about broadcast addresses of interfaces
@@ -398,6 +403,9 @@ private:
 	diagnostic_io_t FDiagnostic;///<Some diagnostic parameters
 	settings_t FParam;///<A current settings of port
 	size_t FMaxSendSize;///< Max send buffer size
+	CMutex FReceiveThreadMutex; ///<It's used for lock receive operation
+	atomic_t FIsWorking;///< true if UDP is working
+	atomic_t FIsReceiving;///< If true then object is locked on recvfrom (see #MClose)
 };
 } //namespace USHARE
 namespace std
@@ -428,6 +436,7 @@ inline std::ostream& operator<<(std::ostream & aStream, NSHARE::CUDP::settings_t
 	aStream << "Flags:"<<aVal.FFlags<<std::endl;
 	aStream << "Send to:"<<aVal.FSendTo<<std::endl;
 	aStream << "Receive from:"<<aVal.FReceiveFrom<<std::endl;
+	aStream << "Socket:"<<aVal.FSocketSetting<<std::endl;
 
 	return aStream;
 }

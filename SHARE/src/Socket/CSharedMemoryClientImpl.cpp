@@ -81,7 +81,7 @@ bool IMPL_CLASS::MOpen()
 		return false;
 	VLOG(2)<<"The ShM "<<FName<<" is opened";
 	void* _p = FSharedMemory.MGetIfMalloced(0);
-	LOG_IF(ERROR,!_is) << "The shared memory " << FName << " has not server.";
+	LOG_IF(ERROR,!_p) << "The shared memory " << FName << " has not server.";
 	if (!_p)
 	{
 		MFreeBase();

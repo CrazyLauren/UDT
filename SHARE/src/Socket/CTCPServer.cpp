@@ -28,7 +28,43 @@ namespace NSHARE
 const NSHARE::CText CTCPServer::NAME="tcpser";
 version_t CTCPServer::sMGetVersion()
 {
-	return version_t(1, 0);
+	/*
+	 *	chanelog
+	 *
+	 *	Версия 0.2 (29.01.2014)
+	 *
+	 *		- Исправлен баг с loopback socket.
+	 *  		Если кто-то подключался одновременно c "петлёй", то её сокет терялся.
+	 *			Теперь в MAddNewClient  присвается FIsLoopConnected true.
+	 *
+	 *	Версия 0.3 (01.02.2016)
+	 *		- Исправлен баг с loopback socket.
+	 *			Гонка потоков. Если connect loopback случался рашьше чем accept
+	 *			ресурсы утекали.
+	 *
+	 *	Версия 0.4 (05.02.2016)
+	 *		- loopback trick переписон через два udp socketa - теперь всё работает как часы.
+	 *
+	 *	Версия 0.5 (22.04.2016)
+	 *		- CImpl
+	 *		- убран костыль smart_recv_t
+	 *
+	 *	Версия 0.6 (23.04.2016)
+	 *		- Теперь можно открять TCP сервер со случайным портом
+	 *
+	 *	Версия 0.7 (22.05.2016)
+	 *		- LoopBack выделен в отдельный класс
+	 *
+	 *	Версия 1.0 (30.06.2016)
+	 *		- Смена API
+	 *
+	 *	Версия 1.1 (30.08.2016)
+	 *		- Добавлен метод MGetBuf
+	 *
+	 *	Версия 1.2 (14.07.2019)
+	 *		- Обновлена реализация класса
+	 */
+	return version_t(1, 2);
 }
 CTCPServer::events_t::key_t const CTCPServer::EVENT_CONNECTED("Connected");
 CTCPServer::events_t::key_t const CTCPServer::EVENT_DISCONNECTED(
@@ -56,12 +92,15 @@ CTCPServer::~CTCPServer()
 	VLOG(2) << "Destruct CTCPServer: " << this;
 	MClose();
 }
+bool CTCPServer::MSetAddress(const net_address& aParam)
+{
+	return FImpl->MSetAddress(aParam);
+}
 bool CTCPServer::MOpen(const net_address& aAddr, int aFlags)
 {
 	VLOG(2) << "Open server  " << aAddr << ", aFlags:" << aFlags << this;
-	if(MIsOpen())
+	if(MIsOpen() || !MSetAddress(aAddr))
 		return false;
-	FImpl->FHostAddr=aAddr;
 	return FImpl->MOpen();
 }
 bool CTCPServer::MReOpen()
@@ -112,7 +151,7 @@ bool CTCPServer::MClose(const client_t& aClient)
 }
 void CTCPServer::MCloseAllClients()
 {
-	return FImpl->MCloseAllClients();
+	return FImpl->MRemoveAllClients();
 }
 void CTCPServer::MClose()
 {
@@ -120,7 +159,7 @@ void CTCPServer::MClose()
 }
 void CTCPServer::MForceUnLock()
 {
-	return FImpl->MUnLockSelect();
+	return FImpl->MForceUnLock();
 }
 
 CTCPServer::sent_state_t CTCPServer::MSend(const void* pData, size_t nSize)
@@ -138,11 +177,11 @@ CTCPServer::sent_state_t CTCPServer::MSend(const void* pData, size_t nSize,
 }
 bool CTCPServer::MIsOpen() const
 {
-	return FImpl->FHostSock.MIsValid();
+	return FImpl->MIsOpen();
 }
-net_address const& CTCPServer::MGetSetting() const
+CTCPServer::settings_t const& CTCPServer::MGetSetting() const
 {
-	return FImpl->FHostAddr;
+	return FImpl->MGetSetting();
 }
 NSHARE::CConfig CTCPServer::MSettings(void) const
 {
@@ -153,61 +192,39 @@ bool CTCPServer::MIsClients() const
 {
 	return FImpl->MIsClients();
 }
-
+bool CTCPServer::MIsClient(const net_address& aIP) const
+{
+	return FImpl->MIsClient(aIP);
+}
 
 const CSocket& CTCPServer::MGetSocket(void) const
 {
-	return FImpl->FHostSock;
+	return FImpl->MGetSocket();
 }
 diagnostic_io_t const& CTCPServer::MGetDiagnosticState() const
 {
-	return FImpl->FDiagnostic;
+	return FImpl->MGetDiagnosticState();
 }
 NSHARE::CConfig CTCPServer::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
+
 	_conf.MAdd(MSettings());
+	_conf.MAdd(MGetDiagnosticState().MSerialize());
 
-	_conf.MAdd(FImpl->FDiagnostic.MSerialize());
-	{
-		CImpl::CRAccsess _r = FImpl->FClients.MGetRAccess();
-
-		VLOG(2) << _r->size() << " clients and "
-							<< FImpl->FSelectSock.MGetSockets().size()
-							<< " sock now.";
-
-		CImpl::clients_fd_t::const_iterator _it = _r->begin(),_it_end(_r->end());
-		for (;_it!=_it_end;++_it)
-		{
-			NSHARE::CConfig _cl("cl");
-			_cl.MAdd(_it->second.FAddr.MSerialize());
-			_cl.MAdd("eagain",_it->second.FAgainError);
-			_cl.MAdd(_it->second.FDiagnostic.MSerialize());
-			_cl.MAdd("time",_it->second.FTime);
-			_conf.MAdd(_cl);
-		}
-	}
 	return _conf;
 }
 CTCPServer::list_of_clients CTCPServer::MGetClientInfo() const
 {
-	list_of_clients _rval;
-	CImpl::CRAccsess const _r = FImpl->FClients.MGetRAccess();
-
-	VLOG(2) << _r->size() << " clients and "
-						<< FImpl->FSelectSock.MGetSockets().size()
-						<< " sock now.";
-
-	CImpl::clients_fd_t::const_iterator _it = _r->begin(), _it_end(_r->end());
-	for (;_it!=_it_end;++_it)
-	{
-		_rval.push_back(_it->second);
-	}
-	return _rval;
+	return FImpl->MGetConnectedClientInfo();
+}
+CTCPServer::list_of_clients CTCPServer::MGetDisconnectedClientInfo() const
+{
+	return FImpl->MGetDisconnectedClientInfo();
 }
 std::ostream& CTCPServer::MPrint(std::ostream& aStream) const
 {
-	net_address const& _addr(MGetSetting());
+	settings_t const& _addr(MGetSetting());
 	if (MIsOpen())
 		aStream << NSHARE::NCONSOLE::eFG_GREEN << "Opened.";
 	else
@@ -216,20 +233,16 @@ std::ostream& CTCPServer::MPrint(std::ostream& aStream) const
 	aStream << NSHARE::NCONSOLE::eNORMAL;
 	aStream << " Type: TCP. " << "Param: " << _addr << ". ";
 
-	if (MIsClients())
+	list_of_clients const _clients(MGetClientInfo());
+	if (!_clients.empty())
 	{
-		CImpl::CRAccsess const _r = FImpl->FClients.MGetRAccess();
 
-		VLOG(2) << _r->size() << " clients and "
-							<< FImpl->FSelectSock.MGetSockets().size()
-							<< " sock now.";
-
-		CImpl::clients_fd_t::const_iterator _it = _r->begin();
+		list_of_clients::const_iterator _it = _clients.begin();
 		aStream << NSHARE::NCONSOLE::eFG_GREEN;
 		for (;;)
 		{
-			aStream << _it->second;
-			if (++_it == _r->end())
+			aStream << *_it;
+			if (++_it == _clients.end())
 				break;
 			else
 				aStream << ';';
@@ -244,8 +257,47 @@ std::ostream& CTCPServer::MPrint(std::ostream& aStream) const
 }
 std::pair<size_t, size_t> CTCPServer::MBufSize() const
 {
-	return std::pair<size_t, size_t>(FImpl->MGetSendBufSize(FImpl->FHostSock),
-			FImpl->MGetRecvBufSize(FImpl->FHostSock));
+	return std::pair<size_t, size_t>(FImpl->MGetSendBufSize(MGetSocket()),
+			FImpl->MGetRecvBufSize(MGetSocket()));
+}
+
+const CText CTCPServer::client_t::NAME="cl";
+const CText CTCPServer::client_t::KEY_CONNECTION_TIME="connect_time";
+const CText CTCPServer::client_t::KEY_DISCONNECT_TIME="disconnect_time";
+
+
+CTCPServer::client_t::client_t(net_address const & aAddr ):
+		FAddr(aAddr),//
+		FTime(aAddr.MIsValid()?NSHARE::get_time():-1),//
+		FDiconnectTime(0)
+{
+
+}
+CTCPServer::client_t::client_t(NSHARE::CConfig const& aConf) :
+		FAddr(aConf.MChild(net_address::NAME)),//
+		FTime(-1),//
+		FDiconnectTime(0),//
+		FDiagnostic(aConf.MChild(diagnostic_io_t::NAME))//
+
+{
+	aConf.MGetIfSet(KEY_CONNECTION_TIME,FTime);
+	aConf.MGetIfSet(KEY_DISCONNECT_TIME,FDiconnectTime);
+}
+bool CTCPServer::client_t::MIsValid() const
+{
+	return FAddr.MIsValid()//
+			&&FDiagnostic.MIsValid()//
+			&&FTime>=0//
+			&&FDiconnectTime>=0;
+}
+CConfig CTCPServer::client_t::MSerialize() const
+{
+	CConfig _conf(NAME);
+	_conf.MAdd(FAddr.MSerialize());
+	_conf.MAdd(FDiagnostic.MSerialize());
+	_conf.MAdd(KEY_CONNECTION_TIME,FTime);
+	_conf.MAdd(KEY_DISCONNECT_TIME,FDiconnectTime);
+	return _conf;
 }
 bool CTCPServer::client_t::operator==(client_t const& aRht) const
 {
@@ -255,5 +307,42 @@ bool CTCPServer::client_t::operator==(net_address const& aRht) const
 {
 	return aRht == FAddr;
 }
+const unsigned CTCPServer::settings_t::DEFAULT_LIST_QUEUE_LEN=2;
+const CText CTCPServer::settings_t::NAME=CTCPServer::NAME;
+const CText CTCPServer::settings_t::KEY_LIST_QUEUE_LEN="listen_queue_len";
 
+CTCPServer::settings_t::settings_t(network_port_t const& aParam) :
+		FServerAddress(aParam),//
+		FListenQueue(DEFAULT_LIST_QUEUE_LEN)
+{
+}
+
+CTCPServer::settings_t::settings_t(net_address const& aParam) :
+		FServerAddress(aParam),//
+		FListenQueue(DEFAULT_LIST_QUEUE_LEN)
+{
+}
+
+CTCPServer::settings_t::settings_t(NSHARE::CConfig const& aConf) :
+		FSocketSetting(aConf.MChild(socket_setting_t::NAME)),//
+		FServerAddress(aConf.MChild(net_address::NAME)),//
+		FListenQueue(DEFAULT_LIST_QUEUE_LEN)
+{
+	aConf.MGetIfSet(KEY_LIST_QUEUE_LEN,FListenQueue);
+}
+bool CTCPServer::settings_t::MIsValid() const
+{
+	return FSocketSetting.MIsValid()//
+			&&FServerAddress.MIsValid()//
+			&&FListenQueue>1;
+}
+
+CConfig CTCPServer::settings_t::MSerialize() const
+{
+	CConfig _conf(NAME);
+	_conf.MAdd(FServerAddress.MSerialize());
+	_conf.MAdd(FSocketSetting.MSerialize());
+	_conf.MAdd(KEY_LIST_QUEUE_LEN,FListenQueue);
+	return _conf;
+}
 } /* namespace NSHARE */

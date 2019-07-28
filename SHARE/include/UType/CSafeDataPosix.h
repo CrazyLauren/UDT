@@ -67,8 +67,9 @@ private:
 	}
 	void MLock()
 	{
+		VLOG(3)<<"Write lock object"<<&FSafe.FData;
 		pthread_rwlock_wrlock(&FSafe.FImpl.FMutex);
-		CHECK_EQ(FSafe.FImpl.FWritersLock,0);
+		DCHECK_EQ(FSafe.FImpl.FWritersLock,0);
 		++FSafe.FImpl.FWritersLock;
 	}
 
@@ -77,7 +78,7 @@ private:
 		if ((--FSafe.FImpl.FWritersLock) == 0)
 			pthread_rwlock_unlock(&FSafe.FImpl.FMutex);
 
-		CHECK_GE(FSafe.FImpl.FWritersLock , 0);
+		DCHECK_GE(FSafe.FImpl.FWritersLock , 0);
 	}
 	CSafeData<_T>& FSafe;
 	friend class CSafeData<_T> ;
@@ -153,6 +154,7 @@ private:
 	inline void MLock()
 	{
 		pthread_rwlock_rdlock(&FSafe.FImpl.FMutex);
+		VLOG(3)<<"Read lock object"<<&FSafe.FData;
 	}
 	inline void MUnlock()
 	{

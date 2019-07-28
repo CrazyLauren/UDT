@@ -41,9 +41,11 @@ namespace NSHARE
 const NSHARE::CText CUDP::NAME = "udp";
 
 CUDP::CUDP(NSHARE::CConfig const& aConf) :
-		FMaxSendSize(0) //
+		FMaxSendSize(0)
 {
 
+	FIsWorking=0;
+	FIsReceiving=0;
 	settings_t _param(aConf);
 	LOG_IF(DFATAL,!_param.MIsValid()) << "Configure for udp is not valid "
 												<< aConf;
@@ -52,17 +54,33 @@ CUDP::CUDP(NSHARE::CConfig const& aConf) :
 CUDP::CUDP(const settings_t& aParam)
 {
 	FMaxSendSize = 0;
+	FIsWorking=0;
+	FIsReceiving=0;
 	if (aParam.MIsValid())
 		MOpen(aParam);
 }
 CUDP::~CUDP()
 {
 	MClose();
+
+	CRAII<CMutex> _lock(FReceiveThreadMutex);///< Wait for receive operation stopped
 }
 void CUDP::MClose()
 {
 	if (MIsOpen())
 	{
+		FIsWorking=0;
+
+		//force unlock socket
+		if(FIsReceiving.MIsOne())
+		{
+			net_address const _addr(net_address::LOCAL_HOST,
+					MGetSetting().FPort);
+			DCHECK(_addr.MIsValid());
+			char _val;
+			sent_state_t const _is=MSend(&_val, sizeof(_val), _addr);
+			DCHECK(_is.MIs());
+		}
 		FSock.MClose();
 	}
 }
@@ -299,7 +317,7 @@ bool CUDP::MOpen()
 		return false;
 
 	if (!FParam.MIsValid()) //auto generate
-		FParam.FPort = 0;
+		FParam.FPort = net_address::RANDOM_NETWORK_PORT;
 
 	FSock = CNetBase::MNewSocket(SOCK_DGRAM,IPPROTO_UDP);
 	if (!FSock.MIsValid())
@@ -308,12 +326,10 @@ bool CUDP::MOpen()
 		return false;
 	}
 
-	if (FParam.FPort)
-		CNetBase::MReUseAddr(FSock);
-
 	FMaxSendSize = 0;
 
-	CNetBase::MSettingBufSize(FSock);
+	CNetBase::MSettingSocket(FSock,FParam.FSocketSetting);
+
 	net_address _bind_addr(FParam.FPort);
 
 	switch (FParam.FType)
@@ -363,7 +379,7 @@ bool CUDP::MOpen()
 		FSock.MClose();
 		return false;
 	}
-	if (!FParam.FPort) //if Port is 0 it means select any available port.
+	if (FParam.FPort == net_address::RANDOM_NETWORK_PORT)
 	{
 		FParam.FPort=CNetBase::MGetLocalAddress(MGetSocket()).FPort;
 		LOG(INFO) << "Chosen port number " << FParam.FPort
@@ -372,6 +388,7 @@ bool CUDP::MOpen()
 
 	VLOG(0) << "The UDP socket has been opened successfully.";
 	FMaxSendSize = static_cast<size_t>(CNetBase::MGetSendBufSize(MGetSocket()));
+	FIsWorking=1;
 	return true;
 }
 bool CUDP::MReOpen()
@@ -392,81 +409,109 @@ ssize_t CUDP::MReceiveData(net_address* aFrom, data_t * aBuf, float const aTime)
 	DCHECK_NOTNULL(aBuf);
 
 	VLOG(2) << "Receive data to " << aBuf << ", max time " << aTime;
+	CRAII<CMutex> _lock(FReceiveThreadMutex);
 
 	if (!MIsOpen())
 	{
 		LOG(ERROR) << "The socket is not working";
-		return 0;
+		FDiagnostic+=sent_state_t(sent_state_t::E_SOCKET_CLOSED,0);
+		FIsReceiving=0;
+		return -1;
 	}
-	int _recvd = 0;
-	_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) &_recvd, 1, MSG_PEEK,
-	NULL, NULL);
-#ifdef _WIN32
-	//WTF? Fucking windows. If the received msg is more than the buffer size,
-	//it generates the WSAEMSGSIZE error. But The buffer is always small as
-	//it is 1 byte!!!!!
-	if (_recvd >= 0	//
-	|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
-#else
-	if (_recvd >= 0)
-#endif
+	int _recvd = -1;
+
+	if (FIsWorking.MIsOne() && ((FIsReceiving = 1)) && FIsWorking.MIsOne()) //-V501
+		//As FIsWorking and FIsReceiving is atomic, need to be sure
+		//that is during of changing the value of FIsReceiving
+		//the value of FIsWorking hasn't  be changed
 	{
-		if (MGetSocket().MIsValid()) //closed
+		_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) &_recvd, 1,
+				MSG_PEEK,
+				NULL, NULL);
+
+#ifdef _WIN32
+		//WTF? Fucking windows. If the received msg is more than the buffer size,
+		//it generates the WSAEMSGSIZE error. But The buffer is always small as
+		//it is 1 byte!!!!!
+		if (_recvd > 0	//
+		|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
+		#else
+		if (_recvd > 0)
+#endif
 		{
-			struct sockaddr_in _addr;
-			socklen_t _len = sizeof(_addr);
-			const size_t _befor = aBuf->size();
-			const size_t _size = MAvailable();
-
-			VLOG(2) << "Available " << _size << " bytes";
-			VLOG_IF(1,!_size) << "No data on socket " << MGetSocket();
-			aBuf->resize(_befor + _size);
-			DCHECK_GT(aBuf->size(), 0);
-			DCHECK_GE(aBuf->size(), _size);
-			data_t::value_type* _pbegin = aBuf->ptr() + (aBuf->size() - _size);
-
-			_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) _pbegin, (int) _size,
-					0, (struct sockaddr*) &_addr, &_len);
-			DCHECK_GT(_recvd, 0);
-
-			VLOG(2) << "Recvd=" << _recvd;
-			if (aFrom)
+			if (FIsWorking.MIsOne()) //closed
 			{
-				LOG_IF(ERROR,_len==0) << "Length of address is 0.";
-				if (_len > 0)
+				struct sockaddr_in _addr;
+				socklen_t _len = sizeof(_addr);
+				const size_t _befor = aBuf->size();
+				const size_t _size = MAvailable();
+
+				VLOG(2) << "Available " << _size << " bytes";
+				VLOG_IF(1,!_size) << "No data on socket " << MGetSocket();
+				aBuf->resize(_befor + _size);
+				DCHECK_GT(aBuf->size(), 0);
+				DCHECK_GE(aBuf->size(), _size);
+				data_t::value_type* _pbegin = aBuf->ptr()
+						+ (aBuf->size() - _size);
+				_recvd = recvfrom(MGetSocket().MGet(), (raw_type_t*) _pbegin,
+						(int) _size,
+						0, (struct sockaddr*) &_addr, &_len);
+				if (FIsWorking.MIsOne())
 				{
-					aFrom->FIp = get_ip(_addr.sin_addr);
-					aFrom->FPort = ntohs(_addr.sin_port);
-					VLOG(2) << "From " << *aFrom;
+					DCHECK_GT(_recvd, 0);
+
+					VLOG(2) << "Recvd=" << _recvd;
+					if (aFrom)
+					{
+						LOG_IF(ERROR,_len==0) << "Length of address is 0.";
+						if (_len > 0)
+						{
+							aFrom->FIp = get_ip(_addr.sin_addr);
+							aFrom->FPort = ntohs(_addr.sin_port);
+							VLOG(2) << "From " << *aFrom;
+						}
+					}
+					aBuf->resize(_befor + _recvd);
+					VLOG(0) << "Reads " << _recvd << " bytes";
+					FDiagnostic.MRecv(_recvd);
+				}
+				else
+				{
+					_recvd = -1;
+					aBuf->resize(_befor);
 				}
 			}
-			aBuf->resize(_befor + _recvd);
-			VLOG(0) << "Reads " << _recvd << " bytes";
-			FDiagnostic.MRecv(_recvd);
+			else
+				_recvd = -1;
 		}
-		else
-			_recvd = -1;
-	}
-	if (_recvd <= 0)
-	{
+		if (_recvd <= 0)
+		{
+			if (FIsWorking.MIsOne())
+			{
 #ifdef _WIN32
-		int const _errno = ::WSAGetLastError();
-		if (_errno == WSAECONNRESET) //Thank you Bill Gates for your care!
-		//It's error  mean that  The packet has been SENT to closed port
-		{
-			VLOG(1) << "WSAECONNRESET" << _errno;
-			_recvd = 0;
-		}
-		else
-		{
-			LOG(ERROR) << "Unknown error:" << _errno;
-			_recvd = -1;
-		}
+				int const _errno = ::WSAGetLastError();
+				if (_errno == WSAECONNRESET) //Thank you Bill Gates for your care!
+				//It's error  mean that  The packet has been SENT to closed port
+				{
+					VLOG(1) << "WSAECONNRESET" << _errno;
+					_recvd = 0;
+				}
+				else
+				{
+					LOG(ERROR) << "Unknown error:" << _errno;
+					_recvd = -1;
+				}
 #else
-		LOG(ERROR)<< "Unknown error:" << print_socket_error();
-		_recvd=-1;
+				LOG(ERROR)<< "Unknown error:" << print_socket_error();
+				_recvd=-1;
 #endif
+				FDiagnostic += sent_state_t(sent_state_t::E_ERROR, 0);
+			}
+			else
+				FDiagnostic += sent_state_t(sent_state_t::E_SOCKET_CLOSED, 0);
+		}
 	}
+	FIsReceiving=0;
 	return _recvd;
 }
 CUDP::sent_state_t CUDP::MSend(void const* pData, size_t nSize,
@@ -580,6 +625,11 @@ std::ostream & CUDP::MPrint(std::ostream & aStream) const
 
 	return aStream;
 }
+diagnostic_io_t const& CUDP::MGetDiagnosticState() const
+{
+	return FDiagnostic;
+}
+
 const CText CUDP::settings_t::NAME = "param";
 const CText CUDP::settings_t::UDP_PORT = "port";
 const CText CUDP::settings_t::ADDR_TO = "toip";
@@ -596,15 +646,17 @@ CUDP::settings_t::settings_t(network_port_t aPort, net_address const& aParam,
 		FType(aType),//
 		FFlags(E_DEFAULT_FLAGS)
 {
+	FSocketSetting.FFlags.MSetFlag(socket_setting_t::E_SET_BUF_SIZE, false);
 	FPort = aPort;
 
 	MAddSendAddr(aParam);
 }
 CUDP::settings_t::settings_t() :
+		FPort(std::numeric_limits<network_port_t>::max()),//
 		FType(eUNICAST),//
-		FFlags(E_DEFAULT_FLAGS)
+		FFlags(E_DEFAULT_FLAGS)//
 {
-	FPort = std::numeric_limits<network_port_t>::max();
+	FSocketSetting.FFlags.MSetFlag(socket_setting_t::E_SET_BUF_SIZE, false);
 }
 bool CUDP::settings_t::MRemoveSendAddr(net_address const&  aParam)
 {
@@ -694,7 +746,8 @@ bool CUDP::settings_t::MAddSendAddr(net_address aParam)
 }
 CUDP::settings_t::settings_t(NSHARE::CConfig const& aConf) :
 		FType(eUNICAST),//
-		FFlags(E_REMOVE_INVALID_SEND_IP)
+		FFlags(E_REMOVE_INVALID_SEND_IP),//
+		FSocketSetting(aConf.MChild(socket_setting_t::NAME))
 {
 	FPort = std::numeric_limits<network_port_t>::max();
 
@@ -735,13 +788,16 @@ CUDP::settings_t::settings_t(NSHARE::CConfig const& aConf) :
 }
 bool CUDP::settings_t::MIsValid() const
 {
-	return FPort != std::numeric_limits<network_port_t>::max();
+	return FPort != std::numeric_limits<network_port_t>::max()//
+			&& FSocketSetting.MIsValid();
 }
 CConfig CUDP::settings_t::MSerialize() const
 {
 	CConfig _conf(NAME);
 	if (MIsValid())
 	{
+		_conf.MAdd(FSocketSetting.MSerialize());
+
 		_conf.MSet(UDP_PORT, FPort);
 		if (!FReceiveFrom.empty())
 		{

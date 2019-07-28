@@ -23,10 +23,11 @@
 
 namespace NUDT
 {
-NSHARE::CText const CHttpIOManagerRegister::NAME = CHttpIOManger::NAME;
+NSHARE::CText const CHttpIOManagerRegister::NAME = "http_gui";
 CHttpIOManagerRegister::CHttpIOManagerRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 4))
 {
+
 }
 void CHttpIOManagerRegister::MUnregisterFactory() const
 {

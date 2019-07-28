@@ -20,7 +20,8 @@
 namespace NUDT
 {
 
-/*
+/** @brief This class is auto looking the other kernel by UDP
+ * and connected it by TCP
  *
  */
 class CAutoSearchByEthernet: public ICore, public NSHARE::CSingleton<CAutoSearchByEthernet>
@@ -59,14 +60,18 @@ private:
 	template<class DG_T>
 	void MProcess(DG_T const* aP, parser_t*);
 
-	void MConnectTo(auto_search_info_t const&);
+	bool MConnectTo(auto_search_info_t const&);
 	void MWaitForServerStarted();
+	bool MPushInfo(const auto_search_info_t& aInfo);
+	CKernelIOByTCPClient* MGetTCPClientIOManger() const;
+	CKernelIOByTCP* MGetTCPServerIOManger() const;
 
 	NSHARE::CUDP FUdp;///< A broadcast port
 	parser_t FProtocolParse;///<A protocol parser
 	list_of_kernels_t FListOfNotHandledKernel; ///< A list of new kernel which hasn't handled yet
 	NSHARE::CMutex FMutex; ///< A mutex for lock FListOfNotHandledKernel
 	list_of_kernels_t FListOfID; ///< List of known program, the first is the own search info
+	NSHARE::CMutex FThreadMutex; ///<It's used for lock receive operation
 
 	friend class CInParser<CAutoSearchByEthernet,NSHARE::net_address> ;
 };

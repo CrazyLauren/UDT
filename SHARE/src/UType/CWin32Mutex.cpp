@@ -78,7 +78,7 @@ struct CMutex::CImpl
  CMutex::~CMutex()
 {
 	DeleteCriticalSection(&FImpl->FCs);
-	CHECK_EQ(FImpl->FId ,0u);
+	DCHECK_EQ(FImpl->FId ,0u);
 	delete FImpl;
 }
  unsigned CMutex::MThread() const

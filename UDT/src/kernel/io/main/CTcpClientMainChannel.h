@@ -95,7 +95,7 @@ private:
 
 	NSHARE::CMutex FMutexNewLinks;
 	NSHARE::CMutex FOpenMutex;
-
+	NSHARE::CMutex FReceiveThreadMutex; ///<It's used for lock receive operation
 };
 
 } /* namespace NUDT */

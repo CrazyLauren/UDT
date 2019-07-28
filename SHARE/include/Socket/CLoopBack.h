@@ -18,7 +18,11 @@
 #include <Socket/diagnostic_io_t.h>
 namespace NSHARE
 {
-
+/** It's a loop back socket which is based on UDP socket.
+ * When it's opening, it chooses the free UPD  port.
+ *
+ *
+ */
 class SHARE_EXPORT CLoopBack: public NSHARE::ISocket
 {
 public:

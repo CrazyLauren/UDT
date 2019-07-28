@@ -77,7 +77,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
 				}
 				break;
 			case eMsgType::E_MSG_SUB_MESSAGE:
@@ -91,7 +91,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
 				}
 				break;
 
@@ -106,7 +106,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(*_phead));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
 				}
 				break;
 

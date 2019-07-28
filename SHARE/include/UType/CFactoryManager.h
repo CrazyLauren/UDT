@@ -26,16 +26,19 @@ namespace NSHARE
  * автоматически уничтожаются после вызова деструктора.
  *
  *\tparam TFactory - тип фабрики
+ *\tparam TMutexType - если нужно сделать класс потокобезопасным укажите в качестве этого параметра CMutex
  *\warning Будьте внимательны шаблон, содержит статический метод,
  * который вызывается при создании объектов.
+ * @warning MFactoryAdded is not called for factory which is added by sMAddFactory method
  */
-template<class TFactory = IFactory>
-class  CFactoryManager:public CSingleton<CFactoryManager<TFactory>  >
+template<class TFactory = IFactory,class TMutexType = CNoMutex>
+class  CFactoryManager:public CSingleton<CFactoryManager<TFactory,TMutexType>  >
 {
 public:
 	typedef std::map<CText, TFactory*> factory_registry_t;
 	typedef TFactory factory_t;
-	typedef CFactoryManager<TFactory> fac_manager_t;
+	typedef CFactoryManager<TFactory,TMutexType> fac_manager_t;
+	typedef TMutexType mutex_t;
 
 	struct  factory_its_t
 	{
@@ -54,6 +57,7 @@ public:
 	void MAddFactory(TFactory* factory);
 	
 	/**\brief Creates a factory T and adds it to the  manager
+	 * @warning Of course, #MFactoryAdded will not be called
 	*/
 	template<typename T>
 	static T* sMAddFactory();
@@ -73,8 +77,8 @@ protected:
 	virtual void MFactoryRemoved(factory_t* factory){;}
 private:
 	void MAddFactoryImpl(TFactory* factory);
-	void MRemoveFactoryImpl(const CText& name);
 	factory_registry_t FRegistry;
+	mutable mutex_t	 FMutex;
 
 	// MINGW не может корректно слинковать шаблон
 	static owned_factorys_t& sMCreatedOurselves(){//fixme add shared_ptr
@@ -83,20 +87,20 @@ private:
 	}
 };
 
-template<class TFactory>
+template<class TFactory,class TMutexType>
 template<typename T>
-inline T* CFactoryManager<TFactory>::sMAddFactory()
+inline T* CFactoryManager<TFactory,TMutexType>::sMAddFactory()
 {
 	T* _p=new T;
-	if(CFactoryManager<TFactory>::sMGetInstancePtr())
+	if(CFactoryManager<TFactory,TMutexType>::sMGetInstancePtr())
 	{
-		CFactoryManager<TFactory>::sMGetInstancePtr()->MAddFactory(_p);
+		CFactoryManager<TFactory,TMutexType>::sMGetInstancePtr()->MAddFactory(_p);
 	}else
 		sMCreatedOurselves().push_back(_p);
 	return _p;
 }
-template<class TFactory>
-inline CFactoryManager<TFactory>::CFactoryManager()
+template<class TFactory,class TMutexType>
+inline CFactoryManager<TFactory,TMutexType>::CFactoryManager()
 {
 	VLOG(2) << "CFactoryManagercreated";
 	owned_factorys_t& _copy=sMCreatedOurselves();
@@ -107,67 +111,54 @@ inline CFactoryManager<TFactory>::CFactoryManager()
 		MAddFactoryImpl(*_it);
 	sMCreatedOurselves().clear();
 }
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MAddFactoryImpl(TFactory* aFactory)
+template<class TFactory,class TMutexType>
+inline void CFactoryManager<TFactory,TMutexType>::MAddFactoryImpl(TFactory* aFactory)
 {
 	CHECK_NOTNULL(aFactory);
 
 	LOG_IF(DFATAL, MIsFactoryPresent(aFactory->MGetType())) << "Factory \""
 			<< aFactory->MGetType() << "\"is already registered.";
-
+	CRAII<mutex_t> _blocked(FMutex);
 	FRegistry[aFactory->MGetType()] = aFactory;
 
 	VLOG(2) << "Factory for " << aFactory->MGetType() << ":" << aFactory
 			<< " added";
 }
 
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MAddFactory(TFactory* aFactory)
+template<class TFactory,class TMutexType>
+inline void CFactoryManager<TFactory,TMutexType>::MAddFactory(TFactory* aFactory)
 {
 	MAddFactoryImpl(aFactory);
 	MFactoryAdded(aFactory);
 }
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MRemoveFactory(const CText& name)
+template<class TFactory,class TMutexType>
+inline void CFactoryManager<TFactory,TMutexType>::MRemoveFactory(const CText& name)
 {
-	typename factory_registry_t::iterator _it = FRegistry.find(name);
+	factory_t* _factory=NULL;
+	{
+		CRAII<mutex_t> _blocked(FMutex);
+		typename factory_registry_t::iterator _it = FRegistry.find(name);
 
-	DLOG_IF(WARNING, _it == FRegistry.end()) << "No factory exists for "
-			<< name;
-	if (_it == FRegistry.end())
-		return;
-	MFactoryRemoved(_it->second);
-	MRemoveFactoryImpl(_it->first);
-}
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MRemoveFactoryImpl(const CText& name)
-{
-	typename factory_registry_t::iterator _it = FRegistry.find(name);
+		DLOG_IF(WARNING, _it == FRegistry.end()) << "No factory exists for "
+				<< name;
+		if (_it == FRegistry.end())
+			return;
 
-	DLOG_IF(WARNING, _it == FRegistry.end()) << "No factory exists for "
-			<< name;
-	if (_it == FRegistry.end())
-		return;
+		_factory=_it->second;
+		_it->second = NULL;
 
-	VLOG(2) << "WindowFactory for " << name << ":" << (*_it).second
+		FRegistry.erase(_it);
+		VLOG(2) << "WindowFactory for" << _it->first << " :" << _it->second
 			<< " removed. ";
+	}
 
-	delete _it->second;
-	_it->second = NULL;
-	FRegistry.erase(_it);
+	MFactoryRemoved(_factory);
 
-//	typename owned_factorys_t::iterator _jt = sMCreatedOurselves().begin();
-//	for (; _jt != sMCreatedOurselves().end(); ++_jt)
-//		if ((*_it).second == (*_jt))
-//		{
-//			VLOG(2) << "Deleted Factory for " + (*_jt)->MGetType() + " .";
-//			delete *_jt;
-//			sMCreatedOurselves().erase(_jt);
-//			break;
-//		}
+	DVLOG(3)<<"Delete factory "<<name<<" : "<<_factory;
+	delete _factory;
 }
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MRemoveFactory(TFactory* factory)
+template<class TFactory,class TMutexType>
+inline void CFactoryManager<TFactory,TMutexType>::MRemoveFactory(TFactory* factory)
 {
 	if (factory)
 	{
@@ -175,15 +166,16 @@ inline void CFactoryManager<TFactory>::MRemoveFactory(TFactory* factory)
 	}
 
 }
-template<class TFactory>
-inline void CFactoryManager<TFactory>::MRemoveAllFactories()
+template<class TFactory,class TMutexType>
+inline void CFactoryManager<TFactory,TMutexType>::MRemoveAllFactories()
 {
 	for (; !FRegistry.empty();)
 		MRemoveFactory((*FRegistry.begin()).second);
 }
-template<class TFactory>
-inline TFactory* CFactoryManager<TFactory>::MGetFactory(const CText& type) const
+template<class TFactory,class TMutexType>
+inline TFactory* CFactoryManager<TFactory,TMutexType>::MGetFactory(const CText& type) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	typename factory_registry_t::const_iterator _it = FRegistry.find(type);
 	if (_it != FRegistry.end())
 		return _it->second;
@@ -191,17 +183,20 @@ inline TFactory* CFactoryManager<TFactory>::MGetFactory(const CText& type) const
 	DLOG(WARNING) << " Factory " << type << " did not founded.";
 	return NULL;
 }
-template<class TFactory>
-inline bool CFactoryManager<TFactory>::MIsFactoryPresent(
+template<class TFactory,class TMutexType>
+inline bool CFactoryManager<TFactory,TMutexType>::MIsFactoryPresent(
 		const CText& name) const
 {
+	CRAII<mutex_t> _blocked(FMutex);
 	return FRegistry.find(name) != FRegistry.end();
 }
-template<class TFactory>
-inline typename CFactoryManager<TFactory>::factory_its_t CFactoryManager<TFactory>::MGetIterator(
+template<class TFactory,class TMutexType>
+inline typename CFactoryManager<TFactory,TMutexType>::factory_its_t CFactoryManager<TFactory,TMutexType>::MGetIterator(
 		) const
 {
-	typedef typename CFactoryManager<TFactory>::factory_its_t _its_t;
+	CRAII<mutex_t> _blocked(FMutex);
+
+	typedef typename CFactoryManager<TFactory,TMutexType>::factory_its_t _its_t;
 	_its_t _it;
 	_it.FBegin = FRegistry.begin();
 	_it.FEnd = FRegistry.end();

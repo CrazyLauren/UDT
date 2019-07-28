@@ -38,59 +38,62 @@ namespace NSHARE
 {
 #define IMPL CTCP::CClientImpl
 
-CTCP::CClientImpl::CClientImpl(CTCP& aTcp) :
-		FTcp(aTcp), FIsReceive(false)
+CTCP::CClientImpl::CClientImpl(CTCP& aTcp,settings_t const& aSetting):
+		FTcp(aTcp), //
+		FSettings(aSetting),//
+		FConnectMutex(CMutex::MUTEX_NORMAL),//
+		FIsConnected(false)
 {
 	VLOG(2) << "Construct CClientImpl :" << this;
-	memset(_buf, 0, sizeof(_buf));
 	memset(&FAddr, 0, sizeof(FAddr));
-	FConnectionCount = 0;
-	FAgainError = 0;
-	FSock = MNewSocket();
-	if (!FSock.MIsValid())
-	{
-		LOG(ERROR)<<"Cannot create socket.";
-	}
-	else
-	MSettingSocket(FSock);
+	FIsDoing=0;
+	FIsReceiving=0;
 }
 CTCP::CClientImpl::~CClientImpl()
 {
-	VLOG(2) << "Disstruct CClientImpl :" << this;
+	VLOG(2) << "Waitfor Close Receive thread";
+	CRAII<CMutex> _lock(FReceiveThreadMutex);
 }
-net_address IMPL::MGetInitParam() const
+void IMPL::MSetAddress(net_address const& aAddr)
 {
-	return net_address(get_ip(FAddr.sin_addr),ntohs(FAddr.sin_port));
+	FSettings.FServerAddress=aAddr;
+
+	if (FSettings.FServerAddress.FIp.MGetConst().empty())
+		FSettings.FServerAddress.FIp=net_address::LOCAL_HOST;
+}
+CTCP::settings_t const& IMPL::MGetInitParam() const
+{
+	return FSettings;
 }
 bool IMPL::MClientConnect()
 {
-	VLOG(2)<<"Connect to "<<MGetInitParam();
+	VLOG(2)<<"Connect to "<<MGetInitParam().FServerAddress;
 
-	CRAII<CMutex> _mutex(FMutex);
-	if (FTcp.MIsConnected())
+	CRAII<CMutex> _mutex(FConnectMutex);
+	if (FIsConnected)
 	{
 		VLOG(2) << "Has been connected";
 		return true;
 	}
 	FSock.MClose();
-	for(HANG_INIT;!FSock.MIsValid();HANG_CHECK)
-	{
-		VLOG(2) << "The socket is invalid";
-		FSock = MNewSocket();
-		MSettingSocket(FSock);
-	}
-	LOG_IF(DFATAL,!MIsClient())<<"Invalid address ";
-	FTcp.FIsConnected = false;
-	if (connect(FSock.MGet(), (struct sockaddr *) &(FAddr),
-					sizeof(FAddr)) >=0)
-	{
-		VLOG(2) << "Connected to "<<MGetInitParam();
-		FTcp.FIsConnected = true;
+	FSock = MNewSocket();
 
-		net_address _addr=MGetInitParam();
-		FTcp.MCall(EVENT_CONNECTED, &_addr);
-		++FConnectionCount;
-		return true;
+	if(FSock.MIsValid())
+	{
+		MSettingSocket(FSock,FSettings.FSocketSetting);
+
+		LOG_IF(DFATAL,FAddr.sin_addr.s_addr == INADDR_ANY)<<"Invalid address ";
+		FIsConnected = false;
+		if (connect(FSock.MGet(), (struct sockaddr *) &(FAddr),
+						sizeof(FAddr)) >=0)
+		{
+			VLOG(2) << "Connected to "<<MGetInitParam().FServerAddress;
+			FIsConnected = true;
+
+			net_address _addr=MGetInitParam().FServerAddress;
+			FTcp.MCall(EVENT_CONNECTED, &_addr);
+			return true;
+		}
 	}
 	VLOG(2)<<"Connection error "<<print_socket_error();
 	return false;
@@ -106,12 +109,14 @@ void IMPL::sMCleanupConnection(void *aP)
 ssize_t IMPL::MReceiveData(data_t* aBuf, const float aTime)
 {
 	VLOG(2) << "Start receive.";
-	FIsReceive = true;
+	CRAII<CMutex> _lock(FReceiveThreadMutex);
+
+	FIsReceiving = 1;
 	int _recvd = 0;
-	for (HANG_INIT; FTcp.FIsWorking && _recvd == 0; )
+	for (; FIsDoing.MIsOne() && _recvd == 0; )
 	{
 		VLOG(2) << "Receive data to " << aBuf;
-		if (FTcp.MIsConnected())
+		if (FIsConnected)
 		{
 			VLOG(2) << "Connected already";
 			bool _is_error = false;
@@ -120,71 +125,89 @@ ssize_t IMPL::MReceiveData(data_t* aBuf, const float aTime)
 			//WTF? Fucking windows. If the received msg is more than the buffer size,
 			//it generates the WSAEMSGSIZE error. But The buffer is always small as
 			//it is 1 byte!!!!!
-			if (_recvd >= 0
+			if (_recvd > 0
 					|| (_recvd == SOCKET_ERROR && WSAEMSGSIZE == ::WSAGetLastError()))
 #else
-			if (_recvd >= 0)
+			if (_recvd > 0)
 #endif
-				_recvd=MReadData(aBuf,FSock);
+				_recvd=MReadData(aBuf,FSock,FDiagnostic);
 
 			if (_recvd <= 0)
-			_is_error = true;
+				_is_error = true;
+
+			VLOG_IF(0,_recvd==0)<<"The connection is closed";
 
 			if (_is_error)
 			{
 				VLOG(2) << "Error during receive " << print_socket_error();
-				MCloseImpl();
+				MDisconnect();
 			}
 		}
 		else
 		{
 			MClientConnect();
-			HANG_CHECK;
 		}
 	}
-	FIsReceive = false;
+	FIsReceiving = 0;
 	VLOG(2) << "End receive.";
-	if(_recvd>0)FDiagnostic.MRecv(_recvd);
 	return _recvd;
+}
+bool IMPL::MIsOpen() const
+{
+	return FIsDoing.MIsOne();
+}
+bool IMPL::MOpen()
+{
+	if (MIsOpen())
+	{
+		LOG(WARNING)<< "The Port has been opened already.";
+		return false;
+	}
+	if(!FSettings.FServerAddress.MIsAddressValid())
+	{
+		LOG(DFATAL)<<"Invalid server address: "<<FSettings.FServerAddress;
+		return false;
+	}
+
+	CNetBase::MSetAddress(FSettings.FServerAddress, &FAddr);
+	FIsDoing = 1;
+	return MIsOpen();
 }
 
 CTCP::sent_state_t IMPL::MSend(const void* pData, size_t nSize)
 {
 	VLOG(2) << "Send " << pData <<" "<< nSize<<" bytes to " << FSock;
-	if (!FTcp.MIsConnected())
+	if (!FIsConnected)
 	{
-		VLOG(2) << "Is not connected.Receive= " << FIsReceive;
-		if (FIsReceive) //if receive method does not work, can connect
-		return sent_state_t(sent_state_t::E_ERROR,0);
-		else if (!MClientConnect())
-		return sent_state_t(sent_state_t::E_ERROR,0);
-	}
-	return MSendTo(FSock,pData,nSize,FDiagnostic,true,FAgainError);
+		VLOG(2) << "Is not connected.Receive= " << FIsReceiving.MIsOne();
+		sent_state_t const _error(sent_state_t::E_ERROR,nSize);
+		FDiagnostic.MSend(_error);
+		return _error;
+	}else
+		return MSendTo(FSock,pData,nSize,FDiagnostic,true);
 }
-
-
-bool IMPL::MIsClient() const
+void IMPL::MDisconnect()
 {
-	return FAddr.sin_addr.s_addr != INADDR_ANY;
-}
-
-void IMPL::MCloseImpl()
-{
-	CRAII < CMutex > _mutex(FMutex);
+	CRAII < CMutex > _mutex(FConnectMutex);
 	VLOG(2) << "Closing the socket";
 
 	FSock.MClose();
-	if(FTcp.FIsConnected)
+	if(FIsConnected)
 	{
-		FTcp.FIsConnected = false;
-		net_address _addr = MGetInitParam();
+		VLOG(2) << "Event Disconnect";
+		FIsConnected = false;
+		net_address _addr = MGetInitParam().FServerAddress;
 		FTcp.MCall(EVENT_DISCONNECTED, &_addr);
 	}
 }
 
 void IMPL::MClose()
 {
-	VLOG(2) << "Close client" << MGetInitParam() << " " << FSock;
-	MCloseImpl();
+	VLOG(2) << "Close client" << MGetInitParam().FServerAddress << " " << FSock;
+	if(MIsOpen())
+	{
+		FIsDoing = 0;
+		FSock.MClose();
+	}
 }}
 

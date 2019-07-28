@@ -41,6 +41,9 @@ struct SHARE_EXPORT net_address
 	static const CText BROAD_CAST_ADDR;///< broadcast address
 	static const CText ALL_NETWORKS;///< address for listens on all networks
 	static const CText LOCAL_HOST;///< ip address of local host
+	static const network_port_t INVALID_NETWORK_PORT;///<Invalid network port value
+	static const network_port_t RANDOM_NETWORK_PORT;/*! If the port number is equal this value then
+	 	 	 	 	 	 	 	 	 	 	 	 	 * its value will be selected from the non-used port.*/
 
 	/** @brief default constructor
 	 *
@@ -141,6 +144,12 @@ struct SHARE_EXPORT net_address
 	 * @return true if it's valid.
 	 */
 	bool MIsValid() const;
+
+	/** @brief Return true if port and IP is valid
+	 *
+	 * @return true if port and IP is valid
+	 */
+	bool MIsAddressValid() const;
 
 	/*! @brief Serialize object
 	 *

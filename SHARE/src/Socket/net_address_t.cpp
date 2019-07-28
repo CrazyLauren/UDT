@@ -28,7 +28,8 @@ const CText net_address::BROAD_CAST_ADDR = "255.255.255.255";
 const CText net_address::ALL_NETWORKS = "0.0.0.0";
 const CText net_address::LOCAL_HOST = "127.0.0.1";
 
-network_port_t INVALID_NETWORK_PORT=-1;
+network_port_t const net_address::INVALID_NETWORK_PORT=-1;
+network_port_t const net_address::RANDOM_NETWORK_PORT=0;
 
 net_address::net_address(uint32_t aIp, network_port_t aPort)
 {
@@ -97,13 +98,19 @@ CConfig net_address::MSerialize() const
 	}
 	return _conf;
 }
+bool net_address::MIsAddressValid() const
+{
+	return MIsPortValid()//
+			&& MIsIPValid()//
+			;
+}
 bool net_address::MIsValid() const
 {
-	return MIsPortValid();///< Required only that the port will be valid
+	return MIsPortValid() || FPort==RANDOM_NETWORK_PORT;///< Required only that the port will be valid
 }
 bool net_address::MIsPortValid() const
 {
-	return FPort !=INVALID_NETWORK_PORT;
+	return FPort !=INVALID_NETWORK_PORT && FPort!=RANDOM_NETWORK_PORT;
 }
 void net_address::MSetIP(uint32_t aIp)
 {

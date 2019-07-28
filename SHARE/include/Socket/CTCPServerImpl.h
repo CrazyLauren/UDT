@@ -11,84 +11,157 @@
  */ 
 #ifndef CTCPSERVERIMPL_H_
 #define CTCPSERVERIMPL_H_
-#include <Socket/CTcpImplBase.h>
+
+#include <Socket/CTCPSelectReceiver.h>
+
 namespace NSHARE
 {
-struct CTCPServer::loop_back_t: IIntrusived
+struct CTCPServer::CImpl:public CTCPSelectReceiver
 {
-	CLoopBack FLoop;
-};
-struct CTCPServer::CImpl:public CTcpImplBase, IIntrusived
-{
-	struct cl_t:client_t
-	{
-		diagnostic_io_t FDiagnostic;
-		mutable unsigned FAgainError;
-	};
-	typedef std::map<CSocket, cl_t> clients_fd_t;
-	typedef NSHARE::CSafeData<clients_fd_t>::RAccess<> const CRAccsess;
-	typedef NSHARE::CSafeData<clients_fd_t>::WAccess<> CWAccsess;
-
-
 	CImpl(CTCPServer * aThis);
 
-	size_t MAvailable() const;
-	bool MCanReceive() const;
-	bool MCloseClient(const net_address& aTo);
-	void MCloseAllClients();
-	void MClose();
+	/** Close the client by Its IP
+	 *
+	 * @param aIP  A client IP
+	 * @return true if closed
+	 */
+	bool MCloseClient(const net_address& aIP);
 
-	ssize_t MReceiveData(recvs_t*aFrom, data_t*aBuf, const float aTime);
-	bool MReceiveLoopBack();
+	/** Add the new client
+	 *
+	 * @param aSocket A socket
+	 * @param aAddress A IP address
+	 */
+	bool MAddClient(CSocket& aSocket, const net_address& aAddress);
 
-	bool MOpenHostSocket();
-	bool MOpenLoopSocket();
+	/** Returns info about socket
+	 *
+	 * @param aSocket The socket
+	 * @return Info about socket
+	 */
+	client_t MGetSocketInfo(CSocket const& aSocket) const;
 
-	cl_t MNewClient_t(net_address const &) const;
-	void MMakeNonBlocking(CSocket& aSocket);
-	void MCloseClient(CSocket& aSocket);
-	bool MIsClient() const;
-	int MWaitData(const float aTime) const;
-	bool MOpen();
-	static eCBRval sMConnect(void*, void*, void* pData);
-	void MAccept();
-	static eCBRval sMCleanupMutex(void*, void*, void* aP);
-
-	sent_state_t MSend(const void* pData, size_t nSize);
-	sent_state_t MSendTo(clients_fd_t::value_type const& aSock, const void* pData, size_t nSize);
-	sent_state_t MSend(const void* pData, size_t nSize, const net_address&aTo);
-	sent_state_t MSend(const void* pData, size_t nSize, NSHARE::CConfig const& aTo);
-	net_address MGetAddress(const struct sockaddr_in&) const;
-
-	cl_t MAddNewClient(CSocket& _sock, struct sockaddr_in& _addr);
-	void MUnLockSelect();
-	//int MReceiveFrom(data_t* aBuf, CSocket &);
-	void MExpectConnection();
-	void MReserveMemory(data_t* aBuf, CSelectSocket::socks_t const&);
-	int MReceiveFromAllSocket(data_t* aBuf, CSelectSocket::socks_t &,
-			recvs_t* aFrom);
-	void MCalculateDataBegin(recvs_t*aFrom, data_t*aBuf);
+	/** Returns true if there are clients
+	 *
+	 * @return true if at least one client is exist
+	 */
 	bool MIsClients() const;
 
-	CSocket FHostSock;
-	CSelectSocket FSelectSock;
+	bool MIsClient(const net_address& aIP) const;
 
-	net_address FHostAddr;
-	NSHARE::CSafeData<clients_fd_t> FClients;
+	void MClose();
 
-	volatile bool FIsWorking;
-	volatile bool FIsReceive;
+	/** Receives the data
+	 *
+	 * @param aFrom [out] From whom the data is received
+	 * @param aBuf [out] Where the received data is passed
+	 * @param aTime [out] Wait for time
+	 * @return The amount of received bytes or -1
+	 */
+	ssize_t MReceiveData(recvs_t*aFrom, data_t*aBuf, const float aTime);
 
-	diagnostic_io_t FDiagnostic;
+	bool MOpen();
 
-	CThread FThread;
-	CMutex FMutex;		//fixme deprecated
-	CCondvar FCond;		//fixme deprecated
-	NSHARE::intrusive_ptr<loop_back_t> FLoopBack;
+
+	/** Send to all clients
+	 *
+	 * @param pData A pointer to data
+	 * @param nSize A data size
+	 * @return send state
+	 */
+	sent_state_t MSend(const void* pData, size_t nSize);
+
+	/** Send to specified client
+	 *
+	 * @param pData A pointer to data
+	 * @param nSize A data size
+	 * @param aTo A ip address of client
+	 * @return send state
+	 */
+	sent_state_t MSend(const void* pData, size_t nSize, const net_address&aTo);
+
+	/** Send to specified client
+	 *
+	 * @param pData A pointer to data
+	 * @param nSize A data size
+	 * @param aTo A ip address of client or serialized object type of CTCPServer::client_t
+	 * @return send state
+	 */
+	sent_state_t MSend(const void* pData, size_t nSize, NSHARE::CConfig const& aTo);
+
+	bool MIsOpen() const;
+	bool MSetAddress(const net_address& aParam);
+
+	/** Returns diagnostic information about
+	 * socket
+	 *
+	 * @return reference to object
+	 */
+	diagnostic_io_t const& MGetDiagnosticState() const;
+
+	CTCPServer::settings_t const& MGetSetting() const;
+	const CSocket& MGetSocket(void) const;
+
+	/** @brief Returns info about connected clients
+	 *
+	 * @return list of connected clients
+	 */
+	list_of_clients MGetConnectedClientInfo() const;
+
+	/** @brief Returns info about disconnected clients
+	 *
+	 * @return list of connected clients
+	 */
+	list_of_clients const&  MGetDisconnectedClientInfo() const;
+protected:
+	void MClientIsRemoved(CSocket& aSocket);
+	void MClientIsAdded(CSocket& aSocket);
+private:
+	typedef std::map<CSocket, client_t> clients_fd_t;///< The list of clients
+	typedef NSHARE::CSafeData<clients_fd_t>::RAccess<> const CRAccsess;///< Access for reading to #clients_fd_t type
+	typedef NSHARE::CSafeData<clients_fd_t>::WAccess<> CWAccsess;///< Access for reading to #clients_fd_t type
+	typedef std::map<net_address, clients_fd_t::const_iterator > client_by_ip_t;///< The list of clients sorted by IP
+
+
+	sent_state_t MSendTo(clients_fd_t::value_type const& aSock, const void* pData, size_t nSize);
+
+	void MStartConnectionThread();
+	void MStopConnectionThread();
+	void MWaitForConnectionThread();
+	void MCloseHostSocket();
+	static eCBRval sMListenThread(void*, void*, void* pData);
+	void MListen();
+	bool MListenSocket();
+	bool MOpenHostSocket();
+
+	bool MAddSocket(CSocket const& aSocket,client_t const& aClient);
+	client_t MRemoveSocket(CSocket const& aSocket);
+	bool MUpdateClientInfo(recvs_t*aFrom, data_t& aBuf,size_t aFirstByte, read_data_from_t const& aSockets);
+
+
+	CThread FConnectThread;///< Thread for handle a new connection
+	//CCondvar FConnectCondVar;///<Condition variable for blocking receiving thread
+	CMutex FConnectMutex;///<Lock connect thread
+
 	CTCPServer *FThis;
-	CSelectSocket::socks_t FTo;
-	const NSHARE::CBuffer FTestMsg;
+
+	NSHARE::CSafeData<clients_fd_t> FClients;///<The list of clients
+	NSHARE::CSafeData<client_by_ip_t> FClientsByIP;///<The list of clients #FClients sorted by IP
+	list_of_clients FInfoAboutOldClient;///<Info about the old client @todo RW lock
+	atomic_t FIsAccepting;///< 0 - FConnectThread isn't working, 1 - isn't working
+
+	CSocket FHostSock;///< A host socket
+	settings_t FSettings;///<Settings
+	mutable diagnostic_io_t FCurrentDiagnostic;///< A current diagnostic state
 };
+inline CTCPServer::settings_t const& CTCPServer::CImpl::MGetSetting() const
+{
+	return FSettings;
+}
+inline const CSocket& CTCPServer::CImpl::MGetSocket(void) const
+{
+	return FHostSock;
+}
 }
 
 #endif /* CTCPSERVERIMPL_H_ */

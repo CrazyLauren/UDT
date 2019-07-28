@@ -32,37 +32,53 @@
 #else
 #include <ws2tcpip.h>
 #endif
-#define NSHARE_TCP_ERROR_TIMEOUT 1000
+
 namespace NSHARE
 {
+const unsigned CTcpImplBase::REPEAT_SEND_COUNT = 5;
+const unsigned CTcpImplBase::NSHARE_TCP_ERROR_TIMEOUT = 1000;
+
 CSocket CTcpImplBase::MNewSocket()
 {
 	return CNetBase::MNewSocket(SOCK_STREAM,IPPROTO_TCP);
 }
+/** Wait for data will send
+ *
+ * @param aTo Socket
+ */
 void CTcpImplBase::MWaitForSend(CSocket const & aTo) const
 {
-	//NSHARE::usleep(NSHARE_TCP_ERROR_TIMEOUT); //fixme wait 1 ms
 	CSelectSocket _sock;
 	_sock.MAddSocket(aTo);
 	CSelectSocket::socks_t _tmp;
 	_sock.MWaitData(_tmp,E_WRITE_ONLY);
-
 }
 CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
-		const void* pData, size_t nSize, diagnostic_io_t const & aDiag,
-		bool aIsBlockMode, unsigned& aNumberOfRepeats) const
+		const void* pData, size_t nSize, diagnostic_io_t & aDiag,
+		bool aIsBlockMode) const
 {
 	int _repeat_count = 5;
 
 	size_t const _full_size = nSize;
-	for (HANG_INIT; _repeat_count && nSize;HANG_CHECK,++aNumberOfRepeats)
+	for (HANG_INIT; _repeat_count //
+					&& nSize//
+					;//
+						HANG_CHECK,// //-V521
+						aDiag+=sent_state_t(sent_state_t::E_AGAIN,nSize)//
+												)
 	{
 		VLOG(2) << "Send to " << aSock;
 		VLOG_IF(5,nSize<100) << NSHARE::print_buffer_t<uint8_t const*>(( uint8_t const*)pData, (uint8_t const*) pData + nSize);
 
-		LOG_IF(ERROR,!aSock.MIsValid()) << "try sending to invalide socket "<< aSock;
 		if(!aSock.MIsValid())
-		return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
+		{
+			DLOG(ERROR) << "try sending to invalid socket "<< aSock;
+
+			sent_state_t const _state(sent_state_t::E_INVALID_VALUE,_full_size-nSize);
+			aDiag+=_state;
+			return _state;
+		}
+
 #if defined(_WIN32)
 		int _val = send(aSock.MGet(), reinterpret_cast<char const*>(pData), static_cast<int>(nSize), 0);
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || (defined(__QNX__) && _NTO_VERSION>=640)||defined(__linux__)
@@ -76,7 +92,7 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 #elif defined(__linux__)//old kernel
 		int _val = send(aSock.MGet(), pData, nSize, MSG_NOSIGNAL);
 #else
-#error Target not supported
+#	error Target not supported
 #endif
 
 		if (_val < 0)
@@ -102,7 +118,8 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 			case EAGAIN: //The client buffer is full
 #endif
 				{
-					LOG_IF(ERROR,aIsBlockMode)<<"WTF!? Cannot occur in the block mode ";
+					DLOG_IF(ERROR,aIsBlockMode)<<"WTF!? Cannot occur in the block mode ";
+
 					VLOG(1) << "The client buffer is full.";
 					MWaitForSend(aSock);
 					break;
@@ -117,8 +134,13 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 #	ifdef EFAULT
 				case EFAULT:
 #	endif
-				LOG(ERROR)<<"Send invalid buffer by tcp(signsev)";
-				return sent_state_t(sent_state_t::E_INVALID_VALUE,0);
+				{
+					LOG(DFATAL)<<"Send invalid buffer by tcp(signsev)";
+
+					sent_state_t const _state(sent_state_t::E_INVALID_VALUE,_full_size-nSize);
+					aDiag+=_state;
+					return _state;
+				}
 				break;
 #endif
 #ifdef __QNX__
@@ -131,7 +153,10 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 					{
 						LOG(ERROR)<< "Cann't Send " << pData << " size=" << nSize << " to "
 						<< aSock << " as " << print_socket_error();
-						return sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
+						sent_state_t const _state(sent_state_t::E_SOCKET_CLOSED,_full_size-nSize);
+						aDiag+=_state;
+						return _state;
+
 					}
 					else
 					{
@@ -152,14 +177,21 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 #endif
 				{
 					LOG(ERROR)<<"The msg to large "<<nSize<<" bytes";
-					return sent_state_t(sent_state_t::E_TOO_LARGE,0);
+					sent_state_t const _state(sent_state_t::E_TOO_LARGE,_full_size-nSize);
+					aDiag+=_state;
+					return _state;
+
 					break;
 				}
 #ifdef EPIPE
 				case EPIPE:
 				{
 					VLOG(2)<<"Socket is closed.";
-					return sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
+
+					sent_state_t const _state(sent_state_t::E_SOCKET_CLOSED,_full_size-nSize);
+					aDiag+=_state;
+					return _state;
+
 					break;
 				}
 #endif
@@ -178,13 +210,19 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 					"Checking ARP for overloading.";
 					--_repeat_count;
 					if(_repeat_count)
-					NSHARE::usleep(NSHARE_TCP_ERROR_TIMEOUT);
+						NSHARE::usleep(NSHARE_TCP_ERROR_TIMEOUT);
 					break;
 				}
 #ifdef WSANOTINITIALISED
 				case WSANOTINITIALISED:
-				LOG(FATAL) <<"WTF!? The WSA is not initialized";
-				return ISocket::sent_state_t(sent_state_t::E_ERROR,0);
+				{
+					LOG(FATAL) <<"WTF!? The WSA is not initialized";
+
+					sent_state_t const _state(sent_state_t::E_ERROR,_full_size-nSize);
+					aDiag+=_state;
+					return _state;
+				}
+
 				break;
 #endif
 
@@ -192,7 +230,10 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 				{
 					LOG(ERROR)<< "Cann't Send " << pData << " size=" << nSize << " to "
 					<< aSock << " as " << print_socket_error();
-					return ISocket::sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
+
+					sent_state_t const _state(sent_state_t::E_ERROR,_full_size-nSize);
+					aDiag+=_state;
+					return _state;
 				}
 				break;
 			}
@@ -202,7 +243,10 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 			if(_val==0)
 			{
 				LOG(ERROR)<<"WTF? Send 0 bytes";
-				return ISocket::sent_state_t(sent_state_t::E_ERROR,_full_size-nSize);
+
+				sent_state_t const _state(sent_state_t::E_ERROR,_full_size-nSize);
+				aDiag+=_state;
+				return _state;
 			}
 			CHECK_GE((int)nSize,_val);
 			nSize-=_val;
@@ -211,37 +255,44 @@ CTCP::sent_state_t CTcpImplBase::MSendTo(CSocket const & aSock,
 		}
 	}
 	if (_repeat_count == 0 || nSize > 0)
-		return ISocket::sent_state_t(sent_state_t::E_ERROR, _full_size - nSize);
+	{
+		sent_state_t const _state(sent_state_t::E_ERROR,_full_size-nSize);
+		aDiag+=_state;
+		return _state;
+	}
 
 	aDiag.MSend(_full_size - nSize);
 	return ISocket::sent_state_t(sent_state_t::E_SENDED, _full_size - nSize);
 }
-int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
+int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock,
+		diagnostic_io_t & aDiag) const
 {
 	const size_t _befor = aBuf->size();
 
 	do
 	{
 		const size_t _avalable = CNetBase::MAvailable(aSock);
-		VLOG(2) << "Befor " << _befor << " bytes";
+
+		DVLOG(2) << "Befor " << _befor << " bytes";
+
 		VLOG_IF(1,(!_avalable)) << "No data on socket " << aSock
 											<< ", may be it has been closed already."
 													"Assuming the size equal 1 byte.";
 
 		const size_t _size = (_avalable ? _avalable : 1) + _befor;
-		VLOG(2) << "Available  " << (_size - _befor) << " bytes";
+		DVLOG(2) << "Available  " << (_size - _befor) << " bytes";
 		aBuf->resize(_size);
 
 
 		ISocket::data_t::value_type* _pbegin = aBuf->ptr() + _befor;
-		CHECK_GT(_size, 0);
+		DCHECK_GT(_size, 0);
 		int _recvd = 0;
 #ifndef _WIN32
 #	ifdef __linux__
 		_recvd = recv(aSock.MGet(), (void*) _pbegin, _avalable, MSG_NOSIGNAL);
 #  else
 		_recvd = recv(aSock.MGet(), (void*) _pbegin, _avalable, 0);
-#endif
+#	endif
 #else
 		_recvd = recv(aSock.MGet(), (char*) _pbegin,
 				static_cast<int>(_avalable), 0);
@@ -251,8 +302,8 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 																	<< _avalable
 																	<< " read "
 																	<< _recvd;
-		VLOG_IF(1, _recvd == 0) << aSock << " has been disconnected";
-		VLOG_IF(1,_recvd <0) << "Error on socket " << aSock << "; "
+		DVLOG_IF(1, _recvd == 0) << aSock << " has been disconnected";
+		DVLOG_IF(1,_recvd <0) << "Error on socket " << aSock << "; "
 									<< print_socket_error();
 
 		//Set real size
@@ -262,7 +313,7 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 		}
 		else
 		{
-			VLOG_IF(5,_recvd<100)
+			DVLOG_IF(5,_recvd<100)
 							<< NSHARE::print_buffer_t<uint8_t const*>(
 									(uint8_t const*) _pbegin,
 									(uint8_t const*) _pbegin + _recvd);
@@ -293,8 +344,7 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 			case EAGAIN: //the buffer is full
 #endif
 			{
-				LOG(ERROR)<< "The buffer is full.";
-				continue;
+				LOG(WARNING)<< "The buffer is full.";
 				break;
 			}
 #if defined(EBUSY)/*QNX signsev*/ ||  defined(WSAEFAULT) || defined(EFAULT )
@@ -307,7 +357,9 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 #	ifdef EFAULT
 			case EFAULT:
 #	endif
-			LOG(ERROR)<<"Recv to invalid buffer by tcp(signsev)";
+			LOG(DFATAL)<<"Recv to invalid buffer by tcp(signsev)";
+
+			aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
 			break;
 #endif
 
@@ -315,8 +367,7 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 			case WSAEMSGSIZE:
 
 			{
-				LOG(ERROR)<<"The buffer is small.";
-				continue;
+				LOG(WARNING)<<"The buffer is small.";
 				break;
 			}
 #endif
@@ -325,26 +376,55 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock) const
 			case EPIPE:
 			{
 				VLOG(2)<<"Socket is closed.";
+				aDiag+=sent_state_t(sent_state_t::E_SOCKET_CLOSED,_avalable);
+				return -1;
 				break;
 			}
 #endif
 
 #ifdef WSANOTINITIALISED
 			case WSANOTINITIALISED:
-			LOG(FATAL) <<"WTF!? The WSA is not initialized";
-			break;
-#endif
+			{
+				aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
+				LOG(DFATAL) <<"WTF!? The WSA is not initialized";
 
+				return -1;
+				break;
+			}
+#endif
+#ifdef WSAECONNRESET
+			case WSAECONNRESET:
+			{
+				aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
+				LOG(INFO) <<"Connection reset for socket "<<aSock;
+				return -1;
+				break;
+			}
+#endif
+#ifdef EBADF
+			case EBADF:
+			{
+				aDiag += sent_state_t(sent_state_t::E_SOCKET_CLOSED, _avalable);
+				LOG(INFO) << "Connection reset for socket "<<aSock;
+				return -1;
+				break;
+			}
+#endif
 			default:
 			{
-				LOG(ERROR)<< "Cann't recv  to "	<< aSock << " as " << print_socket_error();
+				aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
+				LOG(DFATAL)<< "Cann't recv  to "	<< aSock << " as " << print_socket_error();
+				return -1;
+				break;
 			}
-			break;
 		}
 	}//if error
-
-	//if the error could be handled, the return _recvd is not called as the continue has been called
+	else
+	{
+		aDiag.MRecv(_recvd);
 		return _recvd;
+	}
+
 	} while (1);
 
 

@@ -100,7 +100,7 @@ void CTcpServerMainChannel::MFill<main_channel_param_t>(data_t* aTo,ILink* aHand
 {
 	VLOG(2) << "Create main channel param DG";
 	NSHARE::net_address _addr;
-	FServer.MGetInitParam(&_addr);
+	_addr=FServer.MGetSetting().FServerAddress;
 	_addr.MSetIP(INADDR_LOOPBACK);
 
 	main_ch_param_t _param;

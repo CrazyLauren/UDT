@@ -21,7 +21,7 @@ class IMainChannel;
 class CKernelIOByTCP;
 
 /** @brief Realization of the communications protocol
- * between two kernels by TCP
+ * between two kernels by TCP (TCP server part)
  *
  *	The name of protocol is CKernelServerLink::NAME.
  *	There are two type of "channels". The first is used for transmission

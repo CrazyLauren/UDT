@@ -17,11 +17,7 @@
 #include <UType/CThread.h>
 #include <Socket/CTcpClientImpl.h>
 #include <console.h>
-#if !defined(_WIN32)
-#include <arpa/inet.h>                      // htons, htonl
-#else
-#include <ws2tcpip.h>
-#endif
+
 namespace NSHARE
 {
 //Early there were two implementation. One of was client,the other was server.
@@ -33,40 +29,34 @@ CTCP::events_t::key_t const CTCP::EVENT_CONNECTED="Connect";
 CTCP::events_t::key_t const CTCP::EVENT_DISCONNECTED="Disconnect";
 
 CTCP::CTCP(NSHARE::CConfig const& aConf) :
-				FClientImpl(new CClientImpl(*this))
+				FClientImpl(new CClientImpl(*this,settings_t(aConf)))
 {
-
-	FIsWorking = false;
-	FIsConnected = false;
-
-	net_address _param(aConf);
-	LOG_IF(DFATAL,!_param.MIsValid())<<"Configure for tcp is not valid "<<aConf;
-	if (_param.MIsValid())
-		MOpen(_param);
+	LOG_IF(DFATAL,!MGetSetting().MIsValid())<<"Configure for tcp is not valid "<<aConf;
+	if (MGetSetting().MIsValid())
+		MOpen();
 }
 CTCP::CTCP(net_address const& aParam) :
-		FClientImpl(new CClientImpl(*this))
+		FClientImpl(new CClientImpl(*this,settings_t(aParam)))
 {
-
-
-	FIsWorking = false;
-	FIsConnected = false;
-
-	if (aParam.MIsValid())
-		MOpen(aParam);
+	if (MGetSetting().MIsValid())
+		MOpen();
+}
+CTCP::CTCP(settings_t const& aParam) :
+		FClientImpl(new CClientImpl(*this,aParam))
+{
+	if (MGetSetting().MIsValid())
+		MOpen();
 }
 CTCP::~CTCP()
 {
 	MClose();
-	delete FClientImpl;
 }
 
-bool CTCP::MOpen(net_address const& aAddr, int aFlags)
+bool CTCP::MOpen(net_address const& aAddr)
 {
-
-	CNetBase::MSetAddress(aAddr, &FClientImpl->FAddr); //FIXME asserts
-	if (aAddr.FIp.MGetConst().empty())
-		FClientImpl->FAddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK );
+	if(MIsOpen())
+		return false;
+	FClientImpl->MSetAddress(aAddr);
 	return MOpen();
 }
 bool CTCP::MConnect()
@@ -77,20 +67,16 @@ bool CTCP::MConnect()
 }
 bool CTCP::MOpen()
 {
-	if (MIsOpen())
-	{
-		LOG(WARNING)<< "The Port has been opened already.";
-		return false;
-	}
-
-	FIsWorking = true;
-	CHECK_NOTNULL(FClientImpl);
-	return FIsWorking;
+	return FClientImpl->MOpen();
 }
 bool CTCP::MReOpen()
 {
 	MClose();
 	return MOpen();
+}
+NSHARE::CConfig CTCP::MSettings(void) const
+{
+	return MGetSetting().MSerialize();
 }
 ssize_t CTCP::MReceiveData(data_t * aBuf, float const aTime)
 {
@@ -98,14 +84,7 @@ ssize_t CTCP::MReceiveData(data_t * aBuf, float const aTime)
 }
 void CTCP::MClose()
 {
-	FIsWorking = false;
 	FClientImpl->MClose();
-
-	usleep(1); //waitfor receive end;
-	for (int i = 0; FClientImpl->FIsReceive && (++i < 10);
-			NSHARE::usleep(100000))
-		VLOG(2) << "Waitfor Close Receive";
-
 }
 CTCP::sent_state_t CTCP::MSend(void const* pData, size_t nSize)
 {
@@ -113,16 +92,11 @@ CTCP::sent_state_t CTCP::MSend(void const* pData, size_t nSize)
 }
 bool CTCP::MIsOpen() const
 {
-	return FIsWorking;
+	return FClientImpl->MIsOpen();
 }
-net_address CTCP::MGetSetting() const
+CTCP::settings_t const& CTCP::MGetSetting() const
 {
 	return FClientImpl->MGetInitParam();
-}
-bool CTCP::MGetInitParam(net_address* aParam) const
-{
-	*aParam = FClientImpl->MGetInitParam();
-	return true;
 }
 const CSocket& CTCP::MGetSocket(void) const
 {
@@ -130,7 +104,7 @@ const CSocket& CTCP::MGetSocket(void) const
 }
 bool CTCP::MIsConnected() const
 {
-	return FIsConnected;
+	return FClientImpl->FIsConnected;
 }
 size_t CTCP::MAvailable() const
 {
@@ -138,8 +112,7 @@ size_t CTCP::MAvailable() const
 }
 std::ostream& CTCP::MPrint(std::ostream & aStream) const
 {
-	net_address _addr;
-	MGetInitParam(&_addr);
+	net_address const& _addr(MGetSetting().FServerAddress);
 	if (MIsOpen())
 		aStream << NSHARE::NCONSOLE::eFG_GREEN << "Opened.";
 	else
@@ -158,20 +131,45 @@ std::ostream& CTCP::MPrint(std::ostream & aStream) const
 NSHARE::CConfig CTCP::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-	{
-		net_address _addr;
-		MGetInitParam(&_addr);
-		_conf.MAdd(_addr.MSerialize());
-	}
+	_conf.MAdd(MGetSetting().MSerialize());
+
 	_conf.MAdd("con", MIsConnected());
 	_conf.MAdd(FClientImpl->FDiagnostic.MSerialize());
-	_conf.MAdd("connum", FClientImpl->FConnectionCount);
-	_conf.MAdd("eagain", FClientImpl->FAgainError);
 	return _conf;
 }
 std::pair<size_t, size_t> CTCP::MBufSize() const
 {
 	return std::pair<size_t, size_t>(FClientImpl->MGetSendBufSize(FClientImpl->FSock),FClientImpl->MGetRecvBufSize(FClientImpl->FSock));
+}
+diagnostic_io_t const& CTCP::MGetDiagnosticState() const
+{
+	return FClientImpl->FDiagnostic;
+}
+const CText CTCP::settings_t::NAME=CTCP::NAME;
+
+CTCP::settings_t::settings_t(net_address const& aParam) :
+		FServerAddress(aParam)
+{
+}
+
+CTCP::settings_t::settings_t(NSHARE::CConfig const& aConf) :
+		FSocketSetting(aConf.MChild(socket_setting_t::NAME)),//
+		FServerAddress(aConf.MChild(net_address::NAME))
+{
+}
+bool CTCP::settings_t::MIsValid() const
+{
+	return FSocketSetting.MIsValid()//
+			&&FServerAddress.MIsValid()//
+			;
+}
+
+CConfig CTCP::settings_t::MSerialize() const
+{
+	CConfig _conf(NAME);
+	_conf.MAdd(FServerAddress.MSerialize());
+	_conf.MAdd(FSocketSetting.MSerialize());
+	return _conf;
 }
 } //namespace NSHARE
 

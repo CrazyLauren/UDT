@@ -105,6 +105,7 @@ static void terminate_handler_impl()
 #elif defined(CPLUS_LOG)
 	log4cplus::Logger::getRoot().shutdown();
 #endif
+	NSHARE::logging_impl::is_inited()=false;
 }
 extern void log_terminate_handler()
 {

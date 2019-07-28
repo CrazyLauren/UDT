@@ -13,6 +13,8 @@
 #ifndef CNETBASE_H_
 #define CNETBASE_H_
 
+#include <Socket/socket_setting_t.h>
+
 namespace NSHARE
 {
 
@@ -22,10 +24,10 @@ namespace NSHARE
 class SHARE_EXPORT CNetBase
 {
 public:
-	static long const DEF_BUF_SIZE;
 
 	/** For windows initialize WSA if need
 	 *
+	 *	@param aSetting Settings
 	 */
 	CNetBase();
 
@@ -97,17 +99,57 @@ public:
 	 * @return amount of bytes
 	 */
 	static size_t MAvailable(CSocket const& aSocket);
-	static int MGetSendBufSize(CSocket const&);
-	static int MSetAddress(net_address const& aAddress,
+
+	/** Converts NSHARE::net_address to sockaddr_in
+	 *
+	 *	@param aAddress A from
+	 *	@param aSa [out] A to
+	 */
+	static void MSetAddress(net_address const& aAddress,
 			struct sockaddr_in *aSa);
 
-	static void MSettingSocket(CSocket& aSocket);
+	/** Setting socket settings
+	 *
+	 *	@param aSetting Settings
+	 */
+	static void MSettingSocket(CSocket& aSocket,socket_setting_t const& aSetting);
 	static bool MSettingSendBufSize(CSocket& aSocket,long aValue);
 	static bool MSettingRecvBufSize(CSocket& aSocket,long aValue);
-	static size_t MGetSendBufSize(CSocket& aSocket);
-	static size_t MGetRecvBufSize(CSocket& aSocket);
-	static void MSettingBufSize(CSocket& aSocket);
-	static void MSettingKeepAlive(CSocket& aSocket);
+
+	/** Returns size of Send buffer
+	 *
+	 * @param aSocket A reference to socket
+	 * @return amount of bytes or -1
+	 */
+	static size_t MGetSendBufSize(CSocket const& aSocket);
+
+	/** Returns size of receive buffer
+	 *
+	 * @param aSocket A reference to socket
+	 * @return amount of bytes or -1
+	 */
+	static size_t MGetRecvBufSize(CSocket const& aSocket);
+
+	/** @brief Set up the buffer size
+	 *
+	 *	By default It's trying to set the buffer size
+	 *	specified in the  #socket_setting_t.
+	 *	If It cannot set the specified buffer size
+	 *	it decrease the buffer size to 10 % in every
+	 *	step until it sets the buffer size.
+	 *
+	 *	@param aSocket The socket
+	 *	@param aSetting Settings
+	 */
+	static void MSettingBufSize(CSocket& aSocket,socket_setting_t const& aSetting);
+
+	/** @brief Enable keep alive
+	 *
+	 *
+	 *	@param aSocket The socket
+	 *	@param aSetting Settings
+	 */
+	static void MSettingKeepAlive(CSocket& aSocket,socket_setting_t const& aSetting);
 
 	/** Set the socket to nonblocking mode
 	 * @param aSocket A reference to socket
@@ -130,6 +172,7 @@ public:
 	 * @return true if no error
 	 */
 	static bool MSendMultiCastMsgByInterface(CSocket& aSocket,struct sockaddr_in const & aSa);
+
 };
 
 } /* namespace NSHARE */

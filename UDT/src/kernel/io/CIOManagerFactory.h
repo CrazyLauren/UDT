@@ -16,7 +16,7 @@
 
 namespace NUDT
 {
-class CIOManagerFactory: public NSHARE::CFactoryManager<IIOManager>
+class CIOManagerFactory: public NSHARE::CFactoryManager<IIOManager,NSHARE::CMutex>
 {
 public:
 	CIOManagerFactory();

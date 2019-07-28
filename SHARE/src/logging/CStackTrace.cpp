@@ -44,7 +44,7 @@ CStackTrace::CStackTrace()
 #else
 	FStackSize = 0;
 #endif
-	memset(FBuffer,0,sizeof(*FBuffer));
+	memset(FBuffer,0,sizeof(FBuffer));
 }
 
 /*#ifdef _MSC_VER

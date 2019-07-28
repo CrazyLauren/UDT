@@ -371,11 +371,13 @@ void IMPL::MSerialize(NSHARE::CConfig &aTo) const
 }
 void IMPL::MAddToSelect()
 {
-	FThis.FSelectSock.MAddSocket(FTcp.MGetSocket());
+	FCurrentSocket=FTcp.MGetSocket();
+	FThis.FSelectSock.MAddSocket(FCurrentSocket);
 	FThis.MUnLockSelect();
 }
 void IMPL::MRemoveFromSelect()
 {
-	FThis.FSelectSock.MRemoveSocket(FTcp.MGetSocket());
+	FThis.FSelectSock.MRemoveSocket(FCurrentSocket);
+	FCurrentSocket=-1;
 	FThis.MUnLockSelect();
 }} /* namespace NUDT */

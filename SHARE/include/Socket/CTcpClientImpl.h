@@ -11,45 +11,57 @@
  */ 
 #ifndef CTCPCLIENTIMPL_H_
 #define CTCPCLIENTIMPL_H_
-#include <Socket/CTcpImplBase.h>
+#include <Socket/CTCPSelectReceiver.h>
 namespace NSHARE
 {
 //Early there were two implementation. One of was client,the other was server.
 //Now In "CTCP" class there is only client  implementation.
 //"CTCP::CClientImpl" class  is remained by historical reason.
-struct CTCP::CClientImpl:public CTcpImplBase
+struct CTCP::CClientImpl:public CTCPSelectReceiver, public IIntrusived
 {
 
-	CClientImpl(CTCP& aTcp);
+	CClientImpl(CTCP& aTcp,settings_t const& aSetting);
 	~CClientImpl();
 
-	net_address MGetInitParam() const;
+	CTCP::settings_t const& MGetInitParam() const;
 	bool MClientConnect();
 
+	/** Send data
+	 *
+	 * @param pData a pointer to data
+	 * @param nSize the size data
+	 * @return
+	 */
 	CTCP::sent_state_t MSend(const void* pData, size_t nSize);
 	ssize_t MReceiveData(data_t* aBuf, const float aTime);
 
-	bool MIsClient() const;
-
+	void MSetAddress(net_address const& aAddr);
 
 	void MClose();
 
+	bool MOpen();
+	bool MIsOpen() const;
+
 	static void sMCleanupConnection(void *aP);
 	//int MReadData(data_t* aBuf);
-	void MCloseImpl();
+	void MDisconnect();
 
 
 	CTCP& FTcp;
-	volatile bool FIsReceive;
-	CMutex FMutex;
+	CTCP::settings_t FSettings;
+
+	CMutex FConnectMutex;
+	CCondvar FConnectEvent;/*!<Using for blocking receive thread
+							* until client will connected*/
 	CSocket FSock;
 	struct sockaddr_in FAddr;
 
 	diagnostic_io_t FDiagnostic;
-	unsigned FConnectionCount;
-	unsigned FAgainError;
-	uint8_t _buf[1];
 
+	CMutex FReceiveThreadMutex; ///<It's used for lock receive operation
+	atomic_t FIsDoing; ///< True if the TCP client has to try to connect
+	volatile bool FIsConnected; ///< True if the TCP client is connected to server
+	atomic_t FIsReceiving;///< If true then object is locked on recv (see #MClose)
 };
 }
 

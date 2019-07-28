@@ -25,7 +25,7 @@ void signal_process(int signal_number)
 	raise(signal_number);
 }
 static bool g_is_set=false;
-static CThread::process_id_t g_entered_thread_id_pointer;
+static CThread::process_id_t g_entered_thread_id_pointer=0;
 static std::vector<void (*)(int)> g_prev_signals(NSIG, SIG_DFL );
 
 /** A signal handler
@@ -34,6 +34,9 @@ static std::vector<void (*)(int)> g_prev_signals(NSIG, SIG_DFL );
  */
 void signal_handler(int aSignal)
 {
+	LOG_IF(INFO,logging_impl::is_inited())<<"Signal "<<"The signal "<<aSignal<<" is been processing."
+			<<"A signal code: "<<" Errno: "
+			<<errno<<". "<<strerror(errno)<<".";
 	CThread::process_id_t _thread_id = NSHARE::CThread::sMThreadId();
 
 	if (g_is_set)
@@ -41,12 +44,8 @@ void signal_handler(int aSignal)
 		if (_thread_id == g_entered_thread_id_pointer)
 		{
 			signal_process(aSignal);
-		}
-		while (true)
-		{
-			std::cerr << "Sleep 1" << std::endl;
-			sleep(1);
-		}
+		}else
+			return;
 	}
 	else
 	{
@@ -54,8 +53,8 @@ void signal_handler(int aSignal)
 		g_is_set=true;
 	}
 
-	LOG(ERROR)<<"The signal "<<aSignal<<" is been processing."
-	<<"A signal code: "<<_thread_id<<" Errno: "
+	LOG_IF(DFATAL,logging_impl::is_inited())<<"The signal "<<aSignal<<" is been processing."
+	<<"Thread id: "<<_thread_id<<" Errno: "
 	<<errno<<". "<<strerror(errno)<<".";
 
 	std::cerr<<"Signal:"<<aSignal<<std::endl;

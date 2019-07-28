@@ -307,7 +307,7 @@ private:
 		if (!_is_found)
 		{
 			++aItBegin;
-			for (HANG_INIT; aItBegin != aItEnd; HANG_CHECK, ++aItBegin)
+			for (HANG_INIT; aItBegin != aItEnd; HANG_CHECK, ++aItBegin) //-V521
 			{
 				_crc = _crc_t::sMCalcCRCofBuf(&(*aItBegin), &(*aItBegin) + _head_size);
 				if (_crc == _crc_t::sMCheckingConstant())

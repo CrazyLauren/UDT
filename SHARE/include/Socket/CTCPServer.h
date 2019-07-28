@@ -12,43 +12,8 @@
 #ifndef CTCPSERVER_H_
 #define CTCPSERVER_H_
 
-/*
- *	chanelog
- *
- *	Версия 0.2 (29.01.2014)
- *
- *		- Исправлен баг с loopback socket.
- *  		Если кто-то подключался одновременно c "петлёй", то её сокет терялся.
- *			Теперь в MAddNewClient  присвается FIsLoopConnected true.
- *
- *	Версия 0.3 (01.02.2016)
- *		- Исправлен баг с loopback socket.
- *			Гонка потоков. Если connect loopback случался рашьше чем accept
- *			ресурсы утекали.
- *
- *	Версия 0.4 (05.02.2016)
- *		- loopback trick переписон через два udp socketa - теперь всё работает как часы.
- *
- *	Версия 0.5 (22.04.2016)
- *		- CImpl
- *		- убран костыль smart_recv_t
- *
- *	Версия 0.6 (23.04.2016)
- *		- Теперь можно открять TCP сервер со случайным портом
- *
- *	Версия 0.7 (22.05.2016)
- *		- LoopBack выделен в отдельный класс
- *
- *	Версия 1.0 (30.06.2016)
- *		- Смена API
- *
- *	Версия 1.1 (30.08.2016)
- *		- Добавлен метод MGetBuf
- *
- */
 #include "CSelectSocket.h"
 
-//todo decrease the number of locks
 #ifndef TCP_SOCKET_EXIST
 #	define TCP_SOCKET_EXIST
 #endif
@@ -68,6 +33,7 @@ namespace NSHARE
  * It divides to the two types: The first method sends data to the specified
  * client, the other sends data to the all connected clients.
  *
+ *	If the port number is zero than the random free port number is selected
  */
 class SHARE_EXPORT CTCPServer: public ISocket, NSHARE::CDenyCopying, public NSHARE::CEvents<
 		NSHARE::CText>
@@ -78,18 +44,110 @@ public:
 
 	typedef NSHARE::CEvents<NSHARE::CText> events_t;///< A type of events used
 
-	/** @brief Connected client information
+	/** @brief Client information
 	 *
 	 */
 	struct SHARE_EXPORT client_t
 	{
+		static const CText NAME; ///< A serialization name
+		static const CText KEY_CONNECTION_TIME; ///< A serialization key of #FTime
+		static const CText KEY_DISCONNECT_TIME; ///< A serialization key of #FDiconnectTime
+
 		net_address FAddr;///< A network address of client
-		time_t FTime;///< The connection time
+		double FTime;///< The connection time
+		double FDiconnectTime;///< The disconnection time
+		mutable diagnostic_io_t FDiagnostic;///< Diagnostic info
+
+		/** Create the new object.
+		 *
+		 * The client network address can be passed to
+		 * the  object constructor.
+		 * If IP is valid, the current time is passed to #FTime field.
+		 *
+		 * @param aAddr A net address of the client
+		 *
+		 */
+		explicit client_t(net_address const & aAddr=net_address());
+
+		/*! @brief Deserialize object
+		 *
+		 * To check the result of deserialization,
+		 * used the MIsValid().
+		 * @param aConf Serialized object
+		 */
+		explicit client_t(NSHARE::CConfig const& aConf);
+
+		/*! @brief Serialize object
+		 *
+		 * The key of serialized object is #NAME
+		 *
+		 * @return Serialized object.
+		 */
+		CConfig MSerialize() const;
+
+
+		/*! @brief Checks object for valid
+		 *
+		 * Usually It's used after deserializing object
+		 * @return true if it's valid.
+		 */
+		bool MIsValid() const;
 
 		bool operator==(client_t const& aRht) const;
 		bool operator==(net_address const& aRht) const;
 	};
 	typedef std::vector<client_t> list_of_clients;///< List of clients
+
+	/** @brief Settings of TCP server
+	 *
+	 */
+	struct SHARE_EXPORT settings_t
+	{
+		static const unsigned DEFAULT_LIST_QUEUE_LEN;///<default value of #FListenQueue
+		static const CText NAME; ///< A serialization name
+		static const CText KEY_LIST_QUEUE_LEN; ///< A serialization key of #FListenQueue
+
+		/** @brief To constructor may be passed to be copied
+		 * a server address
+		 *
+		 * @param aParam The address where the data is sent
+		 */
+		explicit settings_t(net_address const& aParam);
+
+		/** @brief To constructor may be passed to be copied
+		 * a server port
+		 *
+		 * @param aParam The port where the data is sent
+		 */
+		explicit settings_t(network_port_t const& aParam =network_port_t());
+
+		/*! @brief Deserialize object
+		 *
+		 * To check the result of deserialization,
+		 * used the MIsValid().
+		 * @param aConf Serialized object
+		 */
+		explicit settings_t(NSHARE::CConfig const& aConf);
+
+		/*! @brief Serialize object
+		 *
+		 * The key of serialized object is #NAME
+		 *
+		 * @return Serialized object.
+		 */
+		CConfig MSerialize() const;
+
+		/*! @brief Checks object for valid
+		 *
+		 * Usually It's used after deserializing object
+		 * @return true if it's valid.
+		 */
+		bool MIsValid() const;
+
+		net_address FServerAddress; ///< The server IP address
+		socket_setting_t FSocketSetting;///< The socket setting
+		unsigned FListenQueue;///<The maximum length that the queue of pending connections may grow to
+	};
 
 	/** @brief Information about the data received  from client
 	 *
@@ -106,7 +164,7 @@ public:
 													* The argument of the event is pointer to the
 													* CTCPServer::client_t object.
 	 	 	 	 	 	 	 	 	 	 	 	 	*/
-	static events_t::key_t const EVENT_DISCONNECTED;/*!< It event is called when client is disconected.
+	static events_t::key_t const EVENT_DISCONNECTED;/*!< It event is called when client is disconnected.
 													* The argument of the event is pointer to the
 													* CTCPServer::client_t object.
 													*/
@@ -142,10 +200,43 @@ public:
 	 */
 	virtual bool MOpen(const net_address& aParam, int aFlags = 0);
 
+	/** @brief Changes the TCP port
+	 *
+	 * @param aParam The port of TCP server
+	 *
+	 * @return true if successfully
+	 */
+	bool MSetAddress(const net_address& aParam);
+
 	/** @brief  Closes the TCP server
 	 *
 	 */
 	virtual void MClose();
+
+	/** Returns true if clients are exist
+	 *
+	 * @return true if at least one client is exist
+	 */
+	bool MIsClients() const;
+
+	/** Returns true if clients are exist
+	 *
+	 * @return true if at least one client is exist
+	 */
+	bool MIsClient(const net_address& aIP) const;
+
+
+	/** @brief Returns info about connected clients
+	 *
+	 * @return list of connected clients
+	 */
+	list_of_clients MGetClientInfo() const;
+
+	/** @brief Returns info about disconnected clients
+	 *
+	 * @return list of connected clients
+	 */
+	list_of_clients MGetDisconnectedClientInfo() const;
 
 	/** @brief Disconnects specified client
 	*
@@ -170,7 +261,7 @@ public:
 	 *
 	 *	@return settings
 	 */
-	net_address const& MGetSetting() const;
+	settings_t const& MGetSetting() const;
 
 	/** @brief Returns serialized settings of TCP Server
 	 *
@@ -200,7 +291,7 @@ public:
 
 	/**	@brief Send to specified addresses
 	 *
-	 * @param aTo A send to IP and port
+	 * @param aTo A send to IP and port or serialized object type of CTCPServer::client_t
 	 * @param pData A pointer to data
 	 * @param nSize A size of data
 	 * @return information about sent to the address
@@ -257,18 +348,6 @@ public:
 	 */
 	size_t MAvailable() const;
 
-	/** Returns true if clients are exist
-	 *
-	 * @return true if at least one client is exist
-	 */
-	bool MIsClients() const;
-
-	/** @brief Returns info about connected clients
-	 *
-	 * @return list of connected clients
-	 */
-	list_of_clients MGetClientInfo() const;
-
 	const CSocket& MGetSocket(void) const;
 
 	/*!	@brief Serialize object
@@ -309,6 +388,16 @@ inline std::ostream& operator <<(std::ostream& aStream,
 {
 	return aStream << aAddress.FAddr << " at " << aAddress.FTime
 			<< "(unix time)";
+}
+inline std::ostream& operator<<(std::ostream & aStream, NSHARE::CTCPServer::settings_t const& aVal)
+{
+	using namespace NSHARE;
+
+	aStream << "Connect to:"<<aVal.FServerAddress<<std::endl;
+	aStream << "Socket:"<<aVal.FSocketSetting<<std::endl;
+	aStream << "Listen Queue:"<<aVal.FListenQueue<<std::endl;
+
+	return aStream;
 }
 }
 #endif /* CTCPSERVER_H_ */

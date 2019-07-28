@@ -174,6 +174,7 @@ void CCore::MRemoveState(IState* aVal)
 		if (_r.first != _r.second)
 			FStates.erase(_r.first);
 	}
+	VLOG(2) << "Finish";
 
 }
 bool CCore::MStart()

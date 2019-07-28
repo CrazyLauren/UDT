@@ -12,12 +12,27 @@
 #ifndef CKERNELCLIENTLINK_H_
 #define CKERNELCLIENTLINK_H_
 
+#include <io/CLinkDiagnostic.h>
+#include "../ILinkBridge.h"
 
 namespace NUDT
 {
 class IMainChannel;
 class CKernelIOByTCP;
 
+/** @brief Realization of the communications protocol
+ * between two kernels by TCP (TCP client part)
+ *
+ *	The name of protocol is CKernelClientLink::NAME.
+ *	There are two type of "channels". The first is used for transmission
+ *	the services messages, the other is used only for transmission data
+ *	which is sent by user program.
+ *	The type of service channel is TCP.
+ *	The type of channel for user data (main channel) is defined in
+ *	configuration file by key CKernelServerLink::MAIN_CHANNEL_TYPE,
+ *	if it's not defined when is used CKernelServerLink::DEFAULT_MAIN main channel
+ *
+ */
 class CKernelClientLink: public ILink,NSHARE::CDenyCopying
 {
 public:

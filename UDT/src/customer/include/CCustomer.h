@@ -963,6 +963,61 @@ public:
 	 *
 	 */
 	void MJoin();
+
+	/** @brief Gets the current time
+	 *
+	 * In practice, the time of system can differ from
+	 * "real" time. The kernel have inner module "RTC",
+	 * which is used for modeling purpose  or when the
+	 * "RTC" is not  available in the hardware.
+	 * If the kernel "RTC" is turned off, calls of this
+	 * method is equal of calling the #SHARE::get_time()
+	 * function. Which in turn equals to call gettimeofday
+	 * of UNIX systems.
+	 * Thus, instead of using standard function
+	 * for gets the current system time (i.e. time(),
+	 * gettimeofday, clock_gettime (CLOCK_REALTIME))
+	 * it recommends to use this method.
+	 * This can save a lot of time in the future.
+	 *
+	 * @return current time in seconds
+	 * 		   (precision - milliseconds)
+	 */
+	double MGetCurrentTime() const;
+
+	/** @brief Suspend a thread until the specified
+	 * time comes
+	 *
+	 * What for it's necessary see  #MGetCurrentTime
+	 * method. If aTime is less or equal  of zero
+	 * then it waits for the time is changed.
+	 * In modeling purpose it's equal to send
+	 * to modeling controller the time
+	 * of "next call".
+	 * @param aTime A time (absolute)
+	 * @return current time in seconds
+	 */
+	double MSleepUntil(double aTime) const;
+
+	/** @brief Creates a timer
+	 *
+	 * The methods creates timer using the kernel "RTC"
+	 * if is turn on or CLOCK_REALTIME if is turn off.
+	 *
+	 * What for it's necessary see  #MGetCurrentTime
+	 * method.
+	 * @param aFirstCall A first expiry time (absolute)
+	 * @param aIntervalCall A repetition interval or -1
+	 * @param aHandler A pointer to the function for handling timer
+	 */
+	void MSetTimer(double aFirstCall,double aIntervalCall, callback_t const& aHandler);
+
+	/** Returns info about used RTC
+	 *
+	 * What for it's necessary see  #MGetCurrentTime
+	 * method.
+	 */
+	unsigned MGetRTCInfo() const;
 private:
 
 	CCustomer();

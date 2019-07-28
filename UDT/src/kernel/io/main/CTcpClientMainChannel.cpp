@@ -89,6 +89,7 @@ bool CTcpClientMainChannel::MStart()
 CTcpClientMainChannel::~CTcpClientMainChannel()
 {
 	MCloseImpl();
+	CRAII<CMutex> _lock(FReceiveThreadMutex);
 }
 void CTcpClientMainChannel::MCloseImpl()
 {
@@ -139,9 +140,9 @@ bool CTcpClientMainChannel::MCloseRequest(descriptor_t aFor)
 	smart_client_t _param;
 	VLOG(2) << "Try close request " << aFor;
 	{
-		w_access _access = FData.MGetWAccess();
-		link_data_t & _this_data = _access.MGet();
-		client_by_id_t::iterator _it = _this_data.FById.find(aFor);
+		r_access const _access = FData.MGetRAccess();
+		link_data_t const & _this_data = _access.MGet();
+		client_by_id_t::const_iterator _it = _this_data.FById.find(aFor);
 		LOG_IF(ERROR,_it == _this_data.FById.end()) << "Main channel for "
 															<< aFor
 															<< " is not exist.";
@@ -312,25 +313,31 @@ NSHARE::eCBRval CTcpClientMainChannel::sMReceiver(NSHARE::CThread const* WHO, NS
 }
 void CTcpClientMainChannel::MReceive(NSHARE::CSelectSocket::socks_t const& _to)
 {
-	r_access _access = FData.MGetRAccess();
-	link_data_t const& _this_data = _access.MGet();
 	CSelectSocket::socks_t::const_iterator _it = _to.begin(), _it_end(
 			_to.end());
 	for (; _it != _it_end; ++_it)
 	{
 		VLOG(5)<<"Next socket "<<*_it;
-		client_by_socket_t::const_iterator _jt = _this_data.FBySocket.find(
+		smart_client_t _link;
+		{
+			r_access _access = FData.MGetRAccess();
+			link_data_t const& _this_data = _access.MGet();
+			client_by_socket_t::const_iterator _jt = _this_data.FBySocket.find(
 				*_it);
-
-		if (_jt == _this_data.FBySocket.end())
-		{
-			LOG(ERROR)<<"The client is not exist.";
-			FSelectSock.MRemoveSocket(*_it);
+			if (_jt == _this_data.FBySocket.end())
+			{
+				LOG(ERROR)<<"The client is not exist.";
+				FSelectSock.MRemoveSocket(*_it);
+			}else
+			{
+				VLOG(5)<<"Receiving by "<<_jt->first;
+				_link=_jt->second;
+			}
 		}
-		else
+		if(_link.MIs())
 		{
-			VLOG(5)<<"Receiving by "<<_jt->first;
-			_jt->second->MReceive();//fixme can be problem if MReceive() will be locked as we have  _access
+
+			_link->MReceive();
 			//todo state
 		}
 	}
@@ -338,6 +345,7 @@ void CTcpClientMainChannel::MReceive(NSHARE::CSelectSocket::socks_t const& _to)
 void CTcpClientMainChannel::MReceiver()
 {
 	VLOG(2) << "Async receive";
+	CRAII<CMutex> _lock(FReceiveThreadMutex);
 	CHECK(FSelectSock.MIsSetUp());
 	for (; FSelectSock.MIsSetUp();)
 	{

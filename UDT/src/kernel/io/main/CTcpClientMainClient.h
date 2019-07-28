@@ -86,6 +86,7 @@ private:
 	parser_t FParser;
 	CTcpClientMainChannel& FThis;
 	net_overload_t FOverload;
+	NSHARE::CSocket FCurrentSocket;
 	//CSendBuffering FBuffer;
 	NSHARE::CMutex FMutexSend;
 	NSHARE::IAllocater * const FBufferAlloc;

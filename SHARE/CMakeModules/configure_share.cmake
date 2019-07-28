@@ -44,6 +44,7 @@ check_include_files("windows.h;winerror.h" HAVE_WINERROR_H)
 
 check_include_files("windows.h;iphlpapi.h" HAVE_IPHLPAPI_H)
 check_include_files("ifaddrs.h" HAVE_GETIFADDRS)
+check_include_files("windows.h;winsock.h" HAVE_WINSOCK_H)
 
 if(NOT HAVE_IPHLPAPI_H AND NOT HAVE_GETIFADDRS)
 	message(FATAL_ERROR "Cannot implemente function for get interface addresses ")

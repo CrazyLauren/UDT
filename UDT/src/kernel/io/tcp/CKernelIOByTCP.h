@@ -25,7 +25,7 @@ public:
 	static const NSHARE::CText PORT;
 	static const NSHARE::CText LINKS;
 	CKernelIOByTCP();
-	~CKernelIOByTCP();
+	virtual ~CKernelIOByTCP();
 
 
 	void MInit(CKernelIo *);

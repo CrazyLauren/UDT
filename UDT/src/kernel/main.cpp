@@ -60,6 +60,7 @@
 using namespace NUDT;
 DECLARATION_VERSION_FOR(Kernel)
 static NSHARE::version_t const g_version(MAJOR_VERSION_OF(Kernel), MINOR_VERSION_OF(Kernel), REVISION_OF(Kernel));
+CAutoSearchByEthernet* g_CAutoSearchByEthernet = NULL;
 
 void initialize_def_main_channels();
 void remove_def_main_channels();
@@ -68,6 +69,7 @@ void initialize_def_io_managers();
 void initialize_extern_modules();
 void initialize_def_sevices();
 void remove_def_sevices();
+void remove_def_io_managers();
 void initialize_core(int argc, char* argv[]);
 void perpetual_loop();
 void start();
@@ -97,7 +99,7 @@ int main(int argc, char *argv[])
 	perpetual_loop();
 //	remove_extern_modules();
 //	remove_def_def_links();
-//	remove_def_io_managers();
+	remove_def_io_managers();
 	remove_def_main_channels();
 	remove_def_sevices();
 
@@ -174,6 +176,19 @@ void initialize_def_io_managers()
 		CHttpIOManagerRegister().MRegisterFactory();
 	else
 		VLOG(2)<<"No "<<CHttpIOManagerRegister::NAME;
+
+	if (CConfigure::sMGetInstance().MGet().MFind(CAutoSearchByEthernet::NAME))
+		g_CAutoSearchByEthernet=new CAutoSearchByEthernet();
+	else
+		VLOG(2)<<"No "<<CAutoSearchByEthernet::NAME;
+
+
+}
+void remove_def_io_managers()
+{
+	if(g_CAutoSearchByEthernet)
+		delete g_CAutoSearchByEthernet;
+	g_CAutoSearchByEthernet = NULL;
 }
 void initialize_extern_modules()
 {
@@ -184,7 +199,7 @@ CParserFactory* g_CParserFactory=NULL;
 CRoutingService* g_CRoutingService=NULL;
 CInfoService* g_CInfoService=NULL;
 CPacketDivisor* g_CPacketDivisor=NULL;
-CAutoSearchByEthernet* g_CAutoSearchByEthernet=NULL;
+
 
 void initialize_def_sevices()
 {
@@ -192,7 +207,6 @@ void initialize_def_sevices()
 	g_CRoutingService=new CRoutingService();
 	g_CInfoService=new CInfoService();
 	g_CPacketDivisor=new CPacketDivisor();
-	g_CAutoSearchByEthernet=new CAutoSearchByEthernet();
 }
 void remove_def_sevices()
 {
@@ -207,9 +221,6 @@ void remove_def_sevices()
 
 	delete g_CParserFactory;
 	g_CParserFactory=NULL;
-
-	delete g_CAutoSearchByEthernet;
-	g_CAutoSearchByEthernet=NULL;
 }
 void initialize_core(int argc, char* argv[])
 {
@@ -287,9 +298,10 @@ void initialize_core(int argc, char* argv[])
 void perpetual_loop()
 {
 	std::cout << "Press any key ..." << std::endl;
+	LOG(INFO)<<"The kernel is started";
 	getchar();
-	//for (;; NSHARE::sleep(10000))
-		;
+
+	LOG(INFO)<<"Stopping the kernel";
 }
 void start()
 {

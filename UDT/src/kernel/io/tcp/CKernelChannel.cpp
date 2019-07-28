@@ -184,9 +184,8 @@ void IMPL::MReceivingForNewLink(
 	case IConnectionHandler::E_ERROR:
 	{
 
-		NSHARE::net_address _addr;
-		FTcp.MGetInitParam(&_addr);
-			LOG(ERROR)<<"The  client "<<_addr<<" cannot connect as  the protocol "<<FSetting.FProtocolType<<" is invalid.";
+		NSHARE::net_address _addr(FTcp.MGetSetting().FServerAddress);
+		LOG(ERROR)<<"The  client "<<_addr<<" cannot connect as  the protocol "<<FSetting.FProtocolType<<" is invalid.";
 		FTcp.MReOpen();
 		break;
 	}
@@ -236,8 +235,7 @@ void IMPL::MReceivedData(data_t::const_iterator aBegin,
 }
 bool IMPL::MAddNewLink()
 {
-	NSHARE::net_address _addr;
-	FTcp.MGetInitParam(&_addr);
+	NSHARE::net_address _addr(FTcp.MGetSetting().FServerAddress);
 	LOG(INFO)<<"The  client is connected to "<<_addr;
 	FLink = smart_link_t(FConnectionHandler->MCreateLink());
 	FConnectionHandler.MRelease();
@@ -279,14 +277,13 @@ bool IMPL::MCloseRequest(descriptor_t aId)
 }
 NSHARE::net_address  IMPL::MGetAddr() const
 {
-	NSHARE::net_address _addr;
-	FTcp.MGetInitParam(&_addr);
+	NSHARE::net_address _addr(FTcp.MGetSetting().FServerAddress);
 	return _addr;
 }
 bool IMPL::MInfo(NSHARE::CConfig & aTo)
 {
-	NSHARE::net_address _addr;
-	if(!FTcp.MGetInitParam(&_addr)) return false;
+	NSHARE::net_address _addr(FTcp.MGetSetting().FServerAddress);
+	if(!_addr.MIsValid()) return false;
 	aTo=_addr.MSerialize();
 	return true;
 }

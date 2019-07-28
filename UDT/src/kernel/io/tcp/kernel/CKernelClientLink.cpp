@@ -580,12 +580,11 @@ void CKernelClientLink::MSendOpenedIfNeed()
 namespace
 {
 
-static const NSHARE::CText NEW_NAME = "udt_client";
 class CNewConnectionClient: public IConnectionHandlerFactory
 {
 public:
 	CNewConnectionClient() :
-			IConnectionHandlerFactory(NEW_NAME)
+			IConnectionHandlerFactory(CKernelClientLink::NAME)
 	{
 
 	}
@@ -611,7 +610,7 @@ CIOKernelLinkRegister::CIOKernelLinkRegister() :
 }
 void CIOKernelLinkRegister::MUnregisterFactory() const
 {
-	CConnectionHandlerFactory::sMGetInstance().MRemoveFactory(NEW_NAME);
+	CConnectionHandlerFactory::sMGetInstance().MRemoveFactory(CKernelClientLink::NAME);
 }
 void CIOKernelLinkRegister::MAdding() const
 {
@@ -621,7 +620,7 @@ bool CIOKernelLinkRegister::MIsAlreadyRegistered() const
 {
 	if (CConnectionHandlerFactory::sMGetInstancePtr())
 		return CConnectionHandlerFactory::sMGetInstance().MIsFactoryPresent(
-				NEW_NAME);
+				CKernelClientLink::NAME);
 	return false;
 
 }

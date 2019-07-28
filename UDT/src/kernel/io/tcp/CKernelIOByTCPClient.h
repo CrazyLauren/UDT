@@ -27,7 +27,7 @@ public:
 	static const NSHARE::CText NAME;
 
 	CKernelIOByTCPClient();
-	~CKernelIOByTCPClient();
+	virtual ~CKernelIOByTCPClient();
 
 	void MInit(CKernelIo *);
 

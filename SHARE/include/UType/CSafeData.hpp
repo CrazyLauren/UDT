@@ -74,7 +74,7 @@ private:
 	}
 	void MLock()
 	{
-		LOG_IF(FATAL,
+		DDLOG_IF(FATAL,
 				FSafe.FImpl.FMutex.MThread()
 						== NSHARE::CThread::sMThreadId())
 				<< "Dead lock for rw writer " << FSafe.FImpl.FMutex.MThread()
@@ -87,14 +87,15 @@ private:
 					&FSafe.FImpl.FMutex);
 			MASSERT_1(_rval);
 		}
-		CHECK_EQ(FSafe.FImpl.FWritersLock,0);
+		DCHECK_EQ(FSafe.FImpl.FWritersLock,0);
 		++FSafe.FImpl.FWritersLock;
+		VLOG(3)<<"Write lock object"<<&FSafe.FData;
 	}
 
 	void MUnlock()
 	{
-		CHECK(FIsLock);
-		CHECK(FSafe.FImpl.FWriters > 0);
+		DCHECK(FIsLock);
+		DCHECK(FSafe.FImpl.FWriters > 0);
 		if ((--FSafe.FImpl.FWritersLock) == 0)
 		{
 			if ((--FSafe.FImpl.FWriters)!=0)
@@ -108,7 +109,7 @@ private:
 				FSafe.FImpl.FMutex.MUnlock();
 			}
 		}
-		CHECK_GE(FSafe.FImpl.FWritersLock, 0);
+		DCHECK_GE(FSafe.FImpl.FWritersLock, 0);
 	}
 
 	CSafeData<_T>& FSafe;
@@ -200,7 +201,7 @@ private:
 	}
 	inline void MLock()
 	{
-		LOG_IF(FATAL,
+		DLOG_IF(FATAL,
 				FSafe.FImpl.FMutex.MThread()
 						== NSHARE::CThread::sMThreadId())
 				<< "Dead lock for rw reader " << FSafe.FImpl.FMutex.MThread()
@@ -213,6 +214,7 @@ private:
 			MASSERT_1(_rval);
 		}
 		++FSafe.FImpl.FReaders;
+		VLOG(3)<<"Read lock object"<<&FSafe.FData;
 	}
 	inline void MUnlock()
 	{

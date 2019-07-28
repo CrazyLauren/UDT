@@ -25,7 +25,7 @@
 
 #include "CAutoSearchByEthernet.h"
 
-#include <io/tcp/kernel/CKernelServerLink.h>
+#include <io/tcp/kernel/CKernelClientLink.h>
 
 template<>
 NUDT::CAutoSearchByEthernet::singleton_pnt_t NUDT::CAutoSearchByEthernet::singleton_t::sFSingleton =
@@ -47,7 +47,12 @@ CAutoSearchByEthernet::CAutoSearchByEthernet()://
 
 CAutoSearchByEthernet::~CAutoSearchByEthernet()
 {
+	VLOG(3)<<"Stopping CAutoSearchByEthernet";
 	FUdp.MClose();
+
+	VLOG(3)<<"Wait for UDP stopped";
+	CRAII<CMutex> _lock(FThreadMutex);
+	VLOG(3)<<"UDP is stopped";
 }
 bool CAutoSearchByEthernet::MStart()
 {
@@ -101,6 +106,7 @@ NSHARE::eCBRval CAutoSearchByEthernet::sMMainLoop(NSHARE::CThread const* WHO,
  */
 void CAutoSearchByEthernet::MReceiveLoop()
 {
+	CRAII<CMutex> _lock(FThreadMutex);
 	ISocket::data_t _data;
 	for (; FUdp.MIsOpen();)
 	{
@@ -111,6 +117,8 @@ void CAutoSearchByEthernet::MReceiveLoop()
 		}
 
 	}
+
+	VLOG(3)<<"UDP will stopped";
 }
 /** @brief Wait for our TCP server is able to
  * connect the other kernels
@@ -120,22 +128,26 @@ void CAutoSearchByEthernet::MWaitForServerStarted()
 {
 	auto_search_info_t _info;
 	_info.FProgramm = get_my_id();
-	_info.FChannel.FProtocolType = CKernelServerLink::NAME;
+	_info.FChannel.FProtocolType = CKernelClientLink::NAME;
 	_info.FChannel.FIsAutoRemoved = true;
-	
-	for (;;)
+	const CKernelIOByTCP* _p_server=NULL;
+	const CKernelIOByTCPClient* _p_client=NULL;
+	for (;FUdp.MIsOpen();)
 	{
-		const CKernelIOByTCP* _p =
-			dynamic_cast<const CKernelIOByTCP*>(CIOManagerFactory::sMGetInstance().MGetFactory(
-					CKernelIOByTCP::NAME));
-		if (_p)
-			_info.FChannel.FAddress = _p->MGetAddress();
-
-		if (_info.FChannel.FAddress.MIsValid())
+		DVLOG(4)<<"Try to find kernel IO";
+		_p_server=_p_server!=NULL?_p_server:MGetTCPServerIOManger();
+		_p_client=_p_client!=NULL?_p_client:MGetTCPClientIOManger();
+		if (_p_server)
+		{
+			_info.FChannel.FAddress = _p_server->MGetAddress();
+			DVLOG(2) << "Kernel IO by TCP is valid:"
+								<< _info.FChannel.FAddress;
+		}
+		if (_info.FChannel.FAddress.MIsPortValid() && _p_server && _p_client)
 			break;
 		else
 		{
-			VLOG(1) << "Wait for 1 second ...";
+			VLOG(1) << "Address is "<<_info.FChannel.FAddress<< ". Wait for 1 second valid address ...";
 			NSHARE::sleep(1);
 		}
 	}
@@ -199,45 +211,96 @@ void CAutoSearchByEthernet::MProcess(auto_search_dg_t const* aP, parser_t* aThis
 	CDataObject::sMGetInstance().MPutOperation(_op);
 }
 
-/** Handler the new connection
+/** Push info about kernel to list
  *
- * @param aInfo A connect to
+ * @param aInfo Connection info about kernel
+ * @return true if pushed
  */
-void CAutoSearchByEthernet::MConnectTo(auto_search_info_t const& aInfo)
+bool CAutoSearchByEthernet::MPushInfo(const auto_search_info_t& aInfo)
 {
-
+	bool _is_new=true;
 	list_of_kernels_t::iterator _it = FListOfID.begin();
-	bool _is_exist = false;
 	for (; _it != FListOfID.end();)
 	{
 		if (_it->FProgramm == aInfo.FProgramm)
 		{
-			LOG(INFO) << "The " << aInfo.FProgramm
-									<< " has been added early";
-			DCHECK_NE(_it->FChannel.FAddress, aInfo.FChannel.FAddress);
-			_is_exist = true;
+			LOG(INFO)   << "The " << aInfo.FProgramm << " has been added early";
+            			DCHECK_NE(_it->FChannel.FAddress, aInfo.FChannel.FAddress);
+            _is_new = false;
 		}
-
 		if (aInfo.FChannel.FAddress == _it->FChannel.FAddress)
 		{
-			LOG(WARNING) << aInfo.FProgramm << " have equal up with "
-									<< _it->FProgramm;
+			LOG(WARNING) << aInfo.FProgramm << " have equal up with " << _it->FProgramm;
 			_it = FListOfID.erase(_it);
 			//todo check for _it->FProgramm is not connected to me
 		}
 		else
 			++_it;
 	}
-
-
-	if (!_is_exist)
-	{
+	if(_is_new)
 		FListOfID.push_back(aInfo);
-		CKernelIOByTCPClient const *_p =
-				dynamic_cast<CKernelIOByTCPClient const *>(CIOManagerFactory::sMGetInstance().MGetFactory(
-						CKernelIOByTCPClient::NAME));
-		//_p->MAddClient(aWhat)
+
+	return _is_new;
+}
+
+/** Returns pointer to TCP client IO manager
+ *
+ * @return pointer or null
+ */
+CKernelIOByTCPClient* CAutoSearchByEthernet::MGetTCPClientIOManger() const
+{
+	if (IIOManager* _manager =
+				CIOManagerFactory::sMGetInstance().MGetFactory(
+						CKernelIOByTCPClient::NAME))
+	{
+		VLOG(2)<<"Kernel IO is found";
+		CKernelIOByTCPClient* _p =
+				reinterpret_cast<CKernelIOByTCPClient*>(_manager);
+		return _p;
 	}
+	return NULL;
+}
+/** Returns pointer to TCP server IO manager
+ *
+ * @return pointer or null
+ */
+CKernelIOByTCP* CAutoSearchByEthernet::MGetTCPServerIOManger() const
+{
+	if (IIOManager* _manager =
+				CIOManagerFactory::sMGetInstance().MGetFactory(
+						CKernelIOByTCP::NAME))
+	{
+		VLOG(2)<<"Kernel IO is found";
+		CKernelIOByTCP* _p =
+				reinterpret_cast<CKernelIOByTCP*>(_manager);
+		return _p;
+	}
+	return NULL;
+}
+/** Handler the new connection
+ *
+ * @param aInfo A connect to
+ * @return true if no error
+ */
+bool CAutoSearchByEthernet::MConnectTo(auto_search_info_t const& aInfo)
+{
+	CKernelIOByTCPClient* _p = MGetTCPClientIOManger();
+	if (_p)
+	{
+		bool const _is = MPushInfo(aInfo);
+		if (_is)
+		{
+			LOG(INFO) << "Add the new kernel " << aInfo;
+			_p->MAddClient(aInfo.FChannel);
+		}
+
+		return true;
+	}else
+	{
+		LOG(ERROR)<<"No TCP client IO manager";
+	}
+
+	return false;
 }
 
 /** Send information about me
@@ -285,7 +348,11 @@ void CAutoSearchByEthernet::MHandleConncections()
 			_info = FListOfNotHandledKernel.back();
 			FListOfNotHandledKernel.pop_back();
 		}
-		MConnectTo(_info);
+		if (!MConnectTo(_info))
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _lock(FMutex);
+			FListOfNotHandledKernel.push_back(_info);
+		}
 	}
 }
 inline void CAutoSearchByEthernet::MInit()

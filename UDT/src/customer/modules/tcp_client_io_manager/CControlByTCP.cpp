@@ -459,8 +459,7 @@ int CControlByTCP::MSend(user_data_t & aData)
 	{
 		LOG(ERROR)<< "It's not connected.";
 		return -1;
-	}
-	LOG_IF(ERROR,FState!=E_CONNECTED) << "Invalid state" << (unsigned) FState;
+	}	
 
 	//aData.FDataId.FPacketNumber= _number;
 	VLOG(2) << "Create user data DG";
@@ -642,8 +641,7 @@ int CControlByTCP::MWaitForSend(unsigned aNumber, unsigned aTime)//fixme depreci
 {
 	double const _time = NSHARE::get_time();
 	double const _timeout = aTime ? aTime / 1000.0 : WAIT_ANSWER_BY_KERNEL;
-	for (HANG_INIT; !MIsKernelReceived(aNumber);
-	HANG_CHECK, NSHARE::usleep(1000))
+	for (HANG_INIT; !MIsKernelReceived(aNumber);HANG_CHECK)
 	{
 		if ((NSHARE::get_time() - _time) < _timeout)
 		{

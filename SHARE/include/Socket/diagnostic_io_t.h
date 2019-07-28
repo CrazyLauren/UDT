@@ -24,6 +24,14 @@ struct sent_state_t
 	static const NSHARE::CText KEY_ERROR;///<A serialization key of #FError
 	static const NSHARE::CText KEY_BYTE;///<A serialization key of #FBytes
 
+	static const NSHARE::CText KEY_INVALID_VALUE;///<A serialization key of #E_INVALID_VALUE
+	static const NSHARE::CText KEY_NOT_OPENED;///<A serialization key of #E_NOT_OPENED
+	static const NSHARE::CText KEY_TOO_LARGE;///<A serialization key of #E_TOO_LARGE
+	static const NSHARE::CText KEY_AGAIN;///<A serialization key of #E_AGAIN
+	static const NSHARE::CText KEY_UNKNOWN_ERROR;///<A serialization key of #E_ERROR
+	static const NSHARE::CText KEY_SOCKET_CLOSED;///<A serialization key of #E_SOCKET_CLOSED
+
+
 	/** @brief Error type
 	 *
 	 */
@@ -38,7 +46,8 @@ struct sent_state_t
 				 	 	 	 	 	 */
 		E_AGAIN			=0x1<<3, ///< This error is occured than the buffer of receiver is full
 		E_ERROR			=0x1<<4, ///< Unknown error
-		E_MAX_BITWISE_CODE = 4,///< Technology value
+		E_SOCKET_CLOSED	=0x1<<5, ///< Socket is closed
+		E_MAX_BITWISE_CODE = 6,///< Technology value
 	};
 
 	typedef NSHARE::CFlags<eSendState,uint32_t> error_t;///< An error type
@@ -93,6 +102,14 @@ struct sent_state_t
 	 */
 	size_t const& MSentByte() const;
 
+	/*! @brief Deserialize object
+	 *
+	 * To check the result of deserialization,
+	 * used the MIsValid().
+	 * @param aConf Serialized object
+	 */
+	explicit sent_state_t(NSHARE::CConfig const& aConf);
+
 	/*! @brief Serialize object
 	 *
 	 * The key of serialized object is #NAME
@@ -100,6 +117,14 @@ struct sent_state_t
 	 * @return Serialized object.
 	 */
 	CConfig MSerialize() const;
+
+	/*! @brief Checks object for valid
+	 *
+	 * Usually It's used after deserializing object
+	 * @return true if it's valid.
+	 */
+	bool MIsValid() const;
+
 private:
 	error_t FError; ///<Send state
 	size_t FBytes; ///< Amount of unsent (sent) bytes
@@ -125,26 +150,40 @@ struct SHARE_EXPORT diagnostic_io_t
 	 *
 	 * @param aCount Amount of received bytes
 	 */
-	void MRecv(size_t aCount) const;
+	void MRecv(size_t aCount);
 
 	/** Passes amount of sent bytes
 	 *
 	 * @param aCount Amount of received bytes
 	 */
-	void MSend(size_t aCount) const;
+	void MSend(size_t aCount);
 
 
 	/** Puts information about send state
 	 *
 	 *	@param aState a state info
 	 */
-	void MSend(sent_state_t const& aState) const;
+	void MSend(sent_state_t const& aState);
 
 	/** Puts information about error
 	 *
 	 *	@param aError A error info
 	 */
-	void operator+=(const sent_state_t &aError) const;
+	void operator+=(const sent_state_t &aError);
+
+	/** Composition information about IO
+	 *
+	 *	@param aInfo The other info
+	 */
+	void operator+=(const diagnostic_io_t &aInfo);
+
+	/*! @brief Deserialize object
+	 *
+	 * To check the result of deserialization,
+	 * used the MIsValid().
+	 * @param aConf Serialized object
+	 */
+	explicit diagnostic_io_t(NSHARE::CConfig const& aConf);
 
 
 	/*! @brief Serialize object
@@ -155,11 +194,50 @@ struct SHARE_EXPORT diagnostic_io_t
 	 */
 	CConfig MSerialize() const;
 
-	mutable atomic_t FRecvData;///< Amount of received data
-	mutable atomic_t FRecvCount;///< Count received packets
-	mutable atomic_t FSentData;///< Amount of sent data
-	mutable atomic_t FSentCount;///< Count sent packets
-	mutable sent_state_t FErrorInfo[sent_state_t::E_MAX_BITWISE_CODE];///< Info about errors
+	/*! @brief Checks object for valid
+	 *
+	 * Usually It's used after deserializing object
+	 * @return true if it's valid.
+	 */
+	bool MIsValid() const;
+
+	/** Returns info about specified error
+	 *
+	 * @param aError An error type
+	 * @return info about error
+	 */
+	sent_state_t const& MGetState(sent_state_t::eSendState const& aError) const;
+
+	/** Returns info about amount of received data
+	 *
+	 * @return  The number of bytes
+	 */
+	size_t MGetRecvDataInfo() const;
+
+	/** Returns info about the number of received packets
+	 *
+	 * @return  The number of packets
+	 */
+	size_t MGetRecvCountInfo() const;
+
+	/** Returns info about amount of sent data
+	 *
+	 * @return  The number of bytes
+	 */
+	size_t MGetSentDataInfo() const;
+
+	/** Returns info about the number of sent packets
+	 *
+	 * @return  The number of packets
+	 */
+	size_t MGetSentCountInfo() const;
+
+private:
+	atomic_t FRecvData;///< Amount of received data
+	atomic_t FRecvCount;///< Count received packets
+	atomic_t FSentData;///< Amount of sent data
+	atomic_t FSentCount;///< Count sent packets
+	sent_state_t FErrorInfo[sent_state_t::E_MAX_BITWISE_CODE];///< Info about errors
 
 };
 }
@@ -174,8 +252,8 @@ inline std::ostream& operator <<(std::ostream& aStream,
 	bool _is=false;
 	if (_val.MGetFlag(sent_state_t::E_INVALID_VALUE))
 	{
-		if(_is)
-			aStream <<", ";
+//		if(_is)
+//			aStream <<", ";
 		_is=true;
 
 		aStream << "No the specified receiver";
@@ -229,16 +307,17 @@ inline std::ostream& operator <<(std::ostream& aStream,
 {
 	using namespace NSHARE;
 
-	aStream<<" Receive " << aVal.FRecvData<<" bytes,";
-	aStream<<" packets # " << aVal.FRecvCount<<",";
-	aStream<<" send " << aVal.FSentData<<" bytes,";
-	aStream<<" packets # " << aVal.FSentCount;
+	aStream<<" Receive " << aVal.MGetRecvDataInfo()<<" bytes,";
+	aStream<<" packets # " << aVal.MGetRecvCountInfo()<<",";
+	aStream<<" send " << aVal.MGetSentDataInfo()<<" bytes,";
+	aStream<<" packets # " << aVal.MGetSentCountInfo();
 
 	const unsigned _last_bits = sent_state_t::E_MAX_BITWISE_CODE;
-	for (unsigned i = 0; i <= _last_bits; ++i)
+	for (unsigned i = 0; i < _last_bits; ++i)
 	{
-		if(!aVal.FErrorInfo[i].MIs())
-			aStream<<aVal.FErrorInfo[i];
+		sent_state_t::eSendState const _error((sent_state_t::eSendState)(0x1<<i));
+		if(!aVal.MGetState(_error).MIs())
+			aStream<<aVal.MGetState(_error);
 	}
 
 	return aStream;
@@ -253,7 +332,7 @@ inline sent_state_t::sent_state_t(eSendState eError, size_t aBytes) :
 
 }
 inline sent_state_t::sent_state_t() : //
-		FError(E_ERROR),//
+		FError(0),//
 		FBytes(0) //
 {
 }
@@ -287,17 +366,17 @@ inline void sent_state_t::operator+=(const sent_state_t &aError)
 	FError.MSetFlag(aError.FError.MGetMask(),true);
 	FBytes+=aError.FBytes;
 }
-inline void diagnostic_io_t::MRecv(size_t aCount) const
+inline void diagnostic_io_t::MRecv(size_t aCount)
 {
 	++FRecvCount;
 	FRecvData+=aCount;
 }
-inline void diagnostic_io_t::MSend(size_t aCount) const
+inline void diagnostic_io_t::MSend(size_t aCount)
 {
 	++FSentCount;
 	FSentData+=aCount;
 }
-inline void diagnostic_io_t::diagnostic_io_t::MSend(sent_state_t const& aState) const
+inline void diagnostic_io_t::diagnostic_io_t::MSend(sent_state_t const& aState)
 {
 	using namespace std;
 
@@ -312,15 +391,41 @@ inline void diagnostic_io_t::diagnostic_io_t::MSend(sent_state_t const& aState) 
 
 		for(unsigned i=0;i<=_last_bits;++i)
 		{
-			if(_mask & 0x1<<i)
+			if(_mask & (0x1<<i))
 				FErrorInfo[i]+=aState.MSentByte();
 		}
 	}
 }
-inline void diagnostic_io_t::operator+=(const sent_state_t &aError) const
+inline void diagnostic_io_t::operator+=(const sent_state_t &aError)
 {
 	MSend(aError);
 }
+inline void diagnostic_io_t::operator+=(const diagnostic_io_t &aInfo)
+{
+	FRecvData+=aInfo.FRecvData;
+	FRecvCount+=aInfo.FRecvCount;
+	FSentData+=aInfo.FSentData;
+	FSentCount+=aInfo.FSentCount;
+	for(unsigned i=0;i<sent_state_t::E_MAX_BITWISE_CODE;++i)
+		FErrorInfo[i]+=aInfo.FErrorInfo[i];
+}
+inline size_t diagnostic_io_t::MGetRecvDataInfo() const
+{
+	return FRecvData;
+}
+inline size_t diagnostic_io_t::MGetRecvCountInfo() const
+{
+	return FRecvCount;
+}
+inline size_t diagnostic_io_t::MGetSentDataInfo() const
+{
+	return FSentData;
+}
+inline size_t diagnostic_io_t::MGetSentCountInfo() const
+{
+	return FSentCount;
+}
+
 }
 
 

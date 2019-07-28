@@ -39,30 +39,30 @@ int CCustomer::_pimpl::MInitialize(NSHARE::CText const& aProgram,
 {
 	if (int _rval = MInitId(aProgram, aName, aVersion))
 	{
-		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
+		LOG(ERROR) << "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 
 	if (int _rval = MInitFactorys())
 	{
-		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
+		LOG(ERROR)<< "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 
 	if (int _rval = MLoadLibraries())
 	{
-		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
+		LOG(ERROR)<< "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 
 	if (int _rval = MInitCallBacks())
 	{
-		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
+		LOG(ERROR) << "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 	if (int _rval = MUdpateRecvList())
 	{
-		LOG_IF(ERROR,_rval!=0) << "Cannot initialize id as " << _rval;
+		LOG(ERROR)<< "Cannot initialize id as " << _rval;
 		return _rval;
 	}
 

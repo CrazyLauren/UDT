@@ -125,7 +125,7 @@ void CKernelIOByTCP::MClose(const descriptor_t& aFrom)
 }
 void CKernelIOByTCP::MClose()
 {
-	FTcpServiceSocket.MClose();
+	VLOG(2)<<"Close CKernelIOByTCP";
 
 	std::vector<net_address> _addr;
 	for (channels_t::iterator i = FServiceChannels.begin(); i != FServiceChannels.end(); ++i)
@@ -137,6 +137,8 @@ void CKernelIOByTCP::MClose()
 	{
 		MRefuseClient(*_it);
 	}
+	MCleanUpNewLinkages();
+	FTcpServiceSocket.MClose();
 }
 
 bool CKernelIOByTCP::MOpen(const void* aP)
@@ -584,8 +586,6 @@ void CKernelIOByTCP::MDisconnectImpl(const NSHARE::net_address& _addr)
 	else
 	{
 		new_channels_t::iterator _it = FNewChannels.find(_addr);
-		LOG_IF(WARNING,_it == FNewChannels.end())
-															<< "Anonymous client disconnected.";
 
 		if (_it != FNewChannels.end())
 		{
@@ -643,7 +643,7 @@ NSHARE::CConfig CKernelIOByTCP::MSerialize() const
 }
 NSHARE::net_address CKernelIOByTCP::MGetAddress() const
 {
-	return FTcpServiceSocket.MGetSetting();
+	return FTcpServiceSocket.MGetSetting().FServerAddress;
 }
 CKernelIOByTCPRegister::CKernelIOByTCPRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(0, 3))

@@ -21,7 +21,7 @@
 #endif
 namespace NSHARE
 {
-/**\brief Очень полезный класс для защиты от зависания
+/**\brief Very usefully class for check to infinite loop
  *
  *	using as:
  *
@@ -65,7 +65,6 @@ public:
 			double _delta = NSHARE::get_time() - FTime;
 			if (_delta < 0.01) //10 ms
 			{
-				NSHARE::usleep(10000);
 				LOG_IF(WARNING, !FFile) << "Hang occur in unknown place.";
 				LOG_IF(WARNING, FFile) << "Hang occur in " << FFile << ":"
 						<< FLine;

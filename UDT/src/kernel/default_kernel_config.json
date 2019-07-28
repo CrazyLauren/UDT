@@ -167,6 +167,17 @@ plugins.
 				"protocol":"udt_client"
 			} */
 		},
+		/** The kernel can looking for other kernel
+		*	by UDP, and creates TCP connection by oneself
+		*/
+		"auto_search":
+		{
+			/** The UDP port settings
+			*/
+			/*"param":{
+				//"port":"18013"//The udp port number. By default is 18013
+			}*/			
+		},
 		"front_end_io_manager":
 		{
 		},

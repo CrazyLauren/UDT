@@ -190,7 +190,7 @@ bool CSharedMemoryServer::MReceiveData(NSHARE::CBuffer& aTo,
 ssize_t CSharedMemoryServer::MReceiveData(NSHARE::CBuffer * aBuf,
 		float const aTime)
 {
-	CHECK_NOTNULL(aBuf);
+	DCHECK_NOTNULL(aBuf);
 	if (FImpl->MReceiveData(*aBuf, NULL, aTime, NULL))
 		return aBuf->size();
 	return -1;
@@ -198,7 +198,7 @@ ssize_t CSharedMemoryServer::MReceiveData(NSHARE::CBuffer * aBuf,
 ssize_t CSharedMemoryServer::MReceiveData(data_t * aData, float const aTime,
 		recvs_from_t *aFrom)
 {
-	CHECK_NOTNULL(aData);
+	DCHECK_NOTNULL(aData);
 	shared_identify_t _id;
 	if (!FImpl->MReceiveData(*aData, &_id, aTime, NULL))
 	{
