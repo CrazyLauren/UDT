@@ -24,6 +24,7 @@
 namespace NUDT
 {
 class CCustomer;
+class IRtc;
 
 /*!\brief Information about requirement message
  *
@@ -585,19 +586,19 @@ public:
 	 */
 	modules_t MModules() const;
 
-	/*\brief Check if you connect to kernel
+	/**\brief Check if you connect to kernel
 	 *
 	*\return true if connected
 	 */
 	bool MIsConnected() const;
 
-	/*\brief Check if you create channel to library
+	/**\brief Check if you create channel to library
 	 *
 	*\return true if created
 	 */
 	bool MIsOpened() const;
 
-	/*\brief Open channel to kernel
+	/**\brief Open channel to kernel
 	 *
 	 *	After the channel to kernel is opened, the
 	 *	connection to kernel begins. When the connection
@@ -607,7 +608,7 @@ public:
 	 */
 	bool MOpen();
 
-	/*\brief Close channel to kernel
+	/**\brief Close channel to kernel
 	 *
 	 */
 	void MClose();
@@ -957,67 +958,26 @@ public:
 	 */
 	NSHARE::CBuffer MGetNewBuf(std::size_t aSize) const;
 
-
 	/*!\brief The function blocks the calling thread
 	 *until opened channel to kernel.
 	 *
 	 */
 	void MJoin();
 
-	/** @brief Gets the current time
+	/** Gets RTC for working
 	 *
-	 * In practice, the time of system can differ from
-	 * "real" time. The kernel have inner module "RTC",
-	 * which is used for modeling purpose  or when the
-	 * "RTC" is not  available in the hardware.
-	 * If the kernel "RTC" is turned off, calls of this
-	 * method is equal of calling the #SHARE::get_time()
-	 * function. Which in turn equals to call gettimeofday
-	 * of UNIX systems.
-	 * Thus, instead of using standard function
-	 * for gets the current system time (i.e. time(),
-	 * gettimeofday, clock_gettime (CLOCK_REALTIME))
-	 * it recommends to use this method.
-	 * This can save a lot of time in the future.
-	 *
-	 * @return current time in seconds
-	 * 		   (precision - milliseconds)
+	 * @param aName Name of RTC
+	 * @return pointer to RTC or NULL
+	 * @warning Call this method as little as possible.
+	 * 			It's looking for the specified RTC.
 	 */
-	double MGetCurrentTime() const;
+	IRtc* MGetRTC(NSHARE::CText const& aName) const;
 
-	/** @brief Suspend a thread until the specified
-	 * time comes
+	/** Gets list of available RTC
 	 *
-	 * What for it's necessary see  #MGetCurrentTime
-	 * method. If aTime is less or equal  of zero
-	 * then it waits for the time is changed.
-	 * In modeling purpose it's equal to send
-	 * to modeling controller the time
-	 * of "next call".
-	 * @param aTime A time (absolute)
-	 * @return current time in seconds
+	 * @return list of RTC
 	 */
-	double MSleepUntil(double aTime) const;
-
-	/** @brief Creates a timer
-	 *
-	 * The methods creates timer using the kernel "RTC"
-	 * if is turn on or CLOCK_REALTIME if is turn off.
-	 *
-	 * What for it's necessary see  #MGetCurrentTime
-	 * method.
-	 * @param aFirstCall A first expiry time (absolute)
-	 * @param aIntervalCall A repetition interval or -1
-	 * @param aHandler A pointer to the function for handling timer
-	 */
-	void MSetTimer(double aFirstCall,double aIntervalCall, callback_t const& aHandler);
-
-	/** Returns info about used RTC
-	 *
-	 * What for it's necessary see  #MGetCurrentTime
-	 * method.
-	 */
-	unsigned MGetRTCInfo() const;
+	std::vector<IRtc*> MGetListOfRTC() const;
 private:
 
 	CCustomer();

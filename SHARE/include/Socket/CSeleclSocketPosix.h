@@ -18,7 +18,7 @@ struct CSelectSocket::CImpl
 {
 	CImpl(CSelectSocket& aThis);
 
-	int MWaitData(socks_t& aTo, float const aTime, unsigned aType) const;
+	int MWaitData(socks_t& aTo, float const aTime, unsigned aType,socks_t* aToWrite) const;
 
 	mutable fd_set readset;
 	mutable fd_set writeset;

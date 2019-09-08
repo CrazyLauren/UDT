@@ -187,8 +187,8 @@ CKernelIo* CKernelIo::sMGetInstancePtr()
 }
 bool CKernelIo::MStart()
 {
-	LOG_IF(DFATAL,FIsInited) << "Reinited ";
-	if (FIsInited)
+	LOG_IF(DFATAL,MIsInited()) << "Reinited ";
+	if (MIsInited())
 		return false;
 	FIsInited = true;
 	factory_its_t _its = MGetIterator();
@@ -200,6 +200,27 @@ bool CKernelIo::MStart()
 	VLOG(2) << "Kernel IO is initialized";
 	return true;
 }
+bool CKernelIo::MIsInited() const
+{
+	return FIsInited;
+}
+void CKernelIo::MStop()
+{
+	LOG_IF(DFATAL,!MIsInited()) << "not inited ";
+	if (!MIsInited())
+		return ;
+	FIsInited = false;
+
+	factory_its_t _its = MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		VLOG(2) << "Next factory";
+		_its.FBegin->second->MClose();
+	}
+	MRemoveAllFactories();
+	VLOG(2) << "Kernel IO is deinitialized";
+}
+
 NSHARE::CConfig CKernelIo::MBufferingConfFor(descriptor_t const& aName,
 		IIOManager* aWhere)
 {
@@ -333,7 +354,7 @@ void CKernelIo::MRemoveChannelFor(descriptor_t const& aVal, IIOManager* aWhere)
 void CKernelIo::MFactoryAdded(factory_t* factory)
 {
 	CHECK_NOTNULL(factory);
-	if (FIsInited)
+	if (MIsInited())
 	{
 		VLOG(2) << "Init " << factory->MGetType();
 		factory->MInit(this);
@@ -351,7 +372,7 @@ void CKernelIo::MFactoryAdded(factory_t* factory)
 }
 void CKernelIo::MFactoryRemoved(factory_t* factory)
 {
-	if (FIsInited)
+	if (MIsInited())
 	{
 		//NSHARE::CRAII<NSHARE::CMutex> _lock_io(FBlockChangingIOMangersList);
 		IIOManager::descriptors_t _descriptors = factory->MGetDescriptors();
@@ -607,5 +628,26 @@ void CKernelIo::MSendTo(output_user_data_t& aData, fail_send_array_t & aNoSent,
 			aFailedData.splice(aFailedData.end(), _to);
 		}
 	}
+}
+void CKernelIo::MClose(descriptor_t const& aVal)
+{
+	if (!CDescriptors::sMIsValid(aVal))
+		return;
+	//NSHARE::CRAII<NSHARE::CMutex> _lock_io(FBlockChangingIOMangersList);
+	IIOManager* _p = NULL;
+	{
+		safe_manager_t::RAccess<> const _access = FIoManagers.MGetRAccess();
+		managers_t const& _man=_access.MGet();
+		managers_t::const_iterator _it = _man.find(aVal);
+		if (_it == _man.end())
+		{
+			LOG(ERROR)<<"There is not manager for "<<aVal;
+			return;
+		}
+		_p = &_it->second.MGet()->FWho;
+	}
+	//if (_p)
+	CHECK_NOTNULL(_p);
+	_p->MClose(aVal);
 }
 } /* namespace NUDT */

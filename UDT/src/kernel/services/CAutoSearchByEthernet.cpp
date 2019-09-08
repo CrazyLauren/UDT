@@ -47,12 +47,14 @@ CAutoSearchByEthernet::CAutoSearchByEthernet()://
 
 CAutoSearchByEthernet::~CAutoSearchByEthernet()
 {
-	VLOG(3)<<"Stopping CAutoSearchByEthernet";
-	FUdp.MClose();
-
 	VLOG(3)<<"Wait for UDP stopped";
 	CRAII<CMutex> _lock(FThreadMutex);
 	VLOG(3)<<"UDP is stopped";
+}
+void CAutoSearchByEthernet::MStop()
+{
+	VLOG(3)<<"Stopping CAutoSearchByEthernet";
+	FUdp.MClose();
 }
 bool CAutoSearchByEthernet::MStart()
 {
@@ -100,6 +102,16 @@ NSHARE::eCBRval CAutoSearchByEthernet::sMMainLoop(NSHARE::CThread const* WHO,
 	reinterpret_cast<CAutoSearchByEthernet*>(aData)->MMainLoop();
 	return E_CB_REMOVE;
 }
+
+/** Check for working
+ *
+ * @return true if working
+ */
+bool CAutoSearchByEthernet::MIsWoking() const
+{
+	return FUdp.MIsOpen();
+}
+
 /** Infinite loop of receiving message
  * from new kernel
  *
@@ -108,7 +120,7 @@ void CAutoSearchByEthernet::MReceiveLoop()
 {
 	CRAII<CMutex> _lock(FThreadMutex);
 	ISocket::data_t _data;
-	for (; FUdp.MIsOpen();)
+	for (; MIsWoking();)
 	{
 		_data.clear();
 		if (FUdp.MReceiveData(&FProtocolParse.FUserData, &_data, 0.0) > 0)
@@ -132,7 +144,7 @@ void CAutoSearchByEthernet::MWaitForServerStarted()
 	_info.FChannel.FIsAutoRemoved = true;
 	const CKernelIOByTCP* _p_server=NULL;
 	const CKernelIOByTCPClient* _p_client=NULL;
-	for (;FUdp.MIsOpen();)
+	for (;MIsWoking();)
 	{
 		DVLOG(4)<<"Try to find kernel IO";
 		_p_server=_p_server!=NULL?_p_server:MGetTCPServerIOManger();
@@ -161,7 +173,7 @@ void CAutoSearchByEthernet::MMainLoop()
 {
 	VLOG(2) << "Async receive";
 
-	LOG_IF(FATAL, !FUdp.MIsOpen()) << "Port is closed";
+	LOG_IF(FATAL, !MIsWoking()) << "Port is closed";
 	MWaitForServerStarted();
 	MSendBroadcast();
 	MReceiveLoop();
@@ -316,7 +328,7 @@ void CAutoSearchByEthernet::MSendBroadcast()
 
 	ISocket::sent_state_t const _error = FUdp.MSend(_buf);
 
-	LOG_IF(DFATAL,!_error.MIs()) << "Cannot send broadcast info as " << _error;
+	LOG_IF(DFATAL,!_error.MIs() && MIsWoking()) << "Cannot send broadcast info as " << _error;
 }
 /** The static method of thread pool
  *

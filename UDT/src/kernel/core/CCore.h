@@ -91,6 +91,15 @@ public:
 	 *\return true if  successfully
 	 */
 	bool MStart();
+
+	/*!\brief Stop all cores
+	 *
+	 * It stops the core in backwards order.
+	 * The first is stopped the latest added core.
+	 *
+	 *\return true if  successfully
+	 */
+	void MStop();
 private:
 
 
@@ -117,9 +126,11 @@ private:
 	 */
 	struct core_object_t
 	{
-		typedef std::map<ICore*, NSHARE::CText> states_t;
+		typedef std::vector<ICore*> list_of_core_t;///<list of pointer to core
+		typedef std::map<ICore*, NSHARE::CText> states_t;///< Map for fast search cores by pointer
 
-		states_t FCores; ///< info for convertion name -> pointer
+		states_t FCoresByPointer; ///< info for convertion name -> pointer
+		list_of_core_t FCoreList;///< A list of core
 	};
 	typedef NSHARE::CSafeData<core_object_t> cores_data_t; ///< RWLock for #core_object_t
 	typedef cores_data_t::RAccess<> const r_core_access; ///< Read only access to #core_object_t

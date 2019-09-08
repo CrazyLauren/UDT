@@ -42,7 +42,9 @@ static size_t f_calculate_size(user_data_t const& aWhat,void*)
 };
 
 CTcpServerMainChannel::CTcpServerMainChannel() :
-		IMainChannel(NAME),FConnector(new CMainClientConnector)
+		IMainChannel(NAME),//
+		FConnector(new CMainClientConnector),//
+		FIsStarted(false)
 {
 	FAddr.FPort = 0;
 	FIsOverload = false;
@@ -56,7 +58,7 @@ CTcpServerMainChannel::CTcpServerMainChannel() :
 
 bool CTcpServerMainChannel::MOpenIfNeed()
 {
-	if (!FServer.MIsOpen())
+	if (!FServer.MIsOpen() && FIsStarted)
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _lock(FOpenMutex);
 		if (!FServer.MIsOpen() && FServer.MOpen(FAddr))
@@ -68,32 +70,49 @@ bool CTcpServerMainChannel::MOpenIfNeed()
 	}
 	return FServer.MIsOpen();
 }
-
-bool CTcpServerMainChannel::MStart()
+bool CTcpServerMainChannel::MStop()
 {
-	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
-	if (_main_settings.MIsEmpty())
+	if(FIsStarted)
 	{
-		LOG(ERROR) << "Main channel settings is not exist";
-		return false;
-	}
-	CConfig _settings = _main_settings.MChild(NAME);
-	if (_settings.MIsEmpty())
-	{
-		LOG(WARNING) << "The tcp server main channel is not initialized as no configure.";
-		return false;
-	}
-
-
-	if (_settings.MGetIfSet(PORT, FAddr.FPort))
-	{
-		VLOG(2) << "Tcp main channel is  using port " << FAddr;
+		VLOG(2)<<"TCP server main channel is stopped";
+		FIsStarted=false;
+		FServer.MClose();
 	}
 	return true;
 }
+bool CTcpServerMainChannel::MStart()
+{
+	if (!FIsStarted)
+	{
+		VLOG(2)<<"Start TCP server main channel ";
+
+		CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(
+				IMainChannel::CONFIGURE_NAME);
+		if (_main_settings.MIsEmpty())
+		{
+			LOG(ERROR) << "Main channel settings is not exist";
+			return false;
+		}
+		CConfig _settings = _main_settings.MChild(NAME);
+		if (_settings.MIsEmpty())
+		{
+			LOG(WARNING)
+									<< "The tcp server main channel is not initialized as no configure.";
+			return false;
+		}
+
+		if (_settings.MGetIfSet(PORT, FAddr.FPort))
+		{
+			VLOG(2) << "Tcp main channel is  using port " << FAddr;
+		}
+		FIsStarted = true;
+		return true;
+	}
+	return false;
+}
 CTcpServerMainChannel::~CTcpServerMainChannel()
 {
-	FServer.MClose();
+	MStop();
 }
 template<>
 void CTcpServerMainChannel::MFill<main_channel_param_t>(data_t* aTo,ILink* aHandler)

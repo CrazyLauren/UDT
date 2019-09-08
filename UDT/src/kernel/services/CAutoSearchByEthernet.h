@@ -20,7 +20,7 @@
 namespace NUDT
 {
 
-/** @brief This class is auto looking the other kernel by UDP
+/** @brief This class is autosearching the other kernel by UDP
  * and connected it by TCP
  *
  */
@@ -42,6 +42,7 @@ public:
 	 *	@return true if started successfully
 	 */
 	bool MStart();
+	void MStop();
 private:
 	typedef CInParser<CAutoSearchByEthernet,NSHARE::net_address> parser_t;///< type of protcol parser
 	typedef std::vector<auto_search_info_t> list_of_kernels_t; ///< A list of NUDT::auto_search_info_t type
@@ -65,6 +66,7 @@ private:
 	bool MPushInfo(const auto_search_info_t& aInfo);
 	CKernelIOByTCPClient* MGetTCPClientIOManger() const;
 	CKernelIOByTCP* MGetTCPServerIOManger() const;
+	bool MIsWoking() const;
 
 	NSHARE::CUDP FUdp;///< A broadcast port
 	parser_t FProtocolParse;///<A protocol parser

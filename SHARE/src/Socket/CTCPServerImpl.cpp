@@ -487,6 +487,7 @@ void IMPL::MListen()
 								&addrlen)));
 		VLOG(2) << "New client: " << _sock << "; host " << FHostSock;
 
+		CRAII<CMutex> _mutex(FConnectMutex);
 		if (FIsAccepting.MIsOne()) ///< As accept is lock thread checking the current state
 		{
 

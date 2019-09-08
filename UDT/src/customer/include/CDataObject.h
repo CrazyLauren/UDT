@@ -49,7 +49,13 @@ struct CUSTOMER_EXPORT demand_dgs_id_t
 	static const data_events_t::key_t NAME;
 	demand_dgs_t FData;
 };
-
+/** Object of this class is used for communication
+ * inner library.
+ *
+ * One of plugins push the data that has to be handled by the other
+ * plugin. The other plugin subscribes to receive the data.
+ *
+ */
 class CUSTOMER_EXPORT CDataObject: public CHardWorker,public NSHARE::CSingleton<CDataObject>
 {
 public:

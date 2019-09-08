@@ -17,6 +17,7 @@
 #include <CParserFactory.h>
 //#include <udt_share.h>
 #include <string.h>
+#include <udt_rtc_types.h>
 
 using namespace NSHARE;
 namespace NUDT
@@ -938,5 +939,5 @@ bool auto_search_info_t::MIsValid() const
 	return FProgramm.MIsValid() //
 	&& FChannel.MIsValid();
 }
-
+const uint64_t time_info_t::END_OF_TIME = std::numeric_limits<uint64_t>::max();
 }

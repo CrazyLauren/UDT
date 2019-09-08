@@ -25,15 +25,14 @@ int main(int argc, char *argv[])
 
 	CSharedMemory _memory;
 	std::cout << "View SM:" << argv[1] << std::endl;
-	bool _is = _memory.MOpen(argv[1], false);
+	CSharedMemory::eError const _error = _memory.MOpen(argv[1], false);
 
-	if (!_is)
-		std::cerr << "Cannot open " << argv[1] << std::endl;
+	if (_error !=CSharedMemory::E_NO_ERROR)
+		std::cerr << "Cannot open " << argv[1] <<"error"<< _error <<std::endl;
 	else
 	{
-		CConfig _conf(argv[1]);
-		std::cout << "serializing" << std::endl;
-		_memory.MSerialize(_conf);
+		CConfig _conf(_memory.MSerialize());
+		std::cout << "serializing" << std::endl;		
 
 		std::cout << "data output" << std::endl;
 		std::stringstream output_stream;

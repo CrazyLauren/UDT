@@ -33,7 +33,7 @@ public:
 
 	void MAdd(operation_t const& operation);
 
-	void MErase(operation_t const& operation);
+	bool MEraseOp(operation_t const& operation);
 
 	void MEraseAll();
 
@@ -55,8 +55,8 @@ protected:
 	typedef std::list<operation_t> Operations;
 	mutable NSHARE::CMutex FMutex;
 	mutable NSHARE::CCondvar FCond;
-	unsigned FNumberOfInvoked;
-	mutable NSHARE::CCondvar FWaitForCond;
+	unsigned FNumberOfInvoked;///< The number of working operation
+	mutable NSHARE::CCondvar FWaitForCond;///<Wait for all operation are finished
 
 	Operations FOperations;
 	Operations::iterator FCurrentOperationIterator;
@@ -94,8 +94,9 @@ protected:
 	/** Run does the opertion thread run loop.*/
 	virtual void MRun();
 
-	volatile bool FDone;
+	atomic_t FDone;
 	volatile bool FInOperation;
+	atomic_t FIsWaitNextOperation;///< 1 if thread blocked as no operation
 
 	mutable NSHARE::CMutex FMutex;
 	SHARED_PTR<COperationQueue> FQueue;

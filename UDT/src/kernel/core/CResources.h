@@ -50,6 +50,7 @@ public:
 	bool MIsValid() const;
 
 	bool MStart();
+	void MStop();
 	~CResources();
 
 	//Loads all resources

@@ -4,5 +4,7 @@
 	<tcp_client_io_manager>
 		<Port>18011</Port>
 	</tcp_client_io_manager>
-	<modules/>
+	<modules>
+		<rtc_for_modeling> </rtc_for_modeling>
+	</modules>
 </conf>

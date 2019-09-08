@@ -33,6 +33,7 @@ public:
 	CKernelIo();
 	virtual ~CKernelIo();
 	bool MStart();
+	void MStop();
 
 //	template<class T>
 //	bool MSendTo(NSHARE::uuid_t const&, const T &);
@@ -69,6 +70,12 @@ public:
 	void MRemoveChannelFor(descriptor_t const&, IIOManager* aWhere);
 	void MClose(descriptor_t const&);
 	NSHARE::CConfig MSerialize() const;
+
+	/** Check for initialized
+	 *
+	 * @return true if inited
+	 */
+	bool MIsInited() const;
 protected:
 	virtual void MFactoryAdded(factory_t* factory);
 	virtual void MFactoryRemoved(factory_t* factory);
@@ -137,7 +144,7 @@ template<class T>
 inline bool CKernelIo:: MSendTo(descriptor_t const& aBy, const T & aVal, routing_t const& aTo,
 		error_info_t const& aError)
 {
-	if (!CDescriptors::sMIsValid(aBy))
+	if (!CDescriptors::sMIsValid(aBy) || !MIsInited())
 		return false;
 	//NSHARE::CRAII<NSHARE::CMutex> _lock_io(FBlockChangingIOMangersList);
 	IIOManager* _p = NULL;
@@ -173,26 +180,6 @@ inline bool CKernelIo::MSendTo(descriptor_t const& aVal, const T &aWhat)
 //{
 //	return MSendTo(CDescriptors::sMGetInstance().MGet(aVal), aWhat);
 //}
-inline void CKernelIo::MClose(descriptor_t const& aVal)
-{
-	if (!CDescriptors::sMIsValid(aVal))
-		return;
-	//NSHARE::CRAII<NSHARE::CMutex> _lock_io(FBlockChangingIOMangersList);
-	IIOManager* _p = NULL;
-	{
-		safe_manager_t::RAccess<> const _access = FIoManagers.MGetRAccess();
-		managers_t const& _man=_access.MGet();
-		managers_t::const_iterator _it = _man.find(aVal);
-		if (_it == _man.end())
-		{
-			LOG(ERROR)<<"There is not manager for "<<aVal;
-			return;
-		}
-		_p = &_it->second.MGet()->FWho;
-	}
-	//if (_p)
-	CHECK_NOTNULL(_p);
-	_p->MClose(aVal);
-}
+
 } /* namespace NUDT */
 #endif /* CKERNELIO_H_ */

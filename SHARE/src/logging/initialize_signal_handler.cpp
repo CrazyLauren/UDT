@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
+#include <logging/vlog_is_on.h>
 
 
 #if defined(HAVE_SIGNAL_H) && (defined(GLOG) ||defined(CPLUS_LOG))
@@ -86,13 +87,7 @@ extern "C" void install_failure_signal_handler()
 #ifdef SIGBUS
 		SIGBUS,
 #endif
-#ifdef SIGBREAK
-		SIGBREAK,
-#elif defined(SIGTTIN)
-		SIGTTIN,
-#else
-		21,
-#endif
+
 #ifdef SIGTTIN
 		SIGTTIN,
 #endif

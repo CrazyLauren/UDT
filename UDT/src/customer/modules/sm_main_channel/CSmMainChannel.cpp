@@ -141,7 +141,7 @@ void CSmMainChannel::MReceiver()
 
 		VLOG(2) << "Receive data from " << _from<<" is ="<<_is;
 		VLOG_IF(2,_data.empty()) << "data empty from "<<_from;
-		DCHECK((!_is) || (_is&&!_data.empty()));
+		DCHECK(!_is||!_data.empty());
 
 		if (_is && !_data.empty())
 		{

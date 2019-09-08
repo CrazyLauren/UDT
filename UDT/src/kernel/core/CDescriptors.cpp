@@ -47,6 +47,10 @@ bool CDescriptors::MStart()
 {
 	return true;
 }
+void CDescriptors::MStop()
+{
+	;
+}
 int CDescriptors::MCreate()
 {
 	VLOG(2) << "Open descriptor";

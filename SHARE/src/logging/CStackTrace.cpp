@@ -69,6 +69,7 @@ CText  CStackTrace::MDemangle(CText const& aName) const
 }
 void CStackTrace::MPrint(std::ostream& aStream, int aIgnoreFrames) const
 {
+	using namespace std;
 	aStream << std::endl;
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -79,18 +80,23 @@ void CStackTrace::MPrint(std::ostream& aStream, int aIgnoreFrames) const
 		CText message = messages[i];
 
 		char *sym_begin = strchr(messages[i], '(');
+		char const *_nill="nil";
 
-		if (sym_begin) {
+		if (sym_begin && strncmp(sym_begin+1,_nill,min(strlen(sym_begin+1),strlen(_nill)))!=0)
+		{
 			char *sym_end = strchr(sym_begin, '+');
 
-			if (sym_end != NULL) {
-				CText sym = CText(sym_begin + 1, sym_end-(sym_begin + 1));
+			if (sym_end != NULL)
+			{
+				char * _first_sym=sym_begin + 1;
+
+				CText sym = CText(_first_sym, sym_end-_first_sym);
 
 				CText const sym_demangled(MDemangle(sym));
 
 				CText path = CText(messages[i], sym_begin-messages[i]);
 
-				size_t slashp = path.rfind("/");
+				size_t const slashp = path.rfind("/");
 
 				if (slashp != CText::npos)
 					path = path.substr(slashp + 1);

@@ -41,6 +41,7 @@ size_t CProtocolParser::MDataOffset(const NUDT::required_header_t& aHeader) cons
 CProtocolParser::result_t CProtocolParser::MParserData(
 		const uint8_t* aItBegin, const uint8_t* aItEnd,NSHARE::uuid_t aFrom,uint8_t aMask)
 {
+	using namespace std;
 	/*! Algorithm of Parsing buffer from aItBegin to aItEnd:*/
 	result_t _result;
 
@@ -64,6 +65,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 			 * */
 
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
+			const unsigned _min_size = min(sizeof(*_phead), sizeof(_founded_dg.FType.FMessageHeader));
 			switch (_phead->FType)
 			{
 			case eMsgType::E_MSG_SUB_SUB_MESSAGE:
@@ -77,7 +79,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, _min_size);
 				}
 				break;
 			case eMsgType::E_MSG_SUB_MESSAGE:
@@ -91,7 +93,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, _min_size);
 				}
 				break;
 
@@ -106,7 +108,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, _min_size);
 				}
 				break;
 

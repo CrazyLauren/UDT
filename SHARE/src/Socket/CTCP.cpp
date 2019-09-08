@@ -108,7 +108,7 @@ bool CTCP::MIsConnected() const
 }
 size_t CTCP::MAvailable() const
 {
-	return FClientImpl->MAvailable(FClientImpl->FSock);
+	return FClientImpl->CTcpImplBase::MAvailable(FClientImpl->FSock);
 }
 std::ostream& CTCP::MPrint(std::ostream & aStream) const
 {

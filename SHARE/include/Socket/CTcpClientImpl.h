@@ -11,13 +11,13 @@
  */ 
 #ifndef CTCPCLIENTIMPL_H_
 #define CTCPCLIENTIMPL_H_
-#include <Socket/CTCPSelectReceiver.h>
+#include <Socket/CTcpImplBase.h>
 namespace NSHARE
 {
 //Early there were two implementation. One of was client,the other was server.
 //Now In "CTCP" class there is only client  implementation.
 //"CTCP::CClientImpl" class  is remained by historical reason.
-struct CTCP::CClientImpl:public CTCPSelectReceiver, public IIntrusived
+struct CTCP::CClientImpl:public CTcpImplBase, public IIntrusived
 {
 
 	CClientImpl(CTCP& aTcp,settings_t const& aSetting);
@@ -51,8 +51,6 @@ struct CTCP::CClientImpl:public CTCPSelectReceiver, public IIntrusived
 	CTCP::settings_t FSettings;
 
 	CMutex FConnectMutex;
-	CCondvar FConnectEvent;/*!<Using for blocking receive thread
-							* until client will connected*/
 	CSocket FSock;
 	struct sockaddr_in FAddr;
 

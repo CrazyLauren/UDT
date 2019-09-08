@@ -413,7 +413,7 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock,
 			default:
 			{
 				aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
-				LOG(DFATAL)<< "Cann't recv  to "	<< aSock << " as " << print_socket_error();
+				LOG(DFATAL)<< "Cann't recv  to "	<< aSock << " as "<< _errno<<" -> " << print_socket_error();
 				return -1;
 				break;
 			}

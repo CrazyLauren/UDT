@@ -115,6 +115,7 @@ private:
 	typedef NSHARE::CSafeData<info_fd_t>::WAccess<> CWAccsess;///< Access for reading to #info_fd_t type
 
 
+	int MWaitForSelectToRead(CSelectSocket::socks_t& aTo, float const aTime);
 	bool MOpenLoopSocket();
 	void MReserveMemory(data_t* aBuf, CSelectSocket::socks_t const&);
 	int MReceiveFromAllSocket(read_data_from_t& aFrom,data_t& aBuf, CSelectSocket::socks_t &);

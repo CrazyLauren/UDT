@@ -40,6 +40,10 @@ bool CDataObject::MStart()
 	else
 		return MCreate(-1);
 }
+void CDataObject::MStop()
+{
+	CHardWorker::MStop();
+}
 void CDataObject::MPush(const destroy_descriptor & aVal)
 {
 	MPushImpl(aVal, true);

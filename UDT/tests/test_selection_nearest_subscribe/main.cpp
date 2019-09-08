@@ -115,7 +115,7 @@ void create_ipc_mutex()
 {
 	using namespace NSHARE;
 
-	bool const _is = g_memory.MOpenOrCreate(g_sem_name, g_buf_shm_size);
+	bool const _is = g_memory.MOpenOrCreate(g_sem_name, g_buf_shm_size)==CSharedMemory::E_NO_ERROR;
 	if (!_is)
 	{
 		std::cerr << "Cannot create shared memory:" << g_sem_name << std::endl;
@@ -140,7 +140,7 @@ void initialize_ipc_mutex()
 {
 	using namespace NSHARE;
 
-	bool const _is = g_memory.MOpen(g_sem_name);
+	bool const _is = g_memory.MOpen(g_sem_name) == CSharedMemory::E_NO_ERROR;
 	if (!_is)
 	{
 		std::cerr << "Cannot open shared memory:" << g_sem_name << std::endl;

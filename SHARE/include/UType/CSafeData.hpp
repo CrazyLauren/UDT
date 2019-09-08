@@ -74,7 +74,7 @@ private:
 	}
 	void MLock()
 	{
-		DDLOG_IF(FATAL,
+		DLOG_IF(FATAL,
 				FSafe.FImpl.FMutex.MThread()
 						== NSHARE::CThread::sMThreadId())
 				<< "Dead lock for rw writer " << FSafe.FImpl.FMutex.MThread()

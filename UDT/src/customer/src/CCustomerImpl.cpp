@@ -23,6 +23,7 @@
 #include <CCustomer.h>
 #include <CCustomerImpl.h>
 #include <CLocalChannelFactory.h>
+#include <CRTCFactory.h>
 
 namespace NUDT
 {
@@ -172,6 +173,8 @@ int CCustomer::_pimpl::MInitFactorys()
 		new CLocalChannelFactory();
 	if (!CDataObject::sMGetInstancePtr())
 		new CDataObject();
+	if (!CRTCFactory::sMGetInstancePtr())
+		new CRTCFactory();
 	return 0;
 }
 
@@ -826,6 +829,24 @@ void CCustomer::_pimpl::MJoin()
 {
 	if(FWorker)//!<\todo resource race (it can be removed before we call it)
 		FWorker->MJoin();
+}
+IRtc* CCustomer::_pimpl::MGetRTC(NSHARE::CText const& aName) const
+{
+	IRtc* _p=NULL;
+	CRTCFactory::factory_its_t _its =
+			CRTCFactory::sMGetInstance().MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+		if((_p=_its.FBegin->second->MGetRTC(IRtcControl::name_rtc_t(aName))))
+			break;
+	return _p;
+}
+std::vector<IRtc*> CCustomer::_pimpl::MGetListOfRTC() const
+{
+	std::vector<IRtc*> _rval;
+/*	CRTCFactory::factory_its_t _its=CRTCFactory::sMGetInstance().MGetIterator();
+	for(;_its.FBegin!=_its.FEnd;++_its.FBegin)
+		_rval.push_back(_its.FBegin->second);*/
+	return _rval;
 }
 int CCustomer::_pimpl::MWaitForEvent(NSHARE::CText const& aEvent,double aSec)
 {

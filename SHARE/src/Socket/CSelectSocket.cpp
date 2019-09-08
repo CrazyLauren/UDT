@@ -98,7 +98,7 @@ void CSelectSocket::MRemoveSocket(CSocket const& aSocket)
 		FIsSetUp = false;
 }
 int CSelectSocket::MWaitData(socks_t& aTo, float const aTime,
-		unsigned aType) const
+		unsigned aType,socks_t* aToWrite) const
 {
 	VLOG(2) << "Wait " << aTime << " sec for  reading data available.";
 	if (!FIsSetUp)
@@ -106,6 +106,6 @@ int CSelectSocket::MWaitData(socks_t& aTo, float const aTime,
 		LOG(ERROR)<<"Select has not setted up yet.";
 		return -1;
 	}
-	return FImpl->MWaitData(aTo, aTime, aType);
+	return FImpl->MWaitData(aTo, aTime, aType,aToWrite);
 }
 } /* namespace NSHARE */

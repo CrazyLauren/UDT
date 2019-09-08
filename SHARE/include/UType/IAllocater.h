@@ -42,57 +42,141 @@ class IAllocater //fixme rename to IAllocator
 {
 public:
 	typedef size_t size_type;
-	typedef/*uint32_t*/uintptr_t offset_pointer_t; //fixme Maybe problem if using x64 and x86 programm with SM
+	typedef/*uint32_t*/uintptr_t offset_pointer_t; //fixme Maybe problem if using x64 and x86 program with SM
 	//need using Small code model
 	static const offset_pointer_t NULL_OFFSET;///< held in CCommonAllocater.cpp by historical reason
 
+	/** Allocation memory status
+	 *
+	 */
+	enum  eAllocationState
+	{
+		E_IS_ALLOCATED=1,//!< The memory block has been allocated
+		E_ISNOT_ALLOCATED=-1,//!< The memory block hasn't been allocated
+		E_CANNOT_CHECK_ALLOCATION,//!< Cannot check for allocation
+	};
 	virtual ~IAllocater()
 	{
 	}
 
+	/** Allocate aligned memory
+	 *
+	 * @param aSize The number of bytes to allocate.
+	 * @param aAlignment The alignment that you want to use for the memory
+	 * @param aType  Where has to be allocated memory @see NSHARE::eAllocatorType
+	 * @return A pointer to the allocated block, or NULL if an error occurred
+	 */
 	virtual void* MAllocate(size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),
-			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
+			eAllocatorType aType= ALLOCATE_FROM_COMMON) = 0;
 
-	virtual void MDeallocate(void* p, size_type aSize) = 0;
+	/** Deallocate a block of memory
+	 *
+	 * @param p A pointer to the block of memory that you want to free.
+	 * 			It's safe to call with a NULL pointer.
+	 * @param aSize Doesn't used
+	 */
+	virtual void MDeallocate(void* p, size_type aSize=0) = 0;
+
+	/** Reallocate a block of memory
+	 *
+	 * @param p A pointer to the block of memory
+	 * @param aSize The new number of bytes.
+	 * @param aAlignment The alignment that you want to use for the memory
+	 * @param aType Where has to be allocated memory
+	 * @return A pointer to the allocated block, or NULL if an error occurred
+	 */
 	virtual void* MReallocate(void* p, size_type aSize, uint8_t aAlignment = __alignof(offset_pointer_t),
-			eAllocatorType = ALLOCATE_FROM_COMMON) = 0;
+			eAllocatorType aType= ALLOCATE_FROM_COMMON) = 0;
 //	virtual void* MMove(void* aWhat)=0; \todo
+
+	/** Convert to offset from pointer to memory block
+	 *
+	 * @param aP A pointer to the block of memory
+	 * @return Offset to memory block or #NULL_OFFSET
+	 */
 	virtual offset_pointer_t MOffset(void* aP) const
 	{
 		return (offset_pointer_t) (intptr_t) (aP);
 	}
+
+	/** Convert to  pointer to memory block from offset
+	 *
+	 * @param aP Offset to memory block
+	 * @return A pointer to the block of memory
+	 */
 	virtual void* MPointer(offset_pointer_t aOffset) const
 	{
 		return reinterpret_cast<void*>(aOffset);
 	}
-	virtual bool MIsAllocated(void* aP) const
+
+	/** Check for allocation memory block
+	 *
+	 * @param pointer to allocated block
+	 * @return E_IS_ALLOCATED if allocated or
+	 */
+	virtual eAllocationState MIsMemAllocated(void* aP) const
 	{
-		return true;
+		return E_CANNOT_CHECK_ALLOCATION;
 	}
+	/** The maximal size of memory block
+	 *
+	 *	The maximal size of memory which can be allocated
+	 *	can be calculated as MMaxSize()-MGetUsedMemory()
+	 * @return size in bytes
+	 */
 	virtual size_type MMaxSize() const=0;
+
+	/**\brief Lock atomic operation (if it not available on target platform)
+	 *
+	 *	The method is used for lock "atomic" operation.
+	 *
+	 *\warning Usually Allocators are definition only one mutex for
+	 *	all memory. Therefore be carefully!
+	 *
+	 *	@see #CRAII<IAllocater>
+	 */
+	virtual bool MAtomicLock() const
+	{
+		return false;
+	}
+
+	/**\brief Unlock atomic operation
+	 *
+	 */
+	virtual bool MAtomicUnlock() const
+	{
+		return false;
+	}
 
 	/**\brief Lock change memory in P if possibly
 	 *
 	 *	The method is used for lock "atomic" operation.
+	 *
 	 *\warning Usually Allocators are definition only one mutex for
 	 *	all memory. Therefore be carefully!
-	 *\todo rename to MAtomicLock
+	 *
+	 *	@see #CRAII<IAllocater>
 	 */
-	virtual bool MLock(void* p) const
+	virtual bool MLockBlock(void* aP) const
 	{
 		return false;
 	}
+
 	/**\brief Unlock change memory in P if possibly
 	 *
-	 **	\todo rename to MAtomicUnlock
 	 */
-	virtual bool MUnlock(void* p) const
+	virtual bool MUnlockBlock(void* aP) const
 	{
 		return false;
 	}
 //	virtual const void* MAdd(const void* p, size_type x) const = 0;
 //	virtual const void* MSubtract(const void* p, size_type x) const = 0;
 
+	/** Amount of allocated memory
+	 *
+	 *
+	 * @return size in bytes
+	 */
 	virtual size_t MGetUsedMemory() const
 	{
 		return 0;
@@ -252,7 +336,10 @@ template<class T> void deallocate_array(IAllocater& aAllocator, T* aArray)
 
 	aAllocator.MDeallocate((char*) aArray - _length_size, _len*sizeof(T) + _length_size);
 }*/
-
+/** Blocking change of memory block (or memory manager if aBuf
+ * doesn't passed)
+ *
+ */
 template<> class CRAII<IAllocater> : public CDenyCopying
 {
 public:
@@ -261,20 +348,44 @@ public:
 	{
 		MLock();
 	}
+	explicit CRAII(IAllocater * aMutex) :
+			FMutex(aMutex), FBuf(NULL)
+	{
+		MLock();
+	}
 	~CRAII()
 	{
 		MUnlock();
+
 	}
 	inline void MUnlock()
 	{
-		if(FIsLock) FMutex->MUnlock(FBuf);
-		FIsLock = false;
+		FBuf!=NULL?MUnlockBlock():MUnlockManager();
 	}
 private:
-	inline void MLock()
+	void MLock()
 	{
-		FIsLock = FMutex && FMutex->MLock(FBuf);
+		FBuf!=NULL?MLockBlock():MLockManager();
 	}
+	inline void MUnlockBlock()
+	{
+		if(FIsLock) FMutex->MUnlockBlock(FBuf);
+		FIsLock = false;
+	}
+	inline void MUnlockManager()
+	{
+		if(FIsLock) FMutex->MAtomicUnlock();
+		FIsLock = false;
+	}
+	inline void MLockBlock()
+	{
+		FIsLock = FMutex && FMutex->MLockBlock(FBuf);
+	}
+	inline void MLockManager()
+	{
+		FIsLock = FMutex && FMutex->MAtomicLock();
+	}
+
 	IAllocater *FMutex;
 	void* FBuf;
 	volatile bool FIsLock;

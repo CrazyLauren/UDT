@@ -1781,13 +1781,11 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 				subst += handle_num<int>(argptr, _start, _it);
 				break;
 			case _l:
+			case _j:
 				subst += handle_num<long int>(argptr, _start, _it);
 				break;
 			case _ll:
 				subst += handle_num<long long>(argptr, _start, _it);
-				break;
-			case _j:
-				subst += handle_num<long int>(argptr, _start, _it);
 				break;
 			case _z:
 				subst += handle_num<size_t>(argptr, _start, _it);
@@ -1823,19 +1821,13 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			}
 
 			switch (length_mod)
-			{
+			{			
 			case _none:
-				subst += handle_num<unsigned>(argptr, _start, _it, base);
-				break;
 			case _hh:
-				subst += handle_num<unsigned>(argptr, _start, _it, base);
-				break;
 			case _h:
-				subst += handle_num<unsigned>(argptr, _start, _it, base);
-				break;
 			case _l:
-				subst += handle_num<unsigned long>(argptr, _start, _it, base);
-				break;
+				subst += handle_num<unsigned>(argptr, _start, _it, base);
+				break;			
 			case _ll:
 				subst += handle_num<unsigned long long>(argptr, _start, _it,
 						base);

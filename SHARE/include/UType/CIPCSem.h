@@ -13,34 +13,34 @@
 #define CIPCSEM_H_
 
 #ifndef _WIN32
+# include <semaphore.h>
 #	if defined(__linux__) && defined(USING_FUTEX)
-#		define SEM_USING_FUTEX
+#		define SEM_USING_FUTEX //!< using futex
 #	else
-#		include <semaphore.h>
 #		define SM_USING_SEM_INIT
 #	endif
 #endif
 namespace NSHARE
 {
-/**\brief кроссплатформенная межпроцессный семафор
+/**\brief Crossplatform realization of interprocessor semaphore
  *
- * Существуют 4 реализации семафора:
- * 1) Через CreateSemaphore (в Windows)
- * 2) Через futex (в linux если стоит препроцессор USING_FUTEX)
- * 3) Через sem_init (в posix)
- * 4) Через sem_open (в posix)
- * Для работы  реализаций 2,3 нужно выделить разделяемую память
- * (shared memory).
- * Для работы  реализаций 1,4 нужно или выделить разделяемую память
- * (shared memory) или вкачестве буфера передать указатель на строку, содержашую
- * имя семафора длинной eReguredBufSize-1.
+ * There are 4 realization:
+ * 1) using CreateSemaphore (in Windows)
+ * 2) using futex (linux only if defined USING_FUTEX preprocessor)
+ * 3) using sem_init (any posix OS), default for posix OS
+ * 4) using sem_open (any posix), only if defined SM_USING_SEM_OPEN preprocessor
+ *
+ * For working of semaphore need to allocate shared memory.
+ * If you doesn't want to allocate memory, you can pass, instead of
+ * pointer to buffer, an unique name of semaphore (length of name
+ * has to be less eReguredBufSize-1).
+ *
  */
 class SHARE_EXPORT CIPCSem:CDenyCopying
 {
 public:
-	/**\brief размер буфера необходимого для хранения семафора
+	/**\brief Info about required buffer size
 	 *
-	 *\note при использовании sem_open в буфере сохраняется имя семафора
 	 */
 	enum
 	{
@@ -50,58 +50,103 @@ public:
 		eReguredBufSize=sizeof(int32_t)+2*4+4
 #elif defined(SM_USING_SEM_INIT)
 		eReguredBufSize=(sizeof(sem_t)+2*4+__alignof(sem_t))
-#else//using sem_open
-		eReguredBufSize=16
+		//eReguredBufSize=(sizeof(int32_t)+2*4+__alignof(int32_t))
 #endif	
 	};
-	/**\brief флаг управления созданием семафора
+
+	/** @brief Semaphore creation control flags
 	 *
 	 */
 	enum eOpenType
 	{
-		E_UNDEF,///< если сем. существует то открыть, иначе создать
-		E_HAS_TO_BE_NEW,///< если семафор существует то возвращается ошибка,иначе создаётся
-		E_HAS_EXIST///< если семафор \aне существует то возвращается ошибка,иначе открывется
+		E_UNDEF,//!< If the semaphore is exist then opens it, otherwise creates it
+		E_HAS_TO_BE_NEW,//!<If the semaphore is exist then return error, otherwise creates it
+		E_HAS_EXIST//!<If the semaphore isn't exist then return error, otherwise opens it
 	};
-	/**\brief максимальное значение симафора
+
+	/** @brief The maximal value of semaphore
 	 *
 	 */
 	static int const MAX_VALUE;
 
+	/** Default constructor
+	 *
+	 */
 	CIPCSem();
 
-	/**\brief Октрыть(создать) семафор в буфере aBuf
-	 *\param aBuf указатель на буфер, где будет храниться семафор
-	 *\param aSize размер буфера (должен быть >=eReguredBufSize)
-	 *\param value начальное значение семафора(игнорируется если сем. существует)
-	 *\param aType \see eOpenType
+	/**	@brief Create or Open interprocessor semaphore
+	 *
+	 *	@param aBuf pointer to buffer of shared memory,
+	 *			where it will be saved or null terminated string
+	 *	@param aSize sizeof buffer (has to be greate then
+	 *			eReguredBufSize)
+	 *	@param value Initial value of semaphore (
+	 *			if semaphore is exist it's ignored)
+	 *	@param aType \see #eOpenType
+	 *
 	 */
-	CIPCSem(uint8_t* aBuf, size_t aSize,unsigned int value,eOpenType const aType=E_UNDEF,int aInitvalue=-1);
+	CIPCSem(uint8_t* aBuf, size_t aSize,unsigned int value,
+			eOpenType const aType=E_UNDEF);
+
+	/** If open then close semaphore but not removed
+	 *
+	 */
 	~CIPCSem();
 
-	/**\brief Октрыть(создать) семафор в буфере aBuf
-	 *\param aBuf указатель на буфер, где будет храниться семафор
-	 *\param aSize размер буфера (должен быть >=eReguredBufSize)
-	 *\param value начальное значение семафора(игнорируется если сем. существует)
-	 *\param aType \see eOpenType
-	 *\return true - в случае успеха
+	/**	@brief Create or Open interprocessor semaphore
+	 *
+	 *	@param aBuf pointer to buffer of shared memory,
+	 *			where it will be saved or null terminated string
+	 *	@param aSize sizeof buffer (has to be greate then
+	 *			eReguredBufSize)
+	 *	@param value Initial value of semaphore (
+	 *			if semaphore is exist it's ignored)
+	 *	@param aHasToBeNew \see #eOpenType
+	 *
+	 *	@return true if no error
 	 */
-	bool MInit(uint8_t* aBuf, size_t aSize,unsigned int value,eOpenType =E_UNDEF,int aInitvalue=-1);
+	bool MInit(uint8_t* aBuf, size_t aSize,unsigned int value,eOpenType aHasToBeNew=E_UNDEF);
 
-	/**\brief После вызова этого метода семафор \aостается в памяти,
-	 *  а объект становиться не инициализированным
+	/** @brief "Deinitialize" the semaphore
+	 *
+	 * @warning The semaphore is not removed, but becomes not initialized
 	 */
 	void MFree();
+
+	/** Checks for initialization semaphore
+	 *
+	 *	@return true if initialized
+	 */
 	bool MIsInited()const;
+
+	/** Wait on a semaphore
+	 *
+	 * @return true if no error
+	 */
 	bool MWait(void);
+
+	/** Wait on a semaphore, with a timeout
+	 *
+	 * @return true if no error
+	 */
 	bool MWait(double const);
+
+	/** Wait on a semaphore, but don't block
+	 *
+	 * @return true if no error
+	 */
 	bool MTryWait(void);
+
+	/** Increment a semaphore
+	 *
+	 * @return true if no error
+	 */
 	bool MPost(void);
 
-	/**\brief возвращет текущее значение семафора
+	/**\brief Get the value of a semaphore
 	 *
-	 *\return -1 - в случае ошибки
-	 * 			>=0 - значение семафора
+	 *\return -1 - if error is occured
+	 * 			>=0 - the semaphore's value
 	 */
 	int MValue() const;
 
@@ -112,23 +157,27 @@ public:
 	 */
 	NSHARE::CText const& MName()const;
 
-	/**\brief удаляет семафор из памяти
+	/**\brief Destroy a semaphore
 	 *
 	 */
 	void MUnlink();
 
-	/**\brief Возвращает в каком режиме был открыт семафор
+	/**\brief Gets in which mode the semaphore was opened
 	 *
-	 *\return E_HAS_TO_BE_NEW - семафор был создан
-	 * 		   E_HAS_EXIST - семафор уже существовал
-	 * 		   иное - семфор не инициализирован
+	 *\return see #eOpenType
 	 *
 	 */
 	eOpenType MGetType() const;
 
+	/** Gets requirement size of buffer
+	 *
+	 * @return size of buffer in bytes
+	 */
 	static size_t sMRequredBufSize();
-private:
+
 	struct CImpl;
+private:
+
 	CImpl *FImpl;
 	eOpenType FType;
 };

@@ -26,6 +26,8 @@ public:
 	CTcpServerMainChannel();
 	virtual ~CTcpServerMainChannel();
 	bool MStart();
+	bool MStop();
+
 	bool MOpen(ILink* aHandler,program_id_t const&,NSHARE::net_address const& aFor);
 	bool MIsOpen(descriptor_t aFor) const;
 	bool MClose(descriptor_t aFor);
@@ -109,6 +111,7 @@ private:
 	NSHARE::intrusive_ptr<CMainClientConnector> FConnector;
 	NSHARE::net_address FAddr;
 	NSHARE::CMutex FOpenMutex;
+	bool FIsStarted;
 };
 }
 #endif /* CTCPMAINCHANNEL_H_ */

@@ -75,7 +75,7 @@ bool IMPL_CLASS::MOpen()
 	CHECK(!FEv.FEvents);
 	CHECK(!FServerInfo);
 
-	bool _is = FSharedMemory.MOpen(FName,true,FReserv);
+	bool _is = FSharedMemory.MOpen(FName,true,FReserv) == CSharedMemory::E_NO_ERROR;
 	LOG_IF(ERROR,!_is) << "Cannot open " << FName;
 	if (!_is)
 		return false;

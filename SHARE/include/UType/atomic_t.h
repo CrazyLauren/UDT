@@ -48,7 +48,18 @@ namespace NSHARE
 			value_type MDecrement() ;
 			bool MIsOne() const;
 			value_type MValue() const;
-			void MWrite(value_type const& aVal) ;
+			void MWrite(value_type const& aVal);
+
+			/** Compare value with #aEqualOf
+			 * if equal then write value #aVal
+			 *
+			 * @param aVal -a new value
+			 * @param aEqualOf -a current value
+			 * @return old value
+			 *
+			 */
+			value_type MWriteIfEqual(value_type const& aVal,value_type const& aEqualOf);
+
 			inline operator value_type() const {
 				return MValue();
 			}

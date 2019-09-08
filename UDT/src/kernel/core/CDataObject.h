@@ -29,6 +29,7 @@ public:
 	virtual ~CDataObject();
 
 	bool MStart();
+	void MStop();
 	//T has to be movable type. I.e.
 	//The memory of T can be moved without calling
 	//coping constuctor.

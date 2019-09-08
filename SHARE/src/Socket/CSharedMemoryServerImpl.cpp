@@ -438,7 +438,7 @@ bool IMPL_CLASS::MOpen()
 	CHECK_GT(FSize,0);
 	CHECK(!FEv.FEvents);
 	CHECK(!FServerInfo);
-	bool _is = FSharedMemory.MOpenOrCreate(FName,FSize,FReserv);
+	bool _is = FSharedMemory.MOpenOrCreate(FName,FSize,FReserv)==CSharedMemory::E_NO_ERROR;
 	DCHECK(_is);
 	if(!_is)
 	{

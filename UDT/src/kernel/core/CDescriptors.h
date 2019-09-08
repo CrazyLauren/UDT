@@ -28,6 +28,7 @@ public:
 
 	CDescriptors();
 	bool MStart();
+	void MStop();
 
 	//int MOpen(const descriptor_info_t&);
 	int MCreate();

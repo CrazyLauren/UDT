@@ -69,6 +69,11 @@ bool CTcpClientMainChannel::MOpenIfNeed()
 	return FLoopBack.MIsOpen();
 }
 
+bool CTcpClientMainChannel::MStop()
+{
+	MCloseImpl();
+	return true;
+}
 bool CTcpClientMainChannel::MStart()
 {
 	CConfig _main_settings = CConfigure::sMGetInstance().MGet().MChild(IMainChannel::CONFIGURE_NAME);
@@ -88,7 +93,7 @@ bool CTcpClientMainChannel::MStart()
 }
 CTcpClientMainChannel::~CTcpClientMainChannel()
 {
-	MCloseImpl();
+	MStop();
 	CRAII<CMutex> _lock(FReceiveThreadMutex);
 }
 void CTcpClientMainChannel::MCloseImpl()

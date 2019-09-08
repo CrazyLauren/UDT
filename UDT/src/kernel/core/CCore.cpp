@@ -180,38 +180,58 @@ void CCore::MRemoveState(IState* aVal)
 bool CCore::MStart()
 {
 	r_core_access _access = FCore.MGetRAccess();
-	core_object_t::states_t const& FStatesByPtr = _access->FCores;
+	core_object_t::list_of_core_t const& FStatesByPtr = _access->FCoreList;
 	
-	core_object_t::states_t::const_iterator _it =
+	core_object_t::list_of_core_t::const_iterator _it =
 			FStatesByPtr.begin(), _it_end(FStatesByPtr.end());
 	for (; _it != _it_end; ++_it)
 	{
-		ICore* const _state = (_it->first);
+		ICore* const _state = (*_it);
 		CHECK_NOTNULL(_state);
 
 		_state->MStart();
 	}
 	return true;
 }
+void CCore::MStop()
+{
+	r_core_access _access = FCore.MGetRAccess();
+	core_object_t::list_of_core_t const& FStatesByPtr = _access->FCoreList;
+
+	core_object_t::list_of_core_t::const_reverse_iterator _it =
+			FStatesByPtr.rbegin(), _it_end(FStatesByPtr.rend());
+	for (; _it != _it_end; ++_it)
+	{
+		ICore* const _state = (*_it);
+		CHECK_NOTNULL(_state);
+
+		_state->MStop();
+	}
+}
 bool CCore::MAddState(ICore* aVal, NSHARE::CText const& aName)
 {
 	VLOG(2) << "Adding core to " << aName << " p=" << aVal;
 	w_core_access _access = FCore.MGetWAccess();
-	return _access->FCores.insert(
+	bool const _is= _access->FCoresByPointer.insert(
 			core_object_t::states_t::value_type(aVal, aName)).second;
+	if(_is)
+		_access->FCoreList.push_back(aVal);
+	return _is;
 }
 void CCore::MRemoveState(ICore* aVal)
 {
 	w_core_access _access = FCore.MGetWAccess();
-	core_object_t::states_t& FCores = _access->FCores;
+	core_object_t::states_t& _by_pointer = _access->FCoresByPointer;
+	core_object_t::list_of_core_t& _cores=_access->FCoreList;
 
 	VLOG(2) << "Removing core to p=" << aVal;
-	core_object_t::states_t::iterator _it = FCores.find(aVal);
-	if (_it != FCores.end())
+	core_object_t::states_t::iterator _it = _by_pointer.find(aVal);
+	if (_it != _by_pointer.end())
 	{
 		CText const _name(_it->second);
 		VLOG(2) << "Remove " << _name;
-		FCores.erase(_it);
+		_cores.erase(std::find(_cores.begin(), _cores.end(), _it->first));
+		_by_pointer.erase(_it);
 	}
 
 }

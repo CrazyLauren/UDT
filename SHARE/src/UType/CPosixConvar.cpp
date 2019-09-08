@@ -22,7 +22,7 @@ struct CCondvar::CImpl
 {
 
 	mutable pthread_cond_t FCondition;
-	pthread_mutexattr_t FAttr;
+//	pthread_mutexattr_t FAttr;
 
 	static void MConditionCleanup(void *arg)
 	{
@@ -38,7 +38,7 @@ struct CCondvar::CImpl
 }
  CCondvar::~CCondvar()
 {
-int _rval=pthread_cond_destroy(&FPImpl->FCondition);
+	int _rval=pthread_cond_destroy(&FPImpl->FCondition);
 	MASSERT(_rval, 0);
 	delete FPImpl;
 }

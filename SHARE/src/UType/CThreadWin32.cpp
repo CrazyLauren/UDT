@@ -69,8 +69,7 @@ void CThread::CImpl::MSetCpuNum()
     if (!FThis.MIsRunning())
        return;
     if (FPThread == INVALID_HANDLE_VALUE)
-       return ;
-	DCHECK_GE(FThis.FParam.priority, 0);
+       return ;	
 
     DWORD affinityMask = 0x1 << FThis.FParam.priority;
 	SetThreadAffinityMask(FPThread, affinityMask);

@@ -169,7 +169,7 @@ public:
 	}
 	T& operator*() const
 	{
-		CHECK_NOTNULL (MPtr());
+		DCHECK_NOTNULL (MPtr());
 		return (*MPtr());
 	}
 	inline T const* MGetConst() const

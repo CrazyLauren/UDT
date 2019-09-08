@@ -34,8 +34,8 @@ public:
 	virtual size_t MGetUsedMemory() const;
 
 	virtual size_t MGetNumberOfAllocations() const;
-	virtual bool MLock(void* p) const;
-	virtual bool MUnlock(void* p) const;
+	virtual bool MAtomicLock() const;
+	virtual bool MAtomicUnlock() const;
 protected:
 	size_t FUsedMemory;
 	size_t FAllocations;
@@ -65,12 +65,12 @@ inline CCommonAllocater<TAloc>::~CCommonAllocater()
 	//LOG_IF(ERROR,FAllocations!= 0)<<"The number of allocation "<<FAllocations;
 }
 template<template<class > class TAloc>
-inline bool CCommonAllocater<TAloc>::MLock(void* p) const
+inline bool CCommonAllocater<TAloc>::MAtomicLock() const
 {
 	return detail::get_common_allocator_mutex().MLock();
 }
 template<template<class > class TAloc>
-inline bool CCommonAllocater<TAloc>::MUnlock(void* p) const
+inline bool CCommonAllocater<TAloc>::MAtomicUnlock() const
 {
 	return detail::get_common_allocator_mutex().MUnlock();
 }

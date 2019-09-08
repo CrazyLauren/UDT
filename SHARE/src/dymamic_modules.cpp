@@ -171,18 +171,17 @@ static NSHARE::CDynamicModule::string_t get_failure_str()
 
 static DYN_LIB_HANDLE dyn_lib_load(const CText& name,const CText& aPath)
 {
-	DYN_LIB_HANDLE handle = 0;
+	DYN_LIB_HANDLE handle = NULL;
 
 	const NSHARE::CDynamicModule::string_t envModuleDir(/*aPath.empty()?get_module_env_var():*/aPath);
 
 	if (!envModuleDir.empty())
 		handle = DYN_LIB_LOAD(envModuleDir + '/' + name);
 	else
-	{
-		if (!handle)
-			handle = DYN_LIB_LOAD(name);
+	{		
+		handle = DYN_LIB_LOAD(name);
 
-		if (!handle)
+		if (handle == NULL)
 			handle = DYN_LIB_LOAD("./" + name);
 	}
 	return handle;

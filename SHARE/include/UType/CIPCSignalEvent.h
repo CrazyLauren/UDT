@@ -36,7 +36,7 @@ namespace NSHARE
  * (shared memory) или вкачестве буфера передать указатель на строку, содержашую
  * имя услдовной переменной длинной eReguredBufSize-1.
  */
-class CIPCSignalEvent:CDenyCopying
+class SHARE_EXPORT CIPCSignalEvent:CDenyCopying
 {
 public:
 	/**\brief размер буфера необходимого для хранения условной переменной

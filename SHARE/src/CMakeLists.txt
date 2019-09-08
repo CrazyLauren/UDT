@@ -36,6 +36,7 @@ list (APPEND CORE_HEADER_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/../include/deftype
 file (GLOB LOGGING_HEADER_FILES ../include/logging/*.h ../include/logging/*.hpp)
 file (GLOB SOCKET_HEADER_FILES ../include/Socket/*.h ../include/Socket/*.hpp)
 file (GLOB UTYPE_HEADER_FILES ../include/UType/*.h ../include/UType/*.hpp)
+file (GLOB UTYPE_HEADER_FILES ../include/UType/impl/*.h ../include/UType/impl/*.hpp)
 file (GLOB UTYPE_EXT_HEADER_FILES ../include/UType/ext/*.h ../include/UType/ext/*.hpp)
 
 set (SHARE_HEADERS ${CORE_HEADER_FILES} ${SOCKET_HEADER_FILES} ${UTYPE_HEADER_FILES} ${UTYPE_EXT_HEADER_FILES} ${LOGGING_HEADER_FILES})

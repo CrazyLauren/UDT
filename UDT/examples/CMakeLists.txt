@@ -2,8 +2,8 @@ PROJECT(${PROJECT_NAME}_examples C CXX)
 
 add_subdirectory(example_easy_program)
 
-add_subdirectory(example_working_by_user_protocol)
 add_subdirectory(example_of_user_protocol_parser)
+add_subdirectory(example_working_by_user_protocol)
 
 add_subdirectory(example_easy_msg_receiver)
 add_subdirectory(example_of_sending_msg)

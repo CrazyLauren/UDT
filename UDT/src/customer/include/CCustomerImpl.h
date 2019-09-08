@@ -29,6 +29,20 @@ public:
 };
 typedef NSHARE::CEvents<NSHARE::CText, event_t, ievents_type> events_t;
 
+/** Implementation of customer
+ *
+ * The architecture is based on plugins architecture. There are three
+ * main singleton object\n
+ *  - #CDataObject, that is responsible to communication between plugins, \n
+ *  - #CConfigure, that is store configuration \n
+ *  - #CResources, that is load the plugins. \n
+ *
+ *  All plugins is available by its "factory", singleton object that
+ *  store pointer to interface of plugin. Of course, the factories
+ *  are created  against type of plugin interface.
+ *
+ *  @todo remove ICustomer, move events to CDataObject
+ */
 struct CCustomer::_pimpl: public ICustomer, public events_t
 {
 	typedef NSHARE::CSafeData<customers_t> safety_customers_t;
@@ -78,6 +92,21 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MWaitForEvent(NSHARE::CText const& aEvent, double aSec);
 	void MJoin();
 	uint16_t MNextUserPacketNumber();
+
+	/** Gets RTC for working
+	 *
+	 * @param aName Name of RTC
+	 * @return pointer to RTC or NULL
+	 * @warning Call this method as little as possible.
+	 * 			It's looking for the specified RTC.
+	 */
+	IRtc* MGetRTC(NSHARE::CText const& aName) const;
+
+	/** Gets list of available RTC
+	 *
+	 * @return list of RTC
+	 */
+	std::vector<IRtc*> MGetListOfRTC() const;
 private:
 	typedef std::set<NSHARE::CText,NSHARE::CStringFastLessCompare> wait_for_t;
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);

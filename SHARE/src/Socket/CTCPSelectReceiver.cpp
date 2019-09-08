@@ -130,7 +130,18 @@ std::pair<bool,unsigned> CTCPSelectReceiver::MFilteringSockets(CSelectSocket::so
 
 	return std::make_pair(_is_loopback, _num_removed_sockets);
 }
-
+/** @brief Wait for socket is selected to read
+ *
+ * @param aTo The sockets
+ * @param aTime  timeout
+ * @return 0 - if timeout,
+ * 			>0 - the number of selected sockets
+ * 			<0 - error
+ */
+int CTCPSelectReceiver::MWaitForSelectToRead(CSelectSocket::socks_t& aTo, float const aTime)
+{
+	return FSelectSock.MWaitData(FTo, aTime);
+}
 ssize_t CTCPSelectReceiver::MReceiveData(read_data_from_t*aFrom, data_t*aBuf, const float aTime)
 {
 	if (!FIsDoing.MIsOne())
@@ -148,7 +159,7 @@ ssize_t CTCPSelectReceiver::MReceiveData(read_data_from_t*aFrom, data_t*aBuf, co
 
 		VLOG(2) << "Wait for the data.";
 		FTo.clear();
-		int _val = FSelectSock.MWaitData(FTo, aTime);
+		int _val = MWaitForSelectToRead(FTo, aTime);
 
 		if(FIsDoing.MIsOne())
 		{

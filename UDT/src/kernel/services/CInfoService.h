@@ -29,6 +29,7 @@ public:
 	bool MIsVertex(const CRouteGraph::node_t& name) const;
 	uuids_t MGetOtherKernelds() const;
 
+	void MStop();
 private:
 	typedef std::map<NSHARE::uuid_t, std::set<descriptor_t> > uuid_from_t;
 
@@ -91,6 +92,8 @@ private:
 			const kernel_link& _new, _data_info_t& _d_info, k_diff_t& aAdded);
 	void MPopConsumerFromMyInfo(const descriptor_t& aFrom,const kernel_link& _new, _data_info_t& _d_info,
 			k_diff_t& aRemoved);
+	void MUnSubcribe();
+	void MSubscribe();
 
 	mutable info_data_t FData;
 	NSHARE::CMutex FUpdateMutex;

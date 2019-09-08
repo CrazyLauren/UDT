@@ -56,6 +56,10 @@ bool CConfigure::MStart()
 {
 	return true;
 }
+void CConfigure::MStop()
+{
+	;
+}
 
 NSHARE::CConfig & CConfigure::MGet()
 {

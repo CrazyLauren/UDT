@@ -77,7 +77,7 @@ void CUDP::MClose()
 			net_address const _addr(net_address::LOCAL_HOST,
 					MGetSetting().FPort);
 			DCHECK(_addr.MIsValid());
-			char _val;
+			char _val=1;
 			sent_state_t const _is=MSend(&_val, sizeof(_val), _addr);
 			DCHECK(_is.MIs());
 		}
@@ -677,9 +677,6 @@ bool CUDP::settings_t::MAddReceiveAddr(network_ip_t const& aNewAddress)
 	switch (FType)
 	{
 	case eUNICAST:
-		if(!FReceiveFrom.empty())
-			return false;
-		break;
 	case eBROADCAST:
 		if(!FReceiveFrom.empty())
 			return false;

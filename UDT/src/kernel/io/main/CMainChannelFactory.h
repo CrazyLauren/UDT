@@ -26,6 +26,7 @@ public:
 	virtual ~CMainChannelFactory();
 	NSHARE::CConfig MSerialize() const;
 	bool MStart();
+	void MStop();
 };
 }
 #endif /* CMAINCHANNELFACTORY_H_ */

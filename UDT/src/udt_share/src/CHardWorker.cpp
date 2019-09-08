@@ -32,6 +32,10 @@ CHardWorker::CHardWorker(NSHARE::CThread::eThreadPriority _priority, int aNum) :
 
 	MCreate(_priority,aNum);
 }
+void CHardWorker::MStop()
+{
+	FPool.MCancel();
+}
 bool CHardWorker::MCreate(int aNum)
 {
 	return FPool.MCreate(aNum);

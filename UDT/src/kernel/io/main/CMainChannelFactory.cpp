@@ -50,6 +50,16 @@ bool CMainChannelFactory::MStart()
 		}
 	return _fails == 0;
 }
+void CMainChannelFactory::MStop()
+{
+	VLOG(0) << "Stopping Main channels";
+	factory_its_t _its = MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+		if (!_its.FBegin->second->MStop())
+		{
+			LOG(ERROR) << "Cannot stop " << _its.FBegin->first;
+		}
+}
 NSHARE::CConfig CMainChannelFactory::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);

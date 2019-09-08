@@ -51,7 +51,11 @@ CSmMainChannel::CSmMainChannel() :
 	FName.MMakeRandom(10);
 }
 
-
+bool CSmMainChannel::MStop()
+{
+	FSmServer.MClose();
+	return true;
+}
 
 bool CSmMainChannel::MStart()
 {
@@ -123,7 +127,7 @@ bool CSmMainChannel::MOpenIfNeed()
 }
 CSmMainChannel::~CSmMainChannel()
 {
-	FSmServer.MClose();
+	MStop();
 }
 template<>
 void CSmMainChannel::MFill<main_channel_param_t>(data_t* aTo)
@@ -578,7 +582,7 @@ void CSmMainChannel::MReceiver()
 		bool _is=FSmServer.MReceiveData(_data,&_from,&_mask.FMask);
 		VLOG(2) << "Receive data from " << _from<<" is ="<<_is;
 		VLOG_IF(2,_data.empty()) << "data empty from "<<_from;
-		DCHECK((!_is) || (_is&&!_data.empty()));
+		DCHECK(!_is || !_data.empty());
 		if ( !_data.empty())
 		{
 			param_t _param; //The pointer to FTarget can be changed

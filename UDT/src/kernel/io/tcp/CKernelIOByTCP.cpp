@@ -83,6 +83,7 @@ void CKernelIOByTCP::MInitTcp()
 CKernelIOByTCP::~CKernelIOByTCP()
 {
 	MClose();
+	NSHARE::CRAII<CMutex> _lock(FReceiverThreadMutex);
 }
 void CKernelIOByTCP::MInit(CKernelIo * aVal)
 {
@@ -171,6 +172,7 @@ NSHARE::eCBRval CKernelIOByTCP::sMReceiver(NSHARE::CThread const* WHO, NSHARE::o
 void CKernelIOByTCP::MServiceReceiver()
 {
 	VLOG(2) << "Async receive";
+	NSHARE::CRAII<CMutex> _lock(FReceiverThreadMutex);
 	ISocket::data_t _data;
 	for(;!FTcpServiceSocket.MIsOpen();NSHARE::usleep(10000))
 		LOG(ERROR) << "Port is closed";

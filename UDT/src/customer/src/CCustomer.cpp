@@ -23,6 +23,7 @@
 
 #include <CCustomerImpl.h>
 #include <shared_types.h>
+#include <CRTCFactory.h>
 
 DECLARATION_VERSION_FOR(customer)
 
@@ -406,6 +407,14 @@ void CCustomer::MJoin()
 {
 	CHECK_NOTNULL(FImpl);
 	return FImpl->MJoin();
+}
+IRtc* CCustomer::MGetRTC(NSHARE::CText const& aName) const
+{
+	return FImpl->MGetRTC(aName);
+}
+std::vector<IRtc*> CCustomer::MGetListOfRTC() const
+{
+	return FImpl->MGetListOfRTC();
 }
 std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
 {

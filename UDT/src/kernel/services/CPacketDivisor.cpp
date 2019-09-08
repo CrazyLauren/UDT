@@ -36,6 +36,10 @@ CPacketDivisor::~CPacketDivisor()
 {
 	//todo handle close uuid ==> remove in FMergeOp
 }
+void CPacketDivisor::MStop()
+{
+	;
+}
 bool CPacketDivisor::MStart()
 {
 	return true;
@@ -169,6 +173,12 @@ NSHARE::eCBRval CPacketDivisor::merge_operation_t::MMergeOperation(
 	VLOG(2) << "Finish handle";
 	return _rval;
 }
+CPacketDivisor::merge_operation_t::~merge_operation_t()
+{
+#ifndef		NO_MERGE_THREAD
+	//todo remove operation
+#endif
+}
 CPacketDivisor::merge_operation_t::merge_operation_t(CPacketDivisor& aThis,
 		user_data_info_t const& aFor, descriptor_t aDesc) :
 		FThis(aThis),	//
@@ -176,7 +186,9 @@ CPacketDivisor::merge_operation_t::merge_operation_t(CPacketDivisor& aThis,
 		FFor(aFor),//
 		FDescriptor(aDesc),	//
 		FError(E_NO_ERROR),//
-		FIsMerged(false)
+		FIsMerged(false),//
+		FOperatation(sMMergeOperation, this,
+				NSHARE::operation_t::AS_LOWER)
 {
 	if (aFor.FSplit.FCounter != 1)
 	{
@@ -278,10 +290,7 @@ void CPacketDivisor::merge_operation_t::MMerge(user_datas_t & aVal,
 #ifndef		NO_MERGE_THREAD
 	if (_need_call)
 	{
-
-		NSHARE::operation_t _op(sMMergeOperation, this,
-				NSHARE::operation_t::AS_LOWER);
-		CDataObject::sMGetInstance().MPutOperation(_op);
+		CDataObject::sMGetInstance().MPutOperation(FOperatation);
 	}
 #else
 	user_datas_t _data;

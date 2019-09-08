@@ -43,6 +43,11 @@ CUdpMainChannel::CUdpMainChannel() :
 
 	FIsOverload = false;
 }
+bool CUdpMainChannel::MStop()
+{
+	FUdp.MClose();
+	return true;
+}
 bool CUdpMainChannel::MStart()
 {
 	VLOG(2) << "Initialize udp main channel";
@@ -65,7 +70,7 @@ bool CUdpMainChannel::MStart()
 }
 CUdpMainChannel::~CUdpMainChannel()
 {
-	FUdp.MClose();
+	MStop();
 }
 template<>
 void CUdpMainChannel::MFill<main_channel_param_t>(data_t* aTo)

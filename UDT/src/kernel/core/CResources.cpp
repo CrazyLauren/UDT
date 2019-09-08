@@ -59,7 +59,12 @@ CResources::~CResources()
 
 bool CResources::MStart()
 {
+	MLoad();
 	return true;
+}
+void CResources::MStop()
+{
+	MUnload();
 }
 
 /*! \brief Put module to FModules

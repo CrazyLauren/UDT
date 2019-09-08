@@ -193,6 +193,11 @@ inline void atomic_add(volatile boost::uint32_t *mem, int val)
 //{
 //	MWrite(aVal);
 //}
+atomic_t::value_type atomic_t::MWriteIfEqual(value_type const& aVal,value_type const& aEqualOf)
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return atomic_cas32(&FCount, aVal, aEqualOf);
+}
 void atomic_t::MWrite(value_type const& aVal)
 {
 	DCHECK_POINTER_ALIGN(&FCount);

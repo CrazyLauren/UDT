@@ -32,11 +32,16 @@ const NSHARE::CText CRoutingService::NAME = "route";
 CRoutingService::CRoutingService() :
 		ICore(NAME)
 {
-	MInit();
+
 }
 
 CRoutingService::~CRoutingService()
 {
+
+}
+void CRoutingService::MStop()
+{
+	MUnSubscribe();
 }
 bool CRoutingService::MStart()
 {
@@ -52,6 +57,7 @@ bool CRoutingService::MStart()
 		}
 
 	}
+	MSubscribe();
 	return true;
 }
 static void set_intersection(demand_dgs_for_t& aTo,
@@ -766,7 +772,38 @@ void CRoutingService::MGetOutputDescriptors(routing_t*const aTo, routing_t*const
 	}
 }
 
-inline void CRoutingService::MInit()
+/** Unsubscribe from the events
+ *
+ */
+void CRoutingService::MUnSubscribe()
+{
+	{
+		callback_data_t _cb(sMHandleDemandId, this);
+		CDataObject::value_t _val(demands_id_t::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+	{
+		callback_data_t _cb(sMHandleUserDataId, this);
+		CDataObject::value_t _val(routing_user_data_t::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+
+	{
+		callback_data_t _cb(sMHandleDemands, this);
+		CDataObject::value_t _val(demand_dgs_for_by_id_t::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+
+	{
+		callback_data_t _cb(sMHandleDiff, this);
+		CDataObject::value_t _val(kernel_infos_diff_t::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+}
+/** Subscribe to the events
+ *
+ */
+inline void CRoutingService::MSubscribe()
 {
 	{
 		callback_data_t _cb(sMHandleDemandId, this);

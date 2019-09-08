@@ -123,6 +123,7 @@ private:
 	NSHARE::CConfig FConfig;
 	unsigned FTimeout;
 	handlers_name_t FHandlers;
+	NSHARE::CMutex FReceiverThreadMutex;
 };
 class CKernelIOByTCPRegister:public NSHARE::CFactoryRegisterer
 {

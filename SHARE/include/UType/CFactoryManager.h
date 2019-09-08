@@ -114,7 +114,7 @@ inline CFactoryManager<TFactory,TMutexType>::CFactoryManager()
 template<class TFactory,class TMutexType>
 inline void CFactoryManager<TFactory,TMutexType>::MAddFactoryImpl(TFactory* aFactory)
 {
-	CHECK_NOTNULL(aFactory);
+	DCHECK_NOTNULL(aFactory);
 
 	LOG_IF(DFATAL, MIsFactoryPresent(aFactory->MGetType())) << "Factory \""
 			<< aFactory->MGetType() << "\"is already registered.";

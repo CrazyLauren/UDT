@@ -21,8 +21,16 @@ check_library_exists(dbghelp SymFromAddr "" HAVE_DBGHELP)
 check_include_files(cxxabi.h HAVE_CXXABI_H)
 check_include_files(dlfcn.h  HAVE_DLFCN)
 check_include_files(signal.h HAVE_SIGNAL_H)
+
 if(HAVE_SIGNAL_H)
   check_symbol_exists(sigaction "signal.h" HAVE_SIGACTION)
+endif()
+
+check_include_files(futex.h HAVE_FUTEX_H)
+
+if(NOT HAVE_FUTEX_H)
+	unset(HAVE_FUTEX_H CACHE)
+	check_include_files(linux/futex.h HAVE_FUTEX_H)
 endif()
 
 IF (WIN32)

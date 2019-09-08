@@ -33,7 +33,7 @@ CSelectSocket::CImpl::CImpl(CSelectSocket& aThis) :
 	FD_ZERO(&writeset);
 }
 int CSelectSocket::CImpl::MWaitData(socks_t& aTo, float const aTime,
-		unsigned aType) const
+		unsigned aType,socks_t* aToWrite) const
 {
 	struct timeval _sleep;
 	struct timeval* _psleep = &_sleep;
@@ -49,6 +49,11 @@ int CSelectSocket::CImpl::MWaitData(socks_t& aTo, float const aTime,
 	CSocket::socket_t _max = 0;
 	CFlags<eSocketType, unsigned> _flags(aType);
 
+	DCHECK(
+			(_flags.MGetFlag(E_READ_ONLY)&& _flags.MGetFlag(E_WRITE_ONLY) && aToWrite !=NULL)//
+			|| (!_flags.MGetFlag(E_READ_ONLY) && _flags.MGetFlag(E_WRITE_ONLY) && aToWrite==NULL)//
+			|| (_flags.MGetFlag(E_READ_ONLY) && !_flags.MGetFlag(E_WRITE_ONLY) && aToWrite==NULL)//
+		);//
 	bool _is = false;
 	std::vector<CSocket> _sockets;
 	{
@@ -118,11 +123,19 @@ int CSelectSocket::CImpl::MWaitData(socks_t& aTo, float const aTime,
 	}
 	for (socks_t::iterator _it = _sockets.begin(); _it != _sockets.end(); ++_it)
 	{
-		if (FD_ISSET(_it->MGet(),&readset))
+		bool const _is_read=FD_ISSET(_it->MGet(),&readset)!=0;
+		bool const _is_write=FD_ISSET(_it->MGet(),&writeset)!=0;
+
+		if (_is_read)
 			aTo.push_back(*_it);
 
-		if (FD_ISSET(_it->MGet(),&writeset))
-			aTo.push_back(*_it);
+		if (_is_write)
+		{
+			if (_flags.MGetFlag(E_READ_ONLY))
+				aToWrite->push_back(*_it);
+			else
+				aTo.push_back(*_it);
+		}
 	}
 	return n;
 }

@@ -989,8 +989,6 @@ void IMPL::MSerializeImpl(NSHARE::CConfig& aConf) const
 	aConf.MAdd(/*"seth",*/FSignalHandler.MSerialize());
 	aConf.MAdd("counter",FCounter);
 	aConf.MAdd(FDiagnostic.MSerialize());
-
-	FSharedMemory.MSerialize(aConf);
-
+	aConf.MAdd(FSharedMemory.MSerialize());
 }
 }

@@ -31,10 +31,68 @@ CInfoService::CInfoService() :
 {
 	MInit();
 }
-
 CInfoService::~CInfoService()
 {
+	MUnSubcribe();
+}
 
+inline void CInfoService::MInit()
+{
+	{
+		w_access _access = FData.MGetWAccess();
+		kernel_infos_t _my_info(get_my_id());
+
+		k_diff_t _fix;
+		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
+				_access->FNet);
+	}
+}
+/** Unsubscribe from the events
+ *
+ */
+void CInfoService::MUnSubcribe()
+{
+	{
+		callback_data_t _cb(sMHandleOpenId, this);
+		CDataObject::value_t _val(open_descriptor::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+	{
+		callback_data_t _cb(sMHandleCloseId, this);
+		CDataObject::value_t _val(close_descriptor::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+	{
+		callback_data_t _cb(sMHandleKernelInfo, this);
+		CDataObject::value_t _val(kernel_infos_array_id_t::NAME, _cb);
+		CDataObject::sMGetInstance() -= _val;
+	}
+}
+/** Subscribe to the events
+ *
+ */
+void CInfoService::MSubscribe()
+{
+	{
+		callback_data_t _cb(sMHandleOpenId, this);
+		CDataObject::value_t _val(open_descriptor::NAME, _cb);
+		CDataObject::sMGetInstance() += _val;
+	}
+	{
+		callback_data_t _cb(sMHandleCloseId, this);
+		CDataObject::value_t _val(close_descriptor::NAME, _cb);
+		CDataObject::sMGetInstance() += _val;
+	}
+	{
+		callback_data_t _cb(sMHandleKernelInfo, this);
+		CDataObject::value_t _val(kernel_infos_array_id_t::NAME, _cb);
+		CDataObject::sMGetInstance() += _val;
+	}
+}
+
+void CInfoService::MStop()
+{
+	MUnSubcribe();
 }
 bool CInfoService::MStart()
 {
@@ -55,6 +113,7 @@ bool CInfoService::MStart()
 						*_access, _fix);
 			}
 		}
+		MSubscribe();
 	}
 	return true;
 }
@@ -612,33 +671,6 @@ void CInfoService::MHandle(const kernel_infos_array_t& aNet,
 		MSynchronize(_sent_to, _diff);
 	}
 	VLOG(2) << "Finished Handling Kernel Info result.";
-}
-
-inline void CInfoService::MInit()
-{
-	{
-		w_access _access = FData.MGetWAccess();
-		kernel_infos_t _my_info(get_my_id());
-
-		k_diff_t _fix;
-		MPutKernel(_my_info, CDescriptors::INVALID, _fix, _access->FUUIDFrom,
-				_access->FNet);
-	}
-	{
-		callback_data_t _cb(sMHandleOpenId, this);
-		CDataObject::value_t _val(open_descriptor::NAME, _cb);
-		CDataObject::sMGetInstance() += _val;
-	}
-	{
-		callback_data_t _cb(sMHandleCloseId, this);
-		CDataObject::value_t _val(close_descriptor::NAME, _cb);
-		CDataObject::sMGetInstance() += _val;
-	}
-	{
-		callback_data_t _cb(sMHandleKernelInfo, this);
-		CDataObject::value_t _val(kernel_infos_array_id_t::NAME, _cb);
-		CDataObject::sMGetInstance() += _val;
-	}
 }
 
 std::vector<descriptor_t> CInfoService::MNextDestinations(

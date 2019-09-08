@@ -125,7 +125,7 @@ void COperationQueue::MAdd(operation_t const& operation)
 	FCond.MSignal();
 }
 
-void COperationQueue::MErase(operation_t const& operation)
+bool COperationQueue::MEraseOp(operation_t const& operation)
 {
 	VLOG(2) << "Doing remove operation";
 
@@ -134,7 +134,7 @@ void COperationQueue::MErase(operation_t const& operation)
 	for (Operations::iterator itr = FOperations.begin();
 			itr != FOperations.end();)
 	{
-		if ((*itr) == operation)
+		if (operation.MGetUniqueId()==itr->MGetUniqueId())
 		{
 			bool needToResetCurrentIterator = (FCurrentOperationIterator == itr);
 
@@ -143,10 +143,12 @@ void COperationQueue::MErase(operation_t const& operation)
 			if (needToResetCurrentIterator)
 				FCurrentOperationIterator = itr;
 
+			return true;
 		}
 		else
 			++itr;
 	}
+	return false;
 }
 
 void COperationQueue::MEraseAll()
@@ -179,8 +181,10 @@ void COperationQueue::MRemoveThread(CPoolThread* thread)
 }
 
 CPoolThread::CPoolThread() :
-		FDone(0), FInOperation(0)
+		FInOperation(0)
 {
+	FDone=0;
+	FIsWaitNextOperation=0;
 	MSetQueue(SHARED_PTR<COperationQueue>(new COperationQueue));
 }
 
@@ -211,15 +215,21 @@ void CPoolThread::MSetQueue(SHARED_PTR<COperationQueue> aOp)
 
 void CPoolThread::MDone(bool done)
 {
-	if (FDone == done)
+	if (FDone.MIsOne() == done)
 		return;
 
-	FDone = done;
+	FDone = done?1:0;
 
 	if (done)
 	{
-		if (FQueue.get()) //FIXME unblocking thread
-			FQueue->MForceUnlock();
+		for (; FIsWaitNextOperation.MIsOne();)
+		{
+			CRAII<CMutex> lock(FMutex);
+
+			if (operationQueue.get())
+				operationQueue->MForceUnlock();
+			NSHARE::CThread::sMYield();
+		}
 	}
 }
 
@@ -231,21 +241,12 @@ bool CPoolThread::MCancel()
 	//int result = 0;
 	if (MIsRunning())
 	{
-
-		FDone = true;
-
 		VLOG(2) << "   Doing cancel " << this;
-
-		{
-			CRAII<CMutex> lock(FMutex);
-
-			if (operationQueue.get())
-				operationQueue->MForceUnlock();
-		}
+		MDone(true);
 		
 		NSHARE::CThread::sMYield();
 		VLOG(2) << " wait for the thread to stop running.";
-		while (MIsRunning() && !CThread::MCancel())
+		while (FIsWaitNextOperation && !CThread::MCancel())
 		{
 
 			{
@@ -254,7 +255,6 @@ bool CPoolThread::MCancel()
 				if (operationQueue.get())
 				{
 					operationQueue->MForceUnlock();
-					// _operationQueue->releaseAllOperations();
 				}
 			}
 			VLOG(2) << "   Waiting for OperationThread to cancel " << this;
@@ -287,51 +287,56 @@ void CPoolThread::MRun()
 		{
 			CRAII<CMutex> lock(FMutex);
 			operationQueue = FQueue;
+			FIsWaitNextOperation=1;
 		}
-		operation_t operation(operationQueue->MNextOperation(true));
-
+		if (!FDone.MIsOne())
 		{
-			CRAII<CMutex> lock(FMutex);
-			FInOperation = true;
-		}
-		if (FDone)
-		{
-			if(operation.MIs())
-				operationQueue->MFinishOperation();
-			break;
-		}
-		LOG_IF(WARNING,!operation.MIs()) << "Empty operation.";
+			operation_t operation(operationQueue->MNextOperation(true));
 
-		if (operation.MIs())
-		{
-			VLOG(4)<<"operation";
-			eCBRval const _rval=(operation)(this, &operation);
-
-			switch (_rval)
 			{
-			case E_CB_REMOVE:
-				//
+				CRAII<CMutex> lock(FMutex);
+				FIsWaitNextOperation = 0;
+				FInOperation = true;
+			}
+			if (FDone.MIsOne())
+			{
+				if (operation.MIs())
+					operationQueue->MFinishOperation();
 				break;
-			case E_CB_SAFE_IT:
-			case E_CB_BLOCING_OTHER:
-				VLOG(2) << " Keeping operartion";
-				operationQueue->MAdd(operation);
-				break;
-			};
-			operationQueue->MFinishOperation();
-		}
+			}
 
-		{
-			CRAII<CMutex> lock(FMutex);
-			FInOperation = false;
-		}
-		if (firstTime)
-		{
-			NSHARE::CThread::sMYield();
-			firstTime = false;
-		}
+			LOG_IF(WARNING,!operation.MIs()) << "Empty operation.";
 
-	} while (!FDone);
+			if (operation.MIs())
+			{
+				VLOG(4) << "operation";
+				eCBRval const _rval = (operation)(this, &operation);
+
+				switch (_rval)
+				{
+				case E_CB_REMOVE:
+					//
+					break;
+				case E_CB_SAFE_IT:
+					case E_CB_BLOCING_OTHER:
+					VLOG(2) << " Keeping operartion";
+					operationQueue->MAdd(operation);
+					break;
+				};
+				operationQueue->MFinishOperation();
+			}
+
+			{
+				CRAII<CMutex> lock(FMutex);
+				FInOperation = false;
+			}
+			if (firstTime)
+			{
+				NSHARE::CThread::sMYield();
+				firstTime = false;
+			}
+		}
+	} while (!FDone.MIsOne());
 	FInOperation = false;
 	VLOG(2) << "exit loop ";
 }
@@ -637,7 +642,28 @@ bool CThreadPool::MAdd(operation_t const& task)
 	}
 	return true;
 }
+bool CThreadPool::MRemove(operation_t const& task)
+{
+	CRAII<CMutex> _blocked(FImpl->FMutex);
+	VLOG(1) << "Doing add of " << task;
+	switch (task.MType())
+	{
+	case operation_t::IMMEDIATE:
+	case operation_t::AS_LOWER:
+		CHECK_NOTNULL(FImpl->FTask.get());
+		return FImpl->FTask->MEraseOp(task);
+		break;
 
+	case operation_t::IO:
+	{
+		VLOG(2) << "Adding  IO operation!!!";
+		CHECK_NOTNULL(FImpl->FIOTask.get());
+		return FImpl->FIOTask->MEraseOp(task);
+	}
+		break;
+	}
+	return true;
+}
 //////////////////////////////////////////////////
 void CThreadPool::MExecuteOtherTasks()
 {
@@ -649,25 +675,40 @@ unsigned CThreadPool::MThreadNum() const
 {
 	return (unsigned)FImpl->FThreads.size();
 }
+operation_t::unique_id_t operation_t::sMGetNextId()
+{
+	static atomic_t _id;
+	return ++_id;
+}
 operation_t::operation_t(eType const& aType) :
-		cb_t(), FType(aType)//, FKeep(new bool(false))
+		cb_t(),//
+		FType(aType),//
+		FUniqueId(sMGetNextId())
 {
 }
 operation_t::operation_t(pM const& aSignal, void * const aData,
 		eType const& aType) :
-		cb_t(aSignal, aData), FType(aType)//, FKeep(new bool(false))
+		cb_t(aSignal, aData), //
+		FType(aType),//
+		FUniqueId(sMGetNextId())
 {
 }
 operation_t::operation_t(operation_t const& aCB) :
-		cb_t(aCB), FType(aCB.FType)//, FKeep(aCB.FKeep)
+		cb_t(aCB),//
+		FType(aCB.FType),//
+		FUniqueId(sMGetNextId())
 {
 	;
 }
 operation_t& operation_t::operator=(operation_t const& aCB)
 {
 	FType=aCB.FType;
-	//FKeep=aCB.FKeep;
+	FUniqueId=aCB.FUniqueId;
 	return *this;
+}
+operation_t::unique_id_t operation_t::MGetUniqueId() const
+{
+	return FUniqueId;
 }
 //void operation_t::MKeep(bool aKeep)
 //{

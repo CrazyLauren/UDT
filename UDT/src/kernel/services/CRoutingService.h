@@ -26,6 +26,7 @@ public:
 	CRoutingService();
 	~CRoutingService();
 	bool MStart();
+	void MStop();
 
 	NSHARE::CConfig MSerialize() const;
 
@@ -79,7 +80,8 @@ private:
 	typedef route_data_t::WAccess<> w_route_access;
 	typedef CKernelIo::output_decriptors_for_t output_decriptors_for_t;
 
-	void MInit();
+	void MSubscribe();
+	void MUnSubscribe();
 
 	static int sMHandleDemandId(CHardWorker* WHO, args_data_t* WHAT,
 			void* YOU_DATA);

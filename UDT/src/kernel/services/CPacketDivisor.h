@@ -37,6 +37,7 @@ public:
 	CPacketDivisor();
 	~CPacketDivisor();
 	bool MStart();
+	void MStop();
 
 	void MSetLimitsFor(descriptor_t const&,split_info const&);
 	std::pair<split_info,bool>  MGetLimitsFor(descriptor_t const&) const;
@@ -66,6 +67,8 @@ private:
 	struct merge_operation_t
 	{
 		merge_operation_t(CPacketDivisor& aThis,user_data_info_t const& aFor,descriptor_t aDesc);
+		~merge_operation_t();
+
 		void MMerge(user_datas_t & aVal,user_datas_t& aTo);
 		static NSHARE::eCBRval sMMergeOperation(NSHARE::CThread const* WHO,
 				NSHARE::operation_t* WHAT, void* YOU_DATA);
@@ -84,6 +87,8 @@ private:
 		std::map<unsigned, split_packet_t> FSplitLevel;
 		eErrorBitwiseCode FError;
 		bool FIsMerged;
+
+		NSHARE::operation_t FOperatation;
 	private:
 		bool MMerging(
 				user_datas_t& aTo);

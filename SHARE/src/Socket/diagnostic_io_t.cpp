@@ -144,6 +144,9 @@ sent_state_t const& diagnostic_io_t::MGetState(sent_state_t::eSendState const& a
 			return FErrorInfo[4];
 	case sent_state_t::E_SOCKET_CLOSED:
 			return FErrorInfo[5];
+	case sent_state_t::E_MAX_BITWISE_CODE:
+	case sent_state_t::E_SENDED:
+		break;
 	}
 	DCHECK(false);
 	static sent_state_t const _fix;

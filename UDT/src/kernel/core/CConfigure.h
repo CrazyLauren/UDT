@@ -27,6 +27,7 @@ public:
 	CConfigure();
 	CConfigure(NSHARE::CText const&,eType const& =JSON);
 	bool MStart();
+	void MStop();
 
 	NSHARE::CConfig & MGet();
 	NSHARE::CText const&  MGetPath() const;

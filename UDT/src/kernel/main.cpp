@@ -56,23 +56,28 @@
 #include "services/CInfoService.h"
 #include "services/CPacketDivisor.h"
 #include "services/CAutoSearchByEthernet.h"
+#include "services/CTimeDispatcher.h"
 
 using namespace NUDT;
 DECLARATION_VERSION_FOR(Kernel)
 static NSHARE::version_t const g_version(MAJOR_VERSION_OF(Kernel), MINOR_VERSION_OF(Kernel), REVISION_OF(Kernel));
 CAutoSearchByEthernet* g_CAutoSearchByEthernet = NULL;
+CTimeDispatcher* g_CTimeDispatcher = NULL;
 
 void initialize_def_main_channels();
 void remove_def_main_channels();
 void initialize_def_links();
 void initialize_def_io_managers();
-void initialize_extern_modules();
+//void initialize_extern_modules();
 void initialize_def_sevices();
 void remove_def_sevices();
 void remove_def_io_managers();
 void initialize_core(int argc, char* argv[]);
+void initalize_io();
+void remove_io();
 void perpetual_loop();
 void start();
+void stop();
 
 int main(int argc, char *argv[])
 {
@@ -91,16 +96,18 @@ int main(int argc, char *argv[])
 
 	initialize_def_links();
 
-	initialize_extern_modules();
+	//initialize_extern_modules();
 
+	initalize_io();
 	//-----------------------------
 
 	start();
 	perpetual_loop();
+	stop();
 //	remove_extern_modules();
-//	remove_def_def_links();
 	remove_def_io_managers();
 	remove_def_main_channels();
+	remove_io();
 	remove_def_sevices();
 
 	return EXIT_SUCCESS;
@@ -182,18 +189,27 @@ void initialize_def_io_managers()
 	else
 		VLOG(2)<<"No "<<CAutoSearchByEthernet::NAME;
 
-
+	if (CConfigure::sMGetInstance().MGet().MFind(CTimeDispatcher::NAME))
+		g_CTimeDispatcher=new CTimeDispatcher();
+	else
+		VLOG(2)<<"No "<<CTimeDispatcher::NAME;
 }
 void remove_def_io_managers()
 {
 	if(g_CAutoSearchByEthernet)
 		delete g_CAutoSearchByEthernet;
 	g_CAutoSearchByEthernet = NULL;
+
+	if(g_CTimeDispatcher)
+		delete g_CTimeDispatcher;
+	g_CTimeDispatcher = NULL;
 }
+/*
 void initialize_extern_modules()
 {
 	NUDT::CResources::sMGetInstance().MLoad();
 }
+*/
 
 CParserFactory* g_CParserFactory=NULL;
 CRoutingService* g_CRoutingService=NULL;
@@ -221,6 +237,16 @@ void remove_def_sevices()
 
 	delete g_CParserFactory;
 	g_CParserFactory=NULL;
+}
+CKernelIo* g_CKernelIo=NULL;
+void remove_io()
+{
+	delete g_CKernelIo;
+	g_CKernelIo=NULL;
+}
+void initalize_io()
+{
+	g_CKernelIo=new CKernelIo();
 }
 void initialize_core(int argc, char* argv[])
 {
@@ -300,13 +326,17 @@ void perpetual_loop()
 	std::cout << "Press any key ..." << std::endl;
 	LOG(INFO)<<"The kernel is started";
 	getchar();
+}
+void stop()
+{
 
 	LOG(INFO)<<"Stopping the kernel";
+
+	std::cout << "Stopping ..." << std::endl;
+	CCore::sMGetInstance().MStop();
 }
 void start()
 {
-	new CKernelIo();
-
 	std::cout << "Starting..." << std::endl;
 	CCore::sMGetInstance().MStart();
 	std::cout << "Working ..." << std::endl;

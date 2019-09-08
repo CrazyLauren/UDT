@@ -26,6 +26,8 @@ typedef eCBRval (*op_signal_t)(CThread const* WHO, operation_t * WHAT,
 struct SHARE_EXPORT operation_t: NSHARE::Callback_t<op_signal_t, operation_t>
 {
 	typedef NSHARE::Callback_t<op_signal_t, operation_t> cb_t;
+	typedef unsigned unique_id_t;
+
 	enum eType
 	{
 		IMMEDIATE, // Should run immediately
@@ -47,8 +49,18 @@ struct SHARE_EXPORT operation_t: NSHARE::Callback_t<op_signal_t, operation_t>
 //	bool MIsKeep() const;
 	eType MType() const;
 	bool operator ==(operation_t const& rihgt) const;
+
+	/** Gets unique id of operation
+	 *
+	 * It used for remove operation
+	 *
+	 */
+	unique_id_t MGetUniqueId() const;
 private:
+
+	static unique_id_t sMGetNextId();
 	eType FType;
+	unique_id_t FUniqueId;
 //	SHARED_PTR<bool> FKeep;
 };
 
@@ -87,10 +99,28 @@ public:
 	bool MCreate(int aNum = -1, CThread::param_t const* aParam = NULL);
 	bool MCancel();
 
+	/** Add the new operation
+	 *
+	 * @param task the new task
+	 * @return true if removed
+	 */
 	bool MAdd(operation_t const& task);
 	bool operator+=(operation_t const& task)
 	{
 		return MAdd(task);
+	}
+
+	/** Remove the operation of course
+	 * if it not run
+	 *
+	 * @param task the removed task
+	 * @return true if removed
+	 */
+	bool MRemove(operation_t const& task);
+
+	bool operator-=(operation_t const& task)
+	{
+		return MRemove(task);
 	}
 
 	/**\brief добавляет новый поток в пул потоков

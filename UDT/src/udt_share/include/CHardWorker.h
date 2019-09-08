@@ -41,6 +41,8 @@ public:
 	CHardWorker();
 	CHardWorker(int aNum);
 	CHardWorker(NSHARE::CThread::eThreadPriority _priority,int aNum=-1);
+
+	void MStop();
 	bool MCreate(int aNum = -1);
 	bool MCreate(NSHARE::CThread::eThreadPriority _priority, int aNum = -1);
 
@@ -164,11 +166,12 @@ template<class T>
 inline void CHardWorker::sMPutData(object_data_t &_data, const T& aVal)
 {
 	_data.FData=malloc(sizeof(aVal));///< \todo alignment of data
-	DCHECK_NOTNULL(_data.FData);
-
-	_data.FDataSize=sizeof(aVal);
-	new (_data.FData) T(aVal);
-	_data.FDestroy = &CHardWorker::MDataCleanUp<T>;
+	if (_data.FData)
+	{
+		_data.FDataSize = sizeof(aVal);
+		new (_data.FData) T(aVal);
+		_data.FDestroy = &CHardWorker::MDataCleanUp<T>;
+	}
 }
 
 template<class T>

@@ -54,11 +54,13 @@
 
 #include <UType/uuid.h>
 #include <programm_id.h>
+#include <UType/CAddress.h>
 #include <CCustomer.h>
 #include <UType/IFactory.h>
 #include <UType/CMutex.h>
 #include <UType/CFactoryManager.h>
 #include <UType/CFactoryRegisterer.h>
+
 
 
 

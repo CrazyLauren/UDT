@@ -33,6 +33,12 @@ public:
 	 */
 	virtual bool MStart()=0;
 
+	/*!\brief Stop working (has to be non-blocking)
+	 *
+	 *\return true if started successfully
+	 */
+	virtual void MStop()=0;
+
 protected:
 
 	/*! \brief The constructor is passed

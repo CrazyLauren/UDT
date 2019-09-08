@@ -39,6 +39,7 @@ size_t CExampleProtocolParser::MDataOffset(const NUDT::required_header_t& aHeade
 CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 		const uint8_t* aItBegin, const uint8_t* aItEnd,NSHARE::uuid_t aFrom,uint8_t aMask)
 {
+	using namespace std;
 	/*! Algorithm of Parsing buffer from aItBegin to aItEnd:*/
 	result_t _result;
 
@@ -62,6 +63,8 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 			 * */
 
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
+			const unsigned _min_size = min(sizeof(_founded_dg.FType.FMessageHeader), sizeof(*_phead));
+
 			switch (_phead->FType)
 			{
 			case E_MSG_TEST:
@@ -75,7 +78,7 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 				else
 				{
 					aItBegin += _phead->FSize;
-					memcpy(_founded_dg.FType.FMessageHeader, _phead, sizeof(msg_head_t));
+					memcpy(_founded_dg.FType.FMessageHeader, _phead, _min_size);
 				}
 				break;
 			case E_MSG_SWAP_BYTE_TEST:
