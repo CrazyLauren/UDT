@@ -21,7 +21,12 @@ namespace NUDT
  */
 struct UDT_SHARE_EXPORT time_info_t
 {
-	typedef uint64_t rtc_time_t;
+	enum
+	{
+		E_TIME_PRECISION=1,//!< the minimal rtc step in microseconds
+	};
+
+	typedef uint64_t rtc_time_t;//!< Used to hold time (precision is #E_TIME_PRECISION)
 	static const uint64_t END_OF_TIME;//!< End of time value
 	time_info_t();
 	rtc_info_t FRtc; //!< Info about used RTC

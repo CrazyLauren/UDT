@@ -160,7 +160,7 @@ SHARED_PACKED(struct event_fifo_t
 				sizeof(event_fifo_t) + FArraySize * sizeof(FInfo[0]));
 	}
 	uint8_t FSignalEvent[CIPCSignalEvent::eReguredBufSize]; //is used to hold signal event name
-	uint8_t FSignalMutex[CIPCSem::eReguredBufSize]; //is used to hold signal event mutex name
+	uint8_t FSignalMutex[CIPCMutex::eReguredBufSize]; //is used to hold signal event mutex name
 	//
 	uint32_t FPIDOfLockedMutex;
 	//
@@ -206,7 +206,7 @@ SHARED_PACKED(struct event_fifo_t
 	inline uint16_t MInc(uint16_t aVal) const;
 	inline uint16_t MDec(uint16_t aVal) const;
 });
-COMPILE_ASSERT(sizeof(event_fifo_t) ==(CIPCSignalEvent::eReguredBufSize+CIPCSem::eReguredBufSize+sizeof(uint32_t)*5+sizeof(uint64_t)),
+COMPILE_ASSERT(sizeof(event_fifo_t) ==(CIPCSignalEvent::eReguredBufSize+CIPCMutex::eReguredBufSize+sizeof(uint32_t)*5+sizeof(uint64_t)),
 		IVALID_SIZEOF_EVENT_FIFO);
 
 inline uint16_t event_fifo_t::MCount() const

@@ -71,6 +71,12 @@ LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${OUTPUT_LIBDIR} )
 SET(CMAKE_SHARE_INCLUDE_PATH ${CMAKE_SHARE_INCLUDE_PATH} CACHE STRING "You may add additional search paths here. Use ; to separate multiple paths.")
 SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} CACHE STRING "You may add additional search paths here. Use ; to separate multiple paths.")
 
+set(CMAKEPACKAGE_INSTALL_DIR
+    "${CMAKE_INSTALL_PREFIX}/cmake"
+    CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where FindCS_atmosphere.cmake   is installed"
+	FORCE
+    )
+	
 include (CMakeModules/configure_share.cmake)
 
 ################################################################################
@@ -141,3 +147,6 @@ else()
 	MESSAGE(WARNING "WARNING: cannot create documentation as doxygen is not found.")	
 endif()
 
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/FindSHARE.cmake              
+          DESTINATION ${CMAKEPACKAGE_INSTALL_DIR} )
+		  

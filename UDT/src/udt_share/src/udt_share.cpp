@@ -348,14 +348,14 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	}
 	if (_name_from_len)
 	{
-		memcpy(_p, _id.FRouting.FFrom.FName.c_str(), _name_from_len);
-		_p += _name_from_len;
+		for(unsigned i=0;i<_name_from_len;++i)
+			*_p++=_id.FRouting.FFrom.FName[i];
 		*_p++ = '\0';
 	}
 	if (_name_protocol)
 	{
-		memcpy(_p, _id.FProtocol.c_str(), _name_protocol);
-		_p += _name_protocol;
+		for(unsigned i=0;i<_name_protocol;++i)
+			*_p++=_id.FProtocol[i];
 		*_p++ = '\0';
 	}
 

@@ -1,4 +1,4 @@
-UDT SHARE 0.6
+UDT SHARE version:0.6
 -------------------
   - Change names of CAddress to CProgramGroup and  CRegistration to CProgramName
   - Added a new method MUpdateIfSet to CConfig
@@ -17,21 +17,21 @@ UDT SHARE 0.6
   - Fix bug creating posix thread 
   - Update CUdp socket, add full broadcast supported (multicast is not supported)
   
-UDT SHARE 0.5
+UDT SHARE version:0.5
 -------------------
   - Fixed virtual method called bug for static variables
   - Reflactoring CBuffer
   - Fixed some small bugs
   - Fixed incorrect aligment of atomic value
   
-UDT SHARE 0.4
+UDT SHARE version:0.4
 -------------------
   - Reduced number of warnings
   - Added CBarrier
   - Fixed some compile problem
   - Now max size of SM server can be more than 2 GB
 
-UDT SHARE 0.3
+UDT SHARE version:0.3
 -------------------
   - Disbale warning 4200 for msvc
   - Refactoring deftype.h

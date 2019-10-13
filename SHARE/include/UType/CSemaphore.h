@@ -13,30 +13,83 @@
 #define CSEMAPHORE_H_
 
 #include <deftype>
+#include <UType/ISemaphore.h>
 
 namespace NSHARE
 {
-/**\brief кроссплатформенная реализация семафора
+/**\brief Crossplatform realization of semaphore
  *
  *
- * Существуют три реализации семафора:
- * 1) Через CreateSemaphore (в Windows)
- * 2) Через sem_init (в posix)
- * 3) Костыль на базе услов. перем. и .мютексов
+ * There are 3 realization:
+ * 1) using CreateSemaphore (in Windows)
+ * 2) using sem_init (any posix OS), default for posix OS
+ * 3) using mutex and condition variable
  */
-class SHARE_EXPORT CSemaphore: NSHARE::CDenyCopying
+class SHARE_EXPORT CSemaphore: public ISemaphore, NSHARE::CDenyCopying
 {
 public:
 
-	CSemaphore(unsigned int value = 1);
+	/** Create and initialize semaphore
+	 *
+	 * @param value initial value of semaphore
+	 */
+	CSemaphore(unsigned int value);
+
+	/** default constructor
+	 *
+	 */
+	CSemaphore();
+
 	virtual ~CSemaphore();
 
-	void MWait();
+	/**	@brief Create semaphore
+	 *
+	 *	@param value Initial value of semaphore (
+	 *			if semaphore is exist it's ignored)
+	 *
+	 *	@return true if no error
+	 */
+	bool MInit(unsigned int value);
+
+	/** @copydoc ISemaphore::MWait
+	 *
+	 */
+	bool MWait();
+
+	/** @copydoc ISemaphore::MWait(double)
+	 *
+	 */
+	bool MWait(double const aTime);
+
+	/** @copydoc ISemaphore::MTryWait
+	 *
+	 */
 	bool MTryWait();
-	void MPost();
+
+	/** @copydoc ISemaphore::MPost
+	 *
+	 */
+	bool MPost();
+
+	/** @copydoc ISemaphore::MValue
+	 *
+	 */
 	int MValue() const;
+
+	/** @copydoc ISemaphore::MIsInited
+	 *
+	 */
 	bool MIsInited() const;
 
+	/** @copydoc ISemaphore::MFree
+	 *
+	 */
+	void MFree();
+
+	/** Testing semaphore
+	 *
+	 * @return true if no error
+	 */
 	static bool sMUnitTest();
 private:
 	struct CImpl;

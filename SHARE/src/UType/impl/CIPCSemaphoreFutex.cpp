@@ -67,7 +67,7 @@ bool CIPCSemaphoreFutex::MInit(uint8_t* aBuf, size_t aSize, unsigned int aInitva
 
 	DCHECK_LE((void*)(FSem+1),(void*)(aBuf+aSize));
 
-	DCHECK_LE(aInitvalue, CIPCSem::MAX_VALUE);
+	DCHECK_LE(aInitvalue, ISemaphore::MAX_VALUE);
 
 	switch (aHasToBeNew)
 	{

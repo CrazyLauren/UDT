@@ -85,6 +85,8 @@ DEFINE_FLAG(std::string, file_name, "")
 DEFINE_FLAG(std::string, socket_setting, "")
 ;
 
+DEFINE_FLAG(bool, short_name, false)
+;
 
 std::string const& _log4cplus_impl::std_patern()
 {
@@ -323,7 +325,8 @@ void _log4cplus_impl::init_log4cplus(char const *argv)
 	if (!slash)
 		slash = strrchr(argv, '\\');
 #endif
-	programm_short_name() = slash ? slash + 1 : argv;
+	const char* _name = slash ? slash + 1 : argv;
+	programm_short_name() = _name;
 
 	timestamp();
 }

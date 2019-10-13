@@ -17,8 +17,6 @@
 namespace NSHARE
 {
 extern size_t get_unique_name(char const* aPreifix,uint8_t* aTo,size_t aSize);
-
-int const CIPCSem::MAX_VALUE=std::numeric_limits<long>::max()/2;
 size_t CIPCSem::sMRequredBufSize()
 {
 	return CIPCSem::eReguredBufSize;
@@ -43,7 +41,7 @@ CIPCSem::CIPCSem(uint8_t* aBuf, size_t aSize, unsigned int value,
 {
 	bool const _is=MInit(aBuf, aSize,value, aHasToBeNew);
 	(void)_is;
-	CHECK(_is);
+	DCHECK(_is);
 }
 CIPCSem::CIPCSem() :
 		FImpl(new CImpl),//
@@ -100,7 +98,7 @@ bool CIPCSem::MInit(uint8_t* aBuf, size_t aSize, unsigned int aInitvalue,
 
 	VLOG(2)<<"Sem "<< (char*)aBuf;
 
-	FImpl->FSem = ::CreateSemaphore(NULL, aInitvalue, MAX_VALUE, (char*)aBuf);
+	FImpl->FSem = ::CreateSemaphore(NULL, aInitvalue, ISemaphore::MAX_VALUE, (char*)aBuf);
 
 	DCHECK_NE(FImpl->FSem, INVALID_HANDLE_VALUE);
 

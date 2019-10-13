@@ -12,57 +12,54 @@
 #ifndef CIPCCONDVAR_H_
 #define CIPCCONDVAR_H_
 
+#include <UType/IConditionVariable.h>
+
 #ifndef _WIN32
-#	if defined(__linux__) && defined(USING_FUTEX)
-#		define SE_USING_FUTEX
-#	else
-#		include <semaphore.h>
-#		define SE_USING_SEM_INIT
-#	endif
+#	define IPC_USING_CONDVAR
 #endif
 
 namespace NSHARE
 {
-/**\brief кроссплатформенная межпроцессная условная переменная(неполноценная)
+/**\brief Crossplatform realization of condition variable
  *
- * Существуют 4 реализации:
- * 1) Через CreateEvent (в Windows)
- * 2) Через futex (в linux если стоит препроцессор USING_FUTEX)
- * 3) Через sem_init (в posix)
- * 4) Через sem_open (в posix)
- * Для работы  реализаций 2,3 нужно выделить разделяемую память
- * (shared memory).
- * Для работы  реализаций 1,4 нужно или выделить разделяемую память
- * (shared memory) или вкачестве буфера передать указатель на строку, содержашую
- * имя услдовной переменной длинной eReguredBufSize-1.
+ * There are 3 realization:
+ * 1) using CreateEvent (in Windows)
+ * 2) using semaphore (in posix)
+ * 3) using condvar (in posix)
+ *
+ * For working of condition variable need to allocate shared memory.
  */
-class SHARE_EXPORT CIPCSignalEvent:CDenyCopying
+class SHARE_EXPORT CIPCSignalEvent:public IConditionVariable,CDenyCopying
 {
 public:
-	/**\brief размер буфера необходимого для хранения условной переменной
+	/**\brief Info about required buffer size
 	 *
-	 *\note при использовании sem_open в буфере сохраняется имя условной переменной
 	 */
-	enum{
+	enum
+	{
 # ifdef _WIN32
-	eReguredBufSize=16
-#elif defined(SE_USING_FUTEX)
-	eReguredBufSize=sizeof(int32_t)+2*4+4
-#elif defined(SE_USING_SEM_INIT)
-	eReguredBufSize=sizeof(sem_t)+2*4+__alignof(sem_t)
+	eReguredBufSize=12+sizeof(NSHARE::atomic_t)*3
+#elif defined(IPC_USING_CONDVAR)
+	eReguredBufSize=SIZEOF_PTHREAD_COND_T+2*sizeof(uint32_t)+__alignof(void*)
 #else//using sem_open
-	eReguredBufSize=16
+//#ifdef IPC_USING_CONDVAR_ON_SEMAPHORE
+# 	error "Unknown target"
 #endif	
 	};
-	/**\brief флаг управления созданием условной переменной
+
+	/**@brief Condition variable creation control flags
 	 *
 	 */
 	enum eOpenType
 	{
-		E_UNDEF,///< если УП существует то открыть, иначе создать
+		E_UNDEF,///< If the condition variable is exist then opens it, otherwise creates it
 		E_HAS_TO_BE_NEW,///< если УП существует то возвращается ошибка,иначе создаётся
 		E_HAS_EXIST,///< если УП существует то открыть, иначе создать
 	};
+
+	/** Default constructor
+	 *
+	 */
 	CIPCSignalEvent();
 
 	/**\brief Октрыть(создать) УП в буфере aBuf
@@ -80,8 +77,9 @@ public:
 	*/
 	bool MInit(uint8_t* aBuf, size_t aSize,eOpenType aHasToBeNew=E_UNDEF);
 	bool MSignal(void);
-	bool MTimedwait(CIPCSem *, const struct timespec* = NULL);
-	bool MTimedwait(CIPCSem *, double const);
+	bool MBroadcast(void);
+	bool MTimedwait(IMutex *);
+	bool MTimedwait(IMutex *, double const);
 
 	/**\brief После вызова этого метода УП \aостается в памяти,
 	 *  а объект становиться не инициализированным
@@ -110,9 +108,16 @@ public:
 	 */
 	eOpenType MGetType() const;
 	static size_t sMRequredBufSize();
-private:
+
+	/** Unit test
+	 *
+	 */
+	static bool sMUnitTest();
+
 	struct CImpl;
+private:
 	CImpl* FPImpl;
+	eOpenType FType;
 };
 
 } /* namespace NSHARE */

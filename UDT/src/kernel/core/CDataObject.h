@@ -51,8 +51,18 @@ public:
 
 
 
+
 	template<class T>
 	inline void MPush(const T& aVal,bool isPrior);
+
+	/** Push data for specified receiver
+	 *
+	 * @param aVal A what you want to send
+	 * @param aId An id of receive
+	 * @param isPrior priority
+	 */
+	template<class T>
+	inline void MPush(const data_to_id<T>& aVal, bool isPrior);
 
 	template<class T>
 	bool MGetLast(T&) const;
@@ -104,6 +114,11 @@ template<class T>
 inline void CDataObject::MPush(const T& aVal, bool isPrior)
 {
 	return MPushImpl(aVal, isPrior);
+}
+template<class T>
+inline void CDataObject::MPush(const data_to_id<T>& aVal, bool isPrior)
+{
+	CHardWorker::MPushData(aVal.MName(), aVal, isPrior);
 }
 template<class T>
 inline bool CDataObject::MGetLast(T & aVal) const

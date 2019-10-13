@@ -17,7 +17,7 @@ namespace NSHARE
 {
 namespace impl
 {
-/** Realization semaphore based Futex
+/** Realization semaphore based sem init
  *
  */
 class CIPCSemaphoreSemInit:public CIPCSem::CImpl
@@ -30,7 +30,7 @@ public:
 	{
 		inline _sem_t();
 		sem_t FSem;
-		uint16_t FCount;
+		uint16_t FCount;//!< The number of "user"
 		uint16_t FIsUnlinked:1;
 		uint16_t :15;
 		uint32_t FId;

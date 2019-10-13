@@ -14,6 +14,7 @@
 
 #include <UType/CSharedMemory.h>
 #include <UType/CIPCSignalEvent.h>
+#include <UType/CIPCMutex.h>
 #include <Socket/diagnostic_io_t.h>
 //#include <boost/circular_buffer.hpp>
 namespace NSHARE
@@ -66,7 +67,7 @@ public:
 		}
 	private:
 		mutable NSHARE::CIPCSignalEvent FSignalEvent;
-		mutable NSHARE::CIPCSem FSignalSem;
+		mutable NSHARE::CIPCMutex FSignalSem;
 	};
 
 	CImpl();

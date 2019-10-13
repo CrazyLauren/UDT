@@ -135,7 +135,7 @@ public:
 	 * @param aRefOffset Does where it allocate memory? (offset from memory begin)
 	 * @return  pointer to the start of the allocated memory, or NULL if an error occurred
 	 */
-	void* MMallocTo(uint32_t const xWantedSize, IAllocater::offset_pointer_t aRefOffset);
+	void* MMallocTo(uint32_t const xWantedSize, IAllocater::offset_pointer_t aRefOffset) const;
 
 	/** Returns pointer to memory block if it
 	 * has been allocated before
@@ -143,7 +143,7 @@ public:
 	 * @param aRefOffset - where searching block
 	 * @return pointer to the start of the allocated memory, or NULL if doesn't allocate
 	 */
-	void* MGetIfMalloced(IAllocater::offset_pointer_t aRefOffset);
+	void* MGetIfMalloced(IAllocater::offset_pointer_t aRefOffset) const;
 
 	/*!\brief Serialize object
 	 *

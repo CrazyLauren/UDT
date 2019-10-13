@@ -1167,7 +1167,7 @@ void CSharedAllocator::MInitIfNeedFreeSem(heap_head_t* const _p_head)
 {
 	if (!FFreeSem.MIsInited())
 	{
-		FFreeSem.MInit(_p_head->FFreeSem,sizeof(_p_head->FFreeSem), CIPCSem::MAX_VALUE,CIPCSem::E_HAS_EXIST);
+		FFreeSem.MInit(_p_head->FFreeSem,sizeof(_p_head->FFreeSem), ISemaphore::MAX_VALUE,CIPCSem::E_HAS_EXIST);
 		DCHECK(FFreeSem.MIsInited());
 		if (FFreeSem.MGetType() == CIPCSem::E_HAS_TO_BE_NEW)//It has been created
 		{
@@ -1183,7 +1183,7 @@ void CSharedAllocator::MInitIfLockBlockSem(heap_head_t* const _p_head)
 	if (!FWaitForUnlock.MIsInited())
 	{
 		FWaitForUnlock.MInit(_p_head->FLockBlockSem, sizeof(_p_head->FLockBlockSem),
-				CIPCSem::MAX_VALUE, CIPCSem::E_HAS_EXIST);
+				ISemaphore::MAX_VALUE, CIPCSem::E_HAS_EXIST);
 		DCHECK(FWaitForUnlock.MIsInited());
 		if (FWaitForUnlock.MGetType() == CIPCSem::E_HAS_TO_BE_NEW)//It has been created
 		{
@@ -1258,6 +1258,18 @@ void* CSharedAllocator::MMalloc(block_size_t const xWantedSize,bool aBlock,bool 
 	}while( aBlock && !_p);
 	return _p;
 }
+/** Clean up semaphore FFreeSem
+ *
+ * If some thread killed during it locks semaphore
+ * the all process buzz.
+ *
+ */
+void CSharedAllocator::MCleanUpFreeSemaphore()
+{
+	heap_head_t* const _p_head = sMGetHead(FBase);
+	_p_head->FNumberOfWaitingFor=0;
+	_p_head->FHasToBeUnlockedForFree=0;
+}
 /** Wait for some block will freed
  *
  * @param _p_head pointer to header
@@ -1285,8 +1297,12 @@ bool CSharedAllocator::MWaitFreeOperation(heap_head_t* const _p_head)
 		bool _is=false;
 		++_p_head->FNumberOfWaitingFor;
 		_is = FFreeSem.MWait();
-		--_p_head->FHasToBeUnlockedForFree;
-		--_p_head->FNumberOfWaitingFor;
+
+		if(_p_head->FHasToBeUnlockedForFree!=0)//!< if thread not killed
+			--_p_head->FHasToBeUnlockedForFree;
+
+		if(_p_head->FNumberOfWaitingFor!=0) //!< if thread not killed
+			--_p_head->FNumberOfWaitingFor;
 
 		DLOG_IF(FATAL,!_is) << "Cannot wait sem " << FFreeSem.MName();
 
@@ -1321,7 +1337,7 @@ void CSharedAllocator::MInformMemFreed(heap_head_t* const _p_head)
 		_num = _p_head->FNumberOfWaitingFor;
 	}while(_p_head->FHasToBeUnlockedForFree.MWriteIfEqual(_num, _unlocked)!=_unlocked);
 
-	DCHECK_LT((int )_num, CIPCSem::MAX_VALUE);
+	DCHECK_LT((int )_num, ISemaphore::MAX_VALUE);
 	for (; _num; --_num)
 	{
 		bool const _is=FFreeSem.MPost();
@@ -1390,7 +1406,7 @@ void CSharedAllocator::MInformMemUnlocked(heap_head_t* const _p_head,const offse
 	unsigned _num = _p_head->FUnlockOfWaitingFor;
 	_p_head->FHasToBeUnlocked=_num;
 	_p_head->FUnlockedBlock=aWhat;
-	DCHECK_LT((int )_num, CIPCSem::MAX_VALUE);
+	DCHECK_LT((int )_num, ISemaphore::MAX_VALUE);
 	for (; _num; --_num)
 	{
 		bool const _is=FWaitForUnlock.MPost();
@@ -2441,7 +2457,16 @@ bool CSharedAllocator::MCleanUpResourceByWatchDog(clean_up_f_t aFunction,
 	MCheckResources(_resources);
 
 	MCleanUpMemoryImpl(_resources);
-	DCHECK_EQ(_p_head->FNumberOfWaitingFor,0);
+	MCleanUpFreeSemaphore();
+/*	{
+		process_node_t * _p = _p_head->MFirstProcessNode(FBase);
+		for (; _p != NULL;)
+		{
+			block_node_t* const _p_node = sMGetBlockNode(_p);
+			CHECK(_p_node->MIsAllocated());
+			_p = _p->MNext(FBase);
+		}
+	}*/
 	DLOG(INFO)<<"CleanUp finished. "<<sMPrintAsXml(this);
 	MUnlock();//!---
 	return true;
@@ -2697,7 +2722,7 @@ bool CSharedAllocator::MLockBlock(void *aP) const
 		if(!_is)//!< Wait until some thread call unlock operation
 		{
 			DVLOG(1) << "The number of waiting for "
-								<< _p_head->FNumberOfWaitingFor;
+								<< _p_head->FUnlockOfWaitingFor;
 			_is_no_error=MWaitUnlockOperation(_p_head,aBaseOffset);
 		}
 	}while(!_is && _is_no_error);

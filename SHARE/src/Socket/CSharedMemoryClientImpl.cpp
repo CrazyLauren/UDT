@@ -252,7 +252,8 @@ void IMPL_CLASS::MDisconnect()
 			FMyInfo));
 	MInvokeEvent(&_info);
 
-	LOG_IF(DFATAL,FEventDone) << "The event handler is not working";
+	//LOG_IF(DFATAL,FEventDone) << "The event handler is not working";
+	LOG_IF(INFO,FEventDone) << "The event handler is not working";
 
 	if (!FEventDone)
 	{

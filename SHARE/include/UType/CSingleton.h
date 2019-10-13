@@ -28,12 +28,12 @@ public:
 
 	~CSingleton(void)
 	{
-		CHECK_NOTNULL(sFSingleton);
+		DCHECK_NOTNULL(sFSingleton);
 		sFSingleton = 0;
 	}
 	static T& sMGetInstance()
 	{
-		CHECK_NOTNULL(sFSingleton);
+		DCHECK_NOTNULL(sFSingleton);
 		return (*sFSingleton);
 	}
 	static T* sMGetInstancePtr()
@@ -43,7 +43,7 @@ public:
 protected:
 	CSingleton()
 	{
-		CHECK(!sFSingleton);
+		DCHECK(!sFSingleton);
 		sFSingleton = static_cast<T*>(this);
 		VLOG(2)<<"Construct singelton "<<this;
 	}

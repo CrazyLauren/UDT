@@ -15,6 +15,7 @@
 #include <programm_id.h>
 #include <udt_types.h>
 #include <Socket/net_address_t.h>
+#include <udt_rtc.h>
 namespace NUDT
 {
 typedef uint32_t error_type;

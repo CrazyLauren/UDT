@@ -177,7 +177,7 @@ CTCPServer::sent_state_t CTCPServer::MSend(const void* pData, size_t nSize,
 }
 bool CTCPServer::MIsOpen() const
 {
-	return FImpl->MIsOpen();
+	return FImpl && FImpl->MIsOpen();
 }
 CTCPServer::settings_t const& CTCPServer::MGetSetting() const
 {

@@ -132,7 +132,6 @@
 //\}
 
 #if   defined(__QNX__)||defined(unix) ||  defined(__MINGW32__)
-#	define HAVE_POSIX_SEMAPHORES
 #	include <pthread.h>                        // POSIX threads support
 #endif
 
@@ -158,6 +157,7 @@
 #include <UType/CCOWPtr.h>
 #include <UType/CFlags.h>
 #include <UType/CMutex.h>
+#include <UType/CMutexEmpty.h>
 #include <UType/CCondvar.h>
 #include <UType/CSemaphore.h>
 #include <UType/CBarrier.h>
@@ -185,6 +185,7 @@
 
 #include <UType/CIPCSem.h>
 #include <UType/CIPCSignalEvent.h>
+#include <UType/CIPCMutex.h>
 
 #include <UType/CThread.h>
 #include <UType/CThreadPool.h>

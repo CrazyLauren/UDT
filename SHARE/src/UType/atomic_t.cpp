@@ -198,7 +198,17 @@ atomic_t::value_type atomic_t::MWriteIfEqual(value_type const& aVal,value_type c
 	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_cas32(&FCount, aVal, aEqualOf);
 }
+atomic_t::value_type atomic_t::MWriteIfEqual(value_type volatile const& aVal,value_type volatile const& aEqualOf) volatile
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return atomic_cas32(&FCount, aVal, aEqualOf);
+}
 void atomic_t::MWrite(value_type const& aVal)
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	atomic_write32(&FCount, aVal);
+}
+void atomic_t::MWrite(value_type const& aVal) volatile
 {
 	DCHECK_POINTER_ALIGN(&FCount);
 	atomic_write32(&FCount, aVal);
@@ -208,7 +218,17 @@ atomic_t::value_type atomic_t::MIncrement()
 	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_inc32(&FCount);
 }
+atomic_t::value_type atomic_t::MIncrement() volatile
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return atomic_inc32(&FCount);
+}
 atomic_t::value_type atomic_t::MDecrement()
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return atomic_dec32(&FCount);
+}
+atomic_t::value_type atomic_t::MDecrement() volatile
 {
 	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_dec32(&FCount);
@@ -218,12 +238,27 @@ void atomic_t::MAdd(int const& aVal)
 	DCHECK_POINTER_ALIGN(&FCount);
 	atomic_add(&FCount, aVal);
 }
+void atomic_t::MAdd(int const& aVal) volatile
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	atomic_add(&FCount, aVal);
+}
 bool atomic_t::MIsOne() const
 {
 	DCHECK_POINTER_ALIGN(&FCount);
 	return MValue() == value_type(1);
 }
+bool atomic_t::MIsOne() volatile const
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return MValue() == value_type(1);
+}
 atomic_t::value_type atomic_t::MValue() const
+{
+	DCHECK_POINTER_ALIGN(&FCount);
+	return atomic_read32(&FCount);
+}
+atomic_t::value_type atomic_t::MValue() volatile const
 {
 	DCHECK_POINTER_ALIGN(&FCount);
 	return atomic_read32(&FCount);

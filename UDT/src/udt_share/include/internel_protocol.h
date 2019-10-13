@@ -43,6 +43,7 @@ enum  eMsgType
 	//E_FAIL_SEND = 26,//
 
 	E_AUTO_SEARCH_INFO = 40,//
+	E_RTC_INFO = 41,//
 };
 //enum eErrorCode
 //{
@@ -512,6 +513,15 @@ SHARED_PACKED(struct auto_search_dg_t: dg_json_base_t<auto_search_dg_t, 0, 1, E_
 });
 COMPILE_ASSERT(sizeof(auto_search_dg_t) == (sizeof(head_t)+4), InvalidSizeOfAUTO_SEARCH_INFO);
 
+//
+//---------------------
+//
+
+SHARED_PACKED(struct real_time_clocks_dg_t: dg_json_base_t<real_time_clocks_dg_t, 0, 1, E_RTC_INFO>
+{
+});
+COMPILE_ASSERT(sizeof(real_time_clocks_dg_t) == (sizeof(head_t)+4), InvalidSizeOfRTC_INFO);
+
 }//namespace NUDT
 
 
@@ -585,7 +595,10 @@ inline std::ostream& operator<<(std::ostream & aStream, NUDT::eMsgType const& aV
 		case E_AUTO_SEARCH_INFO:
 			aStream << "Auto search info.";
 			break;
-
+			
+		case E_RTC_INFO:
+			aStream << "rtc info.";
+			break;
 	};
 	return aStream << "(" << static_cast<int>(aVal) << ")";
 }

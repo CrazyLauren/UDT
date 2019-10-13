@@ -141,13 +141,13 @@ CSharedAllocator* CSharedMemory::MGetMemorManager() const
 	return &FImpl->FAllocater.FAllocater;
 }
 
-void* CSharedMemory::MMallocTo(const uint32_t xWantedSize, IAllocater::offset_pointer_t aRefOffset)
+void* CSharedMemory::MMallocTo(const uint32_t xWantedSize, IAllocater::offset_pointer_t aRefOffset) const
 {
 	DCHECK_NOTNULL (FImpl);
 	return FImpl->FAllocater.FAllocater.MMallocTo(xWantedSize, static_cast<CSharedAllocator::offset_t>(aRefOffset));
 }
 
-void* CSharedMemory::MGetIfMalloced(IAllocater::offset_pointer_t aRefOffset)
+void* CSharedMemory::MGetIfMalloced(IAllocater::offset_pointer_t aRefOffset) const
 {
 	DCHECK_NOTNULL (FImpl);
 	return FImpl->FAllocater.FAllocater.MGetIfMalloced(static_cast<CSharedAllocator::offset_t>(aRefOffset));

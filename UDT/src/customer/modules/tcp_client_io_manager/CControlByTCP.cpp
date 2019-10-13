@@ -109,11 +109,11 @@ void CControlByTCP::MFill<custom_filters_dg2_t>(data_t* aTo)
 	CHECK_NOTNULL(FCustomer);
 	req_recv_t _data;
 	CDataObject::sMGetInstance().MGetLast(_data);
-	if (_data.FDemand.empty())
-	{
-		LOG(ERROR)<< "It does not expect data.";
-		return;
-	}
+	/*if ()
+	{*/
+	LOG_IF(INFO,_data.FDemand.empty())<< "It does not expect data.";
+	/*	return;
+	}*/
 	serialize<custom_filters_dg2_t,demand_dgs_t>(aTo,_data.FDemand,routing_t (),error_info_t ());
 }
 
@@ -360,6 +360,19 @@ void CControlByTCP::MProcess(user_data_fail_send_t const* aP, void* aParser)
 
 	MReceivedData(_fail);
 }
+template<>
+void CControlByTCP::MProcess(real_time_clocks_dg_t const* aP, void*)
+{
+	VLOG(2) << "New  RTC info " << *aP;
+
+	routing_t _uuid;
+	real_time_clocks_t _rtc(
+			deserialize<real_time_clocks_dg_t, real_time_clocks_t>(aP, &_uuid, NULL));
+
+	new_real_time_clocks_t _data;
+	_data.FData = _rtc;
+	CDataObject::sMGetInstance().MPush(_data,true);
+}
 //
 //----------------------
 //
@@ -452,7 +465,7 @@ int CControlByTCP::MSend(data_t & aData)
 	}
 	return FTcpSocket->MSend(aData.ptr(), aData.size()).MIs()?0:CCustomer::ERROR_UNEXPECETED;
 }
-int CControlByTCP::MSend(user_data_t & aData)
+/*int CControlByTCP::MSend(user_data_t & aData)
 {
 	//if (!MIsConnected())
 	if(FState!=E_CONNECTED)
@@ -469,7 +482,7 @@ int CControlByTCP::MSend(user_data_t & aData)
 		return CCustomer::ERROR_UNEXPECETED;
 	}
 	return E_NO_ERROR;
-}
+}*/
 //
 //----------------------
 //
@@ -550,6 +563,7 @@ const NSHARE::ISocket* CControlByTCP::MGetSocket() const
 	return FTcpSocket;
 }
 
+/*
 bool CControlByTCP::MIsAvailable() const
 {
 	if (MIsOpened())
@@ -572,6 +586,7 @@ bool CControlByTCP::MIsAvailable() const
 	_sock.MClose();
 	return _result;
 }
+*/
 void CControlByTCP::MReceivedData(const NSHARE::ISocket::data_t& aData)
 {
 	VLOG(2) << "Receive :" << aData.size();
@@ -734,7 +749,13 @@ void CControlByTCP::MDisconnect(NSHARE::net_address* aVal)
 						<< NSHARE::get_unix_time();
 	MCloseMain();
 	FState = E_OPENED;
-	FCustomer->MEventDisconnected();
+
+	{
+		DCHECK(FKernelId.MIs());
+		disconnected_from_kernel_t _disconnect;
+		_disconnect.FData = FKernelId.MGetConst();
+		CDataObject::sMGetInstance().MPush(_disconnect);
+	}
 }
 id_t const& CControlByTCP::MGetKernelID() const
 {
@@ -756,7 +777,12 @@ void CControlByTCP::MSendProtocolType()
 void CControlByTCP::MSetStateConnected()
 {
 	FState = E_CONNECTED;
-	FCustomer->MEventConnected();
+	{
+		DCHECK(FKernelId.MIs());
+		connected_to_kernel_t _connect;
+		_connect.FData = FKernelId.MGetConst();
+		CDataObject::sMGetInstance().MPush(_connect);
+	}
 }
 CControlByTCPRegister::CControlByTCPRegister() :
 		NSHARE::CFactoryRegisterer(NAME, NSHARE::version_t(MAJOR_VERSION_OF(tcp_client_io_manager), MINOR_VERSION_OF(tcp_client_io_manager), REVISION_OF(tcp_client_io_manager)))

@@ -67,9 +67,35 @@ bool CLocalLink::MIsOpened() const
 {
 	return FState == E_OPEN;
 }
+/** Subscribe to the events
+ *
+ */
+bool CLocalLink::MSubscribe()
+{
+	{
+		callback_data_t _cb(sMHandleNewRTC, this);
+		CDataObject::value_t _val(
+				data_to_id<real_time_clocks_t>::sMGetNameFor(Fd), _cb);
+		FHandlerNewRTC = _val;
+		CDataObject::sMGetInstance() += FHandlerNewRTC;
+	}
+	return true;
+}
+/** Unsubscribe from the events
+ *
+ */
+void CLocalLink::MUnSubscribe()
+{
+	CDataObject::sMGetInstance() -= FHandlerNewRTC;
+}
+
+
 bool CLocalLink::MAccept()
 {
 	VLOG(2) << "Accept " << FCustomer.FId;
+
+	MSubscribe();
+
 	descriptor_info_t _info;
 	_info.FProgramm = FCustomer;
 	_info.FTypeLink = NAME;
@@ -119,13 +145,15 @@ void CLocalLink::MCloseRequest()
 void CLocalLink::MCloseImpl()
 {
 	VLOG(2) << "Close link";
+	MUnSubscribe();
+
 	if(FMainChannel) MCloseMain();
 		FState = E_NOT_OPEN;
 	FMainChannel = NULL;
 	Fd = CDescriptors::INVALID;
 	FServiceParser.MCleanBuffer();
 	VLOG(2) << "The link has been closed.";
-	CHECK(FState == E_NOT_OPEN);;
+	CHECK(FState == E_NOT_OPEN);
 }
 void CLocalLink::MClose()
 {
@@ -196,6 +224,12 @@ inline unsigned CLocalLink::MFill<progs_id_t>(data_t* _buf,
 		const progs_id_t& _id, const routing_t& aRoute,error_info_t const& aError)
 {
 	return (unsigned)serialize<clients_info2_t,progs_id_t>(_buf,_id,aRoute,aError);
+}
+template<>
+inline unsigned CLocalLink::MFill<real_time_clocks_t>(data_t* _buf,
+		const real_time_clocks_t& _id, const routing_t& aRoute,error_info_t const& aError)
+{
+	return (unsigned)serialize<real_time_clocks_dg_t,real_time_clocks_t>(_buf,_id,aRoute,aError);
 }
 template<>
 inline unsigned CLocalLink::MFill<fail_send_t>(data_t* _buf,
@@ -432,12 +466,12 @@ bool CLocalLink::MSend(const user_data_t& _id)
 }
 bool CLocalLink::MSend(const data_t& aVal)
 {
-	CHECK(FBridge);
+	DCHECK(FBridge);
 	return MSendService(aVal);
 }
 bool CLocalLink::MSendService(const data_t& aVal)
 {
-	CHECK(FBridge);
+	DCHECK(FBridge);
 	return FBridge->MSend(aVal);
 }
 NSHARE::CText CLocalLink::MGetMainChannelType(bool aDefOnly)
@@ -522,6 +556,37 @@ NSHARE::CConfig const& CLocalLink::MBufSettingFor(
 		return _def;
 	};
 	return NSHARE::CConfig::sMGetEmpty();
+}
+/** Handle new RTC info
+ *
+ * @param aWhat a new RTC info
+ */
+void CLocalLink::MHandleNewRTC(const real_time_clocks_t& aWhat)
+{
+	data_t _buf;
+	MFill(&_buf, aWhat,routing_t(),error_info_t());
+
+	MSend(_buf);
+}
+int CLocalLink::sMHandleNewRTC(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	typedef data_to_id<real_time_clocks_t> _t;
+
+	CLocalLink* _this = reinterpret_cast<CLocalLink*>(YOU_DATA);
+	DCHECK_NOTNULL(_this);
+
+	descriptor_t const& _fd=_this->Fd;
+	DCHECK_EQ(_t::sMGetNameFor(_fd), WHAT->FType);
+
+	const _t* _p =
+			reinterpret_cast<const _t*>(WHAT->FPointToData);
+	DCHECK_NOTNULL(_p);
+
+	DCHECK_EQ(_p->FId, _fd);
+	_this->MHandleNewRTC(_p->FVal);
+
+	return NSHARE::E_CB_SAFE_IT;
 }
 namespace
 {

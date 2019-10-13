@@ -29,9 +29,12 @@ namespace NUDT
 {
 using namespace NSHARE;
 CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
-		my_t(&aThis), FThis(aThis), FWorker(NULL),  FMutexWaitFor(
-				NSHARE::CMutex::MUTEX_NORMAL), FUniqueNumber(0), FMainPacketNumber(
-				0)
+		my_t(&aThis),//
+		FThis(aThis),//
+		FMainIO(NULL),//
+		FMutexWaitFor(NSHARE::CMutex::MUTEX_NORMAL),//
+		FUniqueNumber(0),//
+		FMainPacketNumber(0)
 {
 
 }
@@ -61,12 +64,16 @@ int CCustomer::_pimpl::MInitialize(NSHARE::CText const& aProgram,
 		LOG(ERROR) << "Cannot initialize id as " << _rval;
 		return _rval;
 	}
+	if(!MInitializeModules())
+	{
+		LOG(ERROR)<< "Invalid IO mamanger";
+		return  ERROR_CONFIGURE_IS_INVALID;
+	}
 	if (int _rval = MUdpateRecvList())
 	{
 		LOG(ERROR)<< "Cannot initialize id as " << _rval;
 		return _rval;
 	}
-
 	return 0;
 }
 CCustomer::_pimpl::~_pimpl()
@@ -75,6 +82,14 @@ CCustomer::_pimpl::~_pimpl()
 	MClose();
 }
 
+/** Initialize program ID of customer
+ *
+ *
+ * @param aProgram a name of program
+ * @param aName a wish name of customer
+ * @param aVersion a version
+ * @return 0 if no error
+ */
 int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 		NSHARE::CText const& aName,NSHARE::version_t const& aVersion)
 {
@@ -121,19 +136,10 @@ int CCustomer::_pimpl::MInitId(NSHARE::CText const& aProgram,
 	}
 	return _rval;
 }
-void CCustomer::_pimpl::sMInitConfigure(const NSHARE::CConfig& aConf)
-{
-	if (CConfigure::sMGetInstancePtr())
-		return;
-
-	VLOG(1) << "Read Internal config " << aConf;
-
-	new CConfigure();
-
-	CConfigure::sMGetInstance().MGet().MMerge(aConf);
-	VLOG(1) << "Final config " << CConfigure::sMGetInstance().MGet();
-}
-
+/** Load all libraries
+ *
+ * @return 0 if no error
+ */
 int CCustomer::_pimpl::MLoadLibraries()
 {
 	if (CResources::sMGetInstancePtr())
@@ -142,17 +148,17 @@ int CCustomer::_pimpl::MLoadLibraries()
 	CConfig const* const _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
 	std::vector<NSHARE::CText> _text;
 
-#ifndef CUSTOMER_WITH_STATIC_MODULES
+//#ifndef CUSTOMER_WITH_STATIC_MODULES
 	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
 	<< " is not exist.";
 
 	if (!_p)
-	return -static_cast<int>(E_CONFIGURE_IS_INVALID);
+	return static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
 	ConfigSet::const_iterator _it = _p->MChildren().begin();
 
 	for (; _it != _p->MChildren().end(); ++_it)
 	_text.push_back((_it)->MKey());
-#endif
+//#endif
 
 	NSHARE::CText _ext_path;
 	CConfigure::sMGetInstance().MGet().MGetIfSet(MODULES_PATH,_ext_path);
@@ -162,6 +168,10 @@ int CCustomer::_pimpl::MLoadLibraries()
 	CResources::sMGetInstance().MLoad();
 	return 0;
 }
+/** Create all factories
+ *
+ * @return
+ */
 int CCustomer::_pimpl::MInitFactorys()
 {
 
@@ -178,6 +188,10 @@ int CCustomer::_pimpl::MInitFactorys()
 	return 0;
 }
 
+/** Subscribes to callbacks
+ *
+ * @return 0 if no error
+ */
 int CCustomer::_pimpl::MInitCallBacks()
 {
 	//FThread += CB_t(sMReceiver, this);
@@ -201,6 +215,22 @@ int CCustomer::_pimpl::MInitCallBacks()
 		CDataObject::value_t _val_channel(demand_dgs_id_t::NAME, _callbak);
 		CDataObject::sMGetInstance() += _val_channel;
 	}
+	{
+		callback_data_t _callbak(sMConnect, this);
+		CDataObject::value_t _val_channel(connected_to_kernel_t::NAME, _callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
+	{
+		callback_data_t _callbak(sMDisconnect, this);
+		CDataObject::value_t _val_channel(disconnected_from_kernel_t::NAME, _callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
+	{
+		callback_data_t _callbak(sMRTCUpdated, this);
+		CDataObject::value_t _val_channel(real_time_clocks_updated_t::NAME,
+				_callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
 	return 0;
 }
 
@@ -209,15 +239,66 @@ bool CCustomer::_pimpl::MIsOpened() const
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
 
-	return FWorker && FWorker->MIsOpened();
+	return FMainIO && FMainIO->MIsOpened();
 }
 bool CCustomer::_pimpl::MIsConnected() const
 {
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(4) << "Our turn.";
 
-	return FWorker && FWorker->MIsConnected();
+	return FMainIO && FMainIO->MIsConnected();
 }
+
+/** Initialize modules
+ *
+ * @return true if no error
+ */
+bool CCustomer::_pimpl::MInitializeModules()
+{
+	const array_of_modules_t _modules(MGetModules());
+	for (array_of_modules_t::const_iterator _it = _modules.begin(); //
+	_it != _modules.end() ; //
+			++_it)
+	{
+		(*_it)->MInit(this);
+	}
+
+	if (!FMainIO)
+	{
+		CText _name(DEFAULT_IO_MANAGER);
+		bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(DOING_MODULE,
+				_name);
+		LOG_IF(WARNING, !_val)  << "The operative module is not present in the config file";
+		FMainIO = CIOFactory::sMGetInstance().MGetFactory(_name);
+		LOG_IF(FATAL, !FMainIO)<< "The module " << _name << " is not exist.";
+	}
+
+	return FMainIO!=NULL;
+}
+
+/** Open all modules
+ *
+ * @param aParam thread param
+ * @return true if no error
+ */
+bool CCustomer::_pimpl::MOpenModules(NSHARE::CThread::param_t* aParam)
+{
+	bool _result = true;
+	const array_of_modules_t _modules(MGetModules());
+	for (array_of_modules_t::const_iterator _it = _modules.begin(); //
+	_it != _modules.end() && _result; //
+			++_it)
+	{
+		_result = (*_it)->MOpen(aParam);
+	}
+	return _result;
+}
+
+/** Start working all modules
+ *
+ * @return true if no error
+ * @todo open all libraries
+ */
 bool CCustomer::_pimpl::MOpen()
 {
 	VLOG(2) << "Open customer";
@@ -225,90 +306,71 @@ bool CCustomer::_pimpl::MOpen()
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
 
-	if (!FWorker)
+	NSHARE::CThread::param_t _param;
+	NSHARE::CThread::param_t* _pparam=NULL;
 	{
-		CText _name(DEFAULT_IO_MANAGER);
-		bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(DOING_MODULE,
-				_name);
-		LOG_IF(WARNING, !_val)
-										<< "The operative module is not present in the config file";
+		NSHARE::CThread::eThreadPriority _priority =
+				NSHARE::CThread::THREAD_PRIORITY_DEFAULT;
 
-		FWorker = CIOFactory::sMGetInstance().MGetFactory(_name);
-		LOG_IF(FATAL, !FWorker) << "The module " << _name << " is not exist.";
-		FWorker->MInit(this);
+		if (CConfigure::sMGetInstance().MGet().MGetIfSet(THREAD_PRIORITY,
+				_priority))
+		{
+			NSHARE::CThread::param_t _param;
+			_param.priority = _priority;
+			_pparam = &_param;
+		}
 	}
-	if (!FWorker)
-		return false;
 
-	bool _result = false;
-	NSHARE::CThread::eThreadPriority _priority =
-			NSHARE::CThread::THREAD_PRIORITY_DEFAULT;
-	if (CConfigure::sMGetInstance().MGet().MGetIfSet(THREAD_PRIORITY,
-			_priority))
-	{
-		NSHARE::CThread::param_t _param;
-		_param.priority = _priority;
-		_result = FWorker->MOpen(&_param);
-//		if (_result)
-//			FThread.MCreate(&_param);
-	}
-	else
-	{
-		_result = FWorker->MOpen();
-//		if (_result)
-//			FThread.MCreate();
-	}
+	bool _result = MOpenModules(_pparam);
+
+	if(!_result)
+		MClose();
+
 	return _result;
-
-//	return true;
 }
+
 void CCustomer::_pimpl::MClose()
 {
 	VLOG(2) << "Close customer";
 
-	CRAII<CMutex> _block(FCommonMutex);
-	VLOG(2) << "Our turn.";
-
-	if (FWorker)
+	MCloseModules();
+}
+/** Close all modules except Main IO manager
+ *
+ */
+void CCustomer::_pimpl::MCloseModules()
+{
+	const array_of_modules_t _modules(MGetModules());
+	for (array_of_modules_t::const_iterator _it = _modules.begin(); //
+	_it != _modules.end(); ++_it)
 	{
-		VLOG(2) << "Close worker";
-		FWorker->MClose();
-		delete FWorker;
-		FWorker=NULL;
-//		FThread.MCancel();
-		VLOG(2) << "EOK";
+		(*_it)->MClose();
 	}
 }
-bool CCustomer::_pimpl::MAvailable(const NSHARE::CText& aModule) const
+int CCustomer::_pimpl::sMConnect(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
 {
-	if (IIOConsumer* _p = CIOFactory::sMGetInstance().MGetFactory(aModule))
-		return _p->MIsAvailable();
-
-	LOG(INFO)<< "The IO module " << aModule << " is not exist.";
-	return false;
+	DCHECK_EQ(aWhat->FType, connected_to_kernel_t::NAME);
+	_pimpl* _impl = reinterpret_cast<_pimpl*>(aData);
+	_impl->MEventConnected();
+	return E_CB_SAFE_IT;
 }
-bool CCustomer::_pimpl::MAvailable() const
+int CCustomer::_pimpl::sMDisconnect(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
 {
-	CText _name;
-	bool _val = CConfigure::sMGetInstance().MGet().MGetIfSet(DOING_MODULE,
-			_name);
-	LOG_IF(ERROR, !_val)
-									<< "The operative module is not present in the config file";
-	if (!_val)
-		return false;
-
-	return MAvailable(_name);
+	DCHECK_EQ(aWhat->FType, disconnected_from_kernel_t::NAME);
+	_pimpl* _impl = reinterpret_cast<_pimpl*>(aData);
+	_impl->MEventDisconnected();
+	return E_CB_SAFE_IT;
 }
-CCustomer::modules_t CCustomer::_pimpl::MAllAvailable() const
+int CCustomer::_pimpl::sMRTCUpdated(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
 {
-	modules_t _module;
-	CIOFactory::factory_its_t _its = CIOFactory::sMGetInstance().MGetIterator();
-	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
-		if (_its.FBegin->second->MIsAvailable())
-			_module.push_back(_its.FBegin->first);
-	return _module;
+	DCHECK_EQ(aWhat->FType, real_time_clocks_updated_t::NAME);
+	_pimpl* _impl = reinterpret_cast<_pimpl*>(aData);
+	_impl->MCallImpl(EVENT_UPDATE_RTC_INFO,NULL);
+	return E_CB_SAFE_IT;
 }
-
 int CCustomer::_pimpl::sMFailSents(CHardWorker* aWho, args_data_t* aWhat,
 		void* aData)
 {
@@ -425,126 +487,174 @@ void CCustomer::_pimpl::MEventDisconnected()
 int CCustomer::_pimpl::sMReceiver(CHardWorker* aWho, args_data_t* aWhat,
 		void* aData)
 {
-
-	CHECK_EQ(aWhat->FType, recv_data_from_t::NAME);
+	DCHECK_EQ(aWhat->FType, recv_data_from_t::NAME);
 	reinterpret_cast<_pimpl*>(aData)->MReceiver(
 			*reinterpret_cast<recv_data_from_t*>(aWhat->FPointToData));
 	return 0;
 }
+
+/** Fills the output customer message (#received_message_args_t)
+ *  #from recv_data_from_t object
+ *
+ * @param aTo store to it
+ * @param aFrom move from
+ */
+void CCustomer::_pimpl::MFillOutputMessage(received_message_args_t* aTo,
+		recv_data_from_t & aFrom)
+{
+	received_message_args_t& _raw_args(*aTo);
+	VLOG(4) << "Handle data from " << aFrom.FData.FDataId.FRouting.FFrom
+						<< " ; size:" << aFrom.FData.FData.size()
+						<< " Packet # "
+						<< aFrom.FData.FDataId.FPacketNumber;
+
+	_raw_args.FPacketNumber = aFrom.FData.FDataId.FPacketNumber&std::numeric_limits<uint16_t>::max();
+
+	_raw_args.FFrom = aFrom.FData.FDataId.FRouting.FFrom.FUuid; //may be remove?
+	_raw_args.FProtocolName =
+			aFrom.FData.FDataId.MIsRaw() ?
+					RAW_PROTOCOL_NAME : aFrom.FData.FDataId.FProtocol;
+	_raw_args.FHeader =aFrom.FData.FDataId.FWhat;
+	_raw_args.FTo=aFrom.FData.FDataId.FDestination;
+	_raw_args.FOccurUserError=0;
+	_raw_args.FEndian=aFrom.FData.FDataId.FEndian;
+
+
+	aFrom.FData.FData.MMoveTo(_raw_args.FMessage.FBuffer);
+
+	size_t const _data_offset =
+			aFrom.FData.FDataId.MIsRaw() ? 0 : aFrom.FData.FDataId.FDataOffset;
+
+	LOG_IF(ERROR, _raw_args.FMessage.FBuffer.empty()) << "Empty data";
+
+	if (!_raw_args.FMessage.FBuffer.empty())
+	{
+		_raw_args.FMessage.FHeaderBegin =
+				reinterpret_cast<const uint8_t*>(&_raw_args.FMessage.FBuffer.front());
+		_raw_args.FMessage.FBegin=_raw_args.FMessage.FHeaderBegin+_data_offset;
+		_raw_args.FMessage.FEnd =
+				reinterpret_cast<const uint8_t*>(&_raw_args.FMessage.FBuffer.back());
+		++_raw_args.FMessage.FEnd; //last equal end
+	}
+}
+
+/** Inform that message have error
+ *
+ * @param aDataInfo Info about message
+ * @param aError error code
+ */
+void CCustomer::_pimpl::MInformInvalidMessage(const user_data_info_t& aDataInfo,
+		user_error_type aError) const
+{
+	fail_send_t _fsent(aDataInfo);
+	_fsent.FRouting.clear();
+	_fsent.FRouting.push_back(get_my_id().FId.FUuid);
+	_fsent.MSetUserError(aError);
+	fail_send_id_from_me_t _sent;
+	_sent.FData = _fsent;
+	CDataObject::sMGetInstance().MPush(_sent);
+}
+/** Handle subscription
+ *
+ * @param aHandler an Id of callback
+ * @param aDataInfo Info about data
+ * @param aMessage message
+ * @return true if no error
+ */
+bool CCustomer::_pimpl::MHandleSubscription(demand_dg_t::event_handler_t const& aHandler,
+		user_data_info_t const& aDataInfo,
+		received_message_args_t& aMessage)
+{
+	LOG(INFO) << "Handling #" << aMessage.FPacketNumber << " by "
+							<< aMessage.FProtocolName << " protocol from "
+							<< aMessage.FFrom << " Raw="
+							<< aMessage.FHeader.FNumber << " by CB #"
+							<< aHandler;
+	FEvents[aHandler].operator ()(&FThis, &aMessage);
+
+	if (!aMessage.FOccurUserError)
+	{
+		VLOG(2) << "The packet #" << aMessage.FPacketNumber << " by " << aMessage.FProtocolName << " protocol from " << aMessage.FFrom << " handled";
+
+		return true;
+	}
+	else
+	{
+		LOG(ERROR) << "The packet #" << aMessage.FPacketNumber << " by " << aMessage.FProtocolName << " protocol from " << aMessage.FFrom << " is not handled as " << (int)(((aMessage.FOccurUserError)));
+
+		MInformInvalidMessage(aDataInfo, aMessage.FOccurUserError);
+		return false;
+	}
+}
+
+/** Inform subscribers about new data
+ *
+ * @param _raw_args
+ * @param aFrom
+ */
+void CCustomer::_pimpl::MInformSubscriber(received_message_args_t* const aData,
+		user_data_info_t const& aDataInfo)
+{
+	DCHECK_NOTNULL(aData);
+
+	received_message_args_t& _raw_args(*aData);
+
+	VLOG(1) << "Handle data from " << _raw_args.FFrom << " ; size:"
+						<< _raw_args.FMessage.FBuffer.size() << " Packet # "
+						<< _raw_args.FPacketNumber;
+
+	CRAII<CMutex> _block(FParserMutex);//!< May be problem as lock thread
+
+	int _count = 0;
+	_count += MCallImpl(EVENT_RAW_DATA, &_raw_args);
+
+	if (!aDataInfo.FEventsList.empty() && !FEvents.empty())
+	{
+		std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
+				aDataInfo.FEventsList.begin(), _it_end(
+				aDataInfo.FEventsList.end());
+		for (; _it != _it_end; ++_it)
+		{
+			cb_event_t::const_iterator _jt = FEvents.find(*_it);
+			if (_jt != FEvents.end())
+			{
+				if(MHandleSubscription(*_it, aDataInfo, _raw_args))
+					++_count;
+				else
+				{
+					LOG_IF(DFATAL,_count!=0) << "Some handlers were handled packet #"
+														<< _raw_args.FPacketNumber
+														<< ", but the error "
+														<< _raw_args.FOccurUserError
+														<< " is occurred in handler "
+														<< *_it;
+					break;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << " CB " << (*_it)
+										<< " is not founded. Ignoring";
+			}
+		}
+		LOG_IF(ERROR,_count==0) << "It does not expect packet from "
+										<< _raw_args.FFrom
+										<< ". Ignoring ...";
+	}
+	LOG_IF(INFO,_count==0) << _raw_args.FMessage.FBuffer.size()
+									<< " bytes of  data from "
+									<< _raw_args.FFrom
+									<< " is not handled.";
+}
+
 void CCustomer::_pimpl::MReceiver(recv_data_from_t & aFrom)
 {
 	VLOG(1) << "Thread data handler started.";
-	LOG_IF(ERROR,!FWorker) << " There is not working module";
+	LOG_IF(ERROR,!FMainIO) << " There is not working module";
 	received_message_args_t _raw_args;
 
-	{ //filling _raw_args
-		VLOG(4) << "Handle data from " << aFrom.FData.FDataId.FRouting.FFrom
-							<< " ; size:" << aFrom.FData.FData.size()
-							<< " Packet # "
-							<< aFrom.FData.FDataId.FPacketNumber;
-
-		_raw_args.FPacketNumber = aFrom.FData.FDataId.FPacketNumber&std::numeric_limits<uint16_t>::max();
-
-		_raw_args.FFrom = aFrom.FData.FDataId.FRouting.FFrom.FUuid; //may be remove?
-		_raw_args.FProtocolName =
-				aFrom.FData.FDataId.MIsRaw() ?
-						RAW_PROTOCOL_NAME : aFrom.FData.FDataId.FProtocol;
-		_raw_args.FHeader =aFrom.FData.FDataId.FWhat;
-		_raw_args.FTo=aFrom.FData.FDataId.FDestination;
-		_raw_args.FOccurUserError=0;
-		_raw_args.FEndian=aFrom.FData.FDataId.FEndian;
-
-
-		aFrom.FData.FData.MMoveTo(_raw_args.FMessage.FBuffer);
-
-		size_t const _data_offset =
-				aFrom.FData.FDataId.MIsRaw() ? 0 : aFrom.FData.FDataId.FDataOffset;
-
-		LOG_IF(ERROR, _raw_args.FMessage.FBuffer.empty()) << "Empty data";
-
-		if (!_raw_args.FMessage.FBuffer.empty())
-		{
-			_raw_args.FMessage.FHeaderBegin =
-					reinterpret_cast<const uint8_t*>(&_raw_args.FMessage.FBuffer.front());
-			_raw_args.FMessage.FBegin=_raw_args.FMessage.FHeaderBegin+_data_offset;
-			_raw_args.FMessage.FEnd =
-					reinterpret_cast<const uint8_t*>(&_raw_args.FMessage.FBuffer.back());
-			++_raw_args.FMessage.FEnd; //last equal end
-		}
-	}
-	{ //handle _raw_args
-		CRAII<CMutex> _block(FParserMutex);
-		VLOG(1) << "Handle data from " << _raw_args.FFrom << " ; size:"
-							<< _raw_args.FMessage.FBuffer.size() << " Packet # "
-							<< _raw_args.FPacketNumber;
-
-		int _count = 0;
-		_count += MCallImpl(EVENT_RAW_DATA, &_raw_args);
-
-		if (!aFrom.FData.FDataId.FEventsList.empty() && !FEvents.empty())
-		{
-			std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
-					aFrom.FData.FDataId.FEventsList.begin(), _it_end(
-							aFrom.FData.FDataId.FEventsList.end());
-
-			for (; _it != _it_end; ++_it)
-			{
-//				CHECK_LT(_it->FVal, FDemands.size());
-//				CHECK_LT(_it->FVal,FEvents.size());
-//				CHECK_EQ(_it->FVal,FDemands[_it->FVal].FHandler);
-
-				cb_event_t::const_iterator _jt = FEvents.find(*_it);
-				if (_jt != FEvents.end())
-				{
-					LOG(INFO)<< "Handling #"<<_raw_args.FPacketNumber<<" by "
-					<<_raw_args.FProtocolName<<" protocol from "<<_raw_args.FFrom<<" Raw="<<_raw_args.FHeader.FNumber<<" by CB #"<<(*_it);
-
-					FEvents[*_it].operator ()(&FThis, &_raw_args);
-					if(!_raw_args.FOccurUserError)
-					{
-						VLOG(2) << "The packet #" << _raw_args.FPacketNumber
-						<< " by " << _raw_args.FProtocolName
-						<< " protocol from "
-						<< _raw_args.FFrom << " handled";
-						++_count;
-					}
-					else
-					{
-						LOG(ERROR)<<"The packet #" << _raw_args.FPacketNumber
-								<< " by " << _raw_args.FProtocolName
-								<< " protocol from "
-								<< _raw_args.FFrom << " is not handled as "<<(int)_raw_args.FOccurUserError;
-						fail_send_t _fsent(aFrom.FData.FDataId);
-						_fsent.FRouting.clear();
-						_fsent.FRouting.push_back(get_my_id().FId.FUuid);
-						_fsent.MSetUserError(_raw_args.FOccurUserError);
-						fail_send_id_from_me_t _sent;
-						_sent.FData=_fsent;
-						CDataObject::sMGetInstance().MPush(_sent);
-						LOG_IF(DFATAL,_count!=0)<<"Some handlers were handled packet #"<< _raw_args.FPacketNumber<<", but the error "
-								<<_raw_args.FOccurUserError<<" is occurred in handler "<<*_it;
-						break;
-					}
-
-				}
-				else
-				{
-					LOG(ERROR)<<" CB "<<(*_it)<<" is not founded. Ignoring";
-				}
-			}
-
-			LOG_IF(ERROR,_count==0) << "It does not expect packet from "
-											<< _raw_args.FFrom
-											<< ". Ignoring ...";
-
-		}
-
-		LOG_IF(INFO,_count==0) << _raw_args.FMessage.
-				FBuffer.size()
-										<< " bytes of  data from "
-										<< _raw_args.FFrom
-										<< " is not handled.";
-	}
+	MFillOutputMessage(&_raw_args,aFrom);
+	MInformSubscriber(&_raw_args, aFrom.FData.FDataId);
 }
 program_id_t  CCustomer::_pimpl::MCustomer(NSHARE::uuid_t const& aUUID) const
 {
@@ -575,7 +685,7 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 	VLOG(2)<<"New demand:"<<_val;
 	CRAII<CMutex> _block(FParserMutex);
 
-	CHECK_EQ(FDemands.size(), FEvents.size());
+	DCHECK_EQ(FDemands.size(), FEvents.size());
 
 	VLOG(2) << "Our turn.";
 	size_t _i = 0;
@@ -599,10 +709,10 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 		FEvents[_val.FHandler]=aHandler;
 	}
 
-	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
+	DVLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	CHECK_EQ(FDemands.size(), FEvents.size());
+	DCHECK_EQ(FDemands.size(), FEvents.size());
 	return _val.FHandler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber)
@@ -619,10 +729,10 @@ int CCustomer::_pimpl::MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber
 	FEvents.erase(_handler);
 	FDemands.erase(FDemands.begin() + _i);
 
-	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
+	DVLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	CHECK_EQ(FDemands.size(), FEvents.size());
+	DCHECK_EQ(FDemands.size(), FEvents.size());
 	return _handler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor(
@@ -657,7 +767,7 @@ int CCustomer::_pimpl::MRemoveDgParserFor(
 	FEvents.erase(_handler);
 	FDemands.erase(FDemands.begin() + _i);
 
-	VLOG_IF(2,!FWorker) << " The channel has not opened yet.";
+	VLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
 	CHECK_EQ(FDemands.size(), FEvents.size());
@@ -693,7 +803,7 @@ int CCustomer::_pimpl::MUdpateRecvList() const
 int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		NSHARE::CBuffer& aBuf, const NSHARE::CText& aTo, eSendToFlags aFlag)
 {
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
@@ -704,13 +814,13 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	user_data_t _data;
 	_data.FData=aBuf;
 	_data.FDataId.FProtocol=aProtocolName;
-
-	return MSendImpl(aBuf,_data);
+	aBuf.release(); //optimization
+	return MSendImpl(_data);
 }
 int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 		NSHARE::CBuffer& aBuf, const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
@@ -722,14 +832,14 @@ int CCustomer::_pimpl::MSendTo(const NSHARE::CText& aProtocolName,
 	_data.FData = aBuf;
 	_data.FDataId.FProtocol = aProtocolName;
 	_data.FDataId.FDestination.push_back(aTo);
-
-	return MSendImpl(aBuf,_data);
+	aBuf.release(); //optimization
+	return MSendImpl(_data);
 }
 int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 		const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags)
 {
 
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
@@ -741,13 +851,13 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,
 	_data.FDataId.FWhat.FNumber = aNumber;
 	_data.FDataId.FWhat.FVersion=aVer;
 	_data.FDataId.FDestination.push_back(aTo);
-
-	return MSendImpl(aBuf,_data);
+	aBuf.release(); //optimization
+	return MSendImpl(_data);
 }
 int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::version_t const& aVer,
 		eSendToFlags)
 {
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aNumber<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
@@ -758,32 +868,32 @@ int CCustomer::_pimpl::MSendTo(unsigned aNumber, NSHARE::CBuffer & aBuf,NSHARE::
 	_data.FData=aBuf;
 	_data.FDataId.FWhat.FNumber=aNumber;
 	_data.FDataId.FWhat.FVersion=aVer;
-
-	return MSendImpl(aBuf,_data);
+	aBuf.release(); //optimization
+	return MSendImpl(_data);
 }
 int CCustomer::_pimpl::MSendTo(required_header_t const& aNumber,
 		NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuf, eSendToFlags)
 {
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aNumber<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
 	}
+
 	CRAII<CMutex> _block(FCommonMutex);
 	VLOG(2) << "Our turn.";
 	user_data_t _data;
 	_data.FData=aBuf;
 	_data.FDataId.FWhat=aNumber;
 	_data.FDataId.FProtocol = aProtocolName;
-
-	return MSendImpl(aBuf,_data);
+	aBuf.release(); //optimization
+	return MSendImpl(_data);
 }
 int CCustomer::_pimpl::MSendTo(required_header_t const& aNumber,
 		NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuf,
 		const NSHARE::uuid_t& aTo, eSendToFlags)
 {
-
-	if (!FWorker)
+	if (!FMainIO)
 	{
 		LOG(WARNING)<<"Cannot send to "<<aTo<<" as library is not opened.";
 		return static_cast<int>(ERROR_NOT_OPEN);
@@ -795,29 +905,25 @@ int CCustomer::_pimpl::MSendTo(required_header_t const& aNumber,
 	_data.FDataId.FWhat = aNumber;
 	_data.FDataId.FDestination.push_back(aTo);
 	_data.FDataId.FProtocol = aProtocolName;
-
-	return MSendImpl(aBuf,_data);
-}
-int CCustomer::_pimpl::MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data)
-{
 	aBuf.release(); //optimization
-	_data.FDataId.FRouting.FFrom=FMyId.FId;
-	_data.FDataId.FPacketNumber=MNextUserPacketNumber();
+	return MSendImpl(_data);
+}
+int CCustomer::_pimpl::MSendImpl(user_data_t& aUserData)
+{
+	aUserData.FDataId.FRouting.FFrom=FMyId.FId;
+	aUserData.FDataId.FPacketNumber=MNextUserPacketNumber();
 
-	int _number = FWorker->MSend(_data);
-	LOG_IF(INFO,_number>=0) << FMyId.FId.FUuid << " sent packet #" << _number;
-	if(_number<0)
-	{
-		//some error, repair buffer
-		aBuf=_data.FData;
-		return _number;
-	}
-	return _data.FDataId.FPacketNumber;
+	send_data_to_t _data;
+	_data.FData = aUserData;
+	aUserData.FData.release();
+	CDataObject::sMGetInstance().MPush(_data);
+
+	return aUserData.FDataId.FPacketNumber;
 }
 NSHARE::CBuffer CCustomer::_pimpl::MGetNewBuf(size_t aSize) const
 {
-	if (FWorker)
-		return FWorker->MGetNewBuf(aSize);
+	if (FMainIO)
+		return FMainIO->MGetNewBuf(aSize);
 	else
 		return NSHARE::CBuffer(aSize);
 }
@@ -827,55 +933,221 @@ CCustomer::customers_t CCustomer::_pimpl::MCustomers() const
 }
 void CCustomer::_pimpl::MJoin()
 {
-	if(FWorker)//!<\todo resource race (it can be removed before we call it)
-		FWorker->MJoin();
+	if(FMainIO)//!<\todo resource race (it can be removed before we call it)
+		FMainIO->MJoin();
 }
+
+/** Checks for ingnoring events
+ *
+ * @param aEvent Event for checking
+ * @return true if has to be ignored
+ */
+bool CCustomer::_pimpl::MIsEventIngnored(const CText& aEvent) const
+{
+	bool _is_ignoring=false;
+	if ((aEvent == EVENT_CONNECTED && MIsConnected())
+			|| (aEvent == EVENT_DISCONNECTED && !MIsConnected())) //
+	{
+		VLOG(2) << "Ingnoring event " << aEvent;
+		_is_ignoring = true;
+	}
+	return _is_ignoring;
+}
+/** Add event to wait list
+ *
+ * @param aEvents Events for added
+ * @param aAddedList list of added events
+ * @return count of added or 0 if error
+ */
+unsigned CCustomer::_pimpl::MPutEvents(const NSHARE::Strings& aEvents,
+		NSHARE::Strings* aAddedList)
+{
+	NSHARE::Strings& _putted_event(*aAddedList);
+	unsigned _count = 0;
+
+	NSHARE::Strings::const_iterator _it = aEvents.begin();
+	for (; _it != aEvents.end(); ++_it)
+	{
+		const CText& _event(*_it);
+
+		const bool _is_ignoring = MIsEventIngnored(_event);
+
+		if (!_is_ignoring)
+		{
+			++_count;
+
+			const bool _is = FWaitFor.insert(_event).second;
+			if (_is)
+				_putted_event.push_back(_event);
+			else
+				VLOG(1) << "Event " << _event << " has expected already";
+		}
+	}
+	return _count;
+}
+
+/** Puts events to wait for list
+ *
+ * @param aEvents List of event
+ * @return error code or 0
+ */
+int CCustomer::_pimpl::MAddEventToWaitList(NSHARE::Strings const& aEvents)
+{
+	int _error_code = 0;
+	NSHARE::Strings _putted_event;
+
+	unsigned const _count = MPutEvents(aEvents, &_putted_event);
+	if (_count == 0)
+		_error_code = static_cast<int>(ERROR_UNEXPECETED);
+
+	if (!_putted_event.empty() && _error_code != 0)
+	{
+		NSHARE::Strings::const_iterator _rit(_putted_event.begin());
+		for (; _rit != _putted_event.end(); ++_rit)
+			FWaitFor.erase(*_rit);
+	}
+	return _error_code;
+}
+
+/** Gets if need to wait events in the list
+ *
+ * @param [in,out] aEvents event list
+ * @return true if need
+ */
+bool CCustomer::_pimpl::MIsKeepOnWaiting(
+		NSHARE::Strings* aEvents) const
+{
+	NSHARE::Strings& _events(*aEvents);
+
+	NSHARE::Strings::iterator _it = _events.begin();
+	for (; _it != _events.end();)
+		if (FWaitFor.find(*_it) == FWaitFor.end())
+			_it = _events.erase(_it);
+		else
+			++_it;
+	return !_events.empty();
+}
+
+int CCustomer::_pimpl::MWaitForEvent(NSHARE::Strings  aEvents,double aSec)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
+	int _rval=MAddEventToWaitList(aEvents);
+
+	if (_rval == 0)
+	{
+		if (aSec < 0)
+		{
+			for (HANG_INIT;MIsKeepOnWaiting(&aEvents);HANG_CHECK)
+			{
+				FCondvarWaitFor.MTimedwait(&FMutexWaitFor);
+			}
+		}
+		else
+		{
+			double const _cur_time=NSHARE::get_time();
+			for (HANG_INIT;
+					MIsKeepOnWaiting(&aEvents) && //
+					aSec>(NSHARE::get_time()-_cur_time);//
+			HANG_CHECK)
+			{
+				FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec-(NSHARE::get_time()-_cur_time));
+
+				NSHARE::Strings::iterator _it = aEvents.begin();
+				for (; _it != aEvents.end(); )
+					if(FWaitFor.find(*_it)==FWaitFor.end())
+						_it=aEvents.erase(_it);
+					else
+						++_it;
+			}
+		}
+	}
+	return _rval;
+}
+uint16_t CCustomer::_pimpl::MNextUserPacketNumber()
+{
+	return ++FMainPacketNumber;
+}
+bool CCustomer::_pimpl::MAvailable(const NSHARE::CText& aModule) const
+{
+	CRAII<CMutex> _block(FCommonMutex);
+
+	array_of_modules_t::const_iterator _to= FModules.begin();
+	for(;_to!=FModules.end() && aModule!= (*_to)->MGetType(); ++_to)
+		;
+	return _to != FModules.end();
+}
+CCustomer::modules_t CCustomer::_pimpl::MAllAvailable() const
+{
+	modules_t _module;
+	array_of_modules_t::const_iterator _to = FModules.begin();
+	for (; _to != FModules.end(); ++_to)
+		_module.push_back((*_to)->MGetType());
+	return _module;
+}
+void CCustomer::_pimpl::MPutModule(IModule* aModule)
+{
+	CRAII<CMutex> _block(FCommonMutex);
+
+	array_of_modules_t::iterator _to= std::lower_bound(FModules.begin(),
+			FModules.end(), aModule);
+	FModules.insert(_to, aModule);
+}
+void CCustomer::_pimpl::MPopModule(IModule* aModule)
+{
+	CRAII<CMutex> _block(FCommonMutex);
+	std::remove(FModules.begin(), FModules.end(), aModule);
+}
+ICustomer::array_of_modules_t CCustomer::_pimpl::MGetModules() const
+{
+	CRAII<CMutex> _block(FCommonMutex);
+	return FModules;
+}
+IModule* CCustomer::_pimpl::MGetModule(const NSHARE::CText& aModule) const
+{
+	CRAII<CMutex> _block(FCommonMutex);
+
+	array_of_modules_t::const_iterator _to = FModules.begin();
+	for (; _to != FModules.end() && aModule != (*_to)->MGetType(); ++_to)
+		;
+	return _to == FModules.end()?NULL:*_to;
+}
+
 IRtc* CCustomer::_pimpl::MGetRTC(NSHARE::CText const& aName) const
 {
 	IRtc* _p=NULL;
 	CRTCFactory::factory_its_t _its =
 			CRTCFactory::sMGetInstance().MGetIterator();
 	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
-		if((_p=_its.FBegin->second->MGetRTC(IRtcControl::name_rtc_t(aName))))
+		if((_p=_its.FBegin->second->MGetRTC(name_rtc_t(aName)))!=NULL)
 			break;
+	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
 	return _p;
 }
 std::vector<IRtc*> CCustomer::_pimpl::MGetListOfRTC() const
 {
 	std::vector<IRtc*> _rval;
-/*	CRTCFactory::factory_its_t _its=CRTCFactory::sMGetInstance().MGetIterator();
+	CRTCFactory::factory_its_t _its=CRTCFactory::sMGetInstance().MGetIterator();
 	for(;_its.FBegin!=_its.FEnd;++_its.FBegin)
-		_rval.push_back(_its.FBegin->second);*/
+	{
+		IRtcControl::array_of_RTC_t const _array(
+				_its.FBegin->second->MGetAllRTC());
+		_rval.insert(_rval.end(), _array.begin(),_array.end());
+	}
 	return _rval;
 }
-int CCustomer::_pimpl::MWaitForEvent(NSHARE::CText const& aEvent,double aSec)
-{
-	NSHARE::CRAII<NSHARE::CMutex> _lock(FMutexWaitFor);
-	bool const _is=FWaitFor.insert(aEvent).second;
-	if(!_is)
-		return static_cast<int>(ERROR_UNEXPECETED);
-	if(
-			(aEvent==EVENT_CONNECTED && MIsConnected()) ||
-			(aEvent==EVENT_DISCONNECTED && !MIsConnected())
-		)
-		return static_cast<int>(ERROR_NOT_CONNECTED_TO_KERNEL);
-	if(aSec<0)
-	{
-		for (HANG_INIT;FWaitFor.find(aEvent)!=FWaitFor.end();HANG_CHECK)
-			FCondvarWaitFor.MTimedwait(&FMutexWaitFor);
-	}else
-	{
-		double const _cur_time=NSHARE::get_time();
-		for (HANG_INIT;FWaitFor.find(aEvent)!=FWaitFor.end() &&//
-					  aSec>(NSHARE::get_time()-_cur_time);
-			HANG_CHECK)
-			FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec-(NSHARE::get_time()-_cur_time));
-	}
 
-	return 0;
-}
-uint16_t CCustomer::_pimpl::MNextUserPacketNumber()
+CDataObject& CCustomer::_pimpl::MGetDataObject() const
 {
-	return ++FMainPacketNumber;
+	return CDataObject::sMGetInstance();
 }
+CResources& CCustomer::_pimpl::MGetResourceObject() const
+{
+	return CResources::sMGetInstance();
+}
+
+CConfigure& CCustomer::_pimpl::MGetConfigureObject() const
+{
+	return CConfigure::sMGetInstance();
+}
+
 }

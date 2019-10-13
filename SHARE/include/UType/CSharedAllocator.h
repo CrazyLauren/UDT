@@ -480,6 +480,7 @@ private:
 	void MInitIfLockBlockSem(heap_head_t* const _p_head);
 	void MInformMemFreed(heap_head_t* const _p_head);
 	bool MWaitFreeOperation( heap_head_t*const _p_head);
+	void MCleanUpFreeSemaphore();
 
 	void MInformMemUnlocked(heap_head_t* const _p_head,const offset_t aWhat) const;
 	bool MWaitUnlockOperation( heap_head_t*const _p_head,const offset_t aWhat) const;

@@ -781,7 +781,7 @@ public:
 //	CPODBuffer(IAllocater* aAlloc, TPointer* aBegin, TPointer* aEnd, eAllocatorType = ALLOCATE_FROM_COMMON);
 
 	CPODBuffer(IAllocater* aAlloc, void const* aBegin, void const* aEnd,eAllocatorType aType=ALLOCATE_FROM_COMMON):
-		FBuffer(aAlloc,aBegin,aEnd,aType)//
+		FBuffer(aBegin,aEnd,0,aAlloc,aType)//
 	{
 		;
 	}

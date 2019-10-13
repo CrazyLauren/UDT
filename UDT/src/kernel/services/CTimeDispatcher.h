@@ -12,97 +12,17 @@
 #ifndef CTIMEDISPATCHER_H_
 #define CTIMEDISPATCHER_H_
 
+#include <UType/CIPCMutex.h>
 #include <UType/CSingleton.h>
 #include <UType/CSharedMemory.h>
 
 #include <core/ICore.h>
-#include <udt_rtc_types.h>
+#include <core/CDescriptors.h>
+
+#include <CRTCForModeling.h>
 namespace NUDT
 {
-/** RTC realized for modeling
- *
- */
-class CRTCForModeling: NSHARE::CDenyCopying
-{
-public:
-	typedef  time_info_t::rtc_time_t rtc_time_t;
 
-	/** Create the new RTC
-	 *
-	 * @param aAllocator  An allocator of shared memory
-	 * @param aName  The unique name of RTC
-	 */
-	CRTCForModeling(NSHARE::IAllocater* aAllocator,
-			NSHARE::CProgramName const& aName);
-
-	~CRTCForModeling();
-
-
-	/** Add a new worker which is used
-	 * the RTC
-	 *
-	 */
-	void MJoinToRTCWorker();
-
-	/** Wait for specified time to expire or
-	 * expire time of the other program
-	 *
-	 * @param aNewTime expired time
-	 * @return current time
-	 */
-	rtc_time_t MNextTime(rtc_time_t aNewTime) const;
-
-	/** Check for create time info
-	 *
-	 * @return true if time info has created
-	 */
-	bool MIsCreated() const;
-
-	/** UnRegistration RTC
-	 *
-	 */
-	void MUnRegistration();
-
-	/** Perpetual loop of update
-	 * time until finish
-	 *
-	 *	@return true if no error
-	 */
-	bool MDispatcher() const;
-
-	/** Reset RTC counter
-	 *
-	 */
-	bool MResetRTC() const;
-
-	/** Gets current time
-	 *
-	 * @return current time
-	 */
-	rtc_time_t MGetCurrentTime() const;
-
-	NSHARE::CProgramName const FName;//!< The unique name of RTC
-private:
-
-	/** Updates time and notifies
-	 * time receiver
-	 *
-	 * @warning Thread unsafety operation
-	 * @param aNewTime a new time
-	 */
-	void MUpdateTime(uint64_t aNewTime) const;
-
-	NSHARE::IAllocater* FAllocator;//!<Pointer to allocator
-	time_info_t* FTimeInfo;//!< Info about time
-	mutable NSHARE::CIPCSem FTimeUpdated; //!< Event to signal the time is changed
-	mutable NSHARE::CIPCSignalEvent FHasToBeUpdated;//!< Event to update time
-	mutable NSHARE::CIPCSem  FSem;//!< Mutex for lock change of #FTimeInfo
-	mutable NSHARE::CMutex FDestroyMutex;/*!< #MDispatcher has the infinite loop therefore
-	 	 	 	 	 	 	 	 	 it need to wait until it's finished working
-	 	 	 	 	 	 	 	 	 before the object will destroyed */
-	bool FIsDone;//!< If true then dispatcher is working
-
-};
 /** @brief This class is controlling scheduling (time partitions).
  * It will actually be activated during modeling.
  * But also can be used for time synchronization.
@@ -126,20 +46,34 @@ public:
 	 *	@return true if started successfully
 	 */
 	bool MStart();
+
+	/** @copydoc ICore::MStop()
+	 *
+	 */
 	void MStop();
 private:
-	typedef std::vector<CRTCForModeling* > array_of_rtc_t;//!< Array of RTC
+	typedef std::vector<SHARED_PTR<CRTCForModeling> > array_of_rtc_t;//!< Array of RTC
 	typedef NSHARE::CSafeData<array_of_rtc_t> safety_array_of_rtc_t;//!< thread safety type
 	typedef int rtc_id_t;//!< is used to hold RTC id
 
 	void MInit();
 	bool MCreateSharedMemory();
-	rtc_id_t MRegistreNewRTC(NSHARE::CProgramName const& aRtcGroup=NSHARE::CProgramName());
+	bool MCreateNewRTC();
+	bool MInformAboutRTC(const descriptor_t& aFor=CDescriptors::INVALID);
+	bool MSubscribe();
+	void MUnSubscribe();
+	NSHARE::IAllocater::offset_pointer_t MRegistreNewRTC(NSHARE::CProgramName const& aRtcGroup=NSHARE::CProgramName());
 	static NSHARE::eCBRval sMMainLoop(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	static NSHARE::eCBRval sMTestLoop(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	static void sMTestLoop(CRTCForModeling* aRTC);
+	static int sMHandleCloseId(CHardWorker* WHO, args_data_t* WHAT,
+			void* YOU_DATA);
+	static int sMHandleOpenId(CHardWorker* WHO, args_data_t* WHAT,
+			void* YOU_DATA);
+	void MHandleOpen(const descriptor_t& aFrom, const descriptor_info_t&);
+	void MHandleClose(const descriptor_t& aFrom, const descriptor_info_t&);
 
-
+	bool MCreateSharedMemoryIfNeed();
 	void MStartTestIfNeed(rtc_id_t );
 	bool MIsRTCExist(
 			const NSHARE::CProgramName& aRtcGroup);
@@ -149,8 +83,10 @@ private:
 	//void MDispatcher() const;
 
 	NSHARE::CSharedMemory FMemory;//!< is used for communication
-	NSHARE::CText FName;//!< shared memory name
+	real_time_clocks_t FRtc;//!< list of RTC
 	safety_array_of_rtc_t FArrayOfRTC;
+	CDataObject::value_t FHandlerOfOpen;//!< Handler of connection of new program
+	CDataObject::value_t FHandlerOfClose;//!< Handler of disconnection of the program
 
 };
 

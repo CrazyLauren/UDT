@@ -22,6 +22,10 @@
 
 namespace NSHARE
 {
+enum
+{
+	STRING_SIZE=16
+};
 extern size_t get_unique_name(char const* aPreifix,uint8_t* aTo,size_t aSize);
 
 namespace impl
@@ -38,7 +42,7 @@ bool CIPCSemaphoreSemOpen::MInit(uint8_t* aBuf, size_t aSize, unsigned int aInit
 	DCHECK_NOTNULL(aBuf);
 	DCHECK_EQ(FSem, SEM_FAILED);
 
-	void *const _p=memchr(aBuf,'\0',aSize);
+	void *const _p=memchr(aBuf,'\0',STRING_SIZE);
 	bool const _is_empty=_p== NULL || _p==aBuf;
 
 	if(aHasToBeNew==CIPCSem::CIPCSem::E_UNDEF && _is_empty)
@@ -47,14 +51,14 @@ bool CIPCSemaphoreSemOpen::MInit(uint8_t* aBuf, size_t aSize, unsigned int aInit
 		aHasToBeNew=CIPCSem::E_HAS_TO_BE_NEW;
 	}
 
-	DCHECK_LE(aInitvalue, CIPCSem::MAX_VALUE);
+	DCHECK_LE(aInitvalue, ISemaphore::MAX_VALUE);
 
 	switch (aHasToBeNew)
 	{
 	case CIPCSem::E_HAS_TO_BE_NEW:
 	{
 
-		get_unique_name("/sem",aBuf, aSize);
+		get_unique_name("/sem",aBuf, STRING_SIZE);
 
 		int const oflags = O_CREAT | O_EXCL;
 		FSem = sem_open((char*)aBuf, oflags, 0666, aInitvalue);

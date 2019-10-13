@@ -378,10 +378,10 @@ int input(int const aSocket, double aTime)
 }
 uint16_t in_cksum(uint16_t *addr, size_t len)
 {
-	register int nleft = len;
-	register u_short *w = addr;
-	register u_short answer;
-	register int sum = 0;
+	int nleft = len;
+	u_short *w = addr;
+	u_short answer;
+	int sum = 0;
 
 	/*
 	 *  Our algorithm is simple, using a 32 bit accumulator (sum),

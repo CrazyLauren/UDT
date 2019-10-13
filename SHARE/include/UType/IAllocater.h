@@ -38,7 +38,7 @@ inline T* get_alignment_address(void*);
  *\warning As Shared memory using only offset instead of pointer,
  *	 recommendation don't use the pointer!
  */
-class IAllocater //fixme rename to IAllocator
+class SHARE_EXPORT IAllocater
 {
 public:
 	typedef size_t size_type;

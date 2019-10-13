@@ -4,6 +4,7 @@ include(CheckLibraryExists)
 include(CheckIncludeFileCXX)
 include(CheckIncludeFile)
 include(CheckCXXSourceCompiles)
+include(CheckTypeSize)
 
 configure_logging(${SHARE_DEPENDENCIES_PATH})
 
@@ -18,9 +19,22 @@ endif()
 check_function_exists(CaptureStackBackTrace HAVE_CAPTURESTACKBACKTRACE)
 
 check_library_exists(dbghelp SymFromAddr "" HAVE_DBGHELP)
-check_include_files(cxxabi.h HAVE_CXXABI_H)
+check_include_file_cxx(cxxabi.h HAVE_CXXABI_H)
 check_include_files(dlfcn.h  HAVE_DLFCN)
 check_include_files(signal.h HAVE_SIGNAL_H)
+check_include_files(semaphore.h HAVE_POSIX_SEMAPHORES)
+check_include_files(pthread.h HAVE_PTHREAD_H)
+
+if(HAVE_POSIX_SEMAPHORES)
+	set(CMAKE_EXTRA_INCLUDE_FILES semaphore.h )
+	check_type_size("sem_t " SIZEOF_SEM_T LANGUAGE CXX)
+endif()
+
+if(HAVE_PTHREAD_H)
+	set(CMAKE_EXTRA_INCLUDE_FILES pthread.h  )
+	check_type_size("pthread_mutex_t " SIZEOF_PTHREAD_MUTEX_T LANGUAGE CXX)
+	check_type_size("pthread_cond_t " SIZEOF_PTHREAD_COND_T LANGUAGE CXX)
+endif()
 
 if(HAVE_SIGNAL_H)
   check_symbol_exists(sigaction "signal.h" HAVE_SIGACTION)

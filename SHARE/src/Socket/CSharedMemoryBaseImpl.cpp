@@ -819,7 +819,7 @@ void IMPL::event_cv_t::MCleanupLock() const
 			LOG(ERROR)<<"Process "<<_process<<"is not exist, but the mutex "<<FSignalSem.MName()
 			<<"still is locked by"<< FEvents->FFifo.FPIDOfLockedMutex<<". Unlocking immediately ...";
 			FEvents->FFifo.FPIDOfLockedMutex= 0;
-			FSignalSem.MPost();
+			FSignalSem.MUnlock();
 		}
 }
 IMPL::event_cv_t::event_cv_t()
@@ -847,7 +847,7 @@ bool IMPL::event_cv_t::MSafetyLock() const
 bool IMPL::event_cv_t::MLock() const
 {
 	const unsigned _pid = get_pid_optimized();
-	bool const _is = FSignalSem.MWait();
+	bool const _is = FSignalSem.MLock();
 	if (_is)
 	{
 		CHECK_NOTNULL(FEvents);
@@ -866,7 +866,7 @@ bool IMPL::event_cv_t::MUnlock() const
 	DCHECK_EQ(FEvents->FFifo.FPIDOfLockedMutex,get_pid_optimized());
 
 	FEvents->FFifo.FPIDOfLockedMutex = 0;
-	bool const _is =  FSignalSem.MPost();
+	bool const _is =  FSignalSem.MUnlock();
 
 	VLOG_IF(2,_is) << "Unlock Sem"<<FSignalSem.MName()<<" by "<< get_pid_optimized();
 	LOG_IF(DFATAL,!_is)<<"Cannot lock sem "<<FSignalSem.MName();
@@ -924,8 +924,7 @@ bool IMPL::event_cv_t::MCreateSignalEvent()
 	}
 	{
 		_is = FSignalSem.MInit(
-				FEvents->FFifo.FSignalMutex,sizeof(FEvents->FFifo.FSignalMutex), 1,
-				CIPCSem::E_HAS_TO_BE_NEW);
+				FEvents->FFifo.FSignalMutex,sizeof(FEvents->FFifo.FSignalMutex), 				CIPCMutex::E_HAS_TO_BE_NEW);
 
 		LOG_IF(DFATAL,!_is) << "Cannot create mutex " << FEvents->FFifo.FSignalMutex;
 		if (!_is)
@@ -949,7 +948,7 @@ bool IMPL::event_cv_t::MInitSignalEvent(
 		return false;
 
 	_is = FSignalSem.MInit(aFifo->FFifo.FSignalMutex,sizeof(aFifo->FFifo.FSignalMutex),
-			CIPCSignalEvent::E_HAS_EXIST);
+		CIPCMutex::E_HAS_EXIST);
 	if (!_is)
 	{
 		FSignalEvent.MFree();

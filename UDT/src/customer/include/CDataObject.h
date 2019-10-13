@@ -16,10 +16,59 @@
 #include <programm_id.h>
 #include <udt_types.h>
 #include <shared_types.h>
+#include <udt_rtc.h>
+
 #include <CHardWorker.h>
 namespace NUDT
 {
+
+/** RTC info Updated
+ *
+ */
+struct CUSTOMER_EXPORT real_time_clocks_updated_t
+{
+	static const data_events_t::key_t NAME;//!< Type of event
+};
+
+/** New RTC info
+ *
+ */
+struct CUSTOMER_EXPORT new_real_time_clocks_t
+{
+	static const data_events_t::key_t NAME;//!< Type of event
+	real_time_clocks_t FData;//!< Real time clocks info
+};
+
+/** Connected to kernel
+ *
+ */
+struct CUSTOMER_EXPORT connected_to_kernel_t
+{
+	static const data_events_t::key_t NAME;//!< Type of event
+	program_id_t FData;//!< Id Of kernel
+};
+
+/** Disconnected from kernel
+ *
+ */
+struct CUSTOMER_EXPORT disconnected_from_kernel_t
+{
+	static const data_events_t::key_t NAME;//!< Type of event
+	program_id_t FData;//!< Id Of kernel
+};
+
+/** Receive user data from kernel
+ *
+ */
 struct CUSTOMER_EXPORT recv_data_from_t
+{
+	static const data_events_t::key_t NAME;
+	user_data_t FData;
+};
+/** Send user data to kernel
+ *
+ */
+struct CUSTOMER_EXPORT send_data_to_t
 {
 	static const data_events_t::key_t NAME;
 	user_data_t FData;
@@ -67,7 +116,13 @@ public:
 	//The memory of T can be moved without calling
 	//coping constuctor.
 	void MPush(const progs_id_from_t &);
-	void MPush(const recv_data_from_t &);
+	void MPush(recv_data_from_t &);//!< move no copy
+
+	/** The data will be moved (non copied)
+	 *
+	 * @param aData aWhat is sent
+	 */
+	void MPush(send_data_to_t & aData);
 	void MPush(const req_recv_t &);
 	void MPush(const fail_send_id_t &);
 	void MPush(const fail_send_id_from_me_t &);
@@ -89,6 +144,7 @@ private:
 
 	mutable NSHARE::CMutex FUserDataMutex;
 	std::list<recv_data_from_t> FUserDataFIFO;
+	std::list<send_data_to_t> 	FOutUserDataFIFO;
 };
 template<class T>
 inline bool CDataObject::MGetLast(T & aVal) const

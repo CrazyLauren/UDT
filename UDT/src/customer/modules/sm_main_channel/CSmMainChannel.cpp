@@ -18,6 +18,7 @@
 #include <programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
+#include <CDataObject.h>
 #include <CCustomer.h>
 #include <CLocalChannelFactory.h>
 #include "receive_from.h"
@@ -38,6 +39,10 @@ CSmMainChannel::CSmMainChannel() :
 {
 	FIsOpen = false;
 	FThreadReceiver += NSHARE::CB_t(CSmMainChannel::sMReceiver, this);
+	{
+		callback_data_t _callbak(sMSend, this);
+		FSendDataHandler = CDataObject::value_t(send_data_to_t::NAME, _callbak);
+	}
 }
 
 CSmMainChannel::~CSmMainChannel()
@@ -46,12 +51,30 @@ CSmMainChannel::~CSmMainChannel()
 	if (FThreadReceiver.MCancel() && FThreadReceiver.MIsRunning())
 		FThreadReceiver.MJoin();
 }
+void CSmMainChannel::MInit(ICustomer *)
+{
+	;
+}
+bool CSmMainChannel::MOpen(const NSHARE::CThread::param_t* )
+{
+	return true;
+}
 bool CSmMainChannel::MOpen(IIOConsumer* aCustomer)
 {
 	FCustomer = aCustomer;
 	//FSm.MOpen();
 	FIsOpen = true;
+
+	CDataObject::sMGetInstance() += FSendDataHandler;
+
 	return true;
+}
+int CSmMainChannel::sMSend(CHardWorker* aWho, args_data_t* aWhat, void* aData)
+{
+	DCHECK_EQ(aWhat->FType, send_data_to_t::NAME);
+	reinterpret_cast<CSmMainChannel*>(aData)->MSend(
+			reinterpret_cast<send_data_to_t*>(aWhat->FPointToData)->FData);
+	return E_CB_SAFE_IT;
 }
 bool CSmMainChannel::MIsConnected() const
 {
@@ -61,6 +84,10 @@ bool CSmMainChannel::MIsOpened() const
 {
 	return FIsOpen;
 }
+void CSmMainChannel::MJoin()
+{
+	;
+}
 void CSmMainChannel::MClose()
 {
 	FSm.MClose();
@@ -68,6 +95,7 @@ void CSmMainChannel::MClose()
 	FIsOpen = false;
 	FCounter=sm_counter_t();
 	FCustomer=NULL;
+	CDataObject::sMGetInstance() -= FSendDataHandler;
 }
 NSHARE::eCBRval CSmMainChannel::sMReceiver(void* aWho, void* aWhat, void*aData)
 {
@@ -87,6 +115,18 @@ void CSmMainChannel::MCheckPacketSequence(const unsigned aPacket,
 															<< " Last counter="
 															<< aLast;
 	aLast = aPacket;
+}
+/** Push data to handle queue
+ *
+ * @param aData what is received
+ */
+void CSmMainChannel::MReceivedData(user_data_t& aData)
+{
+	recv_data_from_t _data;
+	_data.FData.FDataId = aData.FDataId;
+	aData.FData.MMoveTo(_data.FData.FData);
+
+	CDataObject::sMGetInstance().MPush(_data);
 }
 void CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data,
 		NSHARE::shared_identify_t const& _from)
@@ -111,9 +151,8 @@ void CSmMainChannel::MReceiveImpl(unsigned aType, NSHARE::CBuffer& _data,
 							<< " from " << _from;
 		CHECK_NOTNULL(FCustomer);
 		_data.MMoveTo(FRecv.second.FData);
-		FCustomer->MReceivedData(FRecv.second);
+		MReceivedData(FRecv.second);
 		FRecv.first = false;
-		FRecv.second.FData.release()/* = user_data_t()*/;
 		break;
 	}
 	default:
@@ -388,44 +427,82 @@ bool CSmMainChannel::MSendImpl(user_data_info_t const & aInfo, NSHARE::CBuffer& 
 	size_t const _remain=_data_buf.capacity()-_data_buf.size()-_data_buf.begin_capacity();
 	return _size < _remain?MSendInOnePart(_size,aInfo,_data_buf):MSendInTwoParts(_size,aInfo,_data_buf);
 }
-bool CSmMainChannel::MSend(user_data_t & aVal)
-{
-	VLOG(2) << "Sending user data.";
-	if (!FSm.MIsConnected())
-	{
-		LOG(ERROR)<<"The Main channel is not opened";
-		return false;
-	}
 
-	CHECK_NOTNULL(FCustomer);
-	//aVal.FDataId.FFrom = CCustomer::sMGetInstance().MGetID().FId;
-	NSHARE::CBuffer _data_buf;
-	if (aVal.FData.MIsAllocatorEqual(FSm.MGetAllocator()))
+/** Move data into shared memory
+ *
+ * @param aTo Copy to
+ * @param aVal Copy From
+ * @return true if no error
+ */
+bool CSmMainChannel::MMoveDataToShm(NSHARE::CBuffer& aTo,
+		user_data_t& aVal)
+{
+	bool _is=true;
+
+	DLOG(ERROR)<< "It's not the recommended  allocator";
+	aTo = MGetNewBuf(aVal.FData.size());
+	if (aTo.size() != aVal.FData.size())
 	{
-		VLOG(2) << "It's the recommended  allocator";
-		 aVal.FData.MMoveTo(_data_buf);
+		DLOG(ERROR) << "Cannot allocate buffer.";
+		_is = false;
 	}
 	else
 	{
-		LOG(ERROR)<< "It's not the recommended  allocator";
-		_data_buf = MGetNewBuf(aVal.FData.size());
-		if (_data_buf.size() != aVal.FData.size())
-		{
-			VLOG(2) << "Cannot allocate buffer.";
-			return false;
-		}
-		_data_buf.deep_copy(aVal.FData);
+		aTo.deep_copy(aVal.FData);
 		aVal.FData.release();
 	}
-	CHECK_EQ(_data_buf.use_count(), 1);
-	bool _is = MSendImpl(aVal.FDataId, _data_buf);
-	if (!_is)
-	{
-		//repair buffer
-		aVal.FData = _data_buf;
-	}
-	_data_buf.release();
+	return _is;
+}
+/** Notify about message isn't send
+ *
+ * @param aVal That isn't sent
+ */
+void CSmMainChannel::MNoteFailedSend(user_data_info_t const& aVal) const
+{
+	fail_send_id_t _fail;
+	_fail.FData = fail_send_t(aVal);
+	_fail.FData.MSetError(E_SOCKET_CLOSED);
+	CDataObject::sMGetInstance().MPush(_fail);
+}
 
+bool CSmMainChannel::MSend(user_data_t & aVal)
+{
+	VLOG(2) << "Sending user data.";
+	bool _is=FSm.MIsConnected();
+
+	LOG_IF(ERROR,!_is)<<"The Main channel is not opened";
+
+	if (_is)
+	{
+		//aVal.FDataId.FFrom = CCustomer::sMGetInstance().MGetID().FId;
+		NSHARE::CBuffer _data_buf;
+		if (aVal.FData.MIsAllocatorEqual(FSm.MGetAllocator()))
+		{
+			///Data in Shm yet
+			VLOG(2) << "It's the recommended  allocator";
+			aVal.FData.MMoveTo(_data_buf);
+		}
+		else
+			_is = MMoveDataToShm(_data_buf, aVal);
+
+		if (_is)
+		{
+			DCHECK_EQ(_data_buf.use_count(), 1);
+
+			_is = MSendImpl(aVal.FDataId, _data_buf);
+			if (!_is)
+			{
+				//repair buffer
+				aVal.FData = _data_buf;
+			}
+			_data_buf.release();
+		}
+	}
+
+	if(!_is)
+	{
+		MNoteFailedSend(aVal.FDataId);
+	}
 	return _is;
 }
 

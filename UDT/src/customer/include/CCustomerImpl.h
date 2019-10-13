@@ -15,6 +15,7 @@
 
 #include <CResources.h>
 #include <CConfigure.h>
+#include <CCustomer.h>
 #include <CIOFactory.h>
 #include <CDataObject.h>
 #include <ICustomer.h>
@@ -48,23 +49,89 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	typedef NSHARE::CSafeData<customers_t> safety_customers_t;
 	typedef HASH_MAP<uint32_t,callback_t> cb_event_t;
 
-
 	_pimpl(CCustomer& aThis);
 
+	/** Initialzie library
+	 *
+	 * @param aProgram Non-unique program name (in FS)
+	 * @param aName Non-unique program name in NET
+	 * @param aVersion Version of program
+	 * @return 0 - EOK
+	 *			else bitwise error code
+	 */
 	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const& aVersion);
 	~_pimpl();
 
 
-	static void sMInitConfigure(const NSHARE::CConfig& aConf);
-
+	/** @copydoc ICustomer::MIsOpened()
+	 *
+	 */
 	bool MIsOpened() const;
+
+	/** @copydoc ICustomer::MIsConnected()
+	 *
+	 */
 	bool MIsConnected() const;
+
+	/** @copydoc ICustomer::MOpen()
+	 *
+	 */
 	bool MOpen();
+
+	/** @copydoc ICustomer::MClose()
+	 *
+	 */
 	void MClose();
 
+	/** @copydoc ICustomer::MAvailable()
+	 *
+	 */
 	bool MAvailable(const NSHARE::CText& aModule) const;
-	bool MAvailable() const;
+
+	/** @copydoc ICustomer::MAllAvailable()
+	 *
+	 */
 	modules_t MAllAvailable() const;
+
+	/** @copydoc ICustomer::MGetModules()
+	 *
+	 */
+	array_of_modules_t MGetModules() const;
+
+	/** @copydoc ICustomer::MGetModule()
+	 *
+	 */
+	IModule* MGetModule(const NSHARE::CText& aModule) const;
+
+	/** @copydoc ICustomer::MCustomers()
+	 *
+	 */
+	customers_t MCustomers() const;
+
+	/** @copydoc ICustomer::MCustomer()
+	 *
+	 */
+	program_id_t MCustomer(NSHARE::uuid_t const&) const;
+
+	/** @copydoc ICustomer::MGetNewBuf()
+	 *
+	 */
+	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;
+
+	/** @copydoc ICustomer::MGetDataObject()
+	 *
+	 */
+	CDataObject& MGetDataObject() const;
+
+	/** @copydoc ICustomer::MGetResourceObject()
+	 *
+	 */
+	CResources& MGetResourceObject() const;
+
+	/** @copydoc ICustomer::MGetConfigureObject()
+	 *
+	 */
+	CConfigure& MGetConfigureObject() const;
 
 	int MSendTo(const NSHARE::CText& aProtocolName, NSHARE::CBuffer & aBuf, const NSHARE::CText& aTo, eSendToFlags);
 	int MSendTo(const NSHARE::CText& aProtocolName,NSHARE::CBuffer & aBuf, const NSHARE::uuid_t& aTo, eSendToFlags);
@@ -80,16 +147,11 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 			const callback_t& aHandler);
 	int MRemoveDgParserFor( requirement_msg_info_t  aNumber);
 	int MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber);
-	customers_t MCustomers() const;
-	program_id_t MCustomer(NSHARE::uuid_t const&) const;
-	NSHARE::CBuffer MGetNewBuf(size_t aSize) const;
-//	static void sMReceiver(id_t const& aFrom, data_t::value_type const* aData,
-//			unsigned aSize);
+
 
 	int  MUdpateRecvList() const;
-	void MEventConnected();
-	void MEventDisconnected();
-	int MWaitForEvent(NSHARE::CText const& aEvent, double aSec);
+
+	int MWaitForEvent(NSHARE::Strings aEvent, double aSec);
 	void MJoin();
 	uint16_t MNextUserPacketNumber();
 
@@ -107,12 +169,27 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	 * @return list of RTC
 	 */
 	std::vector<IRtc*> MGetListOfRTC() const;
+
+	/** Store info about new module
+	 *
+	 * @param aModule An mew module
+	 */
+	void MPutModule(IModule* aModule);
+
+	/** Remove info about new module
+	 *
+	 * @param aModule An mew module
+	 */
+	void MPopModule(IModule* aModule);
 private:
 	typedef std::set<NSHARE::CText,NSHARE::CStringFastLessCompare> wait_for_t;
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMFailSents(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMDemands(CHardWorker* aWho, args_data_t* aWhat, void* aData);
+	static int sMConnect(CHardWorker* aWho, args_data_t* aWhat, void* aData);
+	static int sMDisconnect(CHardWorker* aWho, args_data_t* aWhat, void* aData);
+	static int sMRTCUpdated(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 
 	void MReceiver(recv_data_from_t & _from);
 
@@ -120,22 +197,42 @@ private:
 	int MInitCallBacks();
 	int MLoadLibraries();
 	int MInitFactorys();
-	int MSendImpl( NSHARE::CBuffer & aBuf,user_data_t& _data);
+	int MSendImpl(user_data_t& _data);
 	inline int MCallImpl(key_t const& aKey, value_arg_t const& aCallbackArgs);
+	bool MInitializeIOManager(NSHARE::CThread::param_t* aParam);
+	bool MOpenModules(NSHARE::CThread::param_t* _pparam);
+	bool MInitializeModules();
+	void MCloseModules();
+	void MEventConnected();
+	void MEventDisconnected();
+
+	void MFillOutputMessage(received_message_args_t* aTo,
+			recv_data_from_t & aFrom);
+	void MInformSubscriber(received_message_args_t* const aData,
+			user_data_info_t const& aFrom);
+	bool MHandleSubscription(
+			demand_dg_t::event_handler_t const& aHandler,
+			 user_data_info_t const& aDataInfo,
+			received_message_args_t& aMessage);
+	void MInformInvalidMessage(const user_data_info_t& aDataInfo,
+			user_error_type aError) const;
+	int MAddEventToWaitList(NSHARE::Strings const& aEvents);
+	bool MIsEventIngnored(const NSHARE::CText& _event) const;
+	bool MIsKeepOnWaiting(NSHARE::Strings* aEvents) const;
+	unsigned MPutEvents(const NSHARE::Strings& aEvents,
+			NSHARE::Strings* aAddedList);
+
 	//-----------------
 	CCustomer& FThis;
 
-	program_id_t FMyId; //todo const
+	program_id_t FMyId; //!< Info about me
 
-	IIOConsumer* FWorker;
+	IIOConsumer* FMainIO;//!< IO communication with kernel
 	mutable NSHARE::CCondvar FCondvarWaitFor;
 	mutable NSHARE::CMutex FMutexWaitFor;
 	mutable wait_for_t FWaitFor;
-//	NSHARE::CThread FThread;
-//	NSHARE::CWaitingQueue<data_from_t> FData;
-//	CDataObject FData;
 
-//	protocol_parser_t FParserToCustomer;
+
 	safety_customers_t FCustomers;
 
 	demand_dgs_t FDemands;
@@ -145,6 +242,7 @@ private:
 	mutable NSHARE::CMutex FParserMutex;
 	uint32_t FUniqueNumber;
 	uint16_t FMainPacketNumber;
+	array_of_modules_t FModules;//!< Info about modules (sorted)
 
 	friend class CCustomer;
 };

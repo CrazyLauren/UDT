@@ -113,6 +113,7 @@ private:
 	size_t FSinffedNum;
 	int FBufferingBytes;
 	streamed_data_t FStreamedData;
+	NSHARE::CMutex FThreadMutex; ///<It's used for lock receive operation
 };
 
 } /* namespace NUDT */

@@ -27,11 +27,11 @@ using namespace NSHARE;
 const NSHARE::CText CTimeDispatcher::NAME = "time_dispatcher";
 const NSHARE::CText CTimeDispatcher::SHARED_MEMORY_NAME = "name";
 
-unsigned const CTimeDispatcher::SHARED_MEMORY_SIZE=1024;
-bool CTimeDispatcher::TEST_IS_ON=false;
+unsigned const CTimeDispatcher::SHARED_MEMORY_SIZE = 1024;
+bool CTimeDispatcher::TEST_IS_ON = false;
 
-CTimeDispatcher::CTimeDispatcher()://
-				ICore(NAME)
+CTimeDispatcher::CTimeDispatcher() : //
+		ICore(NAME)
 {
 	MInit();
 }
@@ -48,18 +48,52 @@ bool CTimeDispatcher::MStart()
 {
 	CConfig const* _p = CConfigure::sMGetInstance().MGet().MFind(NAME);
 
-	if (!_p->MGetIfSet(SHARED_MEMORY_NAME, FName))
-	{
-		//DLOG(FATAL)<<"Cannot open sm server as the name is not set. Value: "<<SHARED_MEMORY_SIZE;
-	}
-	LOG(INFO)<<"Time dispatcher shared memory name:"<<FName;
 
-	if (MCreateSharedMemory())
+	FRtc=real_time_clocks_t(_p->MChild(real_time_clocks_t::NAME));
+	bool _is = FRtc.MIsValid();
+	_is = _is && MCreateSharedMemory();
+	_is = _is && MCreateNewRTC();
+	_is = _is && MInformAboutRTC();
+	_is = _is && MSubscribe();
+	return _is;
+}
+
+/** Subscribe to the events
+ *
+ */
+inline bool CTimeDispatcher::MSubscribe()
+{
 	{
-		MRegistreNewRTC();
+		callback_data_t _cb(sMHandleOpenId, this);
+		CDataObject::value_t _val(open_descriptor::NAME, _cb);
+		FHandlerOfOpen = _val;
+		CDataObject::sMGetInstance() += FHandlerOfOpen;
 	}
-	else
-		return false;
+	{
+		callback_data_t _cb(sMHandleCloseId, this);
+		CDataObject::value_t _val(close_descriptor::NAME, _cb);
+		FHandlerOfClose = _val;
+		CDataObject::sMGetInstance() += FHandlerOfClose;
+	}
+	return true;
+}
+
+/** Inform about RTC
+ *
+ *	@param aFor Who is to be informed?
+ */
+bool CTimeDispatcher::MInformAboutRTC(const descriptor_t& aFor)
+{
+	VLOG(2)<<"Inform about RTC :"<<aFor;
+
+	if (!FRtc.empty())
+	{
+		if (aFor == CDescriptors::INVALID)
+			CDataObject::sMGetInstance().MPush(FRtc, true);
+		else
+
+			CDataObject::sMGetInstance().MPush(make_data_to(aFor, FRtc), true);
+	}
 	return true;
 }
 /** Create share memory for RTC
@@ -68,23 +102,41 @@ bool CTimeDispatcher::MStart()
  */
 bool CTimeDispatcher::MCreateSharedMemory()
 {
-	FName.MMakeRandom(10);
-	if (FMemory.MOpenOrCreate(FName, SHARED_MEMORY_SIZE)==CSharedMemory::E_NO_ERROR)
-	{
+	if (FMemory.MIsOpened())
 		return true;
-	}
+
+	DLOG_IF(FATAL,FRtc.FShdMemName.empty())
+													<< "Cannot open sm server as the name is not set. Value: "
+													<< FRtc.FShdMemName;
+	if (FRtc.FShdMemName.empty())
+		FRtc.FShdMemName.MMakeRandom(10);
+
+	LOG(INFO) << "Time dispatcher shared memory name:" << FRtc.FShdMemName;
+
+	FMemory.sMRemove(FRtc.FShdMemName);
+	if (FMemory.MOpenOrCreate(FRtc.FShdMemName, SHARED_MEMORY_SIZE)
+			== CSharedMemory::E_NO_ERROR)
+		return true;
 
 	return false;
 }
 void CTimeDispatcher::MStop()
 {
-	VLOG(3)<<"Stopping CTimeDispatcher";
-
+	VLOG(3) << "Stopping CTimeDispatcher";
+	MUnSubscribe();
 	{
 		safety_array_of_rtc_t::WAccess<> _accesss =
 				FArrayOfRTC.MGetWAccess();
 		_accesss->clear();
 	}
+}
+/** Unsubscribe from the events
+ *
+ */
+void CTimeDispatcher::MUnSubscribe()
+{
+	CDataObject::sMGetInstance() -= FHandlerOfOpen;
+	CDataObject::sMGetInstance() -= FHandlerOfClose;
 }
 /** The static method of thread pool
  *
@@ -108,13 +160,13 @@ NSHARE::eCBRval CTimeDispatcher::sMMainLoop(NSHARE::CThread const* WHO,
 bool CTimeDispatcher::MIsRTCExist(
 		const NSHARE::CProgramName& aRtcGroup)
 {
-	safety_array_of_rtc_t::RAccess<> const _accesss=FArrayOfRTC.MGetRAccess();
-	array_of_rtc_t const& _rtc=*_accesss;
+	safety_array_of_rtc_t::RAccess<> const _accesss = FArrayOfRTC.MGetRAccess();
+	array_of_rtc_t const& _rtc = *_accesss;
 	array_of_rtc_t::const_iterator _it = _rtc.begin();
 	for (; _it != _rtc.end(); ++_it)
-		if ((*_it)->FName == aRtcGroup)
+		if ((*_it)->MGetName() == aRtcGroup)
 			break;
-	return _it!=_rtc.end();
+	return _it != _rtc.end();
 }
 /** Start RTC dispatcher
  *
@@ -123,7 +175,7 @@ bool CTimeDispatcher::MIsRTCExist(
 void CTimeDispatcher::MStartRTCDispatcher(rtc_id_t _rval)
 {
 	const safety_array_of_rtc_t::RAccess<> _access = FArrayOfRTC.MGetRAccess();
-	CRTCForModeling* const _p = (*_access)[_rval];
+	CRTCForModeling* const _p = (*_access)[_rval].get();
 	/** Start main thread. */
 	NSHARE::operation_t _op(CTimeDispatcher::sMMainLoop, _p,
 			NSHARE::operation_t::IO);
@@ -144,11 +196,12 @@ CTimeDispatcher::rtc_id_t CTimeDispatcher::MPushNewRTC(
 	array_of_rtc_t::const_iterator _it = _rtc.begin();
 
 	for (; _it != _rtc.end(); ++_it)
-		if ((*_it)->FName == aRtcGroup)
+		if ((*_it)->MGetName() == aRtcGroup)
 			break;
 	if (_it == _rtc.end())
 	{
-		_rtc.push_back(new CRTCForModeling(FMemory.MGetAllocator(), aRtcGroup));
+		array_of_rtc_t::value_type _ptr(new CRTCForModeling(FMemory.MGetAllocator(), aRtcGroup));
+		_rtc.push_back(_ptr);
 		_rval = _rtc.size() - 1;
 	}
 	else
@@ -157,21 +210,42 @@ CTimeDispatcher::rtc_id_t CTimeDispatcher::MPushNewRTC(
 	return _rval;
 }
 
+/** Create RTC
+ *
+ * @return true if no error
+ */
+bool CTimeDispatcher::MCreateNewRTC()
+{
+	real_time_clocks_t::iterator _it(FRtc.begin()), _it_end(FRtc.end());
+	for (; _it != _it_end; ++_it)
+	{
+		_it->FOffset=MRegistreNewRTC(_it->FName);
+	}
+	return true;
+}
 /** Create timer
  *
  * @param aRtcGroup for whom is RTC
  * @return -1 if error otherwise RTC Id
  */
-CTimeDispatcher::rtc_id_t CTimeDispatcher::MRegistreNewRTC(NSHARE::CProgramName const& aRtcGroup)
+NSHARE::IAllocater::offset_pointer_t CTimeDispatcher::MRegistreNewRTC(
+		NSHARE::CProgramName const& aRtcGroup)
 {
-	rtc_id_t const _rval= MPushNewRTC(aRtcGroup);
+	NSHARE::IAllocater::offset_pointer_t _offset=NSHARE::IAllocater::NULL_OFFSET;
+	rtc_id_t const _rval = MPushNewRTC(aRtcGroup);
 
 	if (_rval >= 0)
 	{
 		MStartRTCDispatcher(_rval);
 		MStartTestIfNeed(_rval);
+		{
+			safety_array_of_rtc_t::RAccess<> const _access =
+						FArrayOfRTC.MGetRAccess();
+			array_of_rtc_t const& _d=*_access;
+			_offset=_d[_rval]->MGetOffset();
+		}
 	}
-	return _rval;
+	return _offset;
 }
 NSHARE::CConfig CTimeDispatcher::MSerialize() const
 {
@@ -199,8 +273,9 @@ void CTimeDispatcher::MStartTestIfNeed(rtc_id_t aRtcID)
 {
 	if (TEST_IS_ON)
 	{
-		safety_array_of_rtc_t::RAccess<> const _access=FArrayOfRTC.MGetRAccess();
-		CRTCForModeling* const _p=(*_access)[aRtcID];
+		safety_array_of_rtc_t::RAccess<> const _access =
+				FArrayOfRTC.MGetRAccess();
+		CRTCForModeling* const _p = (*_access)[aRtcID].get();
 
 		for (unsigned i = 0; i < NUM_THREAD; ++i)
 		{
@@ -218,192 +293,74 @@ void CTimeDispatcher::sMTestLoop(CRTCForModeling* aRTC)
 {
 	CHECK_NOTNULL(aRTC);
 
-	aRTC->MJoinToRTCWorker();
+	aRTC->MJoinToRTC();
 
-	CRTCForModeling::rtc_time_t _cur_time=aRTC->MGetCurrentTime();
-	CRTCForModeling::rtc_time_t _prev_next_time=_cur_time;
-	CRTCForModeling::rtc_time_t _next_time=_cur_time+1;
+	CRTCForModeling::rtc_time_t _cur_time = aRTC->MGetCurrentTime();
+	CRTCForModeling::rtc_time_t _prev_next_time = _cur_time;
+	CRTCForModeling::rtc_time_t _next_time = _cur_time + 1;
 
-	for (;_cur_time<(time_info_t::END_OF_TIME-1000000); //
+	for (; _cur_time < (time_info_t::END_OF_TIME - 1000000); //
 			_prev_next_time = _next_time, //
 			_next_time += (NSHARE::get_random_value_by_RNG() % 1000000) //
 			)
 	{
-		DCHECK_GE(_next_time,_cur_time);
+		DCHECK_GE(_next_time, _cur_time);
 		for (; (_cur_time = aRTC->MNextTime(_next_time)) != _next_time;)
 		{
 			CHECK_LE(_cur_time, _next_time);
 		}
 	}
 }
-CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator,//
-		NSHARE::CProgramName const& aName):
-		FName(aName),//
-		FAllocator(aAllocator),//
-		FTimeInfo(NULL),//
-		FIsDone(false)
+
+/** Handle new program
+ *
+ * @param aFrom The id of new program
+ * @param aInfo The info of new program
+ */
+void CTimeDispatcher::MHandleOpen(const descriptor_t& aFrom,
+		const descriptor_info_t& aInfo)
 {
-	FTimeInfo=allocate_object<time_info_t>(*FAllocator);
-
-	FTimeUpdated.MInit(FTimeInfo->FEventTimeChanged, sizeof(FTimeInfo->FEventTimeChanged),0);
-	FHasToBeUpdated.MInit(FTimeInfo->FHasToBeUpdated, sizeof(FTimeInfo->FHasToBeUpdated));
-
-	FSem.MInit(FTimeInfo->FMutex, sizeof(FTimeInfo->FMutex),1);
-
-}
-
-CRTCForModeling::~CRTCForModeling()
-{
-	MUnRegistration();
-}
-void CRTCForModeling::MUnRegistration()
-{
-	if (MIsCreated())
+	if(aInfo.FProgramm.FType==E_CONSUMER)
 	{
-		{
-			FIsDone = true;
-			VLOG(2) << "Wait for dispatcher stopped";
-			CRAII<CMutex> _destroy_lock(FDestroyMutex);
-		}
-
-		FTimeUpdated.MUnlink();
-		FHasToBeUpdated.MUnlink();
-		FSem.MUnlink();
-
-		FAllocator->MDeallocate(FTimeInfo, 0);
-		FTimeInfo = NULL;
+		MInformAboutRTC(aFrom);
 	}
 }
-
-bool CRTCForModeling::MIsCreated() const
+/** Close new program
+ *
+ * @param aFrom The id of new program
+ * @param aInfo The info of new program
+ */
+void CTimeDispatcher::MHandleClose(const descriptor_t& aFrom,
+		const descriptor_info_t& aInfo)
 {
-	return FTimeInfo!=NULL;
-}
-
-void CRTCForModeling::MJoinToRTCWorker()
-{
-	DCHECK(MIsCreated());
-
-	CRAII<CIPCSem> _lock(FSem);
-	++FTimeInfo->FNumOfWorking;
-}
-void CRTCForModeling::MUpdateTime(rtc_time_t aNewTime) const
-{
-	DVLOG(3)<<"Update time "<<aNewTime;
-	FTimeInfo->FTime=aNewTime;
-
-	FTimeInfo->FTimeHW=get_unix_time();
-	if (FTimeInfo->FTime >= FTimeInfo->FNextTimer)
+	if(aInfo.FProgramm.FType==E_CONSUMER)
 	{
-		FTimeInfo->FNextTimer=std::numeric_limits<CRTCForModeling::rtc_time_t>::max();
-		FTimeInfo->FNumOfUnlocked=FTimeInfo->FNumOfWait;
-		unsigned _post=FTimeInfo->FNumOfUnlocked;
-		for (unsigned i = 0; i < _post; ++i)
-			FTimeUpdated.MPost();
+		;
 	}
 }
-CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(rtc_time_t aNewTime) const
+int CTimeDispatcher::sMHandleOpenId(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
 {
-	using namespace std;
-	DCHECK(MIsCreated());
-
-	rtc_time_t _rval = 0;
-	bool _done=false;
-	for(;!_done;)
-	{
-		CRAII<CIPCSem> _lock(FSem);
-		if (FTimeInfo->FNumOfUnlocked==0)
-		{
-			DCHECK_LE(FTimeInfo->FTime, aNewTime);
-			DCHECK_GT(FTimeInfo->FNumOfWorking, 0u);
-
-			DVLOG(3) << "New time is " << aNewTime;
-
-			FTimeInfo->FNextTimer = min(aNewTime, FTimeInfo->FNextTimer);
-			++FTimeInfo->FNumOfWait;
-			if (FTimeInfo->FNumOfWait == FTimeInfo->FNumOfWorking)
-			{
-				DVLOG(3) << "Current minimal value: "
-									<< FTimeInfo->FNextTimer;
-				FHasToBeUpdated.MSignal();
-				++FTimeInfo->FTimeStep;
-			}
-
-			DVLOG(3) << "Request: " << aNewTime << "  minimal time:"
-								<< FTimeInfo->FNextTimer;
-			FSem.MPost();
-
-			FTimeUpdated.MWait();
-
-			DCHECK_GT(FTimeInfo->FNumOfUnlocked,0);
-			DCHECK_GT(FTimeInfo->FNumOfWait,0);
-
-			--FTimeInfo->FNumOfWait;
-			--FTimeInfo->FNumOfUnlocked;
-
-			FSem.MWait();
-
-			DCHECK_LE(FTimeInfo->FTime, aNewTime);
-			DCHECK_GT(FTimeInfo->FNumOfWorking, FTimeInfo->FNumOfWait);
-
-			_rval = FTimeInfo->FTime;
-			_done=true;
-		}
-		else
-		{
-			_done=!NSHARE::CThread::sMYield();
-			DLOG_IF(FATAL,_done)<<"Yield operation is not supported";
-		}
-	}
-
-	return _rval;
+	CTimeDispatcher* _this = reinterpret_cast<CTimeDispatcher*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(open_descriptor::NAME, WHAT->FType);
+	const open_descriptor* _p =
+			reinterpret_cast<const open_descriptor*>(WHAT->FPointToData);
+	CHECK_NOTNULL(_p);
+	_this->MHandleOpen(_p->FId, _p->FInfo);
+	return 0;
 }
-bool CRTCForModeling::MDispatcher() const
+int CTimeDispatcher::sMHandleCloseId(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
 {
-	CRAII<CMutex> _destroy_lock(FDestroyMutex);
-	CRTCForModeling::rtc_time_t _next_time=0;
-
-	CRAII<CIPCSem> _lock(FSem);
-	if (!FIsDone)
-		do
-		{
-			NSHARE::atomic_t _step;
-			do
-			{
-				_step=FTimeInfo->FTimeStep;
-				FHasToBeUpdated.MTimedwait(&FSem);
-			} while (_step == FTimeInfo->FTimeStep);
-
-			DCHECK_EQ(FTimeInfo->FNumOfUnlocked,0);
-
-			MUpdateTime(FTimeInfo->FNextTimer);
-
-			//FTimeInfo->FNumOfWait=0;
-		} while (!FIsDone //
-				&& FTimeInfo//
-				&& FTimeInfo->FTime != time_info_t::END_OF_TIME);
-
-	LOG(INFO)<<"Time is ended for dispatcher "<<FName;
-	return true;
+	CTimeDispatcher* _this = reinterpret_cast<CTimeDispatcher*>(YOU_DATA);
+	CHECK_NOTNULL(_this);
+	CHECK_EQ(close_descriptor::NAME, WHAT->FType);
+	const close_descriptor* _p =
+			reinterpret_cast<close_descriptor*>(WHAT->FPointToData);
+	CHECK_NOTNULL(_p);
+	_this->MHandleClose(_p->FId, _p->FInfo);
+	return 0;
 }
-bool CRTCForModeling::MResetRTC() const
-{
-	if(MIsCreated() && FTimeInfo->FTime==time_info_t::END_OF_TIME)
-	{
-		LOG(INFO)<<"Restart dispatcher "<<FName;
-		FTimeInfo->FTime=0;
-		FTimeInfo->FTimeStep=0;
-	}
-	return true;
-}
-CRTCForModeling::rtc_time_t CRTCForModeling::MGetCurrentTime() const
-{
-	if (MIsCreated())
-	{
-		CRAII<CIPCSem> _lock(FSem);
-		return FTimeInfo->FTime;
-	}
-	else
-		return 0;
-}
+
 } /* namespace NUDT */

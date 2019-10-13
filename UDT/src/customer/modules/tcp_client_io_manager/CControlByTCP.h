@@ -38,13 +38,11 @@ public:
 
 	void MInit(ICustomer*);
 	bool MOpen(const NSHARE::CThread::param_t* = NULL);
-	bool MIsAvailable() const;
 	bool MIsConnected() const;
 	bool MIsOpened() const;
 	void MClose();
 	void MJoin();
 	int MSend(data_t & aData);
-	int MSend(user_data_t & aData);
 
 	void MReceivedData(const data_t& aData,void*);
 	void MReceivedData(user_data_t const & aData);

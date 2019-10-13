@@ -23,7 +23,7 @@ namespace NSHARE
 {
 namespace impl
 {
-COMPILE_ASSERT((sizeof(CIPCSemaphoreSemInit::_sem_t)+__alignof(sem_t))<=CIPCSem::eReguredBufSize,InvalidSizeSem_t);
+COMPILE_ASSERT((sizeof(CIPCSemaphoreSemInit::_sem_t))<=CIPCSem::eReguredBufSize,InvalidSizeSem_t);
 CIPCSemaphoreSemInit::_sem_t::_sem_t()
 {
 	memset(this,0,sizeof(*this));
@@ -60,7 +60,7 @@ bool CIPCSemaphoreSemInit::MInit(uint8_t* aBuf, size_t aSize, unsigned int aInit
 	FSem=(_sem_t*)get_alignment_address<sem_t>(aBuf);
 	DCHECK_LE((void*)(FSem+1),(void*)(aBuf+aSize));
 
-	DCHECK_LE(aInitvalue, CIPCSem::MAX_VALUE);
+	DCHECK_LE(aInitvalue, ISemaphore::MAX_VALUE);
 
 	switch (aHasToBeNew)
 	{

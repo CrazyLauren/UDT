@@ -239,6 +239,15 @@ plugins.
 		},
 		"time_dispatcher":
 		{
-		
-		}
+			"rtcs":
+			{
+				"shm_name":"rtc_kernel",
+				"rtc_info":
+				{
+					"name":"some",
+					"rtc_type":2
+				}
+			
+			}
+		}	
 }

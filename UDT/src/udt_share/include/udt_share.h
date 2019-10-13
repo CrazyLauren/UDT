@@ -76,8 +76,8 @@ inline size_t serialize(NSHARE::CBuffer* _buf,const T& aWhat, const routing_t& a
 
 	_kd->MSetStrSize (static_cast<uint16_t>(_str_size+1));
 	_p+=sizeof(aKdTypeY);
-	memcpy(_p,_text.c_str(),_str_size);
-	_p+=_str_size;
+	for(unsigned i=0;i<_str_size;++i)
+		*_p++ = _text[i];
 	*_p++ = '\0';
 
 	fill_dg_head(_p_begin, full_size,get_my_id());

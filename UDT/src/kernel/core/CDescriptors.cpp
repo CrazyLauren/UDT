@@ -183,7 +183,7 @@ std::pair<descriptor_info_t, bool>  CDescriptors::MGet(
 	d_list_t::const_iterator _it = FDescriptors.find(aVal);
 	if (_it != FDescriptors.end() && _it->second.MIs())
 	{
-		_rval.first = _it->second;
+		_rval.first = _it->second.MGetConst();
 		_rval.second = true;
 	}
 	return _rval;

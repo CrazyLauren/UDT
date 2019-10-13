@@ -1,27 +1,136 @@
 {
-        "modules": {
-            "example_parser": {
-                "some": "val"
-            }
+
+/** The kernel have plugins architecture.
+This option is set up options of loaded
+plugins.
+*/
+        "modules": 
+		{
+			/** Where the kernel is looking for plugins*/
+			
+			"modules_path":"./plugins",
+			
+			/** if true the kernel loaded only specialized in key "libraries"
+				library.
+			*/
+			"only_specified":"false",
+			
+			/** Here setting up option of loaded library.
+				The key is euqal name of library (without lib, .so and .dll prefix)
+			*/
+			"libraries":
+			{
+				/** The library name
+				*/
+				"example_parser":
+				{
+					/** If true when if library hasn't be loaded 
+						when the error is occured
+					*/
+					"has_to_be_loaded":true,
+					
+					/** Here you can specify some parameter which will be passed
+						to library when it will loaded
+					*/
+					"configure":
+					{
+						"val":"val"//some value which will be passed
+					} 
+				}
+			}
         },
+		
+		/** Options of channel by which 
+			the useful data is sent.
+			The key is name of channel.
+		*/
 		"mainchannels":
 		{
-			"sm": {
+			/** Options of shared memory channel
+			*/
+			"sm": 
+			{
+				/** A unique name of shared memory.
+				
+				Requred.*/
 				"name": "kernel_udt",
+				
+				/** The size of shared memory.
+				The size of shered memory has to be 
+				greater than "max message size"+ "reserv".
+				
+				Requred.*/				
 				"size": "10000000",
+				
+				/** The size of reserve in the shared memory 
+				for self-using of kernel.
+				
+				The more size of reserve the more 
+				stability the kernel is working
+				when the shared memory is full.
+				By default the reserv size is 1 kb.
+				
+				No requred.*/
+				//"reserv": "1024",
+				
+				/** If true, the name of shared memory is
+				equal "path to the kernel" + "name". 
+				The option is used to avoid
+				starting the kernel with equal 
+				shared memory name.
+				
+				No requred.*/
 				"path_hash_to_name":"true",
+				
+				/** The "old" shared memory 
+				will be removed if it exists.				
+				
+				No requred.
+				*/
 				"remove": "true",
+				
+				/** If true when the kernel 
+				by default allocate data to 
+				shared memory.
+				If you turn of the option 
+				when performance is decrease
+				as the kernel has to be copied
+				the data from heap to shared memory
+				when send it to local customer
+				
+				No requred.
+				*/
 				"as_def_alloc":"true"
 			},
-			"tcpser":{},
+			/** Options of tcp server channel
+			*/
+			"tcpser":
+			{
+				/** The port of tcp server.
+				* If it zero then is used any no not busy
+				* port
+				*/
+				//"port":"0"
+			},
 			"tcp":{}
 		},
-		"tcp_io_manager":{
+		"tcp_io_manager":
+		{
+			/** The own port number.
+			* By default is 18011.
+			*
+			*/
+			//"port":"18011",
+			
+			/** Maximal timeout
+			* for handel new connection
+			* in ms. By default 2000 ms.  
+			*
+			*/
+			//"timeout":"2000",			
 			"consumer":{
 				"channel_for":{
-					"default":"sm",
-					"uex@guex":"sm",
-					"uex2@guex":"sm"
+					"default":"sm"
 				}
 			},
 			"udt_server":{
@@ -31,16 +140,89 @@
 			},
 			"protocol":["consumer","udt_server"]
 		},
-		"tcp_client_io_manager":{
+		/** The kernel can connect to the other 
+		*	kernel by TCP. To do this
+		*	need to specify the port (tcp_io_manager.port
+		* 	of the kernel config) and ip
+		*	of the other kernel. 
+		*/
+		"tcp_client_io_manager":
+		{
+			/** The own port number.
+			* By default is 18015.
+			*
+			*/
+			//"port":"18015",
 			
+			/** The other kernel info.
+			*	For each the kernel
+			* 	need specify the follow 
+			*	parametres. 			
+			*/
+			/* "cl":{
+				"addr":{
+					"ip":"127.0.0.1",
+					"port":"18011"//equal of tcp_io_manager.port
+				},
+				"protocol":"udt_client"
+			} */
+		},
+		/** The kernel can looking for other kernel
+		*	by UDP, and creates TCP connection by oneself
+		*/
+		"auto_search":
+		{
+			/** The UDP port settings
+			*/
+			/*"param":{
+				//"port":"18013"//The udp port number. By default is 18013
+			}*/			
 		},
 		"front_end_io_manager":
 		{
-			"frontend":{
-			}
 		},
 		"http_gui":
 		{
+			/**
+			* To all kernel you may connect from 
+			* browser to see it state and change it behaivor.
+			* The web page is located in "gui" directory 	
+			*/
+			
+			/** The port number of http
+			* server. By default is 18012
+			*/
+			"port":"18012",
+						
+			/**
+			* By GUI you can sniff the messages.
+			* By default, for the GUI is requirement that the 
+			* received message has not be splitted.
+			* Of course, if javascript  GUI web page 
+			* will be changed this requirement is canceled.
+			*/
+			//"mtu":{ /* Limitation of the maximum message size*/
+			
+			/** The maximum message size is set by */			
+			//"s":0, /** if zero then no limitation*/
+			
+			/** The behavior of kernel is specified as follows  
+			if "s" is not zero and message is greater of limitation  than \n
+			 - if settup "cannot_be_splitted" value then
+			 the error E_DATA_TOO_LARGE is occured \n
+			 - if setup "not_limited" then the limitation will be ignored \n
+			 - if setup "limited" the message will be splitted
+			 */
+			//"t":"cannot_be_splitted",
+			//},
+			
+			/** When the message is sniffed 
+			* It put to fifo buffer until the 
+			* GUI user is not refresh the web page.
+			* The maximum buffer is limitation as follows
+			*/
+			"maxbuf":"1048576"			
+			
 		},
 		"buffers":
 		{
@@ -54,6 +236,18 @@
 						"maxsmbuf":"1000000"
 					}
 			}
-		}
-
+		},
+		"time_dispatcher":
+		{
+			"rtcs":
+			{
+				"shm_name":"rtc_kernel",
+				"rtc_info":
+				{
+					"name":"rtc",
+					"rtc_type":2
+				}
+			
+			}
+		}	
 }

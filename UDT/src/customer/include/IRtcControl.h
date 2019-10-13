@@ -12,6 +12,7 @@
 #ifndef ICRTCONTROL_H_
 #define ICRTCONTROL_H_
 
+#include "IModule.h"
 #include <udt_rtc_types.h>
 namespace NUDT
 {
@@ -19,12 +20,13 @@ class IRtc;
 /** API for control by RTC
  *
  */
-class IRtcControl:public NSHARE::IFactory
+class CUSTOMER_EXPORT IRtcControl:public IModule
 {
 public:
+	typedef std::vector<IRtc*> array_of_RTC_t;//!< The array of pointer to RTC
 	typedef unsigned rtc_id_t;//!< unique id of RTC
 	typedef  time_info_t::rtc_time_t rtc_time_t;
-	typedef  NSHARE::CProgramName name_rtc_t;//!< Type of name RTC
+
 
 	/** Gets ID by name
 	 *
@@ -41,6 +43,12 @@ public:
 	virtual name_rtc_t MGetRTCByName(rtc_id_t const& aID) const =0;
 
 	virtual IRtc* MGetRTC(name_rtc_t const& aID) const =0;
+
+	/** Gets all RTC
+	 *
+	 * @return array of RTC
+	 */
+	virtual array_of_RTC_t MGetAllRTC() const=0;
 //	/** Wait for specified time to expire or
 //	 * expire time of the other program
 //	 *
@@ -72,7 +80,7 @@ public:
 //	virtual rtc_time_t MGetCurrentTime(rtc_id_t const& aID) const =0;
 protected:
 	IRtcControl(const NSHARE::CText& type) :
-		NSHARE::IFactory(type)
+		IModule(type)
 	{
 	}
 };

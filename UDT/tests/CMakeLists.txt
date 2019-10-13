@@ -10,6 +10,7 @@ else()
 		add_subdirectory(speed_test)
 		add_subdirectory(test_errors)
 		add_subdirectory(test_inheritance)
+		add_subdirectory(test_rtc)
 		
 		install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel.json 
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/test)

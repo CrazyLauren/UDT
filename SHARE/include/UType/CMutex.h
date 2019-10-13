@@ -12,31 +12,40 @@
 #ifndef MUTEX_H_
 #define MUTEX_H_
 
+#include <UType/IMutex.h>
+
 namespace NSHARE
 {
 
-class SHARE_EXPORT CMutex: CDenyCopying
+class SHARE_EXPORT CMutex:public IMutex, CDenyCopying
 {
 public:
-	// Construction | Destruction
-	enum eMutexType
-	{
-		MUTEX_NORMAL=1,
-		MUTEX_RECURSIVE
-	};
+
+	/** Create the new mutex
+	 *
+	 */
 	explicit CMutex(eMutexType aType = MUTEX_RECURSIVE);
 	~CMutex(void);
 
-
+	/** @copydoc IMutex::MLock
+	 *
+	 */
 	bool MLock(void);
+
+	/** @copydoc IMutex::MCanLock
+	 *
+	 */
 	bool MCanLock(void);
+
+	/** @copydoc IMutex::MUnlock
+	 *
+	 */
 	bool MUnlock(void);
-	eMutexType MGetMutexType() const
-	{
-		return FFlags;
-	}
 
-
+	/** @copydoc IMutex::MGetMutexType
+	 *
+	 */
+	eMutexType MGetMutexType() const;
 
 	/**\brief mutex unit test
 	 *
@@ -63,6 +72,10 @@ private:
 
 	friend class CCondvar;
 };
+inline CMutex::eMutexType CMutex::MGetMutexType() const
+{
+	return FFlags;
+}
 template<> class  CRAII<CMutex> : public CDenyCopying
 {
 public:
@@ -104,61 +117,6 @@ public:
 	}
 private:
 	CRAII<CMutex> CRaii;
-};
-
-/**\brief Используется в шаблонах, для указания отсуствия mutex
- *
- *\note реализация находится в CWin32Mutex.cpp
- */
-struct SHARE_EXPORT CMutexEmpty: CDenyCopying
-{
-	typedef CMutex::eMutexType eMutexType;
-
-	explicit CMutexEmpty(CMutex::eMutexType aType = CMutex::MUTEX_RECURSIVE) :
-			FFlags(aType)
-	{
-		FThreadID = 0;
-	}
-	bool MLock(void);
-	bool MCanLock(void);
-	bool MUnlock(void);
-	eMutexType MGetMutexType() const
-	{
-		return FFlags;
-	}
-
-	/**\brief mutex unit test
-	 *
-	 *\todo
-	 */
-	static bool sMUnitTest();
-
-	/**\brief thread ID which locked mutex
-	 *
-	 *\return thread id if locked otherwise 0
-	 */
-	unsigned MThread()const;
-
-private:
-	void* MGetPtr() const
-	{
-		return NULL;
-	}
-
-	eMutexType FFlags;
-	atomic_t FThreadID;
-};
-
-template<> struct SHARE_EXPORT CRAII<CMutexEmpty> : public CDenyCopying
-{
-public:
-	explicit CRAII(CMutexEmpty const& aMutex)
-	{
-
-	}
-	void MUnlock(void)
-	{
-	}
 };
 /**\brief Используется в шаблонах, для указания отсуствия mutex
  * в отличии от CMutexEmpty, этот класс можно копировать

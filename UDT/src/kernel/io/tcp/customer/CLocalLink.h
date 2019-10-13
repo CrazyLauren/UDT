@@ -12,6 +12,8 @@
 #ifndef CLINK_H_
 #define CLINK_H_
 
+#include <udt_rtc_types.h>
+
 namespace NUDT
 {
 class IMainChannel;
@@ -89,6 +91,11 @@ private:
 		return *this;
 	}
 
+	bool MSubscribe();
+	void MUnSubscribe();
+	void MHandleNewRTC(const real_time_clocks_t& aWhat);
+	static int sMHandleNewRTC(CHardWorker* WHO, args_data_t* WHAT,
+			void* YOU_DATA);
 
 	SHARED_PTR<demand_dgs_t> FpDemands;
 	SHARED_PTR<demand_dgs_for_t> FpDemandsDgFor;
@@ -106,6 +113,8 @@ private:
 	IMainChannel* FMainChannel;
 	CLinkDiagnostic FDisgnostic;
 	program_id_t const FCustomer;
+	CDataObject::value_t FHandlerNewRTC;//!< Handler of new RTC info
+	//CDataObject::value_t FHandlerOfClose;//!< Handler of disconnection of the program
 
 	friend class CInParser<CLocalLink> ;
 	//mingw bug. It does not like the typedef

@@ -16,6 +16,7 @@
 
 #include "customer_export.h"
 #include <udt_types.h>
+#include <programm_id.h>
 
 #ifdef uuid_t
 #	error "Fucking programmer"
@@ -449,6 +450,8 @@ public:
 	static const NSHARE::CText EVENT_RECEIVER_UNSUBSCRIBE;/*!<It's invoked when a receiver (subscriber)
 														 did not want to receive the message from you (publisher).
 														 Each callback is passed  subcribe_receiver_args_t structure.*/
+	static const NSHARE::CText EVENT_UPDATE_RTC_INFO;/*!< It's invoked when you updated RTC info.
+												 The callback is called without additional arguments.*/
 	/// \}
 
 	typedef std::vector<NSHARE::CText> modules_t;///< An information about modules
@@ -574,12 +577,6 @@ public:
 	 */
 	bool MAvailable(const NSHARE::CText& aModule) const;
 
-	/*!\brief Check for available used module (DOING_MODULE)
-	 *
-	*\return true if exist
-	 */
-	bool MAvailable() const;
-
 	/*!\brief Get list of available modules
 	 *
 	*\return modules
@@ -624,12 +621,30 @@ public:
 	 *\param aSec - time out if value < 0 than wait for infinitely
 	 *
 	 *\warning Non-recommended to use the method for any events
-	 *	with the exception of #EVENT_CONNECTED, #EVENT_DISCONNECTED
+	 *	associated with receiving data
 	 *
 	 *\return < 0 if the error is occured:\n
-	 *		#ERROR_UNEXPECETED if the event has been registered early.
+	 *		#ERROR_UNEXPECETED if the event has not registered.
 	 */
 	int MWaitForEvent(NSHARE::CText const& aEvent,double aSec=-1);
+
+	/*!\brief wait for some events is occured (and handled)
+	 *
+	 * For events #EVENT_CONNECTED and #EVENT_DISCONNECTED
+	 * connection is checked. That is, if it's connected and the
+	 * MWaitForEvent method with #EVENT_CONNECTED is called
+	 * when returned error #ERROR_NOT_CONNECTED_TO_KERNEL.
+	 *
+	 *\param aEvent - waited for event
+	 *\param aSec - time out if value < 0 than wait for infinitely
+	 *
+	 *\warning Non-recommended to use the method for any events
+	 *	associated with receiving data
+	 *
+	 *\return < 0 if the error is occured:\n
+	 *		#ERROR_UNEXPECETED if the event has not registered.
+	 */
+	int MWaitForEvent(NSHARE::Strings const& aEvent,double aSec=-1);
 
 	/*!\brief Get information about you
 	 *
@@ -978,14 +993,17 @@ public:
 	 * @return list of RTC
 	 */
 	std::vector<IRtc*> MGetListOfRTC() const;
+
+
+	struct _pimpl;//!< Realization
+
+	_pimpl& MGetImpl() const;//!< Return pointer to realization (for inner use)
 private:
 
 	CCustomer();
-	int MInitialize(NSHARE::CText const& aProgram, NSHARE::CText const& aName,NSHARE::version_t const&);
 
 	~CCustomer();
 
-	struct _pimpl;
 	_pimpl* FImpl;
 };
 

@@ -60,6 +60,9 @@ CHttpIOManger::CHttpIOManger() :
 CHttpIOManger::~CHttpIOManger()
 {
 	MCloseImpl();
+	{
+		CRAII<CMutex> _lock(FThreadMutex);
+	}
 }
 void CHttpIOManger::MInit(CKernelIo *aVal)
 {
@@ -137,6 +140,7 @@ NSHARE::eCBRval CHttpIOManger::sMReceiver(NSHARE::CThread const* WHO,
 void CHttpIOManger::MReceiver()
 {
 	VLOG(2) << "Async receive";
+	CRAII<CMutex> _lock(FThreadMutex);
 	ISocket::data_t _data;
 	LOG_IF(FATAL, !FTcpServiceSocket.MIsOpen()) << "Port is closed";
 	for (; FTcpServiceSocket.MIsOpen();)
@@ -566,6 +570,7 @@ bool CHttpIOManger::MSend(const demand_dgs_for_t& aVal, descriptor_t const&,
 }
 void CHttpIOManger::MCloseImpl()
 {
+	FTcpServiceSocket.MClose();
 	//todo
 	Fd = CDescriptors::INVALID;
 

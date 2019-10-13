@@ -11,724 +11,282 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
-#if   defined(__QNX__)||defined(unix)
-
+#if  defined(__QNX__)||defined(unix)
 #include <deftype>
-#include <UType/CIPCSignalEvent.h>
-#include <semaphore.h>
+#include <limits.h>
 #include <fcntl.h>
-#ifdef SE_USING_FUTEX
-#	include <sys/syscall.h>
-#	include <linux/futex.h>
-#endif
+#include <UType/CIPCSignalEvent.h>
+#include <UType/CIPCMutex.h>
+
 namespace NSHARE
 {
-#ifdef SE_USING_SEM_INIT
-SHARED_PACKED(struct _sem_t
+struct CIPCSignalEvent::CImpl
 {
-	inline _sem_t();
-	sem_t FSem;
-	uint16_t FCount;
-	uint16_t FIsUnlinked:1;
-	uint16_t :15;
-	uint32_t FId;
+	/** it's stored in shared memory
+	 *
+	 */
+	struct data_t
+	{
+		pthread_cond_t FPCond;
+		uint16_t FCount;//!< The number of "user"
+		uint16_t FIsUnlinked:1;
+		uint16_t :15;
+		uint32_t FId;
 
-	inline bool MIsValid() const;
-	inline void MInc();
-	inline bool MDec();
-	inline void MCreatedNew();
-});
-COMPILE_ASSERT((sizeof(_sem_t)+__alignof(sem_t))==CIPCSignalEvent::eReguredBufSize,InvalidSizeSem2_t);
-_sem_t::_sem_t()
+		inline bool MIsValid() const;
+		inline void MInc();
+		inline bool MDec();
+		inline void MCreatedNew();
+	};
+
+	CImpl():FData(NULL)
+	{
+
+	}
+	CImpl(uint8_t* aBuf, size_t aSize,CIPCSignalEvent::eOpenType const aType) :
+		FData(NULL)
+	{
+	}
+	static void MConditionCleanup(void *arg)
+	{
+		pthread_mutex_t *mutex = static_cast<pthread_mutex_t *>(arg);
+		pthread_mutex_unlock(mutex);
+	}
+	data_t* FData;//!< Pointer to data in shared memory
+	CText FName;//!< Name of mutex
+};
+namespace
 {
-	memset(this,0,sizeof(*this));
+COMPILE_ASSERT((sizeof(CIPCSignalEvent::CImpl::data_t))<=CIPCSignalEvent::eReguredBufSize,InvalidSizeCondvar_t);
+COMPILE_ASSERT(sizeof(CIPCSignalEvent::CImpl::data_t) ==(sizeof(uint32_t)*2//
+		+sizeof(pthread_cond_t)//
+		),IVALID_SIZEOF_DATA);
 }
-bool _sem_t::MIsValid() const
+bool CIPCSignalEvent::CImpl::data_t::MIsValid() const
 {
 	return FCount > 0 && !FIsUnlinked;
 }
-void _sem_t::MInc()
+void CIPCSignalEvent::CImpl::data_t::MInc()
 {
 	++FCount;
 }
-bool _sem_t::MDec()
+bool CIPCSignalEvent::CImpl::data_t::MDec()
 {
 	return --FCount==0;
 }
-inline void _sem_t::MCreatedNew()
+inline void CIPCSignalEvent::CImpl::data_t::MCreatedNew()
 {
 	FIsUnlinked=false;
 	FCount=0;
 	FId=get_uuid().MGetHash();
 }
-size_t CIPCSignalEvent::sMRequredBufSize()
+CIPCSignalEvent::CIPCSignalEvent() ://
+		FPImpl(new CImpl),
+		FType(E_UNDEF)
 {
-	return sizeof(_sem_t);
+	;
 }
-struct CIPCSignalEvent::CImpl
+CIPCSignalEvent::CIPCSignalEvent(uint8_t* aBuf, size_t aSize,
+		eOpenType const aHasToBeNew) :
+		FPImpl(new CImpl),//
+		FType(E_UNDEF)
 {
-	mutable _sem_t* FSignalEvent;
-	eOpenType FType;
-	CText FName;
-
-	CImpl() :
-			FSignalEvent(NULL),FType(E_UNDEF)
-	{
-
-	}
-};
-CIPCSignalEvent::CIPCSignalEvent() :
-		FPImpl(new CImpl)
-{
-
+	bool const _is=MInit(aBuf,aSize, aHasToBeNew);
+	DCHECK(_is);
 }
-CIPCSignalEvent::CIPCSignalEvent(uint8_t* aBuf, size_t aSize, eOpenType aIsNew) :
-		FPImpl(new CImpl)
+bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, 	eOpenType  aHasToBeNew)
 {
-	bool const _is=MInit(aBuf,aSize, aIsNew);
-	if(!_is)
-		MASSERT_1(false);
-}
-bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, eOpenType aHasToBeNew)
-{
-	CHECK_NOTNULL(FPImpl);
-	if (MIsInited())
-	{
-		LOG(ERROR)<<"Cannot init ipc se";
-		return false;
-	}
+	DCHECK_NOTNULL(aBuf);
 
-	if(aSize<sMRequredBufSize())
-	{
-		LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<<sMRequredBufSize();
-		return false;
-	}
-
-	CHECK_NOTNULL(aBuf);
-	CHECK_EQ(FPImpl->FSignalEvent,NULL);
-	FPImpl->FSignalEvent=(_sem_t*)get_alignment_address<sem_t>(aBuf);
-	CHECK_LE((void*)(FPImpl->FSignalEvent+1),(void*)(aBuf+aSize));
-	switch (aHasToBeNew)
-	{
-	case E_HAS_TO_BE_NEW:
-	{
-
-		if (FPImpl->FSignalEvent->MIsValid() || sem_init(&FPImpl->FSignalEvent->FSem, 1, 0)!=0)
-		{
-			if(FPImpl->FSignalEvent->MIsValid())
-				errno=EEXIST;
-			FPImpl->FSignalEvent = NULL;
-			LOG(ERROR) <<"Signal event has not created as error " << strerror(errno) << "(" << errno << ")";
-			return false;
-		}else
-			FPImpl->FSignalEvent->MCreatedNew();
-
-		break;
-	}
-	case E_HAS_EXIST:
-	{
-		int _val = 0;
-		//FImpl->FSem = ;//exist
-		if ( !FPImpl->FSignalEvent->MIsValid() || sem_getvalue(&FPImpl->FSignalEvent->FSem, &_val)!=0)
-		{
-			if(!FPImpl->FSignalEvent->MIsValid())
-				errno=ENOENT;
-			FPImpl->FSignalEvent = NULL;
-			LOG(ERROR)<<"Signal event has not created as error " << strerror(errno) << "(" << errno << ")";
-			return false;
-		}
-		break;
-	}
-
-	case E_UNDEF:
-	{
-		aHasToBeNew = E_HAS_EXIST;
-		int _val = 0;
-		if (!FPImpl->FSignalEvent->MIsValid() || sem_getvalue(&FPImpl->FSignalEvent->FSem, &_val)!=0)
-		{
-			aHasToBeNew = E_HAS_TO_BE_NEW;
-
-			if (sem_init(&FPImpl->FSignalEvent->FSem, 1, 0)!=0)
-			{
-				FPImpl->FSignalEvent = NULL;
-				LOG(ERROR) << " Signal event  has not created as error " << strerror(errno) << "(" << errno << ")";
-				return false;
-			}else
-				FPImpl->FSignalEvent->MCreatedNew();
-		}
-		break;
-	}
-	}
-	FPImpl->FSignalEvent->MInc();
-	FPImpl->FType=aHasToBeNew;
-	char _str[16];
-	sprintf(_str,"%u",FPImpl->FSignalEvent->FId);
-	FPImpl->FName=_str;
-	return true;
-}
-void CIPCSignalEvent::MFree()
-{
-	CHECK_NOTNULL(FPImpl);
-	if(!MIsInited())
-		return;
-/*	bool _is = sem_close(FPImpl->FSignalEvent) == 0;
-	VLOG(2) << "Event " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	(void)_is;*/
-	if(FPImpl->FSignalEvent->MDec())
-	{
-		MUnlink();
-	}
-
-	{
-		FPImpl->FSignalEvent = NULL;
-		FPImpl->FType = E_UNDEF;
-		FPImpl->FName.clear();
-	}
-}
-void CIPCSignalEvent::MUnlink()
-{
-	CHECK_NOTNULL(FPImpl);
-	if(!MIsInited())
-		return;
-	CHECK_NOTNULL(FPImpl->FSignalEvent);
-	bool const _is = sem_destroy(&FPImpl->FSignalEvent->FSem) == 0;
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	if(_is)
-		FPImpl->FSignalEvent->FIsUnlinked=true;
-}
-CIPCSignalEvent::~CIPCSignalEvent()
-{
-	MFree();
-	delete FPImpl;
-}
-bool CIPCSignalEvent::MTimedwait(CIPCSem * aMutex, const struct timespec* aVal)
-{
-	if(aVal)
-		return MTimedwait(aMutex,aVal->tv_sec+((double)aVal->tv_nsec)/1000.0/1000.0/1000.0);
-	VLOG(2) << "Event " << MName()<< " is waited for.";
-
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NOTNULL(FPImpl->FSignalEvent);
-
-
-	aMutex->MPost();
-	bool _is = sem_wait(&FPImpl->FSignalEvent->FSem) == 0;
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-
-	return _is;
-}
-bool CIPCSignalEvent::MTimedwait(CIPCSem *aMutex, double const aTime)
-{
-	CHECK_GE(aTime,0);
-	CHECK_LE(aTime,std::numeric_limits<unsigned>::max());
-	VLOG(2) << "Event  TimedWait " << MName()<<" Time = "<<aTime;
-	struct timespec tm;
-	if (clock_gettime(CLOCK_REALTIME, &tm) < 0)
-	{
-		LOG(DFATAL)<<"Clock reatime error "<<errno;
-		return false;
-	}
-	add(&tm, aTime);
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NOTNULL(FPImpl->FSignalEvent);
-
-	aMutex->MPost();
-	bool _is = sem_timedwait(&FPImpl->FSignalEvent->FSem,&tm) == 0;
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Event Wait error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
-}
-
-bool CIPCSignalEvent::MSignal()
-{
-	CHECK_NOTNULL(FPImpl);
-	VLOG(2) << "Event " << MName() << " will signaled.";
-	bool _is = sem_post(&FPImpl->FSignalEvent->FSem) == 0;
-	VLOG(2) << "Event " << MName() << " is singaled.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
-}
-NSHARE::CText const& CIPCSignalEvent::MName() const
-{
-	CHECK_NOTNULL(FPImpl);
-	return FPImpl->FName;
-}
-bool CIPCSignalEvent::MIsInited() const
-{
-	return FPImpl->FSignalEvent != NULL ;
-}
-#elif defined(SE_USING_FUTEX)
-SHARED_PACKED(struct _sem_t
-{
-	inline _sem_t();
-	int32_t FFutex;
-	uint16_t FCount;
-	uint16_t FIsUnlinked:1;
-	uint16_t :15;
-	uint32_t FId;
-
-	inline bool MIsValid() const;
-	inline void MInc();
-	inline bool MDec();
-	inline void MCreatedNew(int aVal);
-});
-COMPILE_ASSERT((sizeof(_sem_t)+__alignof(int32_t))==CIPCSignalEvent::eReguredBufSize,InvalidSizeSem2_t);
-_sem_t::_sem_t()
-{
-	memset(this,0,sizeof(*this));
-}
-bool _sem_t::MIsValid() const
-{
-	return FCount > 0 && !FIsUnlinked;
-}
-void _sem_t::MInc()
-{
-	++FCount;
-}
-bool _sem_t::MDec()
-{
-	return --FCount==0;
-}
-inline void _sem_t::MCreatedNew(int aVal)
-{
-	FIsUnlinked=false;
-	FCount=0;
-	FId=get_uuid().MGetHash();
-	FFutex=aVal;
-}
-size_t CIPCSignalEvent::sMRequredBufSize()
-{
-	return sizeof(_sem_t);
-}
-struct CIPCSignalEvent::CImpl
-{
-	mutable _sem_t* FSignalEvent;
-	eOpenType FType;
-	CText FName;
-
-	CImpl() :
-			FSignalEvent(NULL),FType(E_UNDEF)
-	{
-
-	}
-};
-CIPCSignalEvent::CIPCSignalEvent() :
-		FPImpl(new CImpl)
-{
-
-}
-CIPCSignalEvent::CIPCSignalEvent(uint8_t* aBuf, size_t aSize, eOpenType aIsNew) :
-		FPImpl(new CImpl)
-{
-	bool const _is=MInit(aBuf,aSize, aIsNew);
-	if(!_is)
-		MASSERT_1(false);
-}
-bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, eOpenType aHasToBeNew)
-{
-	CHECK_NOTNULL(FPImpl);
-	if (MIsInited())
-	{
-		LOG(ERROR)<<"Cannot init ipc se";
-		return false;
-	}
-
-	if(aSize<sMRequredBufSize())
-	{
-		LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<<sMRequredBufSize();
-		return false;
-	}
-
-	CHECK_NOTNULL(aBuf);
-	CHECK_EQ(FPImpl->FSignalEvent,NULL);
-	FPImpl->FSignalEvent=(_sem_t*)(((uintptr_t)aBuf+4)& ~(4-1));
-
-	CHECK_EQ((uintptr_t)FPImpl->FSignalEvent%4,0);
-
-	switch (aHasToBeNew)
-	{
-	case E_HAS_TO_BE_NEW:
-	{
-
-		if (FPImpl->FSignalEvent->MIsValid())
-		{
-			errno=EEXIST;
-			LOG(ERROR) <<"Signal event has not created as error " << strerror(errno) << "(" << errno << ")";
-			FPImpl->FSignalEvent = NULL;
-			return false;
-		}
-		FPImpl->FSignalEvent->MCreatedNew(0);
-		break;
-	}
-	case E_HAS_EXIST:
-	{
-		int _val = 0;
-		//FImpl->FSem = ;//exist
-		if ( !FPImpl->FSignalEvent->MIsValid())
-		{
-			errno=ENOENT;
-			FPImpl->FSignalEvent = NULL;
-			LOG(ERROR)<<"Signal event has not created as error " << strerror(errno) << "(" << errno << ")";
-			return false;
-		}
-		break;
-	}
-
-	case E_UNDEF:
-	{
-		aHasToBeNew = E_HAS_EXIST;
-		int _val = 0;
-		if (!FPImpl->FSignalEvent->MIsValid())
-		{
-			aHasToBeNew = E_HAS_TO_BE_NEW;
-			FPImpl->FSignalEvent->MCreatedNew(0);
-		}
-		break;
-	}
-	}
-	FPImpl->FSignalEvent->MInc();
-	FPImpl->FType=aHasToBeNew;
-	char _str[16];
-	sprintf(_str,"%u",FPImpl->FSignalEvent->FId);
-	FPImpl->FName=_str;
-	return true;
-}
-void CIPCSignalEvent::MFree()
-{
-	CHECK_NOTNULL(FPImpl);
-	if(!MIsInited())
-		return;
-/*	bool _is = sem_close(FPImpl->FSignalEvent) == 0;
-	VLOG(2) << "Event " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	(void)_is;*/
-	if(FPImpl->FSignalEvent->MDec())
-	{
-		MUnlink();
-	}
-
-	{
-		FPImpl->FSignalEvent = NULL;
-		FPImpl->FType = E_UNDEF;
-		FPImpl->FName.clear();
-	}
-}
-void CIPCSignalEvent::MUnlink()
-{
-}
-CIPCSignalEvent::~CIPCSignalEvent()
-{
-	MFree();
-	delete FPImpl;
-}
-bool CIPCSignalEvent::MTimedwait(CIPCSem * aMutex, const struct timespec* aVal)
-{
-	if(aVal)
-		return MTimedwait(aMutex,aVal->tv_sec+((double)aVal->tv_nsec)/1000.0/1000.0/1000.0);
-	VLOG(2) << "Event " << MName()<< " is waited for.";
-
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NOTNULL(FPImpl->FSignalEvent);
-
-	aMutex->MPost();
-    int s=-1;
-    bool  _is =false;
-    do {
-
-          /* Is the futex available? */
-
-          if ((_is=__sync_bool_compare_and_swap(&FPImpl->FSignalEvent->FFutex, 1, 0)))
-              break;      /* Yes */
-
-          /* Futex is not available; wait */
-
-          s = syscall(SYS_futex,&FPImpl->FSignalEvent->FFutex, FUTEX_WAIT, 0, NULL, NULL, 0);
-
-    }while(!_is && (s != -1 || errno == EAGAIN));
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-
-	return _is;
-}
-bool CIPCSignalEvent::MTimedwait(CIPCSem *aMutex, double const aTime)
-{
-	CHECK_GE(aTime,0);
-	CHECK_LE(aTime,std::numeric_limits<unsigned>::max());
-	VLOG(2) << "Event  TimedWait " << MName()<<" Time = "<<aTime;
-	struct timespec tm;
-	if (clock_gettime(CLOCK_REALTIME, &tm) < 0)
-	{
-		LOG(DFATAL)<<"Clock reatime error "<<errno;
-		return false;
-	}
-	add(&tm, aTime);
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NOTNULL(FPImpl->FSignalEvent);
-
-	aMutex->MPost();
-
-    int s=-1;
-    bool  _is =false;
-    do {
-
-          /* Is the futex available? */
-
-          if ((_is=__sync_bool_compare_and_swap(&FPImpl->FSignalEvent->FFutex, 1, 0)))
-              break;      /* Yes */
-
-          /* Futex is not available; wait */
-
-          s = syscall(SYS_futex,&FPImpl->FSignalEvent->FFutex, FUTEX_WAIT, 0, &tm, NULL, 0);
-
-    }while(!_is && (s != -1 || errno == EAGAIN));
-
-
-
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Event Wait error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
-}
-
-bool CIPCSignalEvent::MSignal()
-{
-	CHECK_NOTNULL(FPImpl);
-	VLOG(2) << "Event " << MName() << " will signaled.";
-
-	int s=0;
-
-	if (__sync_bool_compare_and_swap(&FPImpl->FSignalEvent->FFutex, 0, 1)) {
-
-		s = syscall(SYS_futex, &FPImpl->FSignalEvent->FFutex, FUTEX_WAKE, 1, NULL, NULL, 0);
-	}
-
-	bool _is = s != -1;
-	VLOG(2) << "Event " << MName() << " is singaled.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
-}
-NSHARE::CText const& CIPCSignalEvent::MName() const
-{
-	CHECK_NOTNULL(FPImpl);
-	return FPImpl->FName;
-}
-bool CIPCSignalEvent::MIsInited() const
-{
-	return FPImpl->FSignalEvent != NULL ;
-}
-#else
-extern size_t get_unique_name(char const* aPreifix,uint8_t* aTo,size_t aSize);
-
-size_t CIPCSignalEvent::sMRequredBufSize()
-{
-	return CIPCSem::eReguredBufSize;
-}
-struct CIPCSignalEvent::CImpl
-{
-	mutable sem_t* FSignalEvent;
-	eOpenType FType;
-	NSHARE::CText FName;
-	CImpl() :
-			FSignalEvent(SEM_FAILED),FType(E_UNDEF)
-	{
-
-	}
-};
-CIPCSignalEvent::CIPCSignalEvent() :
-		FPImpl(new CImpl)
-{
-
-}
-CIPCSignalEvent::CIPCSignalEvent(uint8_t* aBuf, size_t aSize, eOpenType aIsNew) :
-		FPImpl(new CImpl)
-{
-	MInit(aBuf,aSize, aIsNew);
-}
-bool CIPCSignalEvent::MInit(uint8_t* aBuf, size_t aSize, eOpenType aHasToBeNew)
-{
-	CHECK_NOTNULL(FPImpl);
 	if (MIsInited())
 	{
 		LOG(ERROR)<<"Cannot init ipc sem";
 		return false;
 	}
-	if(aSize<eReguredBufSize)
+
+	VLOG(2) << "Mutex  is initialized.";
+
+	if(aSize<sMRequredBufSize())
 	{
-		LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<< eReguredBufSize;
+		LOG(DFATAL)<<"Invalid size of buf "<<aSize<<" min size "<<sMRequredBufSize();
 		return false;
 	}
-	CHECK_NOTNULL(aBuf);
-	CHECK_EQ(FPImpl->FSignalEvent, SEM_FAILED);
 
-	VLOG(2) << "Event is initialized.";
+	FPImpl->FData=(CImpl::data_t*)get_alignment_address<CImpl::data_t>(aBuf);
+	DCHECK_LE((void*)(FPImpl->FData+1),(void*)(aBuf+aSize));
+	CImpl::data_t &_data=*FPImpl->FData;
 
-	void *const _p=memchr(aBuf,'\0',aSize);
-	bool const _is_empty=_p== NULL || _p==aBuf;
+	pthread_condattr_t attr;
+	int r = pthread_condattr_init(&attr);
+	if(r != 0)
+		goto error;
 
-	if(aHasToBeNew==E_UNDEF && _is_empty)
-	{
-		VLOG(2)<<"The buffer is empty. Create the mutex";
-		aHasToBeNew=E_HAS_TO_BE_NEW;
-	}
 
-	int oflags = O_CREAT | O_EXCL;
+	r = pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+	if(r != 0)
+		goto error;
 
 	switch (aHasToBeNew)
 	{
-		case E_HAS_TO_BE_NEW:
+	case CIPCSignalEvent::E_HAS_TO_BE_NEW:
+	{
+		if(_data.MIsValid())
 		{
-			get_unique_name("/ev",aBuf, aSize);
+			errno=EEXIST;
+			goto error;
+		}
+		r = pthread_cond_init(&(_data.FPCond), &attr);
 
-
-			FPImpl->FSignalEvent = sem_open((char*)aBuf, oflags, 0666, 0);
-			if (FPImpl->FSignalEvent == SEM_FAILED)
-			{
-				LOG(ERROR) << aBuf << " has not created as error " << strerror(errno) << "(" << errno << ")";
-				if (errno == EEXIST)
-				{
-					VLOG(2) << "The IPC mutex  is exist.";
-				}
-				return false;
-			}
-			break;
-		}
-		case E_HAS_EXIST:
+		if (r != 0)
+			goto error;
+		else
+			_data.MCreatedNew();
+		break;
+	}
+	case CIPCSignalEvent::E_HAS_EXIST:
+	{
+		if (!_data.MIsValid())
 		{
-			if(_is_empty)
-			{
-				LOG(ERROR)<<"The buffer is empty.";
-				return false;
-			}
-			oflags = 0;
-			FPImpl->FSignalEvent= sem_open((char*)aBuf, oflags);
-			if (FPImpl->FSignalEvent == SEM_FAILED)
-			{
-				LOG(ERROR) << aBuf << " has not created as error " << strerror(errno) << "(" << errno << ")";
-				//CHECK_NE(errno, EEXIST);
-				return false;
-			}
-			break;
-		}
-		case E_UNDEF:
-		{
-		aHasToBeNew = E_HAS_TO_BE_NEW;
-		int oflags = O_CREAT | O_EXCL;
-		FPImpl->FSignalEvent = sem_open((char*)aBuf, oflags, 0666, 0);
-		if (FPImpl->FSignalEvent == SEM_FAILED && errno == EEXIST)
-		{
-			VLOG(2) << "It's exist";
-			aHasToBeNew = E_HAS_EXIST;
-			oflags = O_CREAT;
-			FPImpl->FSignalEvent = sem_open((char*)aBuf, oflags, 0666, 0);
-		}
-		if (FPImpl->FSignalEvent == SEM_FAILED)
-		{
-			LOG(ERROR) << aBuf << " has not created as error " << strerror(errno) << "(" << errno << ")";
-			return false;
+			errno=ENOENT;
+			goto error;
 		}
 		break;
-		}
 	}
-	FPImpl->FType = aHasToBeNew;
-	FPImpl->FName=(char*)aBuf;
+
+	case CIPCSignalEvent::E_UNDEF:
+	{
+		aHasToBeNew = CIPCSignalEvent::E_HAS_EXIST;
+		if (!_data.MIsValid())
+		{
+			aHasToBeNew = CIPCSignalEvent::E_HAS_TO_BE_NEW;
+			r = pthread_cond_init(&(_data.FPCond), &attr);
+
+			if (r!=0)
+				goto error;
+			else
+				_data.MCreatedNew();
+		}
+		break;
+	}
+	}
+	pthread_condattr_destroy(&attr);
+	_data.MInc();
+
+	FType = aHasToBeNew;
+	char _str[16];
+	sprintf(_str,"%u",_data.FId);
+	FPImpl->FName=_str;
 	return true;
-}
-void CIPCSignalEvent::MFree()
-{
-	CHECK_NOTNULL(FPImpl);
-	if(FPImpl->FSignalEvent== SEM_FAILED)
-		return;
-	CHECK_NE(FPImpl->FSignalEvent, SEM_FAILED);
-	bool _is = sem_close(FPImpl->FSignalEvent) == 0;
-	VLOG(2) << "Event " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	(void)_is;
-	FPImpl->FSignalEvent= SEM_FAILED;
+error:
+ 	LOG(ERROR) << "Mutex has not created as it exist" << strerror(errno) << "(" << errno << ")";
+ 	pthread_condattr_destroy(&attr);
+
+ 	FPImpl->FData = NULL;
+	FType = CIPCSignalEvent::E_UNDEF;
 	FPImpl->FName.clear();
-}
-void CIPCSignalEvent::MUnlink()
-{
-	if(!MName().empty())
-		sem_unlink(MName().c_str());
+
+	return false;
 }
 CIPCSignalEvent::~CIPCSignalEvent()
 {
-	if(FPImpl->FSignalEvent!= SEM_FAILED)
-		MFree();
+	MFree();
 	delete FPImpl;
 }
-bool CIPCSignalEvent::MTimedwait(CIPCSem * aMutex, const struct timespec* aVal)
+void CIPCSignalEvent::MFree()
 {
-	if(aVal)
-		return MTimedwait(aMutex,aVal->tv_sec+((double)aVal->tv_nsec)/1000.0/1000.0/1000.0);
-	VLOG(2) << "Event " << MName()<< " is waited for.";
-
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NE(FPImpl->FSignalEvent, SEM_FAILED);
-
-
-	aMutex->MPost();
-	bool _is = sem_wait(FPImpl->FSignalEvent) == 0;
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
-}
-bool CIPCSignalEvent::MTimedwait(CIPCSem *aMutex, double const aTime)
-{
-	CHECK_GE(aTime,0);
-	CHECK_LE(aTime,std::numeric_limits<unsigned>::max());
-	VLOG(2) << "Event  TimedWait " << MName()<<" Time = "<<aTime;
-	struct timespec tm;
-	if (clock_gettime(CLOCK_REALTIME, &tm) < 0)
+	if(!MIsInited())
+		return;
+	if(FPImpl->FData->MDec())
 	{
-		LOG(DFATAL)<<"Clock reatime error "<<errno;
+		MUnlink();
+	}
+	{
+		FPImpl->FData = NULL;
+		FType = CIPCSignalEvent::E_UNDEF;
+		FPImpl->FName.clear();
+	}
+}
+void CIPCSignalEvent::MUnlink()
+{
+	if(!MIsInited())
+		return;
+	bool const _is = pthread_cond_destroy(&FPImpl->FData->FPCond) == 0;
+	DLOG_IF(ERROR,!_is) << "Unllink error " << strerror(errno)<<"("<<errno<<")";
+	if(_is)
+	{
+		FPImpl->FData->FIsUnlinked= true;
+	}
+}
+
+bool CIPCSignalEvent::MTimedwait(IMutex *aMutex)
+{
+	return MTimedwait(aMutex, -1);
+}
+bool CIPCSignalEvent::MTimedwait(IMutex *aIMutex, double const aTime)
+{
+	DCHECK(dynamic_cast<CIPCMutex*>(aIMutex)!=NULL);
+	CIPCMutex *aMutex=static_cast<CIPCMutex *>(aIMutex);
+
+	VLOG_IF(2,aTime>=0.0)
+			<< "Condvar is Waited for  Mutex " << aTime << " sec.";
+	VLOG_IF(2,aTime<0)
+			<< "Condvar is Waited for  Mutex an infinitely long time";
+//	aMutex->FIsForCondvar = true;
+#ifdef __QNX__
+	if (aMutex->MGetMutexType() != CIPCMutex::MUTEX_NORMAL)
+	{
+		std::cerr << "The Condvar is not  working with recursive mutex."
+				<< std::endl;
+		LOG(FATAL)<<"The Condvar is not  working with recursive mutex.";
 		return false;
 	}
-	add(&tm, aTime);
-	CHECK_NOTNULL(FPImpl);
-	CHECK_NE(FPImpl->FSignalEvent, SEM_FAILED);
-
-	aMutex->MPost();
-	bool _is = sem_timedwait(FPImpl->FSignalEvent,&tm) == 0;
-	aMutex->MWait();
-
-	VLOG(2) << "Sem " << MName() << " hold.";
-	LOG_IF(ERROR,!_is) << "Event Wait error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
+#endif
+	int _status=-1;
+	pthread_cleanup_push(CImpl::MConditionCleanup, aMutex->MGetPtr())
+		;
+		if (aTime > 0.0)
+		{
+			struct timespec tm;
+			if (clock_gettime(CLOCK_REALTIME, &tm) < 0)
+			{
+				LOG(DFATAL)<<"Clock reatime error "<<errno;
+				return false;
+			}
+			VLOG(2)<<"Wait for from "<<tm.tv_sec<<"."<<tm.tv_nsec;
+			add(&tm, aTime);
+			VLOG(2)<<"Wait for to "<<tm.tv_sec<<"."<<tm.tv_nsec;
+			_status = pthread_cond_timedwait(&FPImpl->FData->FPCond,
+					static_cast<pthread_mutex_t*>(aMutex->MGetPtr()), &tm);
+		}
+		else
+			_status = pthread_cond_wait(&FPImpl->FData->FPCond,
+					static_cast<pthread_mutex_t*>(aMutex->MGetPtr()));
+		VLOG_IF(1,_status<0) << "Condvar error " << strerror(errno)<<"("<<errno<<")";
+		pthread_cleanup_pop(0);
+	return !_status;
 }
-
-bool CIPCSignalEvent::MSignal()
+ bool CIPCSignalEvent::MSignal()
 {
-	CHECK_NOTNULL(FPImpl);
-	VLOG(2) << "Event " << MName() << " will signaled.";
-	bool _is = sem_post(FPImpl->FSignalEvent) == 0;
-	VLOG(2) << "Event " << MName() << " is singaled.";
-	LOG_IF(ERROR,!_is) << "Look error " << strerror(errno)<<"("<<errno<<")";
-	return _is;
+	return !pthread_cond_signal(&FPImpl->FData->FPCond);
 }
+ bool CIPCSignalEvent::MBroadcast()
+{
+	return !pthread_cond_broadcast(&FPImpl->FData->FPCond);
+}
+
+bool CIPCSignalEvent::MIsInited() const
+{
+	return FPImpl->FData != NULL;
+}
+
 NSHARE::CText const& CIPCSignalEvent::MName() const
 {
 	return FPImpl->FName;
 }
-bool CIPCSignalEvent::MIsInited() const
+size_t CIPCSignalEvent::sMRequredBufSize()
 {
-	return FPImpl->FSignalEvent != SEM_FAILED ;
+	return eReguredBufSize;
 }
-
+}
 #endif
-} /* namespace NSHARE */
-#endif
-
-
 

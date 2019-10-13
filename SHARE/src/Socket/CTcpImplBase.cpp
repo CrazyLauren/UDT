@@ -363,9 +363,13 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock,
 			break;
 #endif
 
-#ifdef	WSAEMSGSIZE
-			case WSAEMSGSIZE:
+#if defined (WSAEMSGSIZE) || defined(EMSGSIZE)
 
+#	ifdef WSAEMSGSIZE
+			case WSAEMSGSIZE:
+#	else 
+			case EMSGSIZE:
+#	endif
 			{
 				LOG(WARNING)<<"The buffer is small.";
 				break;
@@ -392,8 +396,13 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock,
 				break;
 			}
 #endif
-#ifdef WSAECONNRESET
+
+#if defined (WSAECONNRESET) || defined(ECONNRESET)
+#	ifdef WSAECONNRESET
 			case WSAECONNRESET:
+#	else
+			case ECONNRESET:
+#	endif
 			{
 				aDiag+=sent_state_t(sent_state_t::E_INVALID_VALUE,_avalable);
 				LOG(INFO) <<"Connection reset for socket "<<aSock;
@@ -401,6 +410,7 @@ int CTcpImplBase::MReadData(ISocket::data_t* aBuf, CSocket const& aSock,
 				break;
 			}
 #endif
+
 #ifdef EBADF
 			case EBADF:
 			{

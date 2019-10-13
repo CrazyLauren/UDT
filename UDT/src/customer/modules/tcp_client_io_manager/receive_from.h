@@ -25,6 +25,7 @@
 	RECEIVE(E_MAIN_CHANNEL_ERROR,main_channel_error_param_t)/*Ошибки открытия, закрытияб работы основного канала*/\
 	RECEIVE(E_USER_DATA_RECEIVED,user_data_received_t)/*Данные от пользователя получены ядром*/\
 	RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Ошибка при отправке данных*/\
+	RECEIVE(E_RTC_INFO,real_time_clocks_dg_t)/*RTC info*/\
 	/*END*/
 
 

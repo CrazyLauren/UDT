@@ -17,12 +17,19 @@
 #include <internel_protocol.h>
 #include <udt_types.h>
 #include <shared_types.h>
+#include <udt_rtc_types.h>
 namespace NUDT
 {
 typedef int descriptor_t;
 typedef std::vector<descriptor_t> descriptors_t;
 //convenient base class
-template<class _T> struct data_from_id
+
+/** Base class which is used to inform
+ * about new data from the other program
+ *
+ */
+template<class _T>
+struct data_from_id
 {	// store a pair of values
 	typedef data_from_id<_T> my_t;
 	typedef descriptor_t _id_t;
@@ -53,6 +60,63 @@ template<class _T> struct data_from_id
 	_id_t FId;
 	_type_t FVal;
 };
+template<class _Ty2> inline data_from_id<_Ty2> make_data_from(
+		descriptor_t _Val1, _Ty2 _Val2)
+{
+	return (data_from_id<_Ty2>(_Val1, _Val2));
+}
+/** Publisher data for specified
+ * program
+ *
+ */
+template<class _T>
+struct data_to_id
+{	// store a pair of values
+	typedef data_to_id<_T> my_t;
+	typedef descriptor_t _id_t;
+	typedef _T _type_t;
+	data_to_id() :
+			FId(-1), FVal(_T())
+	{	// construct from defaults
+	}
+
+	data_to_id(const descriptor_t& _Val1, const _T& _Val2) :
+			FId(_Val1), FVal(_Val2)
+	{	// construct from specified values
+	}
+
+	template<class _U>
+	data_to_id(const data_to_id<_U>& _Right) :
+			FId(_Right.FId), FVal(_Right.FVal)
+	{
+	}
+
+	void swap(my_t& _Right)
+	{
+		std::swap(FId, _Right.FId);
+		std::swap(FVal, _Right.FVal);
+	}
+	NSHARE::CText MName() const
+	{
+		return sMGetNameFor(FId);
+	}
+	static NSHARE::CText sMGetNameFor(descriptor_t const& aId)
+	{
+		DCHECK_GE(aId,0);
+		NSHARE::CText _str;
+		NSHARE::num_to_str(aId, _str);
+		_str+=_T::NAME;
+		return _str;
+	}
+
+	_id_t FId;
+	_type_t FVal;
+};
+template<class _Ty2> inline data_to_id<_Ty2> make_data_to(
+		descriptor_t _Val1, _Ty2 _Val2)
+{
+	return (data_to_id<_Ty2>(_Val1, _Val2));
+}
 
 ////////////////////////////////////////////
 struct descriptor_info_t:kernel_link
@@ -221,7 +285,6 @@ typedef data_from_id<demand_dgs_for_t> demand_dgs_for_by_id_t;
 typedef data_from_id<fail_send_t> fail_send_by_id_t;
 
 
-
 template<class _Ty2> inline
 bool operator==(const data_from_id<_Ty2>& _Left,
 		const data_from_id<_Ty2>& _Right)
@@ -265,11 +328,7 @@ bool operator>=(const data_from_id<_Ty2>& _Left,
 	return (!(_Left < _Right));
 }
 
-template<class _Ty2> inline data_from_id<_Ty2> make_data_from(
-		descriptor_t _Val1, _Ty2 _Val2)
-{
-	return (data_from_id<_Ty2>(_Val1, _Val2));
-}
+
 }
 namespace std
 {

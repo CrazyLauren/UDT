@@ -12,26 +12,46 @@
 #ifndef CCONDVAR_H_
 #define CCONDVAR_H_
 
+#include <UType/IConditionVariable.h>
+
 namespace NSHARE
 {
-#ifdef _MSC_VER
-	struct timespec;
-#endif
 /**\brief condition variable
  *
  */
-class SHARE_EXPORT CCondvar:CDenyCopying
+class SHARE_EXPORT CCondvar:public IConditionVariable,CDenyCopying
 {
 public:
-// Construction | Destruction
-	CCondvar();
-	~CCondvar(void);
 
+	/** Create condition variable
+	 *
+	 */
+	CCondvar();
+	~CCondvar();
+
+	/** @copydoc IConditionVariable::MSignal
+	 *
+	 */
 	bool MSignal(void);
-	bool MTimedwait(CMutex *, const struct timespec* = NULL);
-	bool MTimedwait(CMutex *, double const);
+
+	/** @copydoc IConditionVariable::MTimedwait(IMutex)
+	 *
+	 */
+	bool MTimedwait(IMutex * aMutex);
+
+	/** @copydoc IConditionVariable::MTimedwait(IMutex,double const)
+	 *
+	 */
+	bool MTimedwait(IMutex * aMutex, double const aTime);
+
+	/** @copydoc IConditionVariable::MTimedwait
+	 *
+	 */
 	bool MBroadcast(void);
 
+	/** Unit test
+	 *
+	 */
 	static bool sMUnitTest();
 private:
 	struct CImpl;

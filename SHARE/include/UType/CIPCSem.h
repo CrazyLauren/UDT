@@ -12,8 +12,9 @@
 #ifndef CIPCSEM_H_
 #define CIPCSEM_H_
 
+#include <UType/ISemaphore.h>
+
 #ifndef _WIN32
-# include <semaphore.h>
 #	if defined(__linux__) && defined(USING_FUTEX)
 #		define SEM_USING_FUTEX //!< using futex
 #	else
@@ -36,7 +37,7 @@ namespace NSHARE
  * has to be less eReguredBufSize-1).
  *
  */
-class SHARE_EXPORT CIPCSem:CDenyCopying
+class SHARE_EXPORT CIPCSem:public ISemaphore, CDenyCopying
 {
 public:
 	/**\brief Info about required buffer size
@@ -49,8 +50,7 @@ public:
 #elif defined(SEM_USING_FUTEX)
 		eReguredBufSize=sizeof(int32_t)+2*4+4
 #elif defined(SM_USING_SEM_INIT)
-		eReguredBufSize=(sizeof(sem_t)+2*4+__alignof(sem_t))
-		//eReguredBufSize=(sizeof(int32_t)+2*4+__alignof(int32_t))
+		eReguredBufSize=SIZEOF_SEM_T+2*sizeof(uint32_t)+__alignof(void*)
 #endif	
 	};
 
@@ -63,11 +63,6 @@ public:
 		E_HAS_TO_BE_NEW,//!<If the semaphore is exist then return error, otherwise creates it
 		E_HAS_EXIST//!<If the semaphore isn't exist then return error, otherwise opens it
 	};
-
-	/** @brief The maximal value of semaphore
-	 *
-	 */
-	static int const MAX_VALUE;
 
 	/** Default constructor
 	 *

@@ -158,8 +158,9 @@ const std::pair<const char*, const char*> CShareLogArgsParser::FOptsCommects[] =
 
 #define TO_SOCKET   17
 				std::make_pair("tosocket",
-						" Send to socket, Format: \"tosocket=\"Json-config\"")
-
+						" Send to socket, Format: \"tosocket=\"Json-config\""),
+#define SHORT_FILE_NAME   18
+				std::make_pair("short_name", "Removes path from file name")
 		//don't forget update methods sMGetDescription and MHandleValue
 		};
 #ifdef GLOG
@@ -183,6 +184,7 @@ const std::pair<const char*, const char*> CShareLogArgsParser::FOptsCommects[] =
 #	undef FILE_NAME
 #	undef OUTPUT_FUNC
 #	undef TO_SOCKET
+#	undef SHORT_FILE_NAME
 #endif
 
 #define IS_OPT(a) if(!_is&& (_is=(aOption==FOptsCommects[a].first)) )
@@ -408,6 +410,13 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		FLAGS_socket_setting=value;
 	}
 #endif
+
+#ifdef SHORT_FILE_NAME
+	IS_OPT(SHORT_FILE_NAME)
+	{
+		FLAGS_short_name=!FLAGS_short_name;
+	}
+#endif
 	if (!_is)
 		throw TCLAP::ArgParseException(
 				std::string("Unknown option: ") + aOption);
@@ -491,6 +500,10 @@ std::string CShareLogArgsParser::sMGetDescription()
 #endif
 #ifdef TO_SOCKET
 	ADD_DESCRIPTION(TO_SOCKET)
+#endif
+
+#ifdef SHORT_FILE_NAME
+	ADD_DESCRIPTION(SHORT_FILE_NAME)
 #endif
 
 #if defined(GLOG) || defined(CPLUS_LOG)

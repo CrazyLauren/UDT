@@ -37,6 +37,7 @@ namespace NSHARE
 
 CStackTrace::CStackTrace()
 {
+	memset(FBuffer,0,sizeof(FBuffer));
 #ifdef HAVE_BACKTRACE_SYMBOLS
 	FStackSize = backtrace(FBuffer, MAX_NUMBER_OF_FRAMES);
 #elif defined(HAVE_CAPTURESTACKBACKTRACE)
@@ -44,7 +45,6 @@ CStackTrace::CStackTrace()
 #else
 	FStackSize = 0;
 #endif
-	memset(FBuffer,0,sizeof(FBuffer));
 }
 
 /*#ifdef _MSC_VER
@@ -54,7 +54,7 @@ CStackTrace::CStackTrace()
 
 CText  CStackTrace::MDemangle(CText const& aName) const
 {
-	CText sym_demangled="<unknown function>";
+	CText sym_demangled=aName;
 #ifdef HAVE_CXXABI_H
 	int status;
 	char *realname = abi::__cxa_demangle(aName.c_str(), 0, 0, &status);

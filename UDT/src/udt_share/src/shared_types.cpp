@@ -266,7 +266,7 @@ NSHARE::CConfig kernel_link::MSerialize() const
 bool kernel_link::MIsValid() const
 {
 	return FProgramm.MIsValid()
-			&& FLatency != std::numeric_limits<unsigned>::max();
+			&& FLatency != std::numeric_limits<uint16_t>::max();
 }
 
 const NSHARE::CText kernel_infos_t::NAME = "kinf";
@@ -378,7 +378,7 @@ extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
 				LOG(DFATAL) << "Unknown error";
 			}
 		}
-		LOG(DFATAL)<<"Cannot serialize head by custom protocol: "<<_proto;
+		LOG(WARNING)<<"Cannot serialize head by custom protocol: "<<_proto;
 		return aWhat.MSerialize();
 	}
 }

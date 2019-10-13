@@ -130,6 +130,8 @@ inline std::string level_to_string(eLavel aLevel)
 
 #define FLAGS_output_func_name DECLARE_flags(output_func_name)
 
+#define FLAGS_short_name DECLARE_flags(short_name)
+
 struct SHARE_EXPORT _log4cplus_impl
 {
 
@@ -175,6 +177,9 @@ DEFINE_FLAG	(std::string, log_link)
 	DEFINE_FLAG(std::string, file_name)
 
 	DEFINE_FLAG(std::string, socket_setting)
+
+	DEFINE_FLAG(bool, short_name)
+
 #undef DEFINE_FLAG
 
 	enum eLoggerType
@@ -233,7 +238,15 @@ DEFINE_FLAG	(std::string, log_link)
 		FIsDoing(
 				Level >= FLAGS_minloglevel && check_logger_avaible(FFile,FLine))
 		{
-
+			if(FLAGS_short_name)
+			{
+				const char* slash = strrchr(aFile, '/');
+				#ifdef _WIN32
+				if (!slash)
+					slash = strrchr(aFile, '\\');
+				#endif
+				FFile= slash ? slash + 1 : aFile;
+			}
 		}
 		~__logging_t()
 		{

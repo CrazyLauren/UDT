@@ -57,6 +57,7 @@ const NSHARE::CText CCustomer::EVENT_FAILED_SEND = "event_failed_send";
 const NSHARE::CText CCustomer::EVENT_RECEIVER_SUBSCRIBE = "event_receiver";
 const NSHARE::CText CCustomer::EVENT_RECEIVER_UNSUBSCRIBE = "remove_receiver";
 
+const NSHARE::CText CCustomer::EVENT_UPDATE_RTC_INFO = "rtc_info_updated";
 
 //kernel's error
 COMPILE_ASSERT(sizeof(CCustomer::error_t)==sizeof(error_type),E_INVALID_ERROR_SIZE);
@@ -82,12 +83,6 @@ CCustomer::CCustomer() :
 		FImpl(new _pimpl(*this))
 {
 }
-int CCustomer::MInitialize(NSHARE::CText const& aProgram,
-		NSHARE::CText const& aName,NSHARE::version_t const& Version)
-{
-	CHECK_NOTNULL(FImpl);
-	return FImpl->MInitialize(aProgram, aName,Version);
-}
 CCustomer::~CCustomer()
 {
 	delete FImpl;
@@ -95,7 +90,7 @@ CCustomer::~CCustomer()
 
 const program_id_t& CCustomer::MGetID() const
 {
-	return FImpl->FMyId;
+	return MGetImpl().FMyId;
 }
 static void f_init_log(int argc, char const* argv[])
 {
@@ -177,58 +172,62 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 		const NSHARE::CConfig& aConf)
 {
 	f_init_log(argc, argv);
-	//read config
-	_pimpl::sMInitConfigure(aConf);
-	//fixme to constructor
-	//init rrd client
-	new CCustomer();
-	CCustomer* _p =CCustomer::sMGetInstancePtr();
-	const int _rval = _p->MInitialize(argv[0], aName,aVersion);
+
+	new CConfigure();
+
+	VLOG(1) << "Read Internal config " << aConf;
+
+	CConfigure::sMGetInstance().MGet().MMerge(aConf);
+	VLOG(1) << "Final config " << CConfigure::sMGetInstance().MGet();
+
+	CCustomer* _p=new CCustomer();
+
+	const int _rval = _p->MGetImpl().MInitialize(argv[0], aName,aVersion);
+
 	if (_rval != 0)
-		delete _p;
+	{
+		sMFree();
+	}
 	return _rval;
 }
 void CCustomer::sMFree()
 {
 	delete CCustomer::sMGetInstancePtr();
+	delete CConfigure::sMGetInstancePtr();
 	sFSingleton=NULL;
 	/// \TODO it
 }
 bool CCustomer::MIsOpened() const
 {
-	return FImpl->MIsOpened();
+	return MGetImpl().MIsOpened();
 }
 bool CCustomer::MIsConnected() const
 {
-	return FImpl->MIsConnected();
+	return MGetImpl().MIsConnected();
 }
 bool CCustomer::MOpen()
 {
-	return FImpl->MOpen();
+	return MGetImpl().MOpen();
 }
 
 void CCustomer::MClose()
 {
-	FImpl->MClose();
+	MGetImpl().MClose();
 }
 
 bool CCustomer::MAvailable(const NSHARE::CText& aModule) const
 {
-	return FImpl->MAvailable(aModule);
-}
-bool CCustomer::MAvailable() const
-{
-	return FImpl->MAvailable();
+	return MGetImpl().MAvailable(aModule);
 }
 CCustomer::modules_t CCustomer::MModules() const
 {
-	return FImpl->MAllAvailable();
+	return MGetImpl().MAllAvailable();
 }
 
 std::vector<request_info_t> CCustomer::MGetMyWishForMSG() const
 {
 	std::vector<request_info_t> _wish;
-	FImpl->MGetMyWishForMSG(_wish);
+	MGetImpl().MGetMyWishForMSG(_wish);
 	return _wish;
 }
 int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
@@ -246,16 +245,16 @@ int CCustomer::MIWantReceivingMSG(const NSHARE::CText& aFrom,
 }
 int CCustomer::MIWantReceivingMSG(const requirement_msg_info_t& aHeader, const callback_t& aCB)
 {
-	return FImpl->MSettingDgParserFor( aHeader, aCB);
+	return MGetImpl().MSettingDgParserFor( aHeader, aCB);
 }
 
 int CCustomer::MDoNotReceiveMSG(const requirement_msg_info_t& aNumber)
 {
-	return FImpl->MRemoveDgParserFor(aNumber);
+	return MGetImpl().MRemoveDgParserFor(aNumber);
 }
 int CCustomer::MDoNotReceiveMSG(unsigned aHandlerId)
 {
-	return FImpl->MRemoveDgParserFor(aHandlerId);
+	return MGetImpl().MRemoveDgParserFor(aHandlerId);
 }
 int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
@@ -264,22 +263,21 @@ int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 	_msg.FRequired.FVersion = MGetID().FVersion;
 	_msg.FRequired.FNumber = aNumber;
 	_msg.FFrom=aFrom;
-	return FImpl->MRemoveDgParserFor( _msg);
+	return MGetImpl().MRemoveDgParserFor( _msg);
 }
 
 int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 		eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), aBuffer, "",
+	int _result = MGetImpl().MSendTo(aProtocolName.MToLowerCase(), aBuffer, "",
 			aFlag);
 	return _result;
 }
 int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 		const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), aBuffer, aTo,
+
+	int _result = MGetImpl().MSendTo(aProtocolName.MToLowerCase(), aBuffer, aTo,
 			aFlag);
 	return _result;
 }
@@ -287,41 +285,41 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 		eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
+
+	NSHARE::CBuffer _buf = MGetImpl().MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
 		return static_cast<int>(ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
-	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, "", aFlag);
+	int _result = MGetImpl().MSendTo(aProtocolName.MToLowerCase(), _buf, "", aFlag);
 	return _result;
 }
 int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 		const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	NSHARE::CBuffer _buf = FImpl->MGetNewBuf(aSize);
+
+	NSHARE::CBuffer _buf = MGetImpl().MGetNewBuf(aSize);
 	if (_buf.size() != aSize)
 		return static_cast<int>(ERROR_CANNOT_ALLOCATE_BUFFER_OF_REQUIREMENT_SIZE);
 	memcpy(_buf.ptr(), aBuffer, aSize);
 
-	int _result = FImpl->MSendTo(aProtocolName.MToLowerCase(), _buf, aTo,
+	int _result = MGetImpl().MSendTo(aProtocolName.MToLowerCase(), _buf, aTo,
 			aFlag);
 	return _result;
 }
 int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,NSHARE::version_t const& aVer,
 		eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
 
-	int _result = FImpl->MSendTo(aNumber, aBuffer, aVer,aFlag);
+
+	int _result = MGetImpl().MSendTo(aNumber, aBuffer, aVer,aFlag);
 	return _result;
 }
 int CCustomer::MSend(unsigned aNumber, NSHARE::CBuffer & aBuffer,
 		const NSHARE::uuid_t& aTo,NSHARE::version_t const& aVer, eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	int _result = FImpl->MSendTo(aNumber, aBuffer, aTo,aVer, aFlag);
+
+	int _result = MGetImpl().MSendTo(aNumber, aBuffer, aTo,aVer, aFlag);
 	return _result;
 }
 int CCustomer::MSend(required_header_t const& aNumber,
@@ -329,96 +327,107 @@ int CCustomer::MSend(required_header_t const& aNumber,
 		const NSHARE::uuid_t& aTo,
 		eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
-	int _result = FImpl->MSendTo(aNumber,aProtocolName, aBuffer, aTo,aFlag);
+
+	int _result = MGetImpl().MSendTo(aNumber,aProtocolName, aBuffer, aTo,aFlag);
 	return _result;
 }
 int CCustomer::MSend(required_header_t const& aNumber,
 		NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 		eSendToFlags aFlag)
 {
-	CHECK_NOTNULL(FImpl);
 
-	int _result = FImpl->MSendTo(aNumber, aProtocolName,aBuffer,aFlag);
+
+	int _result = MGetImpl().MSendTo(aNumber, aProtocolName,aBuffer,aFlag);
 	return _result;
 }
 program_id_t CCustomer::MCustomer(NSHARE::uuid_t const& aUUID) const
 {
-	return FImpl->MCustomer(aUUID);
+	return MGetImpl().MCustomer(aUUID);
 }
 CCustomer::customers_t CCustomer::MCustomers() const
 {
-	return FImpl->MCustomers();
+	return MGetImpl().MCustomers();
 }
 
 bool CCustomer::operator+=(event_handler_info_t const & aVal)
 {
-	return FImpl->operator +=(aVal);
+	return MGetImpl().operator +=(aVal);
 }
 bool CCustomer::operator-=(event_handler_info_t const & aVal)
 {
-	return FImpl->operator -=(aVal);
+	return MGetImpl().operator -=(aVal);
 }
 bool CCustomer::MAdd(event_handler_info_t const & aVal, unsigned int aPrior)
 {
-	return FImpl->MAdd(aVal, aPrior);
+	return MGetImpl().MAdd(aVal, aPrior);
 }
 bool CCustomer::MErase(event_handler_info_t const& aVal)
 {
-	return FImpl->MErase(aVal);
+	return MGetImpl().MErase(aVal);
 }
 
 bool CCustomer::MChangePrior(event_handler_info_t const&aVal, unsigned int aPrior)
 {
-	return FImpl->MChangePrior(aVal, aPrior);
+	return MGetImpl().MChangePrior(aVal, aPrior);
 }
 bool CCustomer::MIs(event_handler_info_t const& aVal) const
 {
-	return FImpl->MIs(aVal);
+	return MGetImpl().MIs(aVal);
 }
 bool CCustomer::MIsKey(NSHARE::CText const& aVal) const
 {
-	return FImpl->MIsKey(aVal);
+	return MGetImpl().MIsKey(aVal);
 }
 std::ostream& CCustomer::MPrintEvents(std::ostream & aStream) const
 {
-	return FImpl->MPrintEvents(aStream);
+	return MGetImpl().MPrintEvents(aStream);
 }
 
 bool CCustomer::MEmpty() const
 {
-	return FImpl->MEmpty();
+	return MGetImpl().MEmpty();
 }
 NSHARE::CBuffer CCustomer::MGetNewBuf(std::size_t aSize) const
 {
-	CHECK_NOTNULL(FImpl);
-	return FImpl->MGetNewBuf(aSize);
+
+	return MGetImpl().MGetNewBuf(aSize);
 }
 const NSHARE::version_t& CCustomer::sMVersion()
 {
 	return g_cutomer_version;
 }
+
+int CCustomer::MWaitForEvent(NSHARE::Strings const& aEvents,double aSec)
+{
+	return MGetImpl().MWaitForEvent(aEvents,aSec);
+}
 int CCustomer::MWaitForEvent(NSHARE::CText const& aEvent, double aSec)
 {
-	CHECK_NOTNULL(FImpl);
-	return FImpl->MWaitForEvent(aEvent,aSec);
+	NSHARE::Strings _list;
+	_list.push_back(aEvent);
+	return MGetImpl().MWaitForEvent(_list,aSec);
 }
 void CCustomer::MJoin()
 {
-	CHECK_NOTNULL(FImpl);
-	return FImpl->MJoin();
+
+	return MGetImpl().MJoin();
 }
 IRtc* CCustomer::MGetRTC(NSHARE::CText const& aName) const
 {
-	return FImpl->MGetRTC(aName);
+	return MGetImpl().MGetRTC(aName);
 }
 std::vector<IRtc*> CCustomer::MGetListOfRTC() const
 {
-	return FImpl->MGetListOfRTC();
+	return MGetImpl().MGetListOfRTC();
 }
 std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
 {
 	return aStream<<static_cast<eErrorBitwiseCode>(encode_inner_error(aVal));
+}
+CCustomer::_pimpl& CCustomer::MGetImpl() const
+{
+	DCHECK_NOTNULL(FImpl);
+	return *FImpl;
 }
 } //
 

@@ -22,12 +22,17 @@ NUDT::CDataObject::singleton_pnt_t  NUDT::CDataObject::singleton_t::sFSingleton 
 		NULL;
 namespace NUDT
 {
+const NSHARE::CText real_time_clocks_updated_t::NAME = "RealTimeClockUpdated";
+const NSHARE::CText new_real_time_clocks_t::NAME = "RealTimeClock";
 const NSHARE::CText progs_id_from_t::NAME = "ProgsIdFrom";
 const NSHARE::CText recv_data_from_t::NAME = "ReceiveFrom";
+const NSHARE::CText send_data_to_t::NAME = "SendDataTo";
 const NSHARE::CText req_recv_t::NAME = "ListOfFilters";
 const NSHARE::CText fail_send_id_t::NAME = "FailSent";
 const NSHARE::CText fail_send_id_from_me_t::NAME = "FailSent2";
 const NSHARE::CText demand_dgs_id_t::NAME = "Demands";
+const NSHARE::CText connected_to_kernel_t::NAME = "event_connected";
+const NSHARE::CText disconnected_from_kernel_t::NAME = "event_disconnected";
 
 static int number_of_thread()
 {
@@ -36,7 +41,8 @@ static int number_of_thread()
 			_num);
 	return _num;
 }
-CDataObject::CDataObject() :CHardWorker(number_of_thread())
+CDataObject::CDataObject() ://
+		CHardWorker(number_of_thread())
 {
 }
 
@@ -57,18 +63,31 @@ void CDataObject::MUserOperation(const NSHARE::CThread* WHO,
 		NSHARE::operation_t* WHAT, const NSHARE::CText& aWhat)
 {
 	VLOG(2) << "Operation for user data " << aWhat;
-	CHECK_EQ(recv_data_from_t::NAME, aWhat);
 	args_data_t _args;
 	_args.FType = aWhat;
-	recv_data_from_t _data;
+	recv_data_from_t _recv_data;
+	send_data_to_t _send_data;
+	if(aWhat==recv_data_from_t::NAME)
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FUserDataMutex);
 		CHECK(!FUserDataFIFO.empty());
-		_data = FUserDataFIFO.front();
+		_recv_data = FUserDataFIFO.front();
 		FUserDataFIFO.pop_front();
+		_args.FPointToData = &_recv_data;
+	}else
+	{
+		DCHECK_EQ(send_data_to_t::NAME, aWhat);
+
+		NSHARE::CRAII<NSHARE::CMutex> _blocked(FUserDataMutex);
+		CHECK(!FOutUserDataFIFO.empty());
+		_send_data = FOutUserDataFIFO.front();
+		FOutUserDataFIFO.pop_front();
+		_args.FPointToData = &_send_data;
+
+		DCHECK_EQ(_send_data.FData.FData.use_count(), 1);
 	}
 
-	_args.FPointToData = &_data;
+
 	VLOG(1) << "Call";
 	int _count = MCall(aWhat, &_args);
 	VLOG(1) << "EOK:" << _count;
@@ -91,13 +110,26 @@ void CDataObject::MPush(const progs_id_from_t & aVal)
 {
 	MPushImpl(aVal,false);
 }
-void CDataObject::MPush(const recv_data_from_t & aVal)
+void  CDataObject::MPush(send_data_to_t & aVal)
+{
+	VLOG(2) << "USER DATA Push " << recv_data_from_t::NAME << " data size = "
+						<< aVal.FData.FData.size();
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _blocked(FUserDataMutex);
+		DCHECK_EQ(aVal.FData.FData.use_count(), 1);
+		FOutUserDataFIFO.push_back(aVal);
+		aVal.FData.FData.release();
+	}
+	MNewDataFor(send_data_to_t::NAME, sMUserDataOperation);
+}
+void CDataObject::MPush(recv_data_from_t & aVal)
 {
 	VLOG(2) << "USER DATA Push " << recv_data_from_t::NAME << " data size = "
 						<< aVal.FData.FData.size();
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _blocked(FUserDataMutex);
 		FUserDataFIFO.push_back(aVal);
+		aVal.FData.FData.release();
 	}
 	MNewDataFor(recv_data_from_t::NAME, sMUserDataOperation);
 }

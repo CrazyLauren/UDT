@@ -13,6 +13,7 @@
  */
 #include <deftype>
 #include <unit_tests.h>
+#include <UType/CIPCMutex.h>
 
 const NSHARE::CText NSHARE::version_t::NAME = "ver";//by historical reason
 
@@ -62,7 +63,17 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 		std::cerr << "CCondvar::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+	if (!NSHARE::CIPCMutex::sMUnitTest())
+	{
+		std::cerr << "CIPCMutex::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
 
+	if (!NSHARE::CIPCSignalEvent::sMUnitTest())
+	{
+		std::cerr << "CIPCSignalEvent::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
 	if (!NSHARE::CText::sMUnitTest())
 	{
 		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
@@ -128,7 +139,7 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 template<typename TMutex>
 struct CMutexTestImpl
 {
-	TMutex mutex;
+	TMutex &mutex;
 	atomic_t thread_number;
 	volatile bool is;
 	std::vector<SHARED_PTR<CThread> > threads;
@@ -145,7 +156,8 @@ struct CMutexTestImpl
 		}
 		return is;
 	}
-	CMutexTestImpl()
+	CMutexTestImpl(TMutex & aMutex):
+		mutex(aMutex)
 	{
 		thread_number=0;
 		is=true;
@@ -176,13 +188,10 @@ struct CMutexTestImpl
 	}
 
 };
-template<typename Mutex>
-bool test_mutex()
+bool test_mutex_normal(IMutex& _mutex1,IMutex& _mutex2,IMutex& _mutex3)
 {
 	{
-		Mutex _mutex1(Mutex::MUTEX_NORMAL);
-		Mutex _mutex2(Mutex::MUTEX_NORMAL);
-		Mutex _mutex3(Mutex::MUTEX_NORMAL);
+
 		{
 			_mutex1.MLock();
 			_mutex2.MLock();
@@ -202,31 +211,45 @@ bool test_mutex()
 			_mutex1.MUnlock();
 		}
 	}
-	{
-		bool _is = true;
-		Mutex _mutex1(Mutex::MUTEX_RECURSIVE);
-		Mutex _mutex2(Mutex::MUTEX_RECURSIVE);
-
-		_mutex1.MLock();
-		_mutex2.MLock();
-		_is = _mutex1.MCanLock() && _is;
-		_is = _mutex2.MCanLock() && _is;
-
-		_mutex1.MUnlock();
-		_mutex2.MUnlock();
-
-		_mutex1.MUnlock();
-		_mutex2.MUnlock();
-		if (!_is)
-			return false;
-	}
-	CMutexTestImpl<Mutex> _test;
+	CMutexTestImpl<IMutex> _test(_mutex1);
 	return _test.MIs();
 }
+bool test_mutex_recursive(IMutex& _mutex1,IMutex& _mutex2)
+{
+	bool _is = true;
+	_mutex1.MLock();
+	_mutex2.MLock();
+	_is = _mutex1.MCanLock() && _is;
+	_is = _mutex2.MCanLock() && _is;
 
+	_mutex1.MUnlock();
+	_mutex2.MUnlock();
+
+	_mutex1.MUnlock();
+	_mutex2.MUnlock();
+	return _is;
+}
 bool CMutex::sMUnitTest()
 {
-	return test_mutex<CMutex>();
+	CMutex _mutex1(CMutex::MUTEX_NORMAL);
+	CMutex _mutex2(CMutex::MUTEX_NORMAL);
+	CMutex _mutex3(CMutex::MUTEX_NORMAL);
+
+	CMutex _rmutex1(CMutex::MUTEX_RECURSIVE);
+	CMutex _rmutex2(CMutex::MUTEX_RECURSIVE);
+	return test_mutex_normal(_mutex1,_mutex2,_mutex3) //
+			&& test_mutex_recursive(_rmutex1,_rmutex2);
+}
+bool CIPCMutex::sMUnitTest()
+{
+	uint8_t _buf1[CIPCMutex::eReguredBufSize];
+	uint8_t _buf2[CIPCMutex::eReguredBufSize];
+	uint8_t _buf3[CIPCMutex::eReguredBufSize];
+
+	CIPCMutex _mutex1(_buf1,sizeof(_buf1),CIPCMutex::E_HAS_TO_BE_NEW);
+	CIPCMutex _mutex2(_buf2,sizeof(_buf2),CIPCMutex::E_HAS_TO_BE_NEW);
+	CIPCMutex _mutex3(_buf3,sizeof(_buf3),CIPCMutex::E_HAS_TO_BE_NEW);
+	return test_mutex_normal(_mutex1,_mutex2,_mutex3);
 }
 /****************************************************
  *		      		Condvar test		     		*
@@ -235,55 +258,46 @@ namespace condvar_test_impl
 {
 using namespace NSHARE;
 char buffer[50] = "";
-CMutex bufferLock(CMutex::MUTEX_NORMAL);
-CCondvar cond;
+IMutex *bufferLock;
+IConditionVariable* cond;
 bool ok = true;
 eCBRval thread1_run(void*, void*, void*)
 {
 	NSHARE::usleep(1000);
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 10; ++i, NSHARE::usleep(rand() % 500))
 	{
-
-		bufferLock.MLock();
-
-		for (HANG_INIT;buffer[0] != '\0'; HANG_CHECK)
-		{
-			cond.MTimedwait(&bufferLock);
-		}
-
+		CRAII<IMutex> _lock(*bufferLock);
 		sprintf(buffer, "%d", i);
-		bufferLock.MUnlock();
-
-		NSHARE::usleep(rand() % 500);
+		cond->MSignal();
 	}
 	return E_CB_SAFE_IT;
 }
 
 eCBRval thread2_run(void*, void*, void*)
 {
-	for (int i = 0; i < 10;)
+	for (int i = 0; i < 10; ++i)
 	{
-
-		bufferLock.MLock();
-		for (; strlen(buffer); NSHARE::usleep(10000))
 		{
+			CRAII<IMutex> _lock(*bufferLock);
+			for (HANG_INIT; buffer[0] == '\0'; HANG_CHECK)
+			{
+				cond->MTimedwait(bufferLock);
+			}
 			char _str[5];
 			sprintf(_str, "%d", i);
 			ok = (strcmp(buffer, _str) == 0) && ok;
-			buffer[0] = '\0';
-
-			cond.MSignal();
-			++i;
-		}
-		bufferLock.MUnlock();
-
-		NSHARE::usleep(rand() % 500);
+			buffer[0] = '\0';			
+		}		
 	}
 	return E_CB_SAFE_IT;
 }
 }
 bool CCondvar::sMUnitTest()
 {
+	condvar_test_impl::ok=true;
+	condvar_test_impl::buffer[0]='\0';
+	condvar_test_impl::bufferLock =new CMutex(CMutex::MUTEX_NORMAL);
+	condvar_test_impl::cond =new CCondvar;
 	CThread t1;
 	t1 += CB_t(condvar_test_impl::thread1_run, NULL);
 	CThread t2;
@@ -294,6 +308,34 @@ bool CCondvar::sMUnitTest()
 
 	t1.MJoin();
 	t2.MJoin();
+	delete condvar_test_impl::bufferLock;
+	delete condvar_test_impl::cond;
+	return condvar_test_impl::ok;
+}
+bool CIPCSignalEvent::sMUnitTest()
+{
+	condvar_test_impl::ok=true;
+	condvar_test_impl::buffer[0]='\0';
+	uint8_t _buf_mutex[CIPCMutex::eReguredBufSize];
+	uint8_t _buf_condvar[CIPCSignalEvent::eReguredBufSize];
+
+	condvar_test_impl::bufferLock = new CIPCMutex(_buf_mutex, sizeof(_buf_mutex),
+			CIPCMutex::E_HAS_TO_BE_NEW);
+
+	condvar_test_impl::cond =new CIPCSignalEvent(_buf_condvar, sizeof(_buf_condvar),
+			CIPCSignalEvent::E_HAS_TO_BE_NEW);
+	CThread t1;
+	t1 += CB_t(condvar_test_impl::thread1_run, NULL);
+	CThread t2;
+	t2 += CB_t(condvar_test_impl::thread2_run, NULL);
+
+	t1.MCreate();
+	t2.MCreate();
+
+	t1.MJoin();
+	t2.MJoin();
+	delete condvar_test_impl::bufferLock;
+	delete condvar_test_impl::cond;
 	return condvar_test_impl::ok;
 }
 /****************************************************

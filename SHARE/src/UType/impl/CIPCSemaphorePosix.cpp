@@ -24,7 +24,6 @@
 
 namespace NSHARE
 {
-int const CIPCSem::MAX_VALUE=SEM_VALUE_MAX;
 CIPCSem::CIPCSem(uint8_t* aBuf, size_t aSize, unsigned int value,
 		eOpenType const aHasToBeNew) :
 		FImpl(NULL),//

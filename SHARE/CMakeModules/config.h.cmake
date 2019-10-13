@@ -20,6 +20,11 @@
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_WINSOCK_H
 #cmakedefine HAVE_FUTEX_H
+#cmakedefine HAVE_POSIX_SEMAPHORES
+#cmakedefine SIZEOF_PTHREAD_MUTEX_T @SIZEOF_PTHREAD_MUTEX_T@
+#cmakedefine SIZEOF_PTHREAD_COND_T @SIZEOF_PTHREAD_COND_T@
+#cmakedefine SIZEOF_SEM_T @SIZEOF_SEM_T@
+
 
 
 

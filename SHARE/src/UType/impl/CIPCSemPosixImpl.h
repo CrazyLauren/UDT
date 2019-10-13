@@ -11,10 +11,10 @@
  */
 #ifndef CIPCSEMPOSIXIMPL_H_
 #define CIPCSEMPOSIXIMPL_H_
-
+#include <UType/ISemaphore.h>
 namespace NSHARE
 {
-struct CIPCSem::CImpl
+struct CIPCSem::CImpl:ISemaphore
 {
 	virtual ~CImpl()
 	{

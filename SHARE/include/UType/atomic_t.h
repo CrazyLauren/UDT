@@ -43,12 +43,21 @@ namespace NSHARE
 			//explicit atomic_t(value_type const& aVal=value_type(1));
 
 
-			void MAdd(int const& aVal) ;
-			value_type MIncrement() ;
+			void MAdd(int const& aVal);
+			void MAdd(int const& aVal) volatile;
+			value_type MIncrement();
+			value_type MIncrement() volatile;
 			value_type MDecrement() ;
+			value_type MDecrement() volatile;
+
 			bool MIsOne() const;
+			bool MIsOne() const volatile;
+
 			value_type MValue() const;
+			value_type MValue() volatile const;
+
 			void MWrite(value_type const& aVal);
+			void MWrite(value_type const& aVal) volatile;
 
 			/** Compare value with #aEqualOf
 			 * if equal then write value #aVal
@@ -59,17 +68,31 @@ namespace NSHARE
 			 *
 			 */
 			value_type MWriteIfEqual(value_type const& aVal,value_type const& aEqualOf);
+			value_type MWriteIfEqual(value_type volatile const& aVal,value_type volatile const& aEqualOf) volatile;
 
 			inline operator value_type() const {
 				return MValue();
 			}
+			inline operator value_type() const volatile{
+				return MValue();
+			}
 			inline void operator-=(const value_type &i);
 			inline void operator+=(const value_type &i);
+
 			inline value_type operator++(int);
 			inline value_type operator--(int);
 			inline value_type operator++();
 			inline value_type operator--();
 			inline value_type operator=(const value_type&);
+
+			inline void operator-=(const value_type &i) volatile;
+			inline void operator+=(const value_type &i) volatile;
+
+			inline value_type operator++(int) volatile;
+			inline value_type operator--(int) volatile;
+			inline value_type operator++() volatile;
+			inline value_type operator--() volatile;
+			inline value_type operator=(const value_type&) volatile;
 
 			mutable value_type FCount;//The c++ standard (c++03 8.5.1) says that The POD
 									  //type has't to use private or protected member
@@ -79,7 +102,16 @@ inline atomic_t::value_type atomic_t::operator=(const value_type& aVal)
 	MWrite(aVal);
 	return MValue();
 }
+inline atomic_t::value_type atomic_t::operator=(const value_type& aVal) volatile
+{
+	MWrite(aVal);
+	return MValue();
+}
 inline void atomic_t::operator-=(const value_type &i)
+{
+	MAdd(-static_cast<int>(i));
+}
+inline void atomic_t::operator-=(const value_type &i) volatile
 {
 	MAdd(-static_cast<int>(i));
 }
@@ -87,7 +119,16 @@ inline void atomic_t::operator+=(const value_type &i)
 {
 	MAdd(static_cast<int>(i));
 }
+inline void atomic_t::operator+=(const value_type &i) volatile
+{
+	MAdd(static_cast<int>(i));
+}
 inline atomic_t::value_type atomic_t::operator++()
+{
+	MIncrement();
+	return MValue();
+}
+inline atomic_t::value_type atomic_t::operator++() volatile
 {
 	MIncrement();
 	return MValue();
@@ -97,11 +138,24 @@ inline atomic_t::value_type atomic_t::operator--()
 	MDecrement();
 	return MValue();
 }
+inline atomic_t::value_type atomic_t::operator--() volatile
+{
+	MDecrement();
+	return MValue();
+}
 inline atomic_t::value_type atomic_t::operator++(int)
 {
 	return MIncrement();
 }
+inline atomic_t::value_type atomic_t::operator++(int) volatile
+{
+	return MIncrement();
+}
 inline atomic_t::value_type atomic_t::operator--(int)
+{
+	return MDecrement();
+}
+inline atomic_t::value_type atomic_t::operator--(int) volatile
 {
 	return MDecrement();
 }

@@ -214,6 +214,7 @@
 //												printed from files prefixed with "gfs"
 //   						d. VLOG(0) and lower messages to be printed from elsewhere
 //
+//		short_name		- Removes path from file name in the log
 // Log lines have this form:
 //
 //     Lmmdd hh:mm:ss.uuuuuu threadid file:line] msg...
