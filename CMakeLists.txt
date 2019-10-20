@@ -7,17 +7,9 @@ else()
 	PROJECT(UDT_NET C CXX)
 endif()
 
-IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  SET(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/binary"  CACHE PATH "Default installation Directory" FORCE)
-ENDIF()
-
-add_definitions(-DBOOST_ALL_NO_LIB)
+#add_definitions(-DBOOST_ALL_NO_LIB)
 
 SET(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE true CACHE BOOL "Build log4cplus from source")
-
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-	SET(CMAKE_POSITION_INDEPENDENT_CODE TRUE CACHE BOOL "")
-endif()
 
 if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
 	if((NOT LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE_OK) AND  LOG4CPLUS_INCLUDES)
@@ -28,7 +20,7 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
 			return()
 		endif()
 	endif()
-	
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "If TRUE, log4cplus is built as a shared library, otherwise as a static library")
 	option(LOG4CPLUS_ENABLE_DECORATED_LIBRARY_NAME  "Turns on resulting file name decoration for static and UNICODE builds." OFF)
 	

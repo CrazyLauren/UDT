@@ -14,8 +14,8 @@
 #if   defined(_WIN32)
 #include <deftype>
 //#include <boost/thread/thread.hpp>
-#include <uclock.h>
-#include <UType/CThread.h>
+#include <share/uclock.h>
+#include <share/UType/CThread.h>
 #include <string>
 #include <process.h>
 #include <stdlib.h>
@@ -422,8 +422,8 @@ std::ostream& CThread::MPrint(std::ostream& aVal)const
 
 #if   !defined(_WIN32)
 #include <deftype>
-#include <uclock.h>
-#include <UType/CThread.h>
+#include <share/uclock.h>
+#include <share/UType/CThread.h>
 #endif
 namespace NSHARE
 {

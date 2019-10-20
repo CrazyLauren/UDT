@@ -12,20 +12,20 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <revision.h>
-#include <share_socket.h>
+#include <share/revision.h>
+#include <share/share_socket.h>
 #ifdef _WIN32
 #include <winsock2.h>                     // sockaddr_in
 #else
 #include <arpa/inet.h>                      // htons, htonl
 #include <sys/socket.h>
 #endif
-#include <programm_id.h>
+#include <udt/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
 #include "receive_from.h"
 #include <parser_in_protocol.h>
-#include <CCustomer.h>
+#include <udt/CCustomer.h>
 #include <CDataObject.h>
 #include <CIOFactory.h>
 #include <CConfigure.h>

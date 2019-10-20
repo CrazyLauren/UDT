@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <random_value.h>
+#include <share/random_value.h>
 #include <core/CDataObject.h>
 #include <core/CConfigure.h>
 #include "CTimeDispatcher.h"

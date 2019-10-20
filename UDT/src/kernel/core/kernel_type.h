@@ -12,10 +12,10 @@
 #ifndef KERNEL_TYPE_H_
 #define KERNEL_TYPE_H_
 
-#include <share_socket.h>
-#include <programm_id.h>
+#include <share/share_socket.h>
+#include <udt/programm_id.h>
 #include <internel_protocol.h>
-#include <udt_types.h>
+#include <udt/udt_types.h>
 #include <shared_types.h>
 #include <udt_rtc_types.h>
 namespace NUDT

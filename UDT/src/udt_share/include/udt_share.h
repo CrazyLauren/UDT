@@ -11,7 +11,7 @@
  */
 #ifndef UDT_SHARE_H_
 #define UDT_SHARE_H_
-#include <udt_share_macros.h>
+#include <udt/udt_share_macros.h>
 #include <shared_types.h>
 
 namespace NUDT

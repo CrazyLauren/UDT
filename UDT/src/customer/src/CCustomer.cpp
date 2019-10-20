@@ -16,10 +16,10 @@
 #ifdef _WIN32
 #	include <winsock2.h>
 #endif
-#include <fdir.h>
-#include <revision.h>
-#include <programm_id.h>
-#include <CCustomer.h>
+#include <share/fdir.h>
+#include <share/revision.h>
+#include <udt/programm_id.h>
+#include <udt/CCustomer.h>
 
 #include <CCustomerImpl.h>
 #include <shared_types.h>
@@ -140,12 +140,12 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 
 		if (_stream.is_open())
 		{
-			if (_name.find_last_of(".xml") != NSHARE::CText::npos)
+			if (_name.find(".xml") != NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from xml configuration file "<<_name;
 				_rval=_conf.MFromXML(_stream)?_rval:static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
 			}
-			else if(_name.find_last_of(".json")!=NSHARE::CText::npos)
+			else if(_name.find(".json")!=NSHARE::CText::npos)
 			{
 				LOG(INFO)<<"Initialize from json configuration file "<<_name;
 				_rval=_conf.MFromJSON(_stream)?_rval:static_cast<int>(ERROR_CONFIGURE_IS_INVALID);

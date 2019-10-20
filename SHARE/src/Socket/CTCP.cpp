@@ -11,12 +11,12 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
-#include <Net.h>
-#include <Socket/CNetBase.h>
-#include <UType/CDenyCopying.h>
-#include <UType/CThread.h>
-#include <Socket/CTcpClientImpl.h>
-#include <console.h>
+#include <share/Net.h>
+#include <share/Socket/CNetBase.h>
+#include <share/UType/CDenyCopying.h>
+#include <share/UType/CThread.h>
+#include <share/Socket/CTcpClientImpl.h>
+#include <share/console.h>
 
 namespace NSHARE
 {

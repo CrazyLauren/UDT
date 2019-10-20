@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <udt_types.h>
+#include <udt/udt_types.h>
 #include <shared_types.h>
 #include "CLinkDiagnostic.h"
 

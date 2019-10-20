@@ -1,0 +1,4 @@
+#ifndef @PROJECT_NAME@_CONFIG_H
+#define @PROJECT_NAME@_CONFIG_H
+
+#endif /* @PROJECT_NAME@_CONFIG_H */

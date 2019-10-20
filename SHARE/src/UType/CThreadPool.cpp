@@ -12,8 +12,8 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <UType/CThreadPool.h>
-#include <UType/CThreadPoolImpl.h>
+#include <share/UType/CThreadPool.h>
+#include "impl/CThreadPoolImpl.h"
 
 namespace NSHARE
 {

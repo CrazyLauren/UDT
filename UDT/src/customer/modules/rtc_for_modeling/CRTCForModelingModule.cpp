@@ -13,10 +13,10 @@
  */
 
 #include <deftype>
-#include <revision.h>
-#include <random_value.h>
+#include <share/revision.h>
+#include <share/random_value.h>
 #include <CRTCFactory.h>
-#include <IRtc.h>
+#include <udt/IRtc.h>
 #include <CDataObject.h>
 
 #include "CRTCForModelingModule.h"

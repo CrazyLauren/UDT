@@ -18,8 +18,7 @@
 #include <stdarg.h>
 #include <locale>
 
-#include <UType/CText.h>
-#include <random_value.h>
+#include <share/random_value.h>
 // Start of NSHARE namespace section
 namespace NSHARE
 {
@@ -221,8 +220,8 @@ int CText::compare(size_type aFirst, size_type aLen, const CText& aStr,
 	if (aLen)
 	{
 		size_type cp_count = std::min(aLen, aStrLen);
-		const utf32* _src = ptr() + aFirst;
-		const utf32* _rht = aStr.ptr() + aStrFirst;
+		const utf32* _src = ptr_const() + aFirst;
+		const utf32* _rht = aStr.ptr_const() + aStrFirst;
 
 		for (; cp_count--; _rht++, _src++)
 			if (*_src != *_rht)
@@ -286,7 +285,7 @@ int CText::compare(size_type aFirst, size_type aLen, utf8 const* aRhtStr,
 	{
 		utf8 const* const _rht_end = aRhtStr + strlen(aRhtStr);
 
-		utf32 const* _src_begin = ptr() + aFirst;
+		utf32 const* _src_begin = ptr_const() + aFirst;
 		utf32 const* const _dest_end = _src_begin + std::min(aLen, aStrLen);
 
 		for (utf32 _code; (aRhtStr != _rht_end) && (_src_begin != _dest_end);
@@ -317,7 +316,7 @@ CText::size_type CText::length_code(ICodeConv const& aType) const
 {
 	if (empty())
 		return 0;
-	return aType.MSizeOf(ptr(), ptr() + size());
+	return aType.MSizeOf(ptr_const(), ptr_const() + size());
 }
 
 int CText::compare(utf8 const* cstr, ICodeConv const& aType) const
@@ -337,7 +336,7 @@ CText::size_type CText::copy(char* buf, size_type len, size_type idx,
 	if (len == npos)
 		len = size();
 
-	return MFromUCS4(&ptr()[idx], buf, npos, len, aType);
+	return MFromUCS4(&ptr_const()[idx], buf, npos, len, aType);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -361,7 +360,7 @@ CText& CText::assign(const CText& str, size_type str_idx, size_type str_num)
 
 	MGrow(str_num);
 	MSetLen(str_num);
-	memcpy(ptr(), &str.ptr()[str_idx], str_num * sizeof(utf32));
+	memcpy(ptr(), &str.ptr_const()[str_idx], str_num * sizeof(utf32));
 
 	return *this;
 }
@@ -451,7 +450,7 @@ CText& CText::append(const CText& str, size_type str_idx, size_type str_num)
 		str_num = str.size() - str_idx;
 
 	MGrow(size() + str_num);
-	memcpy(&ptr()[size()], &str.ptr()[str_idx], str_num * sizeof(utf32));
+	memcpy(&ptr()[size()], &str.ptr_const()[str_idx], str_num * sizeof(utf32));
 	MSetLen(size() + str_num);
 	return *this;
 }
@@ -532,7 +531,7 @@ CText& CText::insert(size_type idx, const CText& str, size_type str_idx,
 	MGrow(newsz);
 	memmove(&ptr()[idx + str_num], &ptr()[idx],
 			(size() - idx) * sizeof(utf32));
-	memcpy(&ptr()[idx], &str.ptr()[str_idx], str_num * sizeof(utf32));
+	memcpy(&ptr()[idx], &str.ptr_const()[str_idx], str_num * sizeof(utf32));
 	MSetLen(newsz);
 
 	return *this;
@@ -666,7 +665,7 @@ CText& CText::replace(size_type idx, size_type len, const CText& str,
 		memmove(&ptr()[idx + str_num], &ptr()[len + idx],
 				(size() - idx - len) * sizeof(utf32));
 
-	memcpy(&ptr()[idx], &str.ptr()[str_idx], str_num * sizeof(utf32));
+	memcpy(&ptr()[idx], &str.ptr_const()[str_idx], str_num * sizeof(utf32));
 	MSetLen(newsz);
 
 	return *this;
@@ -829,13 +828,13 @@ CText::size_type CText::find(utf32 code_point, size_type idx) const
 		return npos;
 	}
 
-	const utf32* _begin = ptr() + idx;
-	const utf32* _end = ptr() + size();
+	const utf32* _begin = ptr_const() + idx;
+	const utf32* _end = ptr_const() + size();
 
 	for (; _begin < _end; ++_begin)
 	{
 		if (*_begin == code_point)
-			return _begin - ptr();
+			return _begin - ptr_const();
 	}
 
 	return npos;
@@ -850,15 +849,15 @@ CText::size_type CText::rfind(utf32 code_point, size_type aIndx) const
 	if (aIndx >= size())
 	aIndx = size() - 1;
 
-	const utf32 *_begin = ptr()
+	const utf32 *_begin = ptr_const()
 	+ (aIndx < size() - 1 ? aIndx : size() - 1 );
 
 	for(;;--_begin)
 	{
 		if (*_begin == code_point)
-		return _begin-ptr(); // found a match
+		return _begin- ptr_const(); // found a match
 
-		if(_begin==ptr())
+		if(_begin== ptr_const())
 		break;
 	}
 	return npos;
@@ -987,13 +986,13 @@ CText::size_type CText::find_first_of(const CText& str, size_type aIndx) const
 		return npos;
 	}
 
-	const utf32* _begin = ptr()+aIndx;
-	const utf32* _end = ptr()+size();
+	const utf32* _begin = ptr_const()+aIndx;
+	const utf32* _end = ptr_const()+size();
 
 	for(;_begin != _end;++_begin)
 	{
 		if (npos != str.find(*_begin))
-		return _begin-ptr();
+		return _begin- ptr_const();
 	}
 	return npos;
 }
@@ -1006,13 +1005,13 @@ CText::size_type CText::find_first_not_of(const CText& str,
 		return npos;
 	}
 
-	const utf32* _begin = ptr()+aIndx;
-	const utf32* _end = ptr()+size();
+	const utf32* _begin = ptr_const()+aIndx;
+	const utf32* _end = ptr_const()+size();
 
 	for(;_begin != _end;++_begin)
 	{
 		if (npos == str.find(*_begin))
-		return _begin-ptr();
+		return _begin- ptr_const();
 	};
 
 	return npos;
@@ -1054,15 +1053,15 @@ CText::size_type CText::find_first_of(utf8 const* utf8_str, size_type aIndx,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	const utf32* _begin = ptr() + aIndx;
-	const utf32* _end = ptr() + size();
+	const utf32* _begin = ptr_const() + aIndx;
+	const utf32* _end = ptr_const() + size();
 
 	VLOG(3) << "New Search:";
 	for (; _begin != _end; ++_begin)
 	{
 		VLOG(3) << "Charaster:" << static_cast<char>(*_begin);
 		if (npos != MFindCodepoint(utf8_str, str_len, *_begin, aType)) //utf8 char
-			return _begin - ptr();
+			return _begin - ptr_const();
 	}
 
 	return npos;
@@ -1082,13 +1081,13 @@ CText::size_type CText::find_first_not_of(utf8 const* utf8_str, size_type aIndx,
 			<< ". The length is size of string, but not size of string memory buffer. "
 					"For a Russian char It is not equal value. The Buffer size is more than the string size.";
 
-	const utf32* _begin = ptr() + aIndx;
-	const utf32* _end = ptr() + size();
+	const utf32* _begin = ptr_const() + aIndx;
+	const utf32* _end = ptr_const() + size();
 
 	for (; _begin != _end; ++_begin)
 	{
 		if (npos == MFindCodepoint(utf8_str, str_len, *_begin, aType)) //utf8 char
-			return _begin - ptr();
+			return _begin - ptr_const();
 	}
 
 	return npos;
@@ -1102,13 +1101,13 @@ CText::size_type CText::find_first_not_of(utf32 code_point,
 		LOG(WARNING)<<"Invalid string index indx="<<aIndx;
 		return npos;
 	}
-	const utf32* _begin = ptr();
-	const utf32* _end = ptr() + size();
+	const utf32* _begin = ptr_const();
+	const utf32* _end = ptr_const() + size();
 
 	for(;_begin!=_end;++_begin)
 	{
 		if (*_begin != code_point)
-		return _begin- ptr();
+		return _begin- ptr_const();
 	}
 	return npos;
 }
@@ -1127,13 +1126,13 @@ CText::size_type CText::find_last_of(const CText& str, size_type aIndx) const
 	if (aIndx >= size())
 	aIndx = size() - 1;
 
-	const utf32* _begin = ptr() + aIndx;
+	const utf32* _begin = ptr_const() + aIndx;
 	for (;;)
 	{
 		if (npos != str.find(*_begin))
-		return _begin - ptr();
+		return _begin - ptr_const();
 
-		if (_begin == ptr())
+		if (_begin == ptr_const())
 		break;
 		_begin--;
 	};
@@ -1152,14 +1151,14 @@ CText::size_type CText::find_last_not_of(const CText& str,
 	if (aIndx >= size())
 	aIndx = size() - 1;
 
-	const utf32* _begin = ptr() + aIndx;
+	const utf32* _begin = ptr_const() + aIndx;
 
 	for (;;)
 	{
 		if (npos == str.find(*_begin))
-		return _begin - ptr();
+		return _begin - ptr_const();
 
-		if (_begin == ptr())
+		if (_begin == ptr_const())
 		break;
 		_begin--;
 	};
@@ -1184,13 +1183,13 @@ CText::size_type CText::find_last_of(utf8 const* utf8_str, size_type aIndx,
 	if (aIndx >= size())
 		aIndx = size() - 1;
 
-	const utf32* _begin = ptr() + aIndx;
+	const utf32* _begin = ptr_const() + aIndx;
 	for (;;)
 	{
 		if (npos != MFindCodepoint(utf8_str, str_len, *_begin, aType))
-			return _begin - ptr();
+			return _begin - ptr_const();
 
-		if (_begin == ptr())
+		if (_begin == ptr_const())
 			break;
 
 		_begin--;
@@ -1214,14 +1213,14 @@ CText::size_type CText::find_last_not_of(utf8 const* utf8_str, size_type aIndx,
 	if (aIndx >= size())
 		aIndx = size() - 1;
 
-	const utf32* _begin = ptr() + aIndx;
+	const utf32* _begin = ptr_const() + aIndx;
 
 	for (;;)
 	{
 		if (npos == MFindCodepoint(utf8_str, str_len, *_begin, aType))
-			return _begin - ptr();
+			return _begin - ptr_const();
 
-		if (_begin == ptr())
+		if (_begin == ptr_const())
 			break;
 
 		_begin--;
@@ -1251,14 +1250,14 @@ CText::size_type CText::find_last_not_of(utf32 code_point,
 	if (aIndx >= size())
 	aIndx = size() - 1;
 
-	const utf32* _begin = ptr() + aIndx;
+	const utf32* _begin = ptr_const() + aIndx;
 
 	for (;;)
 	{
 		if (*_begin!= code_point)
-		return _begin - ptr();
+		return _begin - ptr_const();
 
-		if (_begin == ptr())
+		if (_begin == ptr_const())
 		break;
 
 		_begin--;
@@ -1413,7 +1412,7 @@ utf8* CText::MBuildUtf8Buff(ICodeConv const& _code) const
 		_impl.FSingleByteBuffer = (utf8*) _impl.FAllocator->MAllocate(
 				_impl.FSingleByteBufferLen);
 	}
-	MFromUCS4(ptr(), _impl.FSingleByteBuffer, _impl.FSingleByteDatalen, size(), _code);
+	MFromUCS4(ptr_const(), _impl.FSingleByteBuffer, _impl.FSingleByteDatalen, size(), _code);
 
 	// always add a null at end
 	_impl.FSingleByteBuffer[_impl.FSingleByteDatalen] = ((utf8) 0);
@@ -1480,7 +1479,7 @@ NSHARE::CBuffer& CText::MToBuf(NSHARE::CBuffer& aBuf) const
 //		CBuffer::const_iterator const _p_buf(_buf);
 
 		size_type const src_len = size();
-		const utf32* _src_begin = ptr();
+		const utf32* _src_begin = ptr_const();
 		utf32 const* const _src_end = _src_begin + src_len;
 		
 		size_t i=0;
@@ -1522,7 +1521,7 @@ std::ostream& CText::MPrint(std::ostream& aStream) const //optimized for utf8
 	{
 		CCodeUTF8::utf8_t _buf[4]; //max 4 byte
 		size_type const src_len = size();
-		const utf32* _src_begin = ptr();
+		const utf32* _src_begin = ptr_const();
 		utf32 const* const _src_end = _src_begin + src_len;
 
 		for (; (_src_begin != _src_end); ++_src_begin)
@@ -2201,8 +2200,8 @@ int CText::MCompareNoCase(size_type aFirst, size_type aLen, const CText& aStr,
 	if (aLen)
 	{
 		size_type cp_count = std::min(aLen, aStrLen);
-		const utf32* _src = ptr() + aFirst;
-		const utf32* _rht = aStr.ptr() + aStrFirst;
+		const utf32* _src = ptr_const() + aFirst;
+		const utf32* _rht = aStr.ptr_const() + aStrFirst;
 
 		for (; cp_count--; _rht++, _src++)
 			if (ucs4_tolower(*_src) != ucs4_tolower(*_rht))
@@ -2283,21 +2282,21 @@ CText& CText::MMakeRandom(size_t aLen, ICodeConv const& aType)
 bool CText::isalpha() const
 {
 	for (size_type _len = 0; _len < size(); ++_len)
-		if (!std::isalpha<wchar_t>(ptr()[_len], utf8_locale()))
+		if (!std::isalpha<wchar_t>(ptr_const()[_len], utf8_locale()))
 			return false;
 	return true;
 }
 bool CText::isdigit() const
 {
 	for (size_type _len = 0; _len < size(); ++_len)
-		if (!std::isdigit<wchar_t>(ptr()[_len], utf8_locale()))
+		if (!std::isdigit<wchar_t>(ptr_const()[_len], utf8_locale()))
 			return false;
 	return true;
 }
 bool CText::isalnum() const
 {
 	for (size_type _len = 0; _len < size(); ++_len)
-		if (!std::isalnum<wchar_t>(ptr()[_len], utf8_locale()))
+		if (!std::isalnum<wchar_t>(ptr_const()[_len], utf8_locale()))
 			return false;
 	return true;
 }

@@ -1,19 +1,34 @@
-file (GLOB SOURCE_FILES *.cpp)
-file (GLOB HEADER_FILES *.hpp)
+set (_TARGET_NAME example_sm_server)
 
-set (TARGET_NAME example_sm_server)
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+file (GLOB _SOURCE_FILES *.cpp)
+file (GLOB _HEADER_FILES *.hpp)
 
-add_definitions(${LOGGING_DEFENITIONS})
-add_executable (${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
-#add_dependencies(${TARGET_NAME} ${SHARE_TARGET_NAME})
-include_directories (${SHARE_INCLUDES} ${LOGGING_INCLUDES} ${Boost_INCLUDE_DIRS})
-target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${SHARE_LIBRARIES} )
+set (_INCLUDE_DIR 														
+					${CMAKE_CURRENT_SOURCE_DIR}
+					)
 
+set (_PRIVATE_DEFINITIONS
+					#
+					)
 
-install (TARGETS ${TARGET_NAME} 
-             RUNTIME DESTINATION "bin" )	
-
-
+helper_add_executable(${_TARGET_NAME} 
+						_SOURCE_FILES
+						_HEADER_FILES
+						_INCLUDE_DIR
+						_PRIVATE_DEFINITIONS
+						true
+						)
+set (_PUBLIC_LIBRARIS
+					#
+					)
+					
+set (_PRIVATE_LIBRARIS
+					${SHARE_LIBRARIES}
+					)
+			
+helper_target_link_libraries(${_TARGET_NAME} 
+							_PUBLIC_LIBRARIS
+							_PRIVATE_LIBRARIS
+							)						
 		
 		

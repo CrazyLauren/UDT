@@ -11,3 +11,5 @@ revision.c
 .kdev4/
 .project
 /doc
+/todo.txt
+/.idea

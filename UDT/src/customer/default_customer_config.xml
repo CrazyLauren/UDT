@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <conf>
 	<worker>tcp_client_io_manager</worker>
-	<tcp_client_io_manager>
-		<Port>18011</Port>
-	</tcp_client_io_manager>
+
 	<modules>
 		<rtc_for_modeling> </rtc_for_modeling>
+		<tcp_client_io_manager>
+			<Port>18011</Port>
+		</tcp_client_io_manager>
+		<sm_main_channel> </sm_main_channel>
+
 	</modules>
 </conf>

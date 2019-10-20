@@ -1,0 +1,3 @@
+sm_main_channel version:0.1
+-------------------
+  - The first Release

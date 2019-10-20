@@ -14,8 +14,8 @@
 #ifdef _WIN32
 #include <deftype>
 #include <winerror.h>
-#include <UType/CIPCSem.h>
-#include <UType/CIPCSignalEvent.h>
+#include <share/UType/CIPCSem.h>
+#include <share/UType/CIPCSignalEvent.h>
 namespace NSHARE
 {
 extern size_t get_unique_name(char const* aPreifix, uint8_t* aTo, size_t aSize);

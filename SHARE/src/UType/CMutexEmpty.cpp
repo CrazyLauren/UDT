@@ -13,7 +13,6 @@
  */
 
 #include <deftype>
-#include <UType/CMutexEmpty.h>
 namespace NSHARE
 {
 CMutexEmpty::CMutexEmpty(eMutexType aType) :

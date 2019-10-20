@@ -12,10 +12,10 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 
-#include <SerialPort.h>
+#include <share/SerialPort.h>
 #include <string.h>
-#include <console.h>
-#include <Socket/print_socket_error.h>
+#include <share/console.h>
+#include "print_socket_error.h"
 #define TIME_OF_WAITING_FOR_RECEIVING 0.25 //10 ms
 namespace NSHARE
 {

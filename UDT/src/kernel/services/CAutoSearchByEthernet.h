@@ -13,8 +13,8 @@
 #define CAUTOSEARCHBYETHERNET_H_
 
 #include <core/ICore.h>
-#include <UType/CSingleton.h>
-#include <share_socket.h>
+#include <share/UType/CSingleton.h>
+#include <share/share_socket.h>
 #include <parser_in_protocol.h>
 
 namespace NUDT

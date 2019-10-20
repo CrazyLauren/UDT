@@ -11,8 +11,8 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
-#include <macro_attributes.h>
-#include <get_cpuid.h>
+#include <share/macro_attributes.h>
+#include <share/get_cpuid.h>
 
 #if defined __GNUC__ && (defined __i386__ || defined __x86_64__)
 namespace NSHARE

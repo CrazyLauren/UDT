@@ -14,11 +14,11 @@
 
 #include <deftype>
 #include <revision.h>
-#include <share_socket.h>
-#include <programm_id.h>
+#include <share/share_socket.h>
+#include <udt/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
-#include <CCustomer.h>
+#include <udt/CCustomer.h>
 #include <CLocalChannelFactory.h>
 #include "receive_from.h"
 #include <parser_in_protocol.h>

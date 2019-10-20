@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #include <core/kernel_type.h>
-#include <CParserFactory.h>
+#include <udt/CParserFactory.h>
 #include "CRequiredDG.h"
 namespace NUDT
 {

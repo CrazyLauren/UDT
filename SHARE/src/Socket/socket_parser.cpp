@@ -13,8 +13,8 @@
  */  
  
 #include <deftype>
-#include <share_socket.h>
-#include <Socket/socket_parser.h>
+#include <share/share_socket.h>
+#include <share/Socket/socket_parser.h>
 
 #ifdef DEX_SOCKET_EXIST
 #define KEY_DEX CDex::NAME

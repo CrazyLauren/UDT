@@ -14,8 +14,8 @@
 
 #include <malloc.h>
 #include <udt_share.h>
-#include <programm_id.h>
-#include <udt_types.h>
+#include <udt/programm_id.h>
+#include <udt/udt_types.h>
 #include <shared_types.h>
 
 namespace NUDT

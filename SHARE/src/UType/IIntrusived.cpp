@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <deftype>
-#include <UType/IIntrusived.h>
+#include <share/UType/IIntrusived.h>
 
 namespace NSHARE
 {

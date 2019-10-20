@@ -12,10 +12,10 @@
 #ifndef CRTCMODELINGIMPL_H_
 #define CRTCMODELINGIMPL_H_
 
-#include <UType/CSharedMemory.h>
-#include <IRtc.h>
+#include <share/UType/CSharedMemory.h>
+#include <udt/IRtc.h>
 #include <CRTCForModeling.h>
-#include <CCustomer.h>
+#include <udt/CCustomer.h>
 
 namespace NUDT
 {

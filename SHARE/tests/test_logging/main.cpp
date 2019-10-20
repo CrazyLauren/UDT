@@ -7,7 +7,7 @@
 //#include <boost/core/demangle.hpp>
 
 #include "test_api.h"
-#include <logging/CStackTrace.h>
+#include <share/logging/CStackTrace.h>
 using namespace NSHARE;
 
 namespace test_sigmentation_failed

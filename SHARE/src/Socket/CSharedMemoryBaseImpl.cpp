@@ -12,12 +12,12 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <crc8.h>
-#include <tasks.h>
-#include <Socket/CSharedMemoryBase.h>
-#include <UType/CSharedAllocator.h>
-#include <Socket/CSharedMemoryImplTypes.h>
-#include <Socket/CSharedMemoryBaseImpl.h>
+#include <share/crc8.h>
+#include <share/tasks.h>
+#include <share/Socket/CSharedMemoryBase.h>
+#include <share/UType/CSharedAllocator.h>
+#include <share/Socket/CSharedMemoryImplTypes.h>
+#include <share/Socket/CSharedMemoryBaseImpl.h>
 namespace NSHARE
 {
 

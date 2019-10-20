@@ -12,7 +12,8 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <customer.h>
-#include <CParserFactory.h>
+#include <algorithm>
+#include <udt/CParserFactory.h>
 #include <udt_example_protocol.h>
 #include "import_export_macros.h"
 #include "CExampleProtocolParser.h"

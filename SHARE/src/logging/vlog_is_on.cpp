@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <logging/vlog_is_on.h>
+#include <share/logging/vlog_is_on.h>
 
 namespace NSHARE
 {

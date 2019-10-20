@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
  
-#include <Net.h>
+#include <share/Net.h>
 #include <fcntl.h>
-#include <Socket/CNetBase.h>
+#include <share/Socket/CNetBase.h>
 
 #if !defined(HAVE_WINSOCK_H)
 #	include <sys/socket.h>
@@ -47,7 +47,7 @@ struct tcp_keepalive
 #	error The target is not supported
 #endif //#ifndef WIN32
 
-#include <Socket/print_socket_error.h>
+#include "print_socket_error.h"
 
 #ifdef HAVE_WINSOCK_H
 typedef char raw_type_t;

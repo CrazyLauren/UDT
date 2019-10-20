@@ -12,8 +12,8 @@
 #ifndef ICUSTOMER_H_
 #define ICUSTOMER_H_
 
-#include <programm_id.h>
-#include <Socket/ISocket.h>
+#include <udt/programm_id.h>
+#include <share/Socket/ISocket.h>
 namespace NUDT
 {
 class IModule;

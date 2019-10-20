@@ -13,10 +13,10 @@
  */
 
 #include <deftype>
-#include <console.h>
+#include <share/console.h>
 #include <algorithm>
-#include <share_socket.h>
-#include <Socket/socket_parser.h>
+#include <share/share_socket.h>
+#include <share/Socket/socket_parser.h>
 
 #define DEFAULT_CFG_FILE "./sniffer.cfg"
 

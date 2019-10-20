@@ -14,7 +14,7 @@
 #include <deftype>
 #include <CHardWorker.h>
 #include "CDataObject.h"
-#include "CCustomer.h"
+#include "udt/CCustomer.h"
 #include "CConfigure.h"
 using namespace NSHARE;
 template<>

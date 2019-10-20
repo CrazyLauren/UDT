@@ -23,7 +23,7 @@
 #endif
 
 #ifndef MSVC
-#	include <win_processor_detection.h>
+#	include <share/win_processor_detection.h>
 #endif
 
 /**\brief define standard headers
@@ -107,7 +107,7 @@
 #		ifndef NOMINMAX
 #			define NOMINMAX
 #		endif
-#		include <win_unistd.h>
+#		include <share/win_unistd.h>
 #		pragma warning(disable : 4290)
 #		pragma warning(disable : 4996)
 #		pragma warning(disable : 4355)
@@ -142,65 +142,65 @@
 #	include <ctime>
 #endif
 
-#include <macro_attributes.h>
-#include <endian_type.h>
-#include <UType/little_big_endian_t.h>
+#include <share/macro_attributes.h>
+#include <share/endian_type.h>
+#include <share/UType/little_big_endian_t.h>
 
-#include <UType/CAssertException.h>
-#include <logging/share_trace.h>
+#include <share/UType/CAssertException.h>
+#include <share/logging/share_trace.h>
 
-#include <type_manip.h>
-#include <UType/CDenyCopying.h>
-#include <UType/CRAII.h>
-#include <UType/atomic_t.h>
-#include <UType/IAllocater.h>
-#include <UType/CCOWPtr.h>
-#include <UType/CFlags.h>
-#include <UType/CMutex.h>
-#include <UType/CMutexEmpty.h>
-#include <UType/CCondvar.h>
-#include <UType/CSemaphore.h>
-#include <UType/CBarrier.h>
-#include <UType/allocators.h>
-#include <UType/CText.h>
-#include <UType/strtonum.h>
-#include <UType/numtostr.h>
-#include <uclock.h>
-#include <UType/CSingleton.h>
-#include <UType/CAntiHang.h>
-#include <UType/CCheckNoMultiThread.h>
-#include <UType/CTypeInfo.h>
-#include <UType/IIntrusived.h>
-#include <UType/intrusive_ptr.h>
-#include <FloatCompare.h>
-#include <UType/SmartField.h>
-#include <UType/CBuffer.h>
-#include <UType/CConfig.h>
-#include <UType/version.h>
-#include <UType/uuid.h>
-#include <UType/cb_t.h>
-#include <UType/CEvent.h>
-#include <UType/CEvents.h>
-#include <UType/deffunc.h>
+#include <share/type_manip.h>
+#include <share/UType/CDenyCopying.h>
+#include <share/UType/CRAII.h>
+#include <share/UType/atomic_t.h>
+#include <share/UType/IAllocater.h>
+#include <share/UType/CCOWPtr.h>
+#include <share/UType/CFlags.h>
+#include <share/UType/CMutex.h>
+#include <share/UType/CMutexEmpty.h>
+#include <share/UType/CCondvar.h>
+#include <share/UType/CSemaphore.h>
+#include <share/UType/CBarrier.h>
+#include <share/UType/allocators.h>
+#include <share/UType/CText.h>
+#include <share/UType/strtonum.h>
+#include <share/UType/numtostr.h>
+#include <share/uclock.h>
+#include <share/UType/CSingleton.h>
+#include <share/UType/CAntiHang.h>
+#include <share/UType/CCheckNoMultiThread.h>
+#include <share/UType/CTypeInfo.h>
+#include <share/UType/IIntrusived.h>
+#include <share/UType/intrusive_ptr.h>
+#include <share/FloatCompare.h>
+#include <share/UType/SmartField.h>
+#include <share/UType/CBuffer.h>
+#include <share/UType/CConfig.h>
+#include <share/UType/version.h>
+#include <share/UType/uuid.h>
+#include <share/UType/cb_t.h>
+#include <share/UType/CEvent.h>
+#include <share/UType/CEvents.h>
+#include <share/UType/deffunc.h>
 
-#include <UType/CIPCSem.h>
-#include <UType/CIPCSignalEvent.h>
-#include <UType/CIPCMutex.h>
+#include <share/UType/CIPCSem.h>
+#include <share/UType/CIPCSignalEvent.h>
+#include <share/UType/CIPCMutex.h>
 
-#include <UType/CThread.h>
-#include <UType/CThreadPool.h>
+#include <share/UType/CThread.h>
+#include <share/UType/CThreadPool.h>
 
-#include <UType/CSafeData.h>
-#include <UType/CSafeQueue.h>
-#include <UType/CWaitingQueue.h>
+#include <share/UType/CSafeData.h>
+#include <share/UType/CSafeQueue.h>
+#include <share/UType/CWaitingQueue.h>
 
-#include <UType/dymamic_modules.h>
-#include <UType/IFactory.h>
-#include <UType/CFactoryManager.h>
-#include <UType/CFactoryRegisterer.h>
-#include <UType/CResources.h>
+#include <share/UType/dymamic_modules.h>
+#include <share/UType/IFactory.h>
+#include <share/UType/CFactoryManager.h>
+#include <share/UType/CFactoryRegisterer.h>
+#include <share/UType/CResources.h>
 
-#include <UType/CAddress.h>
+#include <share/UType/CAddress.h>
 
-#include <UType/CCOWPtrTest.h>
+#include <share/UType/CCOWPtrTest.h>
 #endif /*DEFTYPE_*/

@@ -35,31 +35,32 @@
 #include <ctype.h>
 #include <functional>
 #include <ctime>
-#include <macro_attributes.h>
-#include <endian_type.h>
-#include <UType/CDenyCopying.h>
-#include <UType/CRAII.h>
-#include <UType/atomic_t.h>
-#include <UType/IAllocater.h>
-#include <UType/CCOWPtr.h>
-#include <UType/CText.h>
-#include <logging/share_trace.h>
-#include <UType/CSingleton.h>
+#include <share/macro_attributes.h>
+#include <share/endian_type.h>
+#include <share/UType/CDenyCopying.h>
+#include <share/UType/CRAII.h>
+#include <share/UType/atomic_t.h>
+#include <share/UType/IAllocater.h>
+#include <share/UType/CCOWPtr.h>
+#include <share/UType/CText.h>
+#include <share/logging/share_trace.h>
+#include <share/UType/CSingleton.h>
 
 
 
-#include <UType/CBuffer.h>
-#include <UType/CConfig.h>
-#include <UType/version.h>
+#include <share/UType/CBuffer.h>
+#include <share/UType/CConfig.h>
+#include <share/UType/version.h>
 
-#include <UType/uuid.h>
-#include <programm_id.h>
-#include <UType/CAddress.h>
-#include <CCustomer.h>
-#include <UType/IFactory.h>
-#include <UType/CMutex.h>
-#include <UType/CFactoryManager.h>
-#include <UType/CFactoryRegisterer.h>
+#include <share/UType/uuid.h>
+#include <udt/programm_id.h>
+#include <share/UType/CAddress.h>
+#include <udt/CCustomer.h>
+#include <udt/IRtc.h>
+#include <share/UType/IFactory.h>
+#include <share/UType/CMutex.h>
+#include <share/UType/CFactoryManager.h>
+#include <share/UType/CFactoryRegisterer.h>
 
 
 

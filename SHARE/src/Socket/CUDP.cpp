@@ -12,11 +12,11 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Net.h>
-#include <Socket/CNetBase.h>
-#include <uclock.h>
+#include <share/Net.h>
+#include <share/Socket/CNetBase.h>
+#include <share/uclock.h>
 #include <string.h>
-#include <console.h>
+#include <share/console.h>
 #include <errno.h>
 #if !defined(_WIN32)
 #include <sys/ioctl.h>
@@ -27,7 +27,7 @@
 #else
 #include <ws2tcpip.h> //socklen_t
 #endif //#ifndef WIN32
-#include <Socket/print_socket_error.h>
+#include "print_socket_error.h"
 #define UDP_BUFFER_SIZE USHRT_MAX
 
 #ifdef _WIN32

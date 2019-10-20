@@ -1,32 +1,64 @@
-PROJECT(${PROJECT_NAME}_share C CXX)
-SET(TARGET_NAME udt_share)
+set(_TARGET_NAME udt_share)
 
-SET(UDT_SHARE_TARGET_NAME ${TARGET_NAME})
-SET(UDT_SHARE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL  "Include path for the header files of udt share" )
+configure_target_version(${_TARGET_NAME}
+		${PATH_TO_REVISION_IN}
+		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+		)
 
-add_definitions(${LOGGING_DEFENITIONS})
+file(GLOB _SOURCE_FILES
+		${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+		)
+list (APPEND _SOURCE_FILES
+		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c"
+		)
 
-configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src 0 1)
+file (GLOB _HEADER_FILES
+		${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+		${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp
+		)
 
-file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-list (APPEND SOURCE_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/src/revision.c)
+set (_PUBLIC_INCLUDE_DIR
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${SHARE_INCLUDES}
+		)
+set (_PRIVATE_INCLUDE_DIR
+		${Boost_INCLUDE_DIRS}
+		)
+set (_PRIVATE_DEFINITIONS
+		BOOST_ALL_NO_LIB
+		)
 
-file (GLOB HEADER_FILES ../include/*.h ../include/*.hpp)
+set (_PUBLIC_DEFINITIONS
+		#
+		)
 
-include_directories (${SHARE_INCLUDES} ${Boost_INCLUDE_DIRS} ${UDT_SHARE_INCLUDES} ${LOGGING_INCLUDES})
+helper_add_library(${_TARGET_NAME}
+		_SOURCE_FILES
+		_HEADER_FILES
+		_PUBLIC_INCLUDE_DIR
+		_PRIVATE_INCLUDE_DIR
+		_PRIVATE_DEFINITIONS
+		_PUBLIC_DEFINITIONS
+		TRUE)
 
-share_add_library(${TARGET_NAME} FALSE SOURCE_FILES HEADER_FILES TRUE)
+set (_PUBLIC_LIBRARIS
+		${SHARE_LIBRARIES}
+		)
 
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS}   )
-share_add_dependency(${TARGET_NAME} ${SHARE_LIBRARIES})
+set (_PRIVATE_LIBRARIS
+		#
+		)
 
-SET(UDT_SHARE_LIBRARIES  ${TARGET_NAME} CACHE INTERNAL "UDT_SHARE_LIBRARIES" FORCE)#fixme must be filepath
+helper_target_link_libraries(${_TARGET_NAME}
+		_PUBLIC_LIBRARIS
+		_PRIVATE_LIBRARIS
+		)
 
-						  
-install(FILES 	${CMAKE_CURRENT_SOURCE_DIR}/include/udt_types.h
-				${CMAKE_CURRENT_SOURCE_DIR}/include/udt_share_macros.h
-				${CMAKE_CURRENT_SOURCE_DIR}/include/programm_id.h
-				${CMAKE_CURRENT_SOURCE_DIR}/include/IExtParser.h
-				${CMAKE_CURRENT_SOURCE_DIR}/include/CParserFactory.h
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/include)						  
+install(FILES include/udt/udt_types.h
+		include/udt/udt_share_macros.h
+        include/udt/programm_id.h
+		include/udt/IExtParser.h
+		include/udt/CParserFactory.h
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/udt
+		)
 						  

@@ -15,7 +15,7 @@
 
 #include <CResources.h>
 #include <CConfigure.h>
-#include <CCustomer.h>
+#include <udt/CCustomer.h>
 #include <CIOFactory.h>
 #include <CDataObject.h>
 #include <ICustomer.h>

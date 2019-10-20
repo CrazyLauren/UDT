@@ -13,12 +13,12 @@
  */
 
 #include <deftype>
-#include <programm_id.h>
+#include <udt/programm_id.h>
 #include <time.h>
 #include <internel_protocol.h>
 #include <shared_types.h>
 #include <udt_share.h>
-#include <CParserFactory.h>
+#include <udt/CParserFactory.h>
 #include "CRawProtocol.h"
 
 template<>

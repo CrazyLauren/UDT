@@ -11,7 +11,7 @@
  */
 
 #include <deftype>
-#include <UType/CIPCMutex.h>
+#include <share/UType/CIPCMutex.h>
 
 #ifdef USING_MUTEX_ON_SEMAPHORE
 namespace NSHARE

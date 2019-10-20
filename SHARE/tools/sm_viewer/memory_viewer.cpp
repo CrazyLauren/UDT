@@ -13,9 +13,9 @@
  */
 #include <deftype>
 #include <iostream>
-#include <UType/CCommonAllocater.h>
-#include <UType/CSharedMemory.h>
-#include <share_socket.h>
+#include <share/UType/CCommonAllocater.h>
+#include <share/UType/CSharedMemory.h>
+#include <share/share_socket.h>
 
 using namespace NSHARE;
 

@@ -1,0 +1,41 @@
+{
+
+/** The customer have plugins architecture.
+This option is set up options of loaded
+plugins.
+*/
+        "modules":
+		{
+			/** Where the customer is looking for plugins*/
+			
+			"modules_path":"./",
+			
+			/** if true the customer loaded only specialized in key "libraries"
+				library.
+			*/
+			"only_specified":"true",
+			
+			/** Here setting up option of loaded library.
+				The key is euqal name of library (without lib, .so and .dll prefix)
+			*/
+			"libraries":
+			{
+				/** The library name
+				*/
+				"rtc_for_modeling":
+				{
+				},
+				"tcp_client_io_manager":
+				{
+					"port": "18011"
+				},
+				"sm_main_channel": {}
+			}
+        },
+
+	/** The name of module for connection to
+	kernel.
+	*/
+		"worker":"tcp_client_io_manager",
+
+}

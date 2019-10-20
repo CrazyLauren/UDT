@@ -11,7 +11,7 @@
  */
 #ifndef CIPCSEMPOSIXIMPL_H_
 #define CIPCSEMPOSIXIMPL_H_
-#include <UType/ISemaphore.h>
+#include <share/UType/ISemaphore.h>
 namespace NSHARE
 {
 struct CIPCSem::CImpl:ISemaphore

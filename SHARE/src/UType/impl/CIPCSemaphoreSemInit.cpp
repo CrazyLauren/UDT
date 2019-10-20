@@ -16,7 +16,7 @@
 #include <limits.h>
 #include <semaphore.h>
 #include <fcntl.h>
-#include <UType/CIPCSem.h>
+#include <share/UType/CIPCSem.h>
 #include "CIPCSemaphoreSemInit.h"
 
 namespace NSHARE

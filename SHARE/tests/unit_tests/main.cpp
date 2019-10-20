@@ -2,7 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 
 #include <deftype>
-#include <unit_tests.h>
+#include <share/unit_tests.h>
 
 using namespace NSHARE;
 

@@ -16,14 +16,13 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#include <fdir.h>
-#include <revision.h>
-#include <programm_id.h>
+#include <udt/programm_id.h>
 
-#include <CCustomer.h>
+#include <udt/CCustomer.h>
 #include <CCustomerImpl.h>
 #include <CLocalChannelFactory.h>
 #include <CRTCFactory.h>
+#include <config/customer/customer_config.h>
 
 namespace NUDT
 {
@@ -146,24 +145,14 @@ int CCustomer::_pimpl::MLoadLibraries()
 		return 0;
 	//MODULE
 	CConfig const* const _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
-	std::vector<NSHARE::CText> _text;
 
-//#ifndef CUSTOMER_WITH_STATIC_MODULES
 	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
-	<< " is not exist.";
+	    << " is not exist.";
 
 	if (!_p)
-	return static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
-	ConfigSet::const_iterator _it = _p->MChildren().begin();
+	    return static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
 
-	for (; _it != _p->MChildren().end(); ++_it)
-	_text.push_back((_it)->MKey());
-//#endif
-
-	NSHARE::CText _ext_path;
-	CConfigure::sMGetInstance().MGet().MGetIfSet(MODULES_PATH,_ext_path);
-
-	new CResources(_text,_ext_path);
+	new CResources(*_p);
 
 	CResources::sMGetInstance().MLoad();
 	return 0;

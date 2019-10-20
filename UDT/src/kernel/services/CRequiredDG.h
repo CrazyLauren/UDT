@@ -11,10 +11,10 @@
  */
 #ifndef CREQUIREDDG_H_
 #define CREQUIREDDG_H_
-#include <udt_types.h>
+#include <udt/udt_types.h>
 #include <shared_types.h>
 
-#include <IExtParser.h>
+#include <udt/IExtParser.h>
 
 namespace NUDT
 {

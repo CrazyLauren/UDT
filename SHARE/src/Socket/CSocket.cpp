@@ -15,7 +15,7 @@
 #include <winsock2.h>
 #endif
 #include <deftype>
-#include <Socket/CSocket.h>
+#include <share/Socket/CSocket.h>
 namespace NSHARE
 {
 unsigned CSocket::g_counter = 0;

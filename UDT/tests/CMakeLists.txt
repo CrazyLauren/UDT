@@ -5,7 +5,8 @@ else()
 	CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 	
 	if(COMPILER_SUPPORTS_CXX11 OR MSVC_VERSION GREATER 1800)
-		
+		enable_testing()
+
 		add_subdirectory(test_selection_nearest_subscribe)
 		add_subdirectory(speed_test)
 		add_subdirectory(test_errors)

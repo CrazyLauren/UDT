@@ -30,29 +30,34 @@
 static char gPath[]=REVISION_PATH;
 static char gTime[]=TIME;
 static char gData[]=DATA;
+static char gDescription[]="@CONF_VERSION_DESCRIPTION@";
 
-EXTERN unsigned get_revision_number_${TARGET_NAME}()
+EXTERN unsigned get_revision_number_${CONF_TARGET_NAME}()
 {
 	return atoi(REVISION);
 }
 
-EXTERN const char* get_revision_path_${TARGET_NAME}()
+EXTERN const char* get_revision_path_${CONF_TARGET_NAME}()
 {
 	return gPath;
 }
-EXTERN const char* get_compile_time_${TARGET_NAME}()
+EXTERN const char* get_compile_time_${CONF_TARGET_NAME}()
 {
 	return gTime;
 }
-EXTERN const char* get_compile_data_${TARGET_NAME}()
+EXTERN const char* get_compile_data_${CONF_TARGET_NAME}()
 {
 	return gData;
 }
-EXTERN unsigned get_major_version_${TARGET_NAME}()
+EXTERN unsigned get_major_version_${CONF_TARGET_NAME}()
 {
 	return MAJOR;
 }
-EXTERN unsigned get_minor_version_${TARGET_NAME}()
+EXTERN unsigned get_minor_version_${CONF_TARGET_NAME}()
 {
 	return MINOR;
+}
+EXTERN const char* get_version_description_${CONF_TARGET_NAME}()
+{
+	return gDescription;
 }

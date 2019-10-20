@@ -13,7 +13,7 @@
 #ifndef CLOCALCHANNELFACTORY_H_
 #define CLOCALCHANNELFACTORY_H_
 
-#include "customer_export.h"
+#include "udt/customer_export.h"
 #include "ILocalChannel.h"
 namespace NUDT
 {

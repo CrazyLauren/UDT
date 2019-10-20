@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */   
 #include <deftype>
-#include <UType/CCheckNoMultiThread.h>
+#include <share/UType/CCheckNoMultiThread.h>
 
 namespace NSHARE
 {

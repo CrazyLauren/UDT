@@ -1,0 +1,50 @@
+UDT SHARE version:0.6
+-------------------
+  - Change names of CAddress to CProgramGroup and  CRegistration to CProgramName
+  - Added a new method MUpdateIfSet to CConfig
+  - Now CFlags without mutex is POD type
+  - Add random value generator by RNG
+  - Change arguments type of init_trace
+  - Fix fatal error in debug mode: failed clean up of locked IPC mutex by shared memory server.
+  - Fix double calling event EVENT_DISCONNECTED from TCPClient
+  - Fix operator == of smart_field_t
+  - Fix problems with using different type of process id in CThread and task.h
+  - Fix some problems with alignof  shared memory
+  - Fix DFATAL error in cleanup callback of posix thread
+  - Change default alignment of allocated memory to 4 byte for x86 8 byte to x64
+  - Fix maybe incorrect casting from unsigned to uint32_t value in SharedMemorySocket
+  - Change sequence of searching library in CDynamicModule
+  - Fix bug creating posix thread 
+  - Update CUdp socket, add full broadcast supported (multicast is not supported)
+  
+UDT SHARE version:0.5
+-------------------
+  - Fixed virtual method called bug for static variables
+  - Reflactoring CBuffer
+  - Fixed some small bugs
+  - Fixed incorrect aligment of atomic value
+  
+UDT SHARE version:0.4
+-------------------
+  - Reduced number of warnings
+  - Added CBarrier
+  - Fixed some compile problem
+  - Now max size of SM server can be more than 2 GB
+
+UDT SHARE version:0.3
+-------------------
+  - Disbale warning 4200 for msvc
+  - Refactoring deftype.h
+  - Now type of epsilon has not to be equal of value type in floating compare function
+  - Fixed bug: Export uint_test function, TCLAP class for msvc
+  - Rename CIntrusived to IIntrusived
+  - Fixed bug:lost "public" access labels in CNoMutex
+  - New methods in CThreadPool
+  - Fixed bug: disbale c++11 atomic operation
+  - Added support MINGW64
+
+UDT SHARE version:0.2
+-------------------
+
+  - Fixed bug: incorrect double to string convertion
+  - Added several unit tests

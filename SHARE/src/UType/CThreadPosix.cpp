@@ -13,8 +13,8 @@
  */ 
 #if   defined(__QNX__)||defined(unix)
 #include <deftype>
-#include <uclock.h>
-#include <UType/CThread.h>
+#include <share/uclock.h>
+#include <share/UType/CThread.h>
 #include <cassert>
 #include <pthread.h>
 #include <signal.h>

@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <limits>
 #include <stdexcept>
-#include <random_value.h>
-#include <get_cpuid.h>
+#include <share/random_value.h>
+#include <share/get_cpuid.h>
 
 namespace NSHARE
 {

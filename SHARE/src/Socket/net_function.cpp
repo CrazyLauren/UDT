@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
 #include <deftype>
-#include <Net.h>
+#include <share/Net.h>
 //#include <unistd.h>
 #include <errno.h>
 #include <time.h>

@@ -12,8 +12,8 @@
 #ifndef CROTOCOLPARSER_H_
 #define CROTOCOLPARSER_H_
 
-#include <udt_share_macros.h>
-#include <udt_types.h>
+#include <udt/udt_share_macros.h>
+#include <udt/udt_types.h>
 
 /*!\brief An example of easiest protocol parser
  *

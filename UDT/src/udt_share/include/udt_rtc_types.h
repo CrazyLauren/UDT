@@ -12,8 +12,8 @@
 #ifndef UDT_RTC_TYPES_H_
 #define UDT_RTC_TYPES_H_
 
-#include <udt_share_macros.h>
-#include <udt_rtc.h>
+#include <udt/udt_share_macros.h>
+#include <udt/udt_rtc.h>
 namespace NUDT
 {
 /** Info about current time

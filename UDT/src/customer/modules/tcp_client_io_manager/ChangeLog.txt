@@ -1,0 +1,29 @@
+tcp_client_io_manager version:0.1
+-------------------
+    -The first Release
+
+tcp_client_io_manager version:0.2
+-------------------
+    -Обработка отключения от сервер
+
+tcp_client_io_manager version:0.3
+-------------------
+    - Добавлены фильтры
+
+tcp_client_io_manager version:0.4
+-------------------
+    -Изменения user_data_t
+
+tcp_client_io_manager version:0.5
+-------------------
+    - Изменения user_data_t
+    - переход на CBuffer
+    - изменение интерфейса Main и IOCustomer
+
+tcp_client_io_manager version:0.6
+-------------------
+    - изменения протокола
+
+tcp_client_io_manager version:0.7
+-------------------
+    -  переименован

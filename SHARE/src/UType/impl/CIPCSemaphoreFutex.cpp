@@ -18,7 +18,7 @@
 #include <fcntl.h>
 #include <sys/syscall.h>
 #include <linux/futex.h>
-#include <UType/CIPCSem.h>
+#include <share/UType/CIPCSem.h>
 #include "CIPCSemaphoreFutex.h"
 
 namespace NSHARE

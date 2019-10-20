@@ -21,9 +21,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 //#include <ev.h>
-#include <fdir.h>
-#include <Pipe.h>
-#include <Socket/CFIFOServerPosixImpl.h>
+#include <share/fdir.h>
+#include <share/Pipe.h>
+#include <share/Socket/CFIFOServerPosixImpl.h>
 
 #define PERM 0666
 using namespace std;

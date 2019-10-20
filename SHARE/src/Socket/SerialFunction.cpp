@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <Socket/SerialFunction.h>
+#include <share/Socket/SerialFunction.h>
 
 namespace NSHARE
 {
@@ -339,7 +339,7 @@ void get_all_ports(ports_t *aTo)
 #include <setupapi.h>
 #include <devguid.h>
 #include <cstring>
-#include <Socket/SerialFunction.h>
+#include <share/Socket/SerialFunction.h>
 
 
 static const DWORD port_name_max_length = 256;
@@ -472,7 +472,7 @@ namespace NSHARE
 } //namespace NSHARE
 #elif defined(__QNX__)//#elif defined(_WIN32)
 #include <deftype>
-#include <Socket/SerialFunction.h>
+#include <share/Socket/SerialFunction.h>
 #include<dirent.h>
 #include<string.h>
 

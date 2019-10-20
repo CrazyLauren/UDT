@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include "CResources.h"
-
+#include <config/customer/customer_config.h>
 using namespace NSHARE;
 template<>
 NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton = NULL;
@@ -30,22 +30,37 @@ extern "C" NSHARE::factory_registry_t* static_factory_registry(NSHARE::CFactoryR
 	}
 	return &_registry;
 }
+const NSHARE::CText CResources::NAME = "modules";
+const NSHARE::CText CResources::MODULES_PATH = "modules_path";
+const NSHARE::CText CResources::LIST_OF_LOADED_LIBRARY = "libraries";
+const NSHARE::CText CResources::ONLY_SPECIFIED_LIBRARY = "only_specified";
 
-CResources::CResources(std::vector<NSHARE::CText> const& aResources,
-		NSHARE::CText const& aExtPath)
+CResources::CResources(NSHARE::CConfig const& aConf)
 {
-	std::vector<NSHARE::CText>::const_iterator _it=aResources.begin();
-	for (; _it != aResources.end(); ++_it)
-	{
-		module_t _mod;
-		_mod.FName=*_it;
-		_mod.FRegister=NULL;
-		FModules.push_back(_mod);
-	}
-	if(aExtPath.length())
-	{
-		LOG(ERROR)<<"Not implemented";
-	}
+    NSHARE::CText const _static_modules(CUSTOMER_WITH_STATIC_MODULES);
+
+    CConfig const& _libs=aConf.MChild(LIST_OF_LOADED_LIBRARY);
+    if(!_libs.MIsEmpty())
+    {
+        ConfigSet _set = _libs.MChildren();
+        ConfigSet::const_iterator _it = _set.begin();
+        for (; _it != _set.end(); ++_it)
+        {
+            if(_static_modules.find((_it)->MKey())==NSHARE::CText::npos)
+            {
+                module_t _mod;
+                _mod.FName = _it->MKey();
+                _mod.FRegister = NULL;
+                FModules.push_back(_mod);
+            }
+        }
+    }
+    aConf.MGetIfSet(MODULES_PATH,FExtLibraryPath);
+    if(FExtLibraryPath.length())
+    {
+        LOG(ERROR)<<"Not implemented";
+    }
+    //aConf.MGetIfSet(ONLY_SPECIFIED_LIBRARY,FDontSearchLibrary);
 }
 
 CResources::~CResources()

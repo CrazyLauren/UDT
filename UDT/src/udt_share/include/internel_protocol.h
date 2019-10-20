@@ -11,10 +11,10 @@
  */
 #ifndef INTERNEL_PROTOCOL_H_
 #define INTERNEL_PROTOCOL_H_
-#include <crc8.h>
-#include <crc16.h>
+#include <share/crc8.h>
+#include <share/crc16.h>
 #include <time.h>
-#include <programm_id.h>
+#include <udt/programm_id.h>
 #ifndef SHARED_PACKED
 #include <macro_attributes.h>
 #endif

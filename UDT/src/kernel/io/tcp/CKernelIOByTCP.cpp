@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share_socket.h>
+#include <share/share_socket.h>
 #include <string.h>
-#include <programm_id.h>
+#include <udt/programm_id.h>
 #include <internel_protocol.h>
 #include <core/kernel_type.h>
 #include <core/CConfigure.h>

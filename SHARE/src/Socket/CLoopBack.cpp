@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
  
-#include <Net.h>
-#include <console.h>
-#include <Socket/CLoopBack.h>
+#include <share/Net.h>
+#include <share/console.h>
+#include <share/Socket/CLoopBack.h>
 
 namespace NSHARE
 {

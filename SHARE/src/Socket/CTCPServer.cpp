@@ -11,13 +11,13 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
-#include <Net.h>
-#include <Socket/CNetBase.h>
-#include <console.h>
-#include <Socket/CLoopBack.h>
-#include <UType/CDenyCopying.h>
-#include <UType/CThread.h>
-#include <Socket/CTCPServerImpl.h>
+#include <share/Net.h>
+#include <share/Socket/CNetBase.h>
+#include <share/console.h>
+#include <share/Socket/CLoopBack.h>
+#include <share/UType/CDenyCopying.h>
+#include <share/UType/CThread.h>
+#include <share/Socket/CTCPServerImpl.h>
 #if !defined(_WIN32)
 #	include <arpa/inet.h>                      // htons, htonl
 #else
@@ -177,7 +177,7 @@ CTCPServer::sent_state_t CTCPServer::MSend(const void* pData, size_t nSize,
 }
 bool CTCPServer::MIsOpen() const
 {
-	return FImpl && FImpl->MIsOpen();
+	return FImpl->MIsOpen();
 }
 CTCPServer::settings_t const& CTCPServer::MGetSetting() const
 {

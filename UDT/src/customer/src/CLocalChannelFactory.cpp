@@ -13,8 +13,8 @@
  */
 
 #include <deftype>
-#include <programm_id.h>
-#include "CCustomer.h"
+#include <udt/programm_id.h>
+#include "udt/CCustomer.h"
 #include "CLocalChannelFactory.h"
 
 template<>

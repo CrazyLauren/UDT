@@ -1,5 +1,5 @@
 
-SET(PATH_TO_REVISION_IN ${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in CACHE INTERNAL  "" FORCE)
+set(PATH_TO_REVISION_IN ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL  "" FORCE)
 
 add_subdirectory(udt_share)
 add_subdirectory(kernel)

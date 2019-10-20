@@ -12,13 +12,13 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <Socket/ISocket.h>
-#include <Socket/CSocket.h>
-#include <Socket/CSelectSocket.h>
+#include <share/Socket/ISocket.h>
+#include <share/Socket/CSocket.h>
+#include <share/Socket/CSelectSocket.h>
 #ifdef _WIN32
-#include <Socket/CSeleclSocketPosix.h>
+#include <share/Socket/CSeleclSocketPosix.h>
 #else
-#include <Socket/CSeleclSocketPosix.h>
+#include <share/Socket/CSeleclSocketPosix.h>
 #endif
 //#if (defined(unix)|| defined(__QNX__)) && !defined(__MINGW32__)
 //#	include <netinet/in.h> // sockaddr_in
@@ -26,7 +26,7 @@
 //#else
 //#include <winsock2.h>
 //#endif//#include <deftype>
-#include <Socket/print_socket_error.h>
+#include "print_socket_error.h"
 namespace NSHARE
 {
 CSelectSocket::CSelectSocket() :

@@ -15,8 +15,8 @@
 #include <deftype>
 #include <limits.h>
 #include <fcntl.h>
-#include <UType/CIPCSignalEvent.h>
-#include <UType/CIPCMutex.h>
+#include <share/UType/CIPCSignalEvent.h>
+#include <share/UType/CIPCMutex.h>
 
 namespace NSHARE
 {

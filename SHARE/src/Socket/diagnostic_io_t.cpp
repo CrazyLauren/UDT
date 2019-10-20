@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
 #include <deftype>
-#include <Socket/diagnostic_io_t.h>
+#include <share/Socket/diagnostic_io_t.h>
 
 namespace NSHARE
 {

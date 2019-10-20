@@ -44,6 +44,19 @@ typedef HMODULE DYN_LIB_HANDLE;
 typedef void* DYN_LIB_HANDLE;
 #endif
 
+#ifndef NDEBUG
+#	ifdef CMAKE_DEBUG_POSTFIX
+const NSHARE::CText CDynamicModule::LIBRARY_UNIQUE_POSTFIX=CMAKE_DEBUG_POSTFIX;
+#	else
+const NSHARE::CText CDynamicModule::LIBRARY_UNIQUE_POSTFIX="";
+#	endif//#	ifndef CMAKE_DEBUG_POSTFIX
+#else
+#	ifdef CMAKE_RELEASE_POSTFIX
+const NSHARE::CText CDynamicModule::LIBRARY_UNIQUE_POSTFIX=CMAKE_RELEASE_POSTFIX;
+#	else
+const NSHARE::CText CDynamicModule::LIBRARY_UNIQUE_POSTFIX="";
+#	endif//#	ifndef CMAKE_RELEASE_POSTFIX
+#endif //#ifndef NDEBUG
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
 const NSHARE::CText CDynamicModule::LIBRARY_EXTENSION(".dll");
 #	ifdef __CYGWIN__
@@ -88,6 +101,16 @@ bool CDynamicModule::MIsValid()const
 //----------------------------------------------------------------------------//
 //extern const char MODULE_DIR_VAR_NAME[] = "";
 
+static bool has_postfix(const CText& name)
+{
+	const size_t ext_len = CDynamicModule::LIBRARY_EXTENSION.length();
+
+	if (name.length() < ext_len)
+		return false;
+
+	return name.compare(name.length() - ext_len, ext_len, CDynamicModule::LIBRARY_EXTENSION) == 0;
+}
+
 static bool has_extension(const CText& name)
 {
 	const size_t ext_len = CDynamicModule::LIBRARY_EXTENSION.length();
@@ -108,9 +131,23 @@ static bool has_prefix(const CText& name)
 		return false;
 	return name.compare(0, ext_len, CDynamicModule::LIBRARY_PREFIX) == 0;
 }
-bool NSHARE::CDynamicModule::sMIsNameOfLibrary(const CText& name)
+bool NSHARE::CDynamicModule::sMIsNameOfLibrary(const CText& aName,bool aAllowPostifx)
 {
-	return has_extension(name);
+	if(!aAllowPostifx)
+		return has_extension(aName);
+	else
+	{
+		bool _is=has_extension(aName);
+		if(_is && !CDynamicModule::LIBRARY_UNIQUE_POSTFIX.empty())
+		{
+			CText _name(aName);
+			_name.erase(_name.length() - CDynamicModule::LIBRARY_EXTENSION.length(),
+					CDynamicModule::LIBRARY_EXTENSION.length());
+
+			_is=has_postfix(_name);
+		}
+		return _is;
+	}
 }
 CText NSHARE::CDynamicModule::sMGetLibraryName(CText name)
 {
@@ -118,6 +155,12 @@ CText NSHARE::CDynamicModule::sMGetLibraryName(CText name)
 	{
 		name.erase(name.length() - CDynamicModule::LIBRARY_EXTENSION.length(),
 				CDynamicModule::LIBRARY_EXTENSION.length());
+
+		if(!CDynamicModule::LIBRARY_UNIQUE_POSTFIX.empty() && has_postfix(name))
+		{
+			name.erase(name.length() - CDynamicModule::LIBRARY_UNIQUE_POSTFIX.length(),
+					CDynamicModule::LIBRARY_UNIQUE_POSTFIX.length());
+		}
 	}
 	if (has_prefix(name))
 	{
@@ -127,6 +170,10 @@ CText NSHARE::CDynamicModule::sMGetLibraryName(CText name)
 }
 CText NSHARE::CDynamicModule::sMGetLibraryNameInSystem(CText name)
 {
+	if(!CDynamicModule::LIBRARY_UNIQUE_POSTFIX.empty())
+	{
+		name.append(CDynamicModule::LIBRARY_UNIQUE_POSTFIX);
+	}
 	name.append(CDynamicModule::LIBRARY_EXTENSION);
 	if(!CDynamicModule::LIBRARY_PREFIX.empty())
 	{

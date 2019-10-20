@@ -1,0 +1,10 @@
+//
+// Created by nonstop on 20.10.2019.
+//
+
+#ifndef CUSTOMER_CONFIG_H
+#define CUSTOMER_CONFIG_H
+
+#cmakedefine CUSTOMER_WITH_STATIC_MODULES "${${_TARGET_NAME_UP}_LIST_STATIC_MODULES}"
+
+#endif //CUSTOMER_CONFIG_H

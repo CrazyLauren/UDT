@@ -17,8 +17,15 @@ namespace NUDT
 class CResources: public NSHARE::CSingleton<CResources>
 {
 public:
-	CResources(std::vector<NSHARE::CText> const& aResources,
-				NSHARE::CText const& aExtPath = NSHARE::CText());
+    static const NSHARE::CText NAME;///< A serializing key
+    static const NSHARE::CText MODULES_PATH;/*!< A name of key for specification
+										where looking for additional libraries*/
+    static const NSHARE::CText LIST_OF_LOADED_LIBRARY;/*!< A name of key for specification
+										what library has to be loaded*/
+    static const NSHARE::CText ONLY_SPECIFIED_LIBRARY;/*!< A name of key for specification
+										loaded only library which is specified by #LIST_OF_LOADED_LIBRARY*/
+
+	CResources(NSHARE::CConfig const& aConf);
 
 	~CResources();
 

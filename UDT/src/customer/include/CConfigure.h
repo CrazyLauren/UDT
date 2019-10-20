@@ -12,7 +12,7 @@
 #ifndef CCONFIGURE_H_
 #define CCONFIGURE_H_
 
-#include "customer_export.h"
+#include "udt/customer_export.h"
 
 namespace NUDT
 {

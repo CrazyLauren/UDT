@@ -1,20 +1,34 @@
-SET(TARGET_NAME test_logging)
+set(_TARGET_NAME test_logging)
 
-add_definitions(${LOGGING_DEFENITIONS})
+file (GLOB _SOURCE_FILES *.cpp)
+file (GLOB _HEADER_FILES *.hpp)
 
-file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-file (GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+set (_INCLUDE_DIR 														
+					${CMAKE_CURRENT_SOURCE_DIR}
+					)
 
+set (_PRIVATE_DEFINITIONS
+					#
+					)
+					
 
-share_add_executable(${TARGET_NAME} SOURCE_FILES HEADER_FILES TRUE)
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} )
-share_add_dependency(${TARGET_NAME} ${SHARE_TARGET_NAME})
-set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 11)
+helper_add_executable(${_TARGET_NAME} 
+						_SOURCE_FILES
+						_HEADER_FILES
+						_INCLUDE_DIR
+						_PRIVATE_DEFINITIONS
+						true
+						)
+set_property(TARGET ${_TARGET_NAME} PROPERTY CXX_STANDARD 11)
 
-target_include_directories( ${TARGET_NAME} PRIVATE
-					${CMAKE_CURRENT_SOURCE_DIR} 
-					${SHARE_INCLUDES} 
-					${Boost_INCLUDE_DIRS} 
-					${LOGGING_INCLUDES}	
-					${CMAKE_BINARY_DIR}/include/
-					)  
+set (_PUBLIC_LIBRARIS
+					#
+					)
+					
+set (_PRIVATE_LIBRARIS
+					${SHARE_LIBRARIES}
+					)
+helper_target_link_libraries(${_TARGET_NAME} 
+							_PUBLIC_LIBRARIS
+							_PRIVATE_LIBRARIS
+							)						

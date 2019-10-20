@@ -1,0 +1,9 @@
+customer version:0.3
+-------------------
+  - Fixed bug: now the programm's version is specifyied at initilization.
+  - Added version for "raw" protocol 
+
+customer version:0.4
+-------------------
+    - change default config file to json
+    - change name of field modules to libraries

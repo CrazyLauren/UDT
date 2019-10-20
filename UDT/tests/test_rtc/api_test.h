@@ -15,7 +15,7 @@
 #define API_TEST_H_
 
 #include <customer.h>
-#include <IRtc.h>
+#include <udt/IRtc.h>
 #include "protocol.h"
 
 namespace test_rtc

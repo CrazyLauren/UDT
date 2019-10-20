@@ -12,13 +12,13 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <fdir.h>
-#include <programm_id.h>
+#include <share/fdir.h>
+#include <udt/programm_id.h>
 #include <time.h>
 #include <internel_protocol.h>
 #include <shared_types.h>
 #include <udt_share.h>
-#include <CParserFactory.h>
+#include <udt/CParserFactory.h>
 
 namespace NUDT
 {

@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
 #include <deftype>
-#include <crc8.h>
-#include <tasks.h>
-#include <UType/CSharedAllocator.h>
+#include <share/crc8.h>
+#include <share/tasks.h>
+#include <share/UType/CSharedAllocator.h>
 
 //todo refractor
 //fixme bug Clean up logic error

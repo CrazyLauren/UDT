@@ -12,8 +12,8 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */  
 #include <deftype>
-#include <UType/CSharedAllocator.h>
-#include <UType/CSharedMemory.h>
+#include <share/UType/CSharedAllocator.h>
+#include <share/UType/CSharedMemory.h>
 #include "impl/CSharedMemoryImpl.h"
 
 namespace NSHARE

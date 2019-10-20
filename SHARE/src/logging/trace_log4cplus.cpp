@@ -21,8 +21,8 @@
 # include <unistd.h>
 #endif
 
-#include <logging/share_trace_log4cplus.h>
-#include <logging/CTraceToSocket.h>
+#include <share/logging/share_trace_log4cplus.h>
+#include <share/logging/CTraceToSocket.h>
 #define DEFINE_FLAG( type, name, defvalue) \
 		 type& _log4cplus_impl::flags_##name() \
 		{static type _v=defvalue;\

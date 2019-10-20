@@ -12,11 +12,11 @@
 
 #ifndef CDATAOBJECT_H_
 #define CDATAOBJECT_H_
-#include "customer_export.h"
-#include <programm_id.h>
-#include <udt_types.h>
+#include "udt/customer_export.h"
+#include <udt/programm_id.h>
+#include <udt/udt_types.h>
 #include <shared_types.h>
-#include <udt_rtc.h>
+#include <udt/udt_rtc.h>
 
 #include <CHardWorker.h>
 namespace NUDT

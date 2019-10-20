@@ -1,33 +1,23 @@
-SET(TARGET_NAME SHARE)
+set(_TARGET_NAME SHARE)
 
-SET(SHARE_TARGET_NAME ${TARGET_NAME} CACHE INTERNAL "" FORCE)
+string(TOUPPER ${_TARGET_NAME}
+		_TARGET_UP
+		)
 
-OPTION(LOGGING_IS_DISABLED_IN_${TARGET_NAME} "Disable logging in share library" ON)
+configure_target_version(${_TARGET_NAME}
+						${CMAKE_CURRENT_SOURCE_DIR}
+						"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+						)
 
-SET(PATH_TO_REVISION_IN ${CMAKE_CURRENT_SOURCE_DIR}/revision.c.in CACHE INTERNAL  "" FORCE)
+option(${_TARGET_UP}_NO_STATRUP_TEST "Disable  start up tests " ON)
+mark_as_advanced(${_TARGET_UP}_NO_STATRUP_TEST)
 
-configure_version(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR} 0 6)
 
-OPTION(SHARE_NO_STATRUP_TEST "Disable  start up tests " ON)
-
-mark_as_advanced(SHARE_NO_STATRUP_TEST)
-
-IF (SHARE_NO_STATRUP_TEST)
-	add_definitions(-DNO_SHARE_TEST)
-ENDIF ()
-
-#SET(LOGGING_COMMAND_FLAG "v" CACHE STRING  "")
-#SET(LOGGING_COMMAND_LONG_NAME "verbose" CACHE STRING  "")
-	
-
-add_definitions(${LOGGING_DEFENITIONS})
-IF (LOGGING_IS_DISABLED_IN_${TARGET_NAME})
-	add_definitions(-DNOLOG)
-ENDIF ()
-
-				
 file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-list (APPEND TARGET_SRC    ${CMAKE_CURRENT_SOURCE_DIR}/revision.c)		
+list (APPEND TARGET_SRC    "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c")
+if (NOT HAVE_DEX)
+	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
+endif ()
 
 file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp)
 list (APPEND CORE_HEADER_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/../include/deftype)
@@ -37,97 +27,135 @@ file (GLOB LOGGING_HEADER_FILES ../include/logging/*.h ../include/logging/*.hpp)
 file (GLOB SOCKET_HEADER_FILES ../include/Socket/*.h ../include/Socket/*.hpp)
 file (GLOB UTYPE_HEADER_FILES ../include/UType/*.h ../include/UType/*.hpp)
 file (GLOB UTYPE_HEADER_FILES_IMPL ../include/UType/impl/*.h ../include/UType/impl/*.hpp)
-file (GLOB UTYPE_EXT_HEADER_FILES ../include/UType/ext/*.h ../include/UType/ext/*.hpp)
 
-set (SHARE_HEADERS ${CORE_HEADER_FILES} 
+set (SHARE_HEADERS ${CORE_HEADER_FILES}
 					${SOCKET_HEADER_FILES}
 					${UTYPE_HEADER_FILES}
 					${UTYPE_EXT_HEADER_FILES}
-					${UTYPE_HEADER_FILES_IMPL}					
+					${UTYPE_HEADER_FILES_IMPL}
 					${LOGGING_HEADER_FILES})
 
-
-IF (NOT HAVE_DEX)
-	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
-ENDIF ()
-	
-
-share_add_library(${TARGET_NAME} FALSE TARGET_SRC SHARE_HEADERS TRUE)
-
-target_include_directories( ${TARGET_NAME} PUBLIC
-					${CMAKE_CURRENT_SOURCE_DIR}/../include 
-					${Boost_INCLUDE_DIRS} 
+set (SHARE_PUBLIC_DIR
+					${CMAKE_CURRENT_SOURCE_DIR}/../include
+					${Boost_INCLUDE_DIRS}
 					${LOGGING_INCLUDES}
-					${CMAKE_BINARY_DIR}/include)
+					${CMAKE_BINARY_DIR}/include
+					)
 
-target_include_directories( ${TARGET_NAME} PRIVATE
-					${RAPIDJSON_INCLUDES} 
-					${TCLAP_INCLUDES} )
-					
-IF (WIN32)
-	set (PLATFORM_LIBS ${PLATFORM_LIBS} ws2_32 ole32 oleaut32 Psapi Setupapi uuid  CACHE STRING     "PLATFORM_LIBS" FORCE)
-	
-	IF(LIBADVAPI32)
-		target_compile_definitions(${TARGET_NAME} PRIVATE HAVE_LIBADVAPI32=1)
-		IF(NOT MINGW)	
-			list(APPEND PLATFORM_LIBS advapi32)
-		ENDIF()		
+set (SHARE_PRIVATE_DIR
+					${RAPIDJSON_INCLUDES}
+					${TCLAP_INCLUDES}
+					)
+set (SHARE_PRIVATE_DEFINITIONS
+					BOOST_ALL_NO_LIB
+					)
+
+set (SHARE_PUBLIC_DEFINITIONS
+
+					)
+
+
+if (${${_TARGET_UP}_NO_STATRUP_TEST})
+	list(APPEND SHARE_PRIVATE_DEFINITIONS NO_SHARE_TEST)
+endif ()
+
+helper_add_library(${_TARGET_UP}
+					TARGET_SRC
+					SHARE_HEADERS
+					SHARE_PUBLIC_DIR
+					SHARE_PRIVATE_DIR
+					SHARE_PUBLIC_DEFINITIONS
+					SHARE_PRIVATE_DEFINITIONS
+					TRUE)
+
+configure_logging(${_TARGET_NAME})
+
+if (WIN32)
+	set (${_TARGET_UP}_PLATFORM_LIBS
+					${${_TARGET_UP}_PLATFORM_LIBS}
+					ws2_32
+					ole32
+					oleaut32
+					Psapi
+					Setupapi
+					uuid
+					CACHE STRING "${_TARGET_NAME} platform libraries" FORCE)
+
+	if(LIBADVAPI32)
+		if(NOT MINGW)
+			list(APPEND ${_TARGET_UP}_PLATFORM_LIBS
+						advapi32
+						)
+		endif()
 	endif()
 
-	IF(HAVE_IPHLPAPI_H)
-		#target_compile_definitions(${TARGET_NAME} PRIVATE HAVE_IPHLPAPI=1)
-		list(APPEND PLATFORM_LIBS iphlpapi)	
-	ENDIF()
-ELSEIF (UNIX)
-	IF(QNX)
-		SET(PLATFORM_LIBS socket m ${PLATFORM_LIBS} CACHE STRING     "PLATFORM_LIBS" FORCE)
-	ELSE()
-		SET(PLATFORM_LIBS  pthread dl rt ${PLATFORM_LIBS} CACHE STRING     "PLATFORM_LIBS" FORCE)
-		
-		IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		
-			IF(HAVE_BACKTRACE_SYMBOLS)
-				set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -rdynamic")
-			ENDIF()
-		ENDIF()
-	ENDIF()
-ENDIF()
-set(_PLATFORM_LIBS ${PLATFORM_LIBS})
+	if(HAVE_IPHLPAPI_H)
+		list(APPEND ${_TARGET_UP}_PLATFORM_LIBS
+					iphlpapi
+			)
+	endif()
+
+elseif (UNIX)
+	if(QNX)
+		set(${_TARGET_UP}_PLATFORM_LIBS
+					${${_TARGET_UP}_PLATFORM_LIBS}
+					socket
+					m
+					CACHE STRING "${_TARGET_NAME} platform libraries" FORCE)
+	else()
+		set(${_TARGET_UP}_PLATFORM_LIBS
+					${${_TARGET_UP}_PLATFORM_LIBS}
+					pthread
+					dl
+					rt
+					CACHE STRING "${_TARGET_NAME} platform libraries" FORCE)
+
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+			if(HAVE_BACKTRACE_SYMBOLS)
+				set(CMAKE_SHARED_LINKER_FLAGS_DEBUG
+						"${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -rdynamic"
+					)
+			endif()
+		endif()
+	endif()
+endif()
+
+if(HAVE_LIBEXECINFO)
+	list(APPEND ${_TARGET_UP}_PLATFORM_LIBS
+					execinfo
+			)
+endif()
+if(HAVE_DBGHELP)
+	list(APPEND ${_TARGET_UP}_PLATFORM_LIBS
+					dbghelp
+			)
+endif()
+
+set(_PLATFORM_LIBS ${${_TARGET_UP}_PLATFORM_LIBS})
 list(REMOVE_DUPLICATES _PLATFORM_LIBS)
 
-SET(PLATFORM_LIBS ${_PLATFORM_LIBS}  CACHE STRING "Platform library" FORCE)
+set(${_TARGET_UP}_PLATFORM_LIBS
+			${_PLATFORM_LIBS}
+			CACHE STRING "${_TARGET_NAME} platform libraries" FORCE)
 
-share_target_link_libraries(${TARGET_NAME} ${PLATFORM_LIBS} ${LOGGING_LIBRARIES} )
-if(HAVE_LIBEXECINFO)
-    share_target_link_libraries(${TARGET_NAME} execinfo)
-endif()	
-if(HAVE_DBGHELP)
-    share_target_link_libraries(${TARGET_NAME} dbghelp)
-endif()	
+set(PUBLIC_LIBRARIES
+			${${_TARGET_NAME}_PLATFORM_LIBS}
+			)
 
-if(ENABLE_VTUNE)    
-	
-    if(VTUNE_FOUND)
-        target_add_definitions(${TARGET_NAME} PRIVATE -DENABLE_VTUNE)
-		
-		target_include_directories( ${TARGET_NAME} PRIVATE
-					${VTune_INCLUDE_DIRS})
-					
-		share_target_link_libraries(${TARGET_NAME} ${VTune_LIBRARIES} )		
-    endif(VTUNE_FOUND)
-	
-endif(ENABLE_VTUNE)
+set(PRIVATE_LIBRARIES
+			#
+			)
 
+helper_target_link_libraries(${_TARGET_NAME}
+							PUBLIC_LIBRARIES
+							PRIVATE_LIBRARIES
+							)
 
 install(FILES ${CORE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 install(FILES ${LOGGING_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/logging)
 install(FILES ${SOCKET_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Socket)
 install(FILES ${UTYPE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/UType)
-#install(FILES ${UTYPE_EXT_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/UType/ext)
 
-SET(SHARE_LIBRARIES  ${TARGET_NAME} CACHE STRING "SHARE_LIBRARIES" FORCE)#fixme must be filepath
+helper_export_library(SHARE)
 
-set(SHARE_FOUND TRUE CACHE BOOL  "SHARE_FOUND" FORCE)	
-
-SET(SHARE_INCLUDES ${SHARE_ROOT_PATH}/include ${CMAKE_BINARY_DIR}/include CACHE PATH  "Include path for the header files of SHARE" )
-mark_as_advanced(SHARE_INCLUDES)
 		
