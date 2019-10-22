@@ -7,9 +7,14 @@
 
 string(TOUPPER "@CONF_TARGET_NAME@"
        _TARGET_UP)
+	   
+if (NOT ${_TARGET_UP}_ROOT)
+    set(${_TARGET_UP}_ROOT ${CMAKE_INSTALL_PREFIX})
+endif ()
+	
 find_path(@CONF_TARGET_NAME@_EXPORT
           NAMES @CONF_TARGET_NAME@Targets.cmake
-          HINTS ${@CONF_TARGET_NAME@_ROOT} ${CMAKE_INSTALL_PREFIX}
+          HINTS ${${_TARGET_UP}_ROOT} ${CMAKE_INSTALL_PREFIX}
           PATH_SUFFIXES cmake
           )
 if (@CONF_TARGET_NAME@_EXPORT)
@@ -38,19 +43,17 @@ if (@CONF_TARGET_NAME@_EXPORT)
 endif ()
 
 if (NOT @CONF_TARGET_NAME@_FOUND)
-    if (NOT @CONF_TARGET_NAME@_ROOT)
-        set(@CONF_TARGET_NAME@_ROOT ${CMAKE_INSTALL_PREFIX})
-    endif ()
+
 
 
     find_path(${_TARGET_UP}_INCLUDES
               NAMES @CONF_LOOKING_FOR_FILES@
-              HINTS ${@CONF_TARGET_NAME@_ROOT} ${CMAKE_INSTALL_PREFIX}
+              HINTS ${${_TARGET_UP}_ROOT} ${CMAKE_INSTALL_PREFIX}
               PATH_SUFFIXES include
               )
 
     find_library(${_TARGET_UP}_LIBRARIES @CONF_TARGET_NAME@
-                 HINTS ${@CONF_TARGET_NAME@_ROOT} ${CMAKE_INSTALL_PREFIX}
+                 HINTS ${${_TARGET_UP}_ROOT} ${CMAKE_INSTALL_PREFIX}
                  PATH_SUFFIXES lib bin
                  )
 
@@ -69,12 +72,12 @@ if (NOT @CONF_TARGET_NAME@_FOUND)
     endif ()
 
     mark_as_advanced(
-            @CONF_TARGET_NAME@_ROOT
+            ${_TARGET_UP}_ROOT
     )
 
 endif ()
 
-message(STATUS "@CONF_TARGET_NAME@_ROOT  = ${@CONF_TARGET_NAME@_ROOT}")
+message(STATUS "@CONF_TARGET_NAME@_ROOT  = ${${_TARGET_UP}_ROOT}")
 message(STATUS "${_TARGET_UP}_INCLUDES  = ${${_TARGET_UP}_INCLUDES}")
 message(STATUS "${_TARGET_UP}_LIBRARIES = ${${_TARGET_UP}_LIBRARIES}")
 mark_as_advanced(

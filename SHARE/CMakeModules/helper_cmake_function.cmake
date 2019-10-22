@@ -94,13 +94,13 @@ function(install_default_directory
             )
 
     set(CMAKE_INSTALL_LIBDIR
-            "${CMAKE_INSTALL_PREFIX}/lib"
+            "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
             CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
 			where library  is installed"
             )
 			
     set(CMAKE_INSTALL_BINDIR
-            "${CMAKE_INSTALL_PREFIX}/bin"
+            "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
             CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
 			where binary  is installed"
             )]]
@@ -598,11 +598,11 @@ function(helper_export_library
 	
 	configure_package_config_file( "${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in"
 								  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
-								INSTALL_DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+								INSTALL_DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 								)
 
 	install(FILES  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
-			DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 			)
 	if( ${_TARGET_UP}_TARGET_VERSION)				
 		set(_VERSION_CONFIG "${_OUT_DIRECTORY}/${aTARGET_NAME}ConfigVersion.cmake")
@@ -614,7 +614,7 @@ function(helper_export_library
 		)
 		
 		install(FILES "${_VERSION_CONFIG}"
-						DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+						DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 					)
 	endif()
 

@@ -22,6 +22,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 include (CMakeModules/configure_${PROJECT_NAME}.cmake)
+add_subdirectory(dependencies)
 include (CMakeModules/dependencies_search.cmake)
 include (CMakeModules/configure_doxygen.cmake)
 include (CMakeModules/share_function.cmake)

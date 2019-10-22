@@ -60,7 +60,7 @@ install(FILES 	include/udt/udt_types.h
 				include/udt/IExtParser.h
 				include/udt/CParserFactory.h
 				include/udt/udt_rtc.h
-				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/udt
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/udt
 		)
 helper_export_library(${_TARGET_NAME})
 

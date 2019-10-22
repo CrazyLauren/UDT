@@ -49,10 +49,10 @@ helper_target_link_libraries(${_TARGET_NAME}
 install(DIRECTORY
 			${CMAKE_CURRENT_SOURCE_DIR}/gui/
 		DESTINATION
-			${CMAKE_INSTALL_PREFIX}/bin/gui
+			${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/gui
 		)
 install(FILES
 			${CMAKE_CURRENT_SOURCE_DIR}/default_kernel_config.json
 		DESTINATION
-			${CMAKE_INSTALL_PREFIX}/bin
+			${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
 		)

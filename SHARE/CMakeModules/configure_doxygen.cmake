@@ -1,7 +1,6 @@
 include(FindPackageHandleStandardArgs)
 find_package(Doxygen)
-if(DOXYGEN_FOUND)	
-	
+if(DOXYGEN_FOUND)		
 	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in")		
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf.in 	
 		${CMAKE_BINARY_DIR}/doc/${PROJECT_NAME}/doxygen.conf)

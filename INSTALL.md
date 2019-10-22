@@ -1,14 +1,20 @@
 UDT Install Guide
 =====================================================
 
-Requirements
-------------
+The UDT build system is based on the cmake project builder. <br />
+Before starting the installation, it is recommended that you read about it. <br />
+ Further in the instruction the gui version of cmake will be used. <br />
+ To avoid problems with cmake, you can clear the environment variables, <br />
+ keeping on only the directories of the target compiler, <br />
+ first of all it concerns the PATH variable. <br />
+ (For example, if you build a project for mingw, <br />
+ cmake can "pick up" sh.exe from another compiler).
+
+# Requirements
 ### Common Requirements
 
 * CMake-GUI for building everything:
 	https://cmake.org
-* Boost (at least 1.47) is needed, but only template libraries, so no
-  system wide installation or static linking is needed here:
 
 ### For generation documentation with doxygen
 * Doxygen
@@ -29,19 +35,43 @@ Requirements
 	- QNX_TARGET
 * QNX Momentics
 
+# Dependencies:
 
-​	
-Download the source
-------------
-Download and extract the latest version of the source code from from https://github.com/CrazyLauren/UDT
+| Title | Version | Required | Note |
+| --- | --- | --- | --- |
+| Boost | 1.47 and higher | Header only files | The required version <br /> is already in the <br /> UDT/SHARE/dependencies <br />directory|
+| rapidjson | 1.02 and higher | Header only files | The required version <br /> is already in the <br /> UDT/SHARE/dependencies  <br />directory|
+| Tclap | 1.2.1 and higher | Header only files | The required version <br />  is already in the <br /> UDT/SHARE/dependencies <br /> directory|
+| Log4cplus | 1.1.3 and 1.2. * | No if option is not  <br /> specified LOGGING_TO_LOG4CPLUS | It compiles automatically  <br />  if the option is specified: <br />  LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE|
+
+# ​Download the source
+Download and extract the latest version of the source code from from [https://github.com/CrazyLauren/UDT](https://github.com/CrazyLauren/UDT)
 press button "Clone or download"
 
-Microsoft Windows (Microsoft Visual C++)
------------------
+# Building
+## Build Options:
+
+| Title | Description |
+| --- | --- |
+| *_WITH_STATIC_DEPENDENCIES | Compile the project with static dependencies. |
+| *_BUILD_STATIC_TOO | Optionally build a static library |
+| CUSTOMER_AVAILABLE_MODULES | List of existing add-on modules |
+| CUSTOMER_WITH_STATIC_MODULES | Build the customer library <br />  with the modules specified in <br />  CUSTOMER _LIST_STATIC_MODULES |
+| LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE | Also build log4cplus 1.2 |
+| LOGGING_HAS_TO_BE_REMOVED | Delete all logs and assert from source code |
+| LOGGING_IS_DISABLED_IN_SHARE | Disable logs only in SHARE libraries, but leave assertions |
+| LOGGING_TO_LOG4CPLUS | For logging use the log4cplus library. **It is recommended to set this option.** |
+| LOGGING_TO_COUT | Output logs to standard output stream |
+Usually it’s enough to configure only project logging. For logging, <br /> 
+ it is recommended to use the log4cplus library option LOGGING_TO_LOG4CPLUS,  <br /> 
+ if the library is not installed on the system, when the option  <br />
+  LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE is set, it will be compiled automatically and statically linked.
+  
+## Microsoft Windows (Microsoft Visual C++)
 
 1. Install Windows version of cmake-gui
 
-2. Run `cmake-gui.exe`
+2. Run `cmake-gui`
 
 3. Press 'Browse Source' to set the source code directory. 
 	This is the directory where the source code is located.
@@ -87,8 +117,7 @@ Microsoft Windows (Microsoft Visual C++)
 
     a) Select 'Build'
 
-Microsoft Windows (MINGW32)
------------------
+## Microsoft Windows (MINGW32)
 
 1. Install Windows version of cmake-gui
 
@@ -97,7 +126,7 @@ Microsoft Windows (MINGW32)
 3. Add the mingw32 programs to the system PATH enviroment variable 
 	(eg. append this string C:\mingw32\bin)
 	
-4. Run `cmake-gui.exe`
+4. Run `cmake-gui`
 
 5. Press `Browse Source` to set the source code directory. 
 	This is the directory where the source code is located.
@@ -140,8 +169,7 @@ Microsoft Windows (MINGW32)
 14. You can see the builded applications and libraries and the headers files
     in the directory that is specified in the variable CMAKE_INSTALL_PREFIX.
 
-GNU/Linux
----------
+## GNU/Linux
 1. Run `cmake-gui`
 
 2. Press `Browse Source` to set the source code directory.
@@ -181,12 +209,11 @@ GNU/Linux
 11. You can see the builded applications and libraries and the headers files
     in the directory that is specified in the variable CMAKE_INSTALL_PREFIX.
 
-QNX
------------------
+## QNX
 For building in Windows, the sequence of actions is as follows (For Linux is similar):
 1. Install Windows version of cmake-gui
 
-2. Run `cmake-gui.exe`
+2. Run `cmake-gui`
 
 3. Press `Browse Source` to set the source code directory. 
 	This is the directory where the source code is located.

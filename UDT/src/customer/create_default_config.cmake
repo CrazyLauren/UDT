@@ -20,4 +20,4 @@
     endforeach()
 ]]
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/default_customer_config.json
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})

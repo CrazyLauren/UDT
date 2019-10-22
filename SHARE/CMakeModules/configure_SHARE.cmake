@@ -74,30 +74,29 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(${PROJECT_NAME}_PLATFORM_DEFENITIONS  "" CACHE STRING "" FORCE)
 
-if (WIN32)
+if (MSVC)
 	# This option is to enable the /MP switch for Visual Studio 2005 and above compilers
-	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." OFF)
+	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." ON)
 
 	mark_as_advanced(BUILD_BY_MP)
 
 	if(BUILD_BY_MP)
-    	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 	endif(BUILD_BY_MP)
 
-   if (MSVC)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4200") #disabling of 4200 warning
-		set(${PROJECT_NAME}_PLATFORM_DEFENITIONS 
-			${${PROJECT_NAME}_PLATFORM_DEFENITIONS} 
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4200") #disabling of 4200 warning
+	set(${PROJECT_NAME}_PLATFORM_DEFENITIONS 
+		${${PROJECT_NAME}_PLATFORM_DEFENITIONS} 
 			-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX 
 			CACHE STRING "" FORCE
-			)
-    endif(MSVC)
+		)
     
     if(LIBADVAPI32)
     	set(HAVE_LIBADVAPI32 1)
     endif()
 endif()
-						
+
+
 configure_file(CMakeModules/config.h.cmake 
 				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
 				ESCAPE_QUOTES

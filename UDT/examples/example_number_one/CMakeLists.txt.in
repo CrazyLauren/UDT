@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.10)
+project(example_number_one)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX
+        "${CMAKE_BINARY_DIR}/binary"
+        CACHE PATH "Default installation Directory" FORCE)
+endif()
+
+include(FindPackageHandleStandardArgs)
+
+set(CMAKE_PREFIX_PATH @CMAKE_PACKAGE_INSTALL_DIR@)
+
+find_package(customer REQUIRED)
+find_package(udt_share REQUIRED)
+find_package(SHARE REQUIRED)
+
+
+add_executable(untitled main.cpp doing_something.cpp)
+
+target_link_libraries(untitled PRIVATE customer)
