@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/share_socket.h>
+#include <SHARE/share_socket.h>
 #include "kernel_type.h"
 namespace NUDT
 {

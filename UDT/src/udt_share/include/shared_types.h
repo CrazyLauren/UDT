@@ -14,7 +14,7 @@
 #include <udt/udt_share_macros.h>
 #include <udt/programm_id.h>
 #include <udt/udt_types.h>
-#include <share/Socket/net_address_t.h>
+#include <SHARE/Socket/net_address_t.h>
 #include <udt/udt_rtc.h>
 namespace NUDT
 {

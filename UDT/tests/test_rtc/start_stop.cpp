@@ -19,7 +19,7 @@
 #	include <process.h>
 #endif
 #include <customer.h>
-#include <share/tasks.h>
+#include <SHARE/tasks.h>
 #include "protocol.h"
 #include "api_test.h"
 

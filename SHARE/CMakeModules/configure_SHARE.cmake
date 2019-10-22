@@ -99,10 +99,10 @@ if (WIN32)
 endif()
 						
 configure_file(CMakeModules/config.h.cmake 
-				${CMAKE_BINARY_DIR}/include/share/config/config.h 
+				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
 				ESCAPE_QUOTES
 				)
 				
 install(FILES ${CMAKE_BINARY_DIR}/include/share/config/config.h
-				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/share/config/
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/config/
 		)

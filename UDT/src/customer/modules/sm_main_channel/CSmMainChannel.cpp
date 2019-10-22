@@ -13,8 +13,8 @@
  */
 
 #include <deftype>
-#include <share/revision.h>
-#include <share/share_socket.h>
+#include <SHARE/revision.h>
+#include <SHARE/share_socket.h>
 #include <udt/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>

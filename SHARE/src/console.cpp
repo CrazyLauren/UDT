@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/console.h>
+#include <SHARE/console.h>
 namespace NSHARE
 {
 namespace NCONSOLE

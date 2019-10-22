@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/Socket/diagnostic_io_t.h>
-#include <share/Socket/ISocket.h>
-#include <share/Socket/socket_parser.h>
+#include <SHARE/Socket/diagnostic_io_t.h>
+#include <SHARE/Socket/ISocket.h>
+#include <SHARE/Socket/socket_parser.h>
 #include <udt/CParserFactory.h>
 #include <core/kernel_type.h>
 #include <core/CDescriptors.h>

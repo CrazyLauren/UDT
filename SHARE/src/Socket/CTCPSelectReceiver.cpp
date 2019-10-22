@@ -13,12 +13,12 @@
  */
 
 #include <deftype>
-#include <share/Net.h>
-#include <share/Socket/CNetBase.h>
-#include <share/Socket/CLoopBack.h>
+#include <SHARE/Net.h>
+#include <SHARE/Socket/CNetBase.h>
+#include <SHARE/Socket/CLoopBack.h>
 #include <string.h>
-#include <share/console.h>
-#include <share/Socket/CTCPSelectReceiver.h>
+#include <SHARE/console.h>
+#include <SHARE/Socket/CTCPSelectReceiver.h>
 #include "print_socket_error.h"
 
 namespace NSHARE

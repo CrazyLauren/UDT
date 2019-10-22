@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/fdir.h>
+#include <SHARE/fdir.h>
 #include "CResources.h"
 
 #if defined(RRD_STATIC)

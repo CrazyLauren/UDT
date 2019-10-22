@@ -19,16 +19,18 @@ if (NOT HAVE_DEX)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 endif ()
 
-file (GLOB CORE_HEADER_FILES ../include/*.h ../include/*.hpp)
-list (APPEND CORE_HEADER_FILES    ${CMAKE_CURRENT_SOURCE_DIR}/../include/deftype)
+file (GLOB CORE_HEADER_FILES ../include/${_TARGET_NAME}/*.h ../include/${_TARGET_NAME}/*.hpp)
+set (DEFTYPE_HEADER_FILES    ../include/deftype)
 
 
-file (GLOB LOGGING_HEADER_FILES ../include/logging/*.h ../include/logging/*.hpp)
-file (GLOB SOCKET_HEADER_FILES ../include/Socket/*.h ../include/Socket/*.hpp)
-file (GLOB UTYPE_HEADER_FILES ../include/UType/*.h ../include/UType/*.hpp)
-file (GLOB UTYPE_HEADER_FILES_IMPL ../include/UType/impl/*.h ../include/UType/impl/*.hpp)
+file (GLOB LOGGING_HEADER_FILES ../include/${_TARGET_NAME}/logging/*.h ../include/${_TARGET_NAME}/logging/*.hpp)
+file (GLOB SOCKET_HEADER_FILES ../include/${_TARGET_NAME}/Socket/*.h ../include/${_TARGET_NAME}/Socket/*.hpp)
+file (GLOB UTYPE_HEADER_FILES ../include/${_TARGET_NAME}/UType/*.h ../include/${_TARGET_NAME}/UType/*.hpp)
+file (GLOB UTYPE_HEADER_FILES_IMPL ../include/${_TARGET_NAME}/UType/impl/*.h ../include/${_TARGET_NAME}/UType/impl/*.hpp)
 
-set (SHARE_HEADERS ${CORE_HEADER_FILES}
+set (SHARE_HEADERS
+	 				${DEFTYPE_HEADER_FILES}
+	 				${CORE_HEADER_FILES}
 					${SOCKET_HEADER_FILES}
 					${UTYPE_HEADER_FILES}
 					${UTYPE_EXT_HEADER_FILES}
@@ -151,11 +153,13 @@ helper_target_link_libraries(${_TARGET_NAME}
 							PRIVATE_LIBRARIES
 							)
 
-install(FILES ${CORE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-install(FILES ${LOGGING_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/logging)
-install(FILES ${SOCKET_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Socket)
-install(FILES ${UTYPE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/UType)
 
-helper_export_library(SHARE)
+install(FILES ${DEFTYPE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${CORE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${_TARGET_NAME})
+install(FILES ${LOGGING_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${_TARGET_NAME}/logging)
+install(FILES ${SOCKET_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${_TARGET_NAME}/Socket)
+install(FILES ${UTYPE_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${_TARGET_NAME}/UType)
+
+helper_export_library(${_TARGET_NAME})
 
 		

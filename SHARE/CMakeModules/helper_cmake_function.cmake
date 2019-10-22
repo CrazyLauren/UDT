@@ -79,11 +79,31 @@ function(install_default_directory
 
 	if(NOT DEFINED CMAKE_PACKAGE_INSTALL_DIR)
 		set(CMAKE_PACKAGE_INSTALL_DIR 
-			"${CMAKE_INSTALL_PREFIX}/cmake"
+			"cmake"
 			CACHE PATH "The directory relative to CMAKE_PREFIX_PATH 
 			where cmake   is installed"		
 			)
 	endif()
+
+	include(GNUInstallDirs)
+	
+  #[[  set(CMAKE_INSTALL_INCLUDE_DIR
+            "${CMAKE_INSTALL_PREFIX}/include"
+            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+			where header  is installed"
+            )
+
+    set(CMAKE_INSTALL_LIBDIR
+            "${CMAKE_INSTALL_PREFIX}/lib"
+            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+			where library  is installed"
+            )
+			
+    set(CMAKE_INSTALL_BINDIR
+            "${CMAKE_INSTALL_PREFIX}/bin"
+            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+			where binary  is installed"
+            )]]
 	mark_as_advanced (
 		${aPROJECT_NAME}_LIBRARIES	
 		${aPROJECT_NAME}_DEPENDENCIES_PATH
@@ -309,6 +329,10 @@ function (helper_add_library
 		)
 
 
+	if(NOT ${PROJECT_NAME}_NAMESPACE)
+		set(${PROJECT_NAME}_NAMESPACE ${PROJECT_NAME})
+	endif()
+
 	string(TOUPPER ${aTARGET_NAME} 
 			_TARGET_NAME_UPPER
 		)
@@ -318,7 +342,7 @@ function (helper_add_library
 		CACHE BOOL "Build ${aTARGET_NAME} as static library too"
 		)
 	set(${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES
-		false 
+		false
 		CACHE BOOL "Link ${aTARGET_NAME} with static dependecies"
 		)
 
@@ -328,7 +352,7 @@ function (helper_add_library
 					${${aSOURCE_FILES_VAR}}
 					${${aHEADER_FILES_VAR}}
 					)
-	
+
 		add_library(${${PROJECT_NAME}_NAMESPACE}::${aTARGET_NAME}
 					ALIAS
 					${aTARGET_NAME})
@@ -340,11 +364,17 @@ function (helper_add_library
 							PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFENITIONS}
 							PUBLIC ${${aPUBLIC_DEFINITIONS}}
 							)
-	
+
+		foreach(_INCL ${${aPUBLIC_DIR}})
+			target_include_directories (${aTARGET_NAME}
+					PUBLIC $<BUILD_INTERFACE:${_INCL}>
+					)
+		endforeach()
 		target_include_directories (${aTARGET_NAME}
-								PUBLIC ${${aPUBLIC_DIR}}
+								PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 								)
-		target_include_directories (${aTARGET_NAME}
+
+        target_include_directories (${aTARGET_NAME}
 								PRIVATE ${${aPRIVATE_DIR}}
 								)
 
@@ -384,9 +414,16 @@ function (helper_add_library
 									PUBLIC ${${aPUBLIC_DEFINITIONS}}
 							)
 		
-		target_include_directories (${aTARGET_NAME}_Static  
-								PUBLIC ${${aPUBLIC_DIR}}
-								)
+        foreach(_INCL ${${aPUBLIC_DIR}})
+            target_include_directories (${aTARGET_NAME}_Static
+                    PUBLIC $<BUILD_INTERFACE:${_INCL}>
+                    )
+        endforeach()
+
+        target_include_directories (${aTARGET_NAME}_Static
+                PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                )
+
 		target_include_directories (${aTARGET_NAME}_Static  
 								PRIVATE ${${aPRIVATE_DIR}}
 								)			
@@ -396,17 +433,18 @@ function (helper_add_library
     if (${aINSTALL_BIN})
 
 		if(TARGET ${aTARGET_NAME} )
-		install(TARGETS ${aTARGET_NAME}
-						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+			install(TARGETS ${aTARGET_NAME}
+						EXPORT ${aTARGET_NAME}-export
+						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
 		endif()
 
         if (TARGET ${${aTARGET_NAME}_Static})
             install(TARGETS ${aTARGET_NAME}_Static
-   						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+   						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
         endif()
     endif()
 	#${CMAKE_CURRENT_BINARY_DIR}/$(Configuration)/${aTARGET_NAME}    		
@@ -511,6 +549,9 @@ function (helper_add_executable
 	string(TOUPPER ${aTARGET_NAME}
 			_TARGET_NAME_UPPER
 			)
+	if(NOT ${PROJECT_NAME}_NAMESPACE)
+		set(${PROJECT_NAME}_NAMESPACE ${PROJECT_NAME})
+	endif()
     #Statically Linked
 	set(${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES false CACHE
 	BOOL "Link with static dependecies")
@@ -526,9 +567,9 @@ function (helper_add_executable
     #Install
 	if (${aINSTALL_BIN})
 		install(TARGETS ${aTARGET_NAME} 
-						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+                        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
 
 	endif()
 endfunction()
@@ -538,6 +579,10 @@ function(helper_export_library
 		aTARGET_NAME # - Name of the library to create.
 		)
 
+	string(TOUPPER ${aTARGET_NAME}
+			_TARGET_UP
+			)
+			
 	set(_OUT_DIRECTORY ${CMAKE_BINARY_DIR}/include/${aTARGET_NAME}/cmake)
 
 	export(TARGETS ${aTARGET_NAME}
@@ -549,12 +594,40 @@ function(helper_export_library
 	configure_file(${CMAKE_MODULE_PATH_HELPER}/HelperFind.cmake
 			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake" @ONLY)
 
-	install ( FILES
-			"${_OUT_DIRECTORY}/${aTARGET_NAME}Targets.cmake"
-			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake"
-         DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
-		 )
+	include(CMakePackageConfigHelpers)
+	
+	configure_package_config_file( "${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in"
+								  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
+								INSTALL_DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+								)
 
+	install(FILES  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
+			DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+			)
+	if( ${_TARGET_UP}_TARGET_VERSION)				
+		set(_VERSION_CONFIG "${_OUT_DIRECTORY}/${aTARGET_NAME}ConfigVersion.cmake")
+		
+		write_basic_package_version_file(
+			"${_VERSION_CONFIG}"
+				VERSION "${${_TARGET_UP}_TARGET_VERSION}"
+				COMPATIBILITY SameMajorVersion
+		)
+		
+		install(FILES "${_VERSION_CONFIG}"
+						DESTINATION "${CMAKE_PACKAGE_INSTALL_DIR}"
+					)
+	endif()
+
+	install ( EXPORT ${aTARGET_NAME}-export
+			FILE "${aTARGET_NAME}Targets.cmake"
+			#NAMESPACE ${PROJECT_NAME}_NAMESPACE::
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+			)
+
+	install ( FILES
+			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake"
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+			)
 	unset(CONF_LOOKING_FOR_FILES)
 	unset(CONF_TARGET_NAME)
 endfunction()

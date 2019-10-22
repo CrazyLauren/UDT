@@ -13,7 +13,7 @@
  */
 #include <exception>
 #ifdef _MSC_VER
-#	include <share/win_unistd.h>
+#	include <SHARE/win_unistd.h>
 #	include <tchar.h>
 #	pragma warning(disable : 4290)
 #	pragma warning(disable : 4996)
@@ -34,27 +34,27 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <share/macro_attributes.h>
+#include <SHARE/macro_attributes.h>
 
 #include <string.h>
 #include <math.h>
 #include <iostream>
 #include <stdint.h>
 #include <functional>
-#include <share/UType/CDenyCopying.h>
-#include <share/UType/CRAII.h>
-#include <share/UType/atomic_t.h>
-#include <share/UType/IAllocater.h>
-#include <share/UType/CCOWPtr.h>
-#include <share/UType/CText.h>
-#include <share/logging/vlog_is_on.h>
-#include <share/logging/share_trace.h>
+#include <SHARE/UType/CDenyCopying.h>
+#include <SHARE/UType/CRAII.h>
+#include <SHARE/UType/atomic_t.h>
+#include <SHARE/UType/IAllocater.h>
+#include <SHARE/UType/CCOWPtr.h>
+#include <SHARE/UType/CText.h>
+#include <SHARE/logging/vlog_is_on.h>
+#include <SHARE/logging/share_trace.h>
 
 #if defined(CPLUS_LOG)
 #	include <log4cplus/logger.h>
 #endif
 
-#include <share/logging/CStackTrace.h>
+#include <SHARE/logging/CStackTrace.h>
 
 void init_share_trace(char const *aProgrammName)
 {

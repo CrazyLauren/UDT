@@ -16,7 +16,7 @@
 #include <limits.h>
 #include <semaphore.h>
 #include <fcntl.h>
-#include <share/UType/CIPCMutex.h>
+#include <SHARE/UType/CIPCMutex.h>
 
 namespace NSHARE
 {

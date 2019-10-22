@@ -11,13 +11,13 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
-#include <share/Net.h>
-#include <share/Socket/CNetBase.h>
-#include <share/UType/CDenyCopying.h>
-#include <share/UType/CThread.h>
-#include <share/Socket/CTcpClientImpl.h>
+#include <SHARE/Net.h>
+#include <SHARE/Socket/CNetBase.h>
+#include <SHARE/UType/CDenyCopying.h>
+#include <SHARE/UType/CThread.h>
+#include <SHARE/Socket/CTcpClientImpl.h>
 #include <errno.h>
-#include <share/console.h>
+#include <SHARE/console.h>
 #if !defined(_WIN32)
 #include <signal.h>
 #include <sys/socket.h>

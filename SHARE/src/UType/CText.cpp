@@ -18,7 +18,7 @@
 #include <stdarg.h>
 #include <locale>
 
-#include <share/random_value.h>
+#include <SHARE/random_value.h>
 // Start of NSHARE namespace section
 namespace NSHARE
 {

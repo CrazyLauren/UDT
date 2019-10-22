@@ -16,9 +16,9 @@
 #include <deftype>
 #include <winerror.h>
 //#include <ev.h>
-#include <share/fdir.h>
-#include <share/Pipe.h>
-#include <share/Socket/CFIFOServerWin32Impl.h>
+#include <SHARE/fdir.h>
+#include <SHARE/Pipe.h>
+#include <SHARE/Socket/CFIFOServerWin32Impl.h>
 
 namespace NSHARE
 {

@@ -12,8 +12,8 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/unit_tests.h>
-#include <share/UType/CIPCMutex.h>
+#include <SHARE/unit_tests.h>
+#include <SHARE/UType/CIPCMutex.h>
 
 const NSHARE::CText NSHARE::version_t::NAME = "ver";//by historical reason
 

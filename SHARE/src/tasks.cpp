@@ -13,8 +13,8 @@
  */ 
 # ifdef __QNX__
 #include <deftype>
-#include <share/tasks.h>
-#include <share/fdir.h>
+#include <SHARE/tasks.h>
+#include <SHARE/fdir.h>
 #include <sys/procfs.h>
 #include <string.h>
 #include <fcntl.h>
@@ -91,7 +91,7 @@ namespace NSHARE
 } //namespace USHARE
 # elif _WIN32
 #include <deftype>
-#include <share/tasks.h>
+#include <SHARE/tasks.h>
 #include <psapi.h>
 //#pragma comment(lib,"Psapi.lib")
 namespace NSHARE
@@ -154,8 +154,8 @@ namespace NSHARE
 # elif unix
 //readproc-code-48dc5a750d6306d6088ca924123a62d009b4bdf2.zip
 #include <deftype>
-#include <share/tasks.h>
-#include <share/fdir.h>
+#include <SHARE/tasks.h>
+#include <SHARE/fdir.h>
 #include <signal.h>
 #include <unistd.h>
 #include <dirent.h>

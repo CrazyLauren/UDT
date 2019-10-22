@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/Net.h>
+#include <SHARE/Net.h>
 #ifdef _WIN32
 #	include <ws2tcpip.h>
 #else

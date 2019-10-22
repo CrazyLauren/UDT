@@ -20,6 +20,7 @@ if (NOT CMAKE_BUILD_TYPE)
 			"Sets the configuration to build (Release, Debug, etc...)"
 		)
 endif()
+
 include (CMakeModules/configure_${PROJECT_NAME}.cmake)
 include (CMakeModules/dependencies_search.cmake)
 include (CMakeModules/configure_doxygen.cmake)

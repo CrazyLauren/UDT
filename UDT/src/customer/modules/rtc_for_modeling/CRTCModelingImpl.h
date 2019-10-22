@@ -12,7 +12,7 @@
 #ifndef CRTCMODELINGIMPL_H_
 #define CRTCMODELINGIMPL_H_
 
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/UType/CSharedMemory.h>
 #include <udt/IRtc.h>
 #include <CRTCForModeling.h>
 #include <udt/CCustomer.h>

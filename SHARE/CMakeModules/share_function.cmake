@@ -87,10 +87,10 @@ function(configure_logging aTARGET_NAME)
 	endif()
 	
 	configure_file(${${_TARGET_UP}_LOGGING_CONFIG_FILE}
-				${CMAKE_BINARY_DIR}/include/share/logging/share_trace_config.h
+				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logging/share_trace_config.h
 				ESCAPE_QUOTES
 				)
-	install(FILES ${CMAKE_BINARY_DIR}/include/share/logging/share_trace_config.h
-				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/share/logging/
+	install(FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logging/share_trace_config.h
+				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/logging/
 		)			
 endfunction()

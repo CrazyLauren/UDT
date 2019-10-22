@@ -13,8 +13,8 @@
  */
 
 #include <deftype>
-#include <share/revision.h>
-#include <share/random_value.h>
+#include <SHARE/revision.h>
+#include <SHARE/random_value.h>
 #include <CRTCFactory.h>
 #include <udt/IRtc.h>
 #include <CDataObject.h>

@@ -37,8 +37,11 @@ const NSHARE::CText CResources::ONLY_SPECIFIED_LIBRARY = "only_specified";
 
 CResources::CResources(NSHARE::CConfig const& aConf)
 {
+#ifdef CUSTOMER_WITH_STATIC_MODULES
     NSHARE::CText const _static_modules(CUSTOMER_WITH_STATIC_MODULES);
-
+#else
+	NSHARE::CText const _static_modules;
+#endif
     CConfig const& _libs=aConf.MChild(LIST_OF_LOADED_LIBRARY);
     if(!_libs.MIsEmpty())
     {

@@ -4,47 +4,42 @@
 #  UDT_FOUND      = Set to true, if all components of UDT have been found.
 #  UDT_INCLUDES   = Include path for the header files of UDT
 #  UDT_LIBRARIES  = Link these to use UDT
-if (NOT UDT_FOUND)
-	if (NOT UDT_ROOT)
-		set (UDT_ROOT ${CMAKE_INSTALL_PREFIX})
-	endif (NOT UDT_ROOT)
 
-	find_path (UDT_INCLUDES
-		NAMES customer.h
-		HINTS ${UDT_ROOT}
-			${CMAKE_INSTALL_PREFIX}
-		PATH_SUFFIXES include
-    )
-	
-	find_library (UDT_LIBRARIES customer
-			HINTS ${UDT_ROOT}
-				${CMAKE_INSTALL_PREFIX}
-			PATH_SUFFIXES lib
-				bin
-    )
+set(UDT_FOUND
+	false
+	CACHE BOOL
+	""
+	FORCE
+	)
+if (UDT_ROOT)
+    set(customer_ROOT ${UDT_ROOT})
+    set(udt_share_ROOT ${UDT_ROOT})
+endif ()
 
-	include (FindPackageHandleStandardArgs)
-	 
-	find_package_handle_standard_args (UDT
-			DEFAULT_MSG
-			UDT_LIBRARIES
-			UDT_INCLUDES)
+find_package(customer REQUIRED)
 
-	if (UDT_FOUND)
-		if (NOT UDT_FIND_QUIETLY)
-			message (STATUS "UDT_ROOT  = ${UDT_ROOT}")
-			message (STATUS "UDT_INCLUDES  = ${UDT_INCLUDES}")
-			message (STATUS "UDT_LIBRARIES = ${UDT_LIBRARIES}")
-		endif (NOT UDT_FIND_QUIETLY)
-	else (UDT_FOUND)
-		if (UDT_FIND_REQUIRED)
-			message (FATAL_ERROR "Could not find UDT!")
-		endif (UDT_FIND_REQUIRED)
-	endif (UDT_FOUND)
-	
-	mark_as_advanced (
-		UDT_ROOT
-		UDT_INCLUDES
-		UDT_LIBRARIES
+if (NOT customer_FOUND)
+    message(FATAL_ERROR "Failed to find customer library. set UDT_ROOT direcoty")
+    return()
+endif ()
+
+find_package(udt_share REQUIRED)
+
+if (NOT udt_share_FOUND)
+    message(FATAL_ERROR "Failed to find udt_share. set UDT_ROOT direcoty")
+    return()
+endif ()
+
+find_package(SHARE REQUIRED)
+
+if (NOT SHARE_FOUND)
+    message(FATAL_ERROR "Failed to find share. set SHARE_ROOT direcoty")
+    return()
+endif ()
+
+set(UDT_FOUND
+    true
+    CACHE BOOL
+    ""
+	FORCE
     )
-endif (NOT UDT_FOUND)

@@ -12,8 +12,8 @@
 #ifndef CSHAREDALLOCATORIMPL_H_
 #define CSHAREDALLOCATORIMPL_H_
 
-#include <share/UType/CSharedMemory.h>
-#include <share/UType/CSharedAllocator.h>
+#include <SHARE/UType/CSharedMemory.h>
+#include <SHARE/UType/CSharedAllocator.h>
 
 namespace NSHARE
 {

@@ -12,11 +12,11 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/Net.h>
-#include <share/Socket/CNetBase.h>
-#include <share/uclock.h>
+#include <SHARE/Net.h>
+#include <SHARE/Socket/CNetBase.h>
+#include <SHARE/uclock.h>
 #include <string.h>
-#include <share/console.h>
+#include <SHARE/console.h>
 #include <errno.h>
 #if !defined(_WIN32)
 #include <sys/ioctl.h>

@@ -14,8 +14,8 @@
 #ifdef _WIN32
 #include <deftype>
 #include <winerror.h>
-#include <share/SerialPort.h>
-#include <share/Socket/CSPWin32Impl.h>
+#include <SHARE/SerialPort.h>
+#include <SHARE/Socket/CSPWin32Impl.h>
 
 namespace NSHARE
 {

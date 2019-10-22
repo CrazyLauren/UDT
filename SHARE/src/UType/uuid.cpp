@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include <boost/uuid/uuid_generators.hpp>
-#include <share/random_value.h>
+#include <SHARE/random_value.h>
 
 namespace NSHARE
 {

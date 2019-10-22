@@ -14,7 +14,7 @@
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/UType/CSharedMemory.h>
 #include "CSharedAllocatorImpl.h"
 
 namespace NSHARE

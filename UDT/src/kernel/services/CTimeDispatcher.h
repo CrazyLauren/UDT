@@ -12,9 +12,9 @@
 #ifndef CTIMEDISPATCHER_H_
 #define CTIMEDISPATCHER_H_
 
-#include <share/UType/CIPCMutex.h>
-#include <share/UType/CSingleton.h>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/UType/CIPCMutex.h>
+#include <SHARE/UType/CSingleton.h>
+#include <SHARE/UType/CSharedMemory.h>
 
 #include <core/ICore.h>
 #include <core/CDescriptors.h>

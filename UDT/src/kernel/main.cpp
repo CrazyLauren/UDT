@@ -14,15 +14,15 @@
 #include <cstdlib>
 #include <iostream>
 #include <deftype>
-#include <share/share_socket.h>
-#include <share/revision.h>
+#include <SHARE/share_socket.h>
+#include <SHARE/revision.h>
 
 #include <internel_protocol.h>
 #include <parser_in_protocol.h>
 #include <udt/programm_id.h>
 #include <udt/CParserFactory.h>
 #include <tclap/CmdLine.h>
-#include <share/logging/CShareLogArgsParser.h>
+#include <SHARE/logging/CShareLogArgsParser.h>
 
 #include "core/CCore.h"
 

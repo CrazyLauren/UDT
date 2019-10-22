@@ -12,8 +12,8 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/revision.h>
-#include <share/share_socket.h>
+#include <SHARE/revision.h>
+#include <SHARE/share_socket.h>
 #ifdef _WIN32
 #include <winsock2.h>                     // sockaddr_in
 #else

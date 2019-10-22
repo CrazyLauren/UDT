@@ -10,7 +10,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/tasks.h>
+#include <SHARE/tasks.h>
 #include "CSharedAllocatorImpl.h"
 #include "CSharedMemoryImpl.h"
 

@@ -12,12 +12,12 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/console.h>
-#include <share/SerialPort.h>
+#include <SHARE/console.h>
+#include <SHARE/SerialPort.h>
 #ifdef _WIN32
-#include <share/Socket/CSPWin32Impl.h>
+#include <SHARE/Socket/CSPWin32Impl.h>
 #else
-#include <share/Socket/CSPPosixImp.h>
+#include <SHARE/Socket/CSPPosixImp.h>
 #endif
 
 namespace NSHARE

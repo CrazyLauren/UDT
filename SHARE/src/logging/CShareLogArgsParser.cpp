@@ -19,8 +19,8 @@
 #elif defined(REMOVE_LOG)
 # define NOLOG
 #endif
-#include <share/share_socket.h>
-#include <share/logging/CShareLogArgsParser.h>
+#include <SHARE/share_socket.h>
+#include <SHARE/logging/CShareLogArgsParser.h>
 #include <tclap/Arg.h>
 #include <tclap/Constraint.h>
 #include <tclap/CmdLine.h>

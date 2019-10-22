@@ -23,7 +23,7 @@
 #endif
 
 #ifndef MSVC
-#	include <share/win_processor_detection.h>
+#	include <SHARE/win_processor_detection.h>
 #endif
 
 /**\brief define standard headers
@@ -86,7 +86,7 @@
 #			include<tr1/shared_ptr.h>
 #			define SHARED_PTR std::tr1::shared_ptr
 #		else
-//#			include<shared_ptr.h>
+//#			include<SHAREd_ptr.h>
 #			include<memory>
 #			define SHARED_PTR std::shared_ptr
 #		endif
@@ -107,7 +107,7 @@
 #		ifndef NOMINMAX
 #			define NOMINMAX
 #		endif
-#		include <share/win_unistd.h>
+#		include <SHARE/win_unistd.h>
 #		pragma warning(disable : 4290)
 #		pragma warning(disable : 4996)
 #		pragma warning(disable : 4355)
@@ -142,65 +142,65 @@
 #	include <ctime>
 #endif
 
-#include <share/macro_attributes.h>
-#include <share/endian_type.h>
-#include <share/UType/little_big_endian_t.h>
+#include <SHARE/macro_attributes.h>
+#include <SHARE/endian_type.h>
+#include <SHARE/UType/little_big_endian_t.h>
 
-#include <share/UType/CAssertException.h>
-#include <share/logging/share_trace.h>
+#include <SHARE/UType/CAssertException.h>
+#include <SHARE/logging/share_trace.h>
 
-#include <share/type_manip.h>
-#include <share/UType/CDenyCopying.h>
-#include <share/UType/CRAII.h>
-#include <share/UType/atomic_t.h>
-#include <share/UType/IAllocater.h>
-#include <share/UType/CCOWPtr.h>
-#include <share/UType/CFlags.h>
-#include <share/UType/CMutex.h>
-#include <share/UType/CMutexEmpty.h>
-#include <share/UType/CCondvar.h>
-#include <share/UType/CSemaphore.h>
-#include <share/UType/CBarrier.h>
-#include <share/UType/allocators.h>
-#include <share/UType/CText.h>
-#include <share/UType/strtonum.h>
-#include <share/UType/numtostr.h>
-#include <share/uclock.h>
-#include <share/UType/CSingleton.h>
-#include <share/UType/CAntiHang.h>
-#include <share/UType/CCheckNoMultiThread.h>
-#include <share/UType/CTypeInfo.h>
-#include <share/UType/IIntrusived.h>
-#include <share/UType/intrusive_ptr.h>
-#include <share/FloatCompare.h>
-#include <share/UType/SmartField.h>
-#include <share/UType/CBuffer.h>
-#include <share/UType/CConfig.h>
-#include <share/UType/version.h>
-#include <share/UType/uuid.h>
-#include <share/UType/cb_t.h>
-#include <share/UType/CEvent.h>
-#include <share/UType/CEvents.h>
-#include <share/UType/deffunc.h>
+#include <SHARE/type_manip.h>
+#include <SHARE/UType/CDenyCopying.h>
+#include <SHARE/UType/CRAII.h>
+#include <SHARE/UType/atomic_t.h>
+#include <SHARE/UType/IAllocater.h>
+#include <SHARE/UType/CCOWPtr.h>
+#include <SHARE/UType/CFlags.h>
+#include <SHARE/UType/CMutex.h>
+#include <SHARE/UType/CMutexEmpty.h>
+#include <SHARE/UType/CCondvar.h>
+#include <SHARE/UType/CSemaphore.h>
+#include <SHARE/UType/CBarrier.h>
+#include <SHARE/UType/allocators.h>
+#include <SHARE/UType/CText.h>
+#include <SHARE/UType/strtonum.h>
+#include <SHARE/UType/numtostr.h>
+#include <SHARE/uclock.h>
+#include <SHARE/UType/CSingleton.h>
+#include <SHARE/UType/CAntiHang.h>
+#include <SHARE/UType/CCheckNoMultiThread.h>
+#include <SHARE/UType/CTypeInfo.h>
+#include <SHARE/UType/IIntrusived.h>
+#include <SHARE/UType/intrusive_ptr.h>
+#include <SHARE/FloatCompare.h>
+#include <SHARE/UType/SmartField.h>
+#include <SHARE/UType/CBuffer.h>
+#include <SHARE/UType/CConfig.h>
+#include <SHARE/UType/version.h>
+#include <SHARE/UType/uuid.h>
+#include <SHARE/UType/cb_t.h>
+#include <SHARE/UType/CEvent.h>
+#include <SHARE/UType/CEvents.h>
+#include <SHARE/UType/deffunc.h>
 
-#include <share/UType/CIPCSem.h>
-#include <share/UType/CIPCSignalEvent.h>
-#include <share/UType/CIPCMutex.h>
+#include <SHARE/UType/CIPCSem.h>
+#include <SHARE/UType/CIPCSignalEvent.h>
+#include <SHARE/UType/CIPCMutex.h>
 
-#include <share/UType/CThread.h>
-#include <share/UType/CThreadPool.h>
+#include <SHARE/UType/CThread.h>
+#include <SHARE/UType/CThreadPool.h>
 
-#include <share/UType/CSafeData.h>
-#include <share/UType/CSafeQueue.h>
-#include <share/UType/CWaitingQueue.h>
+#include <SHARE/UType/CSafeData.h>
+#include <SHARE/UType/CSafeQueue.h>
+#include <SHARE/UType/CWaitingQueue.h>
 
-#include <share/UType/dymamic_modules.h>
-#include <share/UType/IFactory.h>
-#include <share/UType/CFactoryManager.h>
-#include <share/UType/CFactoryRegisterer.h>
-#include <share/UType/CResources.h>
+#include <SHARE/UType/dymamic_modules.h>
+#include <SHARE/UType/IFactory.h>
+#include <SHARE/UType/CFactoryManager.h>
+#include <SHARE/UType/CFactoryRegisterer.h>
+#include <SHARE/UType/CResources.h>
 
-#include <share/UType/CAddress.h>
+#include <SHARE/UType/CAddress.h>
 
-#include <share/UType/CCOWPtrTest.h>
+#include <SHARE/UType/CCOWPtrTest.h>
 #endif /*DEFTYPE_*/

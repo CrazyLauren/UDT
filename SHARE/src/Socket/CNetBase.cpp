@@ -12,9 +12,9 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
  
-#include <share/Net.h>
+#include <SHARE/Net.h>
 #include <fcntl.h>
-#include <share/Socket/CNetBase.h>
+#include <SHARE/Socket/CNetBase.h>
 
 #if !defined(HAVE_WINSOCK_H)
 #	include <sys/socket.h>

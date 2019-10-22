@@ -13,12 +13,12 @@
  */
 
 #include <deftype>
-#include <share/console.h>
-#include <share/Pipe.h>
+#include <SHARE/console.h>
+#include <SHARE/Pipe.h>
 #ifdef _WIN32
-#include <share/Socket/CFifoWin32Impl.h>
+#include <SHARE/Socket/CFifoWin32Impl.h>
 #else
-#include <share/Socket/CFifoPosixImpl.h>
+#include <SHARE/Socket/CFifoPosixImpl.h>
 #endif
 namespace NSHARE
 {

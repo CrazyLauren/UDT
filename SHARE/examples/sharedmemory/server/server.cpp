@@ -14,8 +14,8 @@
 #include <deftype>
 #include <iostream>
 #include <stdexcept>
-#include <share/share_socket.h>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/share_socket.h>
+#include <SHARE/UType/CSharedMemory.h>
 using namespace NSHARE;
 
 using namespace std;

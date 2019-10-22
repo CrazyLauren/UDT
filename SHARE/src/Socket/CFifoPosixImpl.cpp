@@ -20,10 +20,10 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <share/console.h>
-#include <share/fdir.h>
-#include <share/Pipe.h>
-#include <share/Socket/CFifoPosixImpl.h>
+#include <SHARE/console.h>
+#include <SHARE/fdir.h>
+#include <SHARE/Pipe.h>
+#include <SHARE/Socket/CFifoPosixImpl.h>
 
 #define PERM 0666
 inline char *print_error()

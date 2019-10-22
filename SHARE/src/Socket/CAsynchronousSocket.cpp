@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/socket.h>
+#include <SHARE/socket.h>
 
 namespace NSHARE
 {

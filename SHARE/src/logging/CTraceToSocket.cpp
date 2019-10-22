@@ -15,7 +15,7 @@
 
 #ifdef CPLUS_LOG
 #include <deftype>
-#include <share/share_socket.h>
+#include <SHARE/share_socket.h>
 #include <log4cplus/log4judpappender.h>
 #include <log4cplus/layout.h>
 #include <log4cplus/streams.h>
@@ -31,7 +31,7 @@
 #else
 #include <cctype>
 #endif
-#include <share/logging/CTraceToSocket.h>
+#include <SHARE/logging/CTraceToSocket.h>
 
 namespace NSHARE
 {

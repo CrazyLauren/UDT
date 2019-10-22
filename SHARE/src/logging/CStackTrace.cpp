@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/logging/CStackTrace.h>
+#include <SHARE/logging/CStackTrace.h>
 
 #ifdef HAVE_DBGHELP
 #	include <dbghelp.h>

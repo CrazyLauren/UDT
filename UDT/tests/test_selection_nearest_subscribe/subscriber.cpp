@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include <customer.h>
-#include <share/tasks.h>
+#include <SHARE/tasks.h>
 #include "protocol.h"
 
 using namespace NSHARE;

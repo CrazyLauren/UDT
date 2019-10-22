@@ -20,10 +20,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
-#include <share/Socket/ISocket.h>
-#include <share/Socket/diagnostic_io_t.h>
-#include <share/Socket/CUnix.h>
-#include <share/console.h>
+#include <SHARE/Socket/ISocket.h>
+#include <SHARE/Socket/diagnostic_io_t.h>
+#include <SHARE/Socket/CUnix.h>
+#include <SHARE/console.h>
 
 
 #define BUFFER_SIZE 32768

@@ -26,8 +26,8 @@
 #include <sysexits.h>
 #include <sys/signal.h>
 #endif
-#include <share/SerialPort.h>
-#include <share/Socket/CSPPosixImp.h>
+#include <SHARE/SerialPort.h>
+#include <SHARE/Socket/CSPPosixImp.h>
 namespace NSHARE
 {
 namespace NSerial

@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include <malloc.h>
-#include <share/fdir.h>
+#include <SHARE/fdir.h>
 #include <exception>
 //todo replace to boost realization
 

@@ -1,9 +1,9 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <deftype>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/UType/CSharedMemory.h>
 #include <tclap/CmdLine.h>
-#include <share/logging/CShareLogArgsParser.h>
+#include <SHARE/logging/CShareLogArgsParser.h>
 
 #include "api_test.h"
 namespace test_rtc

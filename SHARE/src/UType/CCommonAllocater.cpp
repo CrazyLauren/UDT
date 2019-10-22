@@ -12,7 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/UType/CCommonAllocater.h>
+#include <SHARE/UType/CCommonAllocater.h>
 namespace NSHARE
 {
 const IAllocater::offset_pointer_t IAllocater::NULL_OFFSET =

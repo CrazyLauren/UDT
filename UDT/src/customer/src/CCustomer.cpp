@@ -16,8 +16,8 @@
 #ifdef _WIN32
 #	include <winsock2.h>
 #endif
-#include <share/fdir.h>
-#include <share/revision.h>
+#include <SHARE/fdir.h>
+#include <SHARE/revision.h>
 #include <udt/programm_id.h>
 #include <udt/CCustomer.h>
 

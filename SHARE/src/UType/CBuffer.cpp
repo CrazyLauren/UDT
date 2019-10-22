@@ -12,11 +12,11 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/crc8.h>
+#include <SHARE/crc8.h>
 
-#include <share/UType/CCommonAllocater.h>
-#include <share/UType/CBuffer.h>
-#include <share/UType/mallocallocater.h>
+#include <SHARE/UType/CCommonAllocater.h>
+#include <SHARE/UType/CBuffer.h>
+#include <SHARE/UType/mallocallocater.h>
 
 #ifdef NOATOMIC
 #	define SAFETY_BUFFER_OPERATION

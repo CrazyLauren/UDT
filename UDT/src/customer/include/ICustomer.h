@@ -13,7 +13,7 @@
 #define ICUSTOMER_H_
 
 #include <udt/programm_id.h>
-#include <share/Socket/ISocket.h>
+#include <SHARE/Socket/ISocket.h>
 namespace NUDT
 {
 class IModule;

@@ -14,8 +14,8 @@
 #ifdef _WIN32
 #include <deftype>
 #include <winerror.h>
-#include <share/Pipe.h>
-#include <share/Socket/CFifoWin32Impl.h>
+#include <SHARE/Pipe.h>
+#include <SHARE/Socket/CFifoWin32Impl.h>
 
 namespace NSHARE
 {

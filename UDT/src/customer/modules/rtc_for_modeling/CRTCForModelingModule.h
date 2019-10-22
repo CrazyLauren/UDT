@@ -14,8 +14,8 @@
 #ifndef CRTCFORMODELINGMODULE_H_
 #define CRTCFORMODELINGMODULE_H_
 
-#include <share/UType/CSingleton.h>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/UType/CSingleton.h>
+#include <SHARE/UType/CSharedMemory.h>
 #include <udt/IRtcControl.h>
 #include <rtc_for_modeling_export.h>
 #include <CDataObject.h>

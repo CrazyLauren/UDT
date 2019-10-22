@@ -17,7 +17,7 @@
 #include <limits.h>
 #include <semaphore.h>
 #include <fcntl.h>
-#include <share/UType/CIPCSem.h>
+#include <SHARE/UType/CIPCSem.h>
 #include "CIPCSemaphoreFutex.h"
 #include "CIPCSemaphoreSemOpen.h"
 #include "CIPCSemaphoreSemInit.h"

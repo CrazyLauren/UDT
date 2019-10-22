@@ -12,15 +12,15 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */ 
 #include <deftype>
-#include <share/crc8.h>
-#include <share/console.h>
-#include <share/Socket/CSharedMemoryBase.h>
-#include <share/UType/CSharedAllocator.h>
-#include <share/Socket/CSharedMemoryImplTypes.h>
-#include <share/Socket/CSharedMemoryBaseImpl.h>
-#include <share/Socket/CSharedMemoryServer.h>
-#include <share/Socket/CSharedMemoryServerImpl.h>
-#include <share/UType/CSharedAllocator.h>
+#include <SHARE/crc8.h>
+#include <SHARE/console.h>
+#include <SHARE/Socket/CSharedMemoryBase.h>
+#include <SHARE/UType/CSharedAllocator.h>
+#include <SHARE/Socket/CSharedMemoryImplTypes.h>
+#include <SHARE/Socket/CSharedMemoryBaseImpl.h>
+#include <SHARE/Socket/CSharedMemoryServer.h>
+#include <SHARE/Socket/CSharedMemoryServerImpl.h>
+#include <SHARE/UType/CSharedAllocator.h>
 
 #define IMPL_CLASS CSharedMemoryServer::CImpl
 

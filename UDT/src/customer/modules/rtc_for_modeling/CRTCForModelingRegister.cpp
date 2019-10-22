@@ -10,8 +10,8 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/revision.h>
-#include <share/random_value.h>
+#include <SHARE/revision.h>
+#include <SHARE/random_value.h>
 #include <CRTCFactory.h>
 
 #include "CRTCForModelingModule.h"

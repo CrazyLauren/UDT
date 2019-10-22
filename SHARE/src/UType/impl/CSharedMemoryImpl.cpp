@@ -10,10 +10,10 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/tasks.h>
-#include <share/crc8.h>
-#include <share/UType/CSharedAllocator.h>
-#include <share/UType/CSharedMemory.h>
+#include <SHARE/tasks.h>
+#include <SHARE/crc8.h>
+#include <SHARE/UType/CSharedAllocator.h>
+#include <SHARE/UType/CSharedMemory.h>
 #include "CSharedMemoryImpl.h"
 
 using namespace boost::interprocess;

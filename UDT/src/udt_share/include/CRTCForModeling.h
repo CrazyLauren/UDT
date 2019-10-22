@@ -14,8 +14,8 @@
 #ifndef CRTCFORMODELING_H_
 #define CRTCFORMODELING_H_
 
-#include <share/UType/CIPCMutex.h>
-#include <share/UType/CIPCSem.h>
+#include <SHARE/UType/CIPCMutex.h>
+#include <SHARE/UType/CIPCSem.h>
 #include <udt_rtc_types.h>
 namespace NUDT
 {

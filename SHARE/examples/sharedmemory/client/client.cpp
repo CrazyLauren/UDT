@@ -13,8 +13,8 @@
  */
 #include <deftype>
 #include <iostream>
-#include <share/share_socket.h>
-#include <share/unit_tests.h>
+#include <SHARE/share_socket.h>
+#include <SHARE/unit_tests.h>
 
 using namespace NSHARE;
 

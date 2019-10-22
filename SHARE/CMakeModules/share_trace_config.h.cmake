@@ -32,16 +32,16 @@
 #		ifdef GLOG
 #			include <glog/logging.h>
 #		elif defined(COUT_LOG)//#ifdef GLOG
-# 			include <share/logging/share_cout_log.h>
+# 			include <SHARE/logging/share_cout_log.h>
 #		elif defined(CPLUS_LOG)
 #			define OUTPUT_FUNCTION_NAME
-# 			include <share/logging/share_trace_log4cplus.h>
+# 			include <SHARE/logging/share_trace_log4cplus.h>
 #		else
 #			define NOLOG
 #		endif //#GLOG
 #	endif //#ifndef NOLOG
 #	if defined(NOLOG) //#ifndef NOLOG
-# 		include <share/logging/share_nolog.h>
+# 		include <SHARE/logging/share_nolog.h>
 #	endif//#ifndef NOLOG
 //\}
 
@@ -73,7 +73,7 @@
 #		define SHARE_TRACE_NAME "nolog"
 #	endif //#GLOG
 #else //#ifndef REMOVE_LOG
-#	include <share/logging/share_dellog.h>
+#	include <SHARE/logging/share_dellog.h>
 #	define SHARE_TRACE_NAME "removed"
 #endif //#ifndef REMOVE_LOG
 //\}

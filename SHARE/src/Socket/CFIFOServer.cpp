@@ -12,13 +12,13 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <share/console.h>
-#include <share/Pipe.h>
+#include <SHARE/console.h>
+#include <SHARE/Pipe.h>
 
 #ifdef _WIN32
-#include <share/Socket/CFIFOServerWin32Impl.h>
+#include <SHARE/Socket/CFIFOServerWin32Impl.h>
 #else
-#include <share/Socket/CFIFOServerPosixImpl.h>
+#include <SHARE/Socket/CFIFOServerPosixImpl.h>
 #endif
 
 namespace NSHARE

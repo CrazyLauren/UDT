@@ -37,8 +37,8 @@ helper_add_library(${_TARGET_NAME}
 		_HEADER_FILES
 		_PUBLIC_INCLUDE_DIR
 		_PRIVATE_INCLUDE_DIR
-		_PRIVATE_DEFINITIONS
 		_PUBLIC_DEFINITIONS
+		_PRIVATE_DEFINITIONS
 		TRUE)
 
 set (_PUBLIC_LIBRARIS
@@ -54,11 +54,14 @@ helper_target_link_libraries(${_TARGET_NAME}
 		_PRIVATE_LIBRARIS
 		)
 
-install(FILES include/udt/udt_types.h
-		include/udt/udt_share_macros.h
-        include/udt/programm_id.h
-		include/udt/IExtParser.h
-		include/udt/CParserFactory.h
+install(FILES 	include/udt/udt_types.h
+				include/udt/udt_share_macros.h
+        		include/udt/programm_id.h
+				include/udt/IExtParser.h
+				include/udt/CParserFactory.h
+				include/udt/udt_rtc.h
 				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/udt
 		)
+helper_export_library(${_TARGET_NAME})
+
 						  
