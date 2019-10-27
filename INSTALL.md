@@ -62,6 +62,8 @@ press button "Clone or download"
 | LOGGING_IS_DISABLED_IN_SHARE | Disable logs only in SHARE libraries, but leave assertions |
 | LOGGING_TO_LOG4CPLUS | For logging use the log4cplus library. **It is recommended to set this option.** |
 | LOGGING_TO_COUT | Output logs to standard output stream |
+
+
 Usually it’s enough to configure only project logging. For logging, <br /> 
  it is recommended to use the log4cplus library option LOGGING_TO_LOG4CPLUS,  <br /> 
  if the library is not installed on the system, when the option  <br />
@@ -82,7 +84,9 @@ Usually it’s enough to configure only project logging. For logging, <br />
 	This should be an empty or non-existent folder that will be created automatic.	
 	
 5. Press button `configure`
+
 	a) In the window that appears, select requirement Visual Studio version
+	
 	b) Press button `finish`
 	
 6. A check will then be performed to ensure all source dependencies are exists.

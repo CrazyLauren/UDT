@@ -9,13 +9,13 @@ endif()
 
 include(FindPackageHandleStandardArgs)
 
-set(CMAKE_PREFIX_PATH @CMAKE_PACKAGE_INSTALL_DIR@)
+set(CMAKE_PREFIX_PATH @CMAKE_INSTALL_PREFIX@/@CMAKE_PACKAGE_INSTALL_DIR@)
 
 find_package(customer REQUIRED)
 find_package(udt_share REQUIRED)
 find_package(SHARE REQUIRED)
 
 
-add_executable(untitled main.cpp doing_something.cpp)
+add_executable(example_number_one main.cpp doing_something.cpp)
 
-target_link_libraries(untitled PRIVATE customer)
+target_link_libraries(example_number_one PRIVATE customer)

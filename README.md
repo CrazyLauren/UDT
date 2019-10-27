@@ -1,2 +1,2 @@
-[Installation instructions](INSTALL.md)
-[Quick start](QuickStart.md)
+# [Installation instructions](INSTALL.md)
+# [Quick start](QuickStart.md)
