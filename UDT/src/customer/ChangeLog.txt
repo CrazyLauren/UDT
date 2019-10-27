@@ -7,3 +7,7 @@ customer version:0.4
 -------------------
     - change default config file to json
     - change name of field modules to libraries
+
+customer version:0.5
+-------------------
+    - Realese RTC for modeling
