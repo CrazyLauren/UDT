@@ -83,7 +83,7 @@ static bool test_double_timers();
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./default_customer_config.xml"); ///< initialize UDT library
+			NSHARE::version_t(1, 0), "./default_customer_config.json"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
@@ -245,6 +245,7 @@ static void doing_tests()
 		getchar();
 	}
 }
+
 static bool test_integer_timers()
 {
 
@@ -264,7 +265,7 @@ static bool test_integer_timers()
 
 	decltype(g_next_times) _next_timers;
 
-	auto _less_eq_then = [&](auto aVal,auto aMin)
+	auto _less_eq_then = [& _precision](decltype(_precision) aVal,decltype(_precision) aMin)
 	{	return aVal <= (aMin + _precision);};
 
 	for (unsigned i=0;i<g_number_of_time;++i)
@@ -371,7 +372,7 @@ static bool test_double_timers()
 
 	decltype(g_next_times) _next_timers;
 
-	auto _less_eq_then = [&](auto aVal,auto aMin)
+	auto _less_eq_then = [&](decltype(_precision) aVal,decltype(_precision) aMin) -> bool
 	{	return aVal <= (aMin + _precision);};
 
 	for (unsigned i=0;i<g_number_of_time;++i)

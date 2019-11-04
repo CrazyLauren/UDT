@@ -1,11 +1,4 @@
 revision.c
-/UDT/src/customer/modules/sm_main_channel/revision.c
-/UDT/src/customer/modules/tcp_io_manager/revision.c
-/UDT/src/customer/modules/tcp_main_channel/revision.c
-/UDT/src/customer/modules/udp_main_channel/revision.c
-/UDT/src/customer/src/revision.c
-/UDT/src/kernel/revision.c
-/UDT/src/udt_share/src/revision.c
 /UDT/src/kernel/gui/.idea
 *.kdev4
 .kdev4/
@@ -13,3 +6,4 @@ revision.c
 /doc
 /todo.txt
 /.idea
+/cmake-build*

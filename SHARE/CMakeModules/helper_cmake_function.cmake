@@ -480,7 +480,7 @@ function (helper_target_link_libraries
 
 	foreach(_LIB ${${aPUBLIC_LIBRARIES}})
 		if(TARGET ${_LIB})
-			set(_LIBRARY_NAME ${_LIB}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+			set(_LIBRARY_NAME ${_LIB}#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 		else()
 			set(_LIBRARY_NAME ${_LIB})
 		endif()
@@ -488,7 +488,7 @@ function (helper_target_link_libraries
 		
 		if(${${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES})
 			if (TARGET ${_LIB}_Static)
-				set(_LIBRARY_NAME ${_LIB}_Static$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)	
+				set(_LIBRARY_NAME ${_LIB}_Static#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 			elseif(TARGET ${_LIB})
 				set(${_LIB}_BUILD_STATIC_TOO 
 						true 
@@ -509,14 +509,14 @@ function (helper_target_link_libraries
 
 	foreach(_LIB ${${aPRIVATE_LIBRARIES}})
 		if(TARGET ${_LIB})
-			set(_LIBRARY_NAME ${_LIB}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+			set(_LIBRARY_NAME ${_LIB}#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 		else()
 			set(_LIBRARY_NAME ${_LIB})
 		endif()
 				
 		if(${${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES})
 			if (TARGET ${_LIB}_Static)
-				set(_LIBRARY_NAME ${_LIB}_Static$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)	
+				set(_LIBRARY_NAME ${_LIB}_Static#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 			elseif(TARGET ${_LIB})
 				set(${_LIB}_BUILD_STATIC_TOO 
 						true 
@@ -595,8 +595,11 @@ function(helper_export_library
 			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake" @ONLY)
 
 	include(CMakePackageConfigHelpers)
-	
-	configure_package_config_file( "${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in"
+
+	if(NOT ${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH)
+		set(${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH ${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in)
+	endif()
+	configure_package_config_file( ${${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH}
 								  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
 								INSTALL_DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 								)

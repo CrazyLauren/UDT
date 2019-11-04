@@ -102,6 +102,6 @@ configure_file(CMakeModules/config.h.cmake
 				ESCAPE_QUOTES
 				)
 				
-install(FILES ${CMAKE_BINARY_DIR}/include/share/config/config.h
+install(FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
 				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/config/
 		)

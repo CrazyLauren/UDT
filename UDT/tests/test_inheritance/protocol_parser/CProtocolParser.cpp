@@ -12,8 +12,7 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 
-#include <algorithm>
-#include <customer.h>
+#include <deftype>
 #include <udt/CParserFactory.h>
 
 #include "import_export_macros.h"

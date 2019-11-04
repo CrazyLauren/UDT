@@ -127,7 +127,7 @@ static bool test_stage_4();
 static void initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./default_customer_config.xml"); ///< initialize UDT library
+			NSHARE::version_t(1, 0), "./default_customer_config.json"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM

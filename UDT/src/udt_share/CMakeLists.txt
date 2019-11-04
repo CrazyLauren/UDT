@@ -19,7 +19,7 @@ file (GLOB _HEADER_FILES
 
 set (_PUBLIC_INCLUDE_DIR
 		${CMAKE_CURRENT_SOURCE_DIR}/include
-		${SHARE_INCLUDES}
+		#${SHARE_INCLUDES}
 		)
 set (_PRIVATE_INCLUDE_DIR
 		${Boost_INCLUDE_DIRS}
@@ -31,6 +31,8 @@ set (_PRIVATE_DEFINITIONS
 set (_PUBLIC_DEFINITIONS
 		#
 		)
+
+#${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR}
 
 helper_add_library(${_TARGET_NAME}
 		_SOURCE_FILES
@@ -62,6 +64,14 @@ install(FILES 	include/udt/udt_types.h
 				include/udt/udt_rtc.h
 				DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/udt
 		)
-helper_export_library(${_TARGET_NAME})
 
+string(TOUPPER ${_TARGET_NAME} _TARGET_NAME_UP)
+
+set(_CONFIG_PLUGIN_PATH ${${PROJECT_NAME}_DEFAULT_PLUGIN_PATH})
+set(_CONFIG_PLUGIN_DIR ${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR})
+
+set(${_TARGET_NAME_UP}_CONFIG_CMAKE_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ConfigUdtShare.cmake.in)
+helper_export_library(${_TARGET_NAME})
+unset(_CONFIG_PLUGIN_DIR)
+unset(_CONFIG_PLUGIN_PATH)
 						  
