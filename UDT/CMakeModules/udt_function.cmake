@@ -33,7 +33,7 @@ function (add_loadable_module aTARGET_NAME)
 			${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 			)
 	list (APPEND _SOURCE_FILES
-			${CMAKE_CURRENT_SOURCE_DIR}/revision.c
+		  ${CMAKE_BINARY_DIR}/src/${aTARGET_NAME}/revision.c
 			)
 
 	file (GLOB _HEADER_FILES

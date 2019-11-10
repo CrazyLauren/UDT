@@ -38,7 +38,7 @@ struct UDT_SHARE_EXPORT time_info_t
 	rtc_time_t FTimeHW; //!< real time (hardware time) of hold #time value
 	rtc_time_t FNextTimer; //!< when the next timer will to expire
 	uint8_t FEventTimeChanged[NSHARE::CIPCSignalEvent::eReguredBufSize]; //!< used to wait for time changed
-	uint8_t FMutex[NSHARE::CIPCSem::eReguredBufSize]; //!< used to lock this object
+	uint8_t FMutex[NSHARE::CIPCMutex::eReguredBufSize]; //!< used to lock this object
 	uint8_t FHasToBeUpdated[NSHARE::CIPCSignalEvent::eReguredBufSize]; //!< used to wait for need to update time
 };
 inline time_info_t::time_info_t()

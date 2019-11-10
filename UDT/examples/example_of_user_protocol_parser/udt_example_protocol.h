@@ -15,7 +15,7 @@
 namespace example_of_user_protocol
 {
 #define PROTOCOL_NAME "pudt" ///<Unique protocol name.Recommended using a short name
-#define CONFIG_PATH "./default_customer_config.xml" ///< Configuration file path. The file format are xml or json.
+#define CONFIG_PATH "./default_customer_config.json" ///< Configuration file path. The file format are xml or json.
 #define MSG_TEST_SIZE 200000 ///< The size of data of message #example_of_user_protocol::E_MSG_TEST
 
 /*!\brief A type of example message

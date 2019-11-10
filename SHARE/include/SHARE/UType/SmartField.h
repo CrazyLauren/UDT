@@ -31,11 +31,13 @@ struct  smart_field_t
 			FVal(type_t()), FIsSet(false)
 	{
 	}
-	explicit smart_field_t(type_t const& aVal)
+	explicit smart_field_t(type_t const& aVal):
+        FIsSet(false)
 	{
 		MSet(aVal);
 	}
-	smart_field_t(const my_t& aRhs)
+	smart_field_t(const my_t& aRhs):
+        FIsSet(false)
 	{
 		(*this) = aRhs;
 	}
@@ -57,7 +59,7 @@ struct  smart_field_t
 		return !operator ==(aRhs);
 	}
 
-	const type_t& operator =(const type_t& aVal)
+	type_t& operator =(const type_t& aVal)
 	{
 		MSet(aVal);
 		return MGet();
@@ -110,7 +112,7 @@ struct  smart_field_t
 		return FVal;
 	}
 
-	operator const type_t() const
+	operator  type_t() const
 	{
 		return FVal;
 	}
@@ -161,12 +163,15 @@ struct smart_field_t<T*>
 	smart_field_t() :
 			FVal(NULL), FIsSet(false)
 	{
+
 	}
-	smart_field_t(ptype_t const& aVal)
+    explicit smart_field_t(ptype_t const& aVal):
+        FIsSet(false)
 	{
 		MSet(aVal);
 	}
-	smart_field_t(const my_t& aRhs)
+	smart_field_t(const my_t& aRhs):
+        FIsSet(false)
 	{
 		(*this) = aRhs;
 	}
@@ -185,7 +190,7 @@ struct smart_field_t<T*>
 		return !operator ==(aRhs);
 	}
 
-	const ptype_t& operator =(const ptype_t& aVal)
+	ptype_t& operator =(const ptype_t& aVal)
 	{
 		MSet(aVal);
 		return MGet();
@@ -238,7 +243,7 @@ struct smart_field_t<T*>
 		return FVal;
 	}
 
-	operator const ptype_t() const
+	operator ptype_t() const
 	{
 		return FVal;
 	}

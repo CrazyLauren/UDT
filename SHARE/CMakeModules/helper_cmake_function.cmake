@@ -175,6 +175,41 @@ function(read_version
 	endif()
 endfunction()
 
+# Generating  revision number and path from GIT
+function(set_revision_from_git aTARGET)
+
+	string(TOUPPER ${aTARGET}
+			_TARGET_UP
+			)
+	include(GetGitRevisionDescription)		
+			
+	git_describe(_TARGET_PATH --always --long)
+
+	get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+		 
+	if(GIT_EXECUTABLE)
+		execute_process(COMMAND git rev-list --count ${GIT_SHA1}
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    RESULT_VARIABLE GIT_error
+                    ERROR_VARIABLE serial_error
+                    OUTPUT_VARIABLE _TARGET_REVISION_VERSION
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_STRIP_TRAILING_WHITESPACE
+				)
+	endif()
+		
+	if(GIT_error EQUAL 0)
+			set(${_TARGET_UP}_TARGET_PATH ${_TARGET_PATH} CACHE STRING "" FORCE)
+			set(${_TARGET_UP}_TARGET_REVISION_VERSION ${_TARGET_REVISION_VERSION} CACHE STRING "" FORCE)
+	endif()
+endfunction()
+
+# Generating  revision number and path from SVN
+function(set_revision_from_svn aTARGET)
+	Subversion_WC_INFO(${CMAKE_SOURCE_DIR} _VERSION)
+	set(${_TARGET_UP}_TARGET_PATH ${_VERSION__WC_ROOT} CACHE STRING "" FORCE)
+	set(${_TARGET_UP}_TARGET_REVISION_VERSION ${_VERSION_WC_REVISION} CACHE STRING "" FORCE)
+endfunction()
 # Make a version
 #	aTARGET - Name of the TARGET
 #	aFILE_PATH - Path to revision.c.in
@@ -194,25 +229,52 @@ function(configure_version aTARGET aFILE_PATH aOUT_PATH aMAJOR aMINOR )
 	# Make a version file containing the current version from git.
 	set(${_TARGET_UP}_TARGET_REVISION_VERSION "0" CACHE STRING "" FORCE)
 	set(${_TARGET_UP}_TARGET_PATH "no path" CACHE STRING "" FORCE)
+	mark_as_advanced(
+			${_TARGET_UP}_TARGET_REVISION_VERSION
+			${_TARGET_UP}_TARGET_PATH
+					)
 
-	option(${_TARGET_UP}_TARGET_EMBED_GIT_SHA "Embeds the GIT SHA in the version code" ON)
-	
-	mark_as_advanced(${_TARGET_UP}_TARGET_EMBED_GIT_SHA
-					${_TARGET_UP}_TARGET_REVISION_VERSION
-					${_TARGET_UP}_TARGET_PATH)
-	
-	if (${_TARGET_UP}_EMBED_GIT_SHA)
-		include(GetGitRevisionDescription)
-		git_describe(VERSION --always)
 
-		#parse the version information into pieces.
-		if(NOT VERSION  MATCHES  "-NOTFOUND")
-			string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" ${_TARGET_UP}_TARGET_PATH "${VERSION}")
-			string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" ${_TARGET_UP}_TARGET_REVISION_VERSION "${VERSION}")
-		else(NOT VERSION  MATCHES  "-NOTFOUND")
-			message("Cannot get revision from git:" "${VERSION}" ) 
-		endif()		
+	find_package(Subversion)
+	if(Subversion_FOUND)
+		execute_process(COMMAND svn --status
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+				RESULT_VARIABLE SVN_error
+				ERROR_VARIABLE serial_error
+				OUTPUT_VARIABLE _TARGET_REVISION_VERSION
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+				ERROR_STRIP_TRAILING_WHITESPACE
+				)
+		if(SVN_error EQUAL 0)
+			option(${_TARGET_UP}_TARGET_EMBED_REVISION_SVN "Embeds the SVN revision in the version code" ON)
+			mark_as_advanced(${_TARGET_UP}_TARGET_EMBED_REVISION_SVN)
+		endif()
 	endif()
+
+	find_package(Git)
+	if(Git_FOUND)
+		execute_process(COMMAND git status
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    RESULT_VARIABLE GIT_error
+                    ERROR_VARIABLE serial_error
+                    OUTPUT_VARIABLE _TARGET_REVISION_VERSION
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_STRIP_TRAILING_WHITESPACE
+				)
+		if(GIT_error EQUAL 0)
+			option(${_TARGET_UP}_TARGET_EMBED_REVISION_GIT "Embeds the GIT SHA in the version code" ON)
+			mark_as_advanced(${_TARGET_UP}_TARGET_EMBED_REVISION_GIT)
+		endif()
+	endif()
+
+	if (${${_TARGET_UP}_TARGET_EMBED_REVISION_GIT})
+		set_revision_from_git(${aTARGET})
+	endif()
+
+	if (${${_TARGET_UP}_TARGET_EMBED_REVISION_SVN})
+		set_revision_from_svn(${aTARGET})
+	endif()
+
 
 	string(TIMESTAMP ${_TARGET_UP}_TIME "%H:%M:%S" )
 	string(TIMESTAMP ${_TARGET_UP}_DATA "%Y-%m-%d" )
@@ -480,7 +542,7 @@ function (helper_target_link_libraries
 
 	foreach(_LIB ${${aPUBLIC_LIBRARIES}})
 		if(TARGET ${_LIB})
-			set(_LIBRARY_NAME ${_LIB}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+			set(_LIBRARY_NAME ${_LIB}#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 		else()
 			set(_LIBRARY_NAME ${_LIB})
 		endif()
@@ -488,7 +550,7 @@ function (helper_target_link_libraries
 		
 		if(${${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES})
 			if (TARGET ${_LIB}_Static)
-				set(_LIBRARY_NAME ${_LIB}_Static$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)	
+				set(_LIBRARY_NAME ${_LIB}_Static#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 			elseif(TARGET ${_LIB})
 				set(${_LIB}_BUILD_STATIC_TOO 
 						true 
@@ -509,14 +571,14 @@ function (helper_target_link_libraries
 
 	foreach(_LIB ${${aPRIVATE_LIBRARIES}})
 		if(TARGET ${_LIB})
-			set(_LIBRARY_NAME ${_LIB}$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+			set(_LIBRARY_NAME ${_LIB}#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 		else()
 			set(_LIBRARY_NAME ${_LIB})
 		endif()
 				
 		if(${${_TARGET_NAME_UPPER}_WITH_STATIC_DEPENDENCIES})
 			if (TARGET ${_LIB}_Static)
-				set(_LIBRARY_NAME ${_LIB}_Static$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)	
+				set(_LIBRARY_NAME ${_LIB}_Static#[[$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>]])
 			elseif(TARGET ${_LIB})
 				set(${_LIB}_BUILD_STATIC_TOO 
 						true 
@@ -595,8 +657,11 @@ function(helper_export_library
 			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake" @ONLY)
 
 	include(CMakePackageConfigHelpers)
-	
-	configure_package_config_file( "${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in"
+
+	if(NOT ${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH)
+		set(${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH ${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in)
+	endif()
+	configure_package_config_file( ${${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH}
 								  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
 								INSTALL_DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 								)

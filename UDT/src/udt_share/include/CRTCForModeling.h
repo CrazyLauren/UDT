@@ -163,6 +163,10 @@ private:
 	mutable NSHARE::CMutex FDestroyMutex;/*!< #MDispatcher has the infinite loop therefore
 	 it need to wait until it's finished working
 	 before the object will destroyed */
+	mutable NSHARE::CMutex FLeaveMutex;/*!< Mutex for wait for leave operation finished
+	 	 	 	 	 	 	 	 	 	 	 (#MNextTime operation stoped)
+	 	 	 	 	 	 	 	 	 	 	 @warning Can died lock with #FSem
+	 	 	 	 	 	 	 	 	 	 	 */
 	bool FIsDone; //!< If true then dispatcher is working
 	bool FIsJoin;//!<If true then joined
 	bool FIsICreateInfo;//!< true I'm create time_info
@@ -263,10 +267,16 @@ inline bool CRTCForModeling::MLeaveFromRTC()
 		return false;
 
 	FIsJoin=false;
-	--FTimeInfo->FNumOfWorking;
+
 	DVLOG(1) << "Leaving from RTC: " << FName << ", Num of working"
 			<< FTimeInfo->FNumOfWorking;
 	MUnlockWaiter();
+
+	{
+		NSHARE::CRAII < NSHARE::CMutex > _leave_lock(FLeaveMutex);
+		--FTimeInfo->FNumOfWorking;
+	}
+
 	if(FTimeInfo->FNumOfWorking==0)
 	{
 		MResetRTC();
@@ -347,13 +357,20 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 	using namespace std;
 	DCHECK(MIsCreated());
 
+	NSHARE::CRAII < NSHARE::CMutex > _leave_lock(FLeaveMutex);
+	if(!MIsJoinToRTC())
+	{
+		LOG(DFATAL)<<"Not joined to RTC";
+
+		return false;
+	}
 	rtc_time_t _rval = 0;
 	bool _done = false;
 	for (; !_done;)
 	{
-		NSHARE::CRAII < NSHARE::CIPCMutex > _lock(FSem);
 		if (FTimeInfo->FNumOfUnlocked == 0)
 		{
+            NSHARE::CRAII < NSHARE::CIPCMutex > _lock(FSem);
 			DCHECK_LE(FTimeInfo->FTime, aNewTime);
 			DCHECK_GT(FTimeInfo->FNumOfWorking, 0u);
 
@@ -378,20 +395,32 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 			do
 			{
 				_time = FTimeInfo->FTime;
+
+				for(HANG_INIT;FTimeInfo->FNumOfUnlocked!=0;
+						NSHARE::CThread::sMYield(),HANG_CHECK)
+					;//!<Wait for the other thread unlocked
+
 				FTimeUpdated.MWait();
+
+				DCHECK_GT(FTimeInfo->FNumOfUnlocked, 0);
+				--FTimeInfo->FNumOfUnlocked;
+
 			} while (_time == FTimeInfo->FTime && MIsJoinToRTC());
 
-			DCHECK_GT(FTimeInfo->FNumOfUnlocked, 0);
 			DCHECK_GT(FTimeInfo->FNumOfWait, 0);
 
 			--FTimeInfo->FNumOfWait;
-			--FTimeInfo->FNumOfUnlocked;
-
-			FSem.MLock();
+#ifndef NDEBUG
+			if(MIsJoinToRTC())/*!< @Warning The  FSem is locked by #MJoinToRTC method
+			 	 	 	 	 	 And it wait for we unlock #FLeaveMutex
+			 	 	 	 	 	 Thus all operation thread safety*/
+				FSem.MLock();
 
 			DCHECK_LE(FTimeInfo->FTime, aNewTime);
-			DCHECK_GT(FTimeInfo->FNumOfWorking, FTimeInfo->FNumOfWait);
-
+			DCHECK_GT(FTimeInfo->FNumOfWorking, FTimeInfo->FNumOfWait)
+			    <<"time= "<<_time<<" current="<< FTimeInfo->FTime<<" Join:"
+			    <<MIsJoinToRTC();
+#endif
 			_rval = FTimeInfo->FTime;
 			_done = true;
 		}

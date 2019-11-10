@@ -1,3 +1,8 @@
+UDT SHARE version:0.7
+-------------------
+	- Fix invald process name bug
+	- Fix get_reveision_number for GIT 
+	
 UDT SHARE version:0.6
 -------------------
   - Change names of CAddress to CProgramGroup and  CRegistration to CProgramName

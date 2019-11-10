@@ -51,7 +51,7 @@ extern void send_nextime(NUDT::IRtc::millisecond_t aTime, NSHARE::uuid_t const &
 extern void send_nextime(NUDT::IRtc::time_in_second_t aTime, NSHARE::uuid_t const & aTo =
 		NSHARE::uuid_t());
 
-extern void start_rtc_control(int argc, char const*argv[],char const * aName);
+extern bool start_rtc_control(int argc, char const*argv[],char const * aName);
 extern void start_rtc_user(int argc, char const *argv[], char const * aName);
 
 }

@@ -40,10 +40,10 @@ function(configure_logging aTARGET_NAME)
 			endif()
 
 			target_compile_definitions(${aTARGET_NAME}
-										PRIVATE GLOG)
+										PUBLIC GLOG)
 			
 			target_link_libraries(${aTARGET_NAME}
-										PRIVATE ${GLOG_LIBRARIES})
+										PUBLIC ${GLOG_LIBRARIES})
 			target_include_directories( ${aTARGET_NAME} PRIVATE
 										${GLOG_INCLUDE_DIRS}
 										)
@@ -55,20 +55,23 @@ function(configure_logging aTARGET_NAME)
 			endif()
 		
 			target_compile_definitions(${aTARGET_NAME}
-										PRIVATE CPLUS_LOG)			
+										PUBLIC CPLUS_LOG)
 			
 			target_link_libraries(${aTARGET_NAME}
 								 		PRIVATE ${LOG4CPLUS_LIBRARIES})
-			target_include_directories( ${aTARGET_NAME}
-										PRIVATE	${LOG4CPLUS_INCLUDES}
+
+			foreach(_INCL ${LOG4CPLUS_INCLUDES})
+			target_include_directories (${aTARGET_NAME}
+										PUBLIC $<BUILD_INTERFACE:${_INCL}>
 										)
+			endforeach()
 			set(USE_CPLUS 1 CACHE INTERNAL "" FORCE)	
 		elseif (${_TARGET_UP}_LOGGING_TO_COUT)
 			target_compile_definitions(${aTARGET_NAME}
-										PRIVATE OUT_LOG)		
+									   PUBLIC OUT_LOG)
 		else()
 			target_compile_definitions(${aTARGET_NAME}
-										PRIVATE NOLOG)
+									   PUBLIC NOLOG)
 		endif ()
 		
 		if (${_TARGET_UP}_LOGGING_IS_DISABLED_IN)

@@ -20,7 +20,7 @@ enum eType
 {
 	E_MSG_RTC_NEXT_TIME=3,
 	E_MSG_RTC_CONTROL=2,
-	E_TEST_MSG,
+	E_TEST_MSG=1,
 };
 struct msg_head_t
 {

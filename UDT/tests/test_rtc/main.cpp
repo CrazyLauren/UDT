@@ -115,6 +115,7 @@ void initialize_ipc_mutex()
 }
 int main(int argc, char const*argv[])
 {
+	int _rval=EXIT_SUCCESS;
 	init_trace(argc, argv);
 	using namespace test_rtc;
 	g_argc = argc;
@@ -126,7 +127,8 @@ int main(int argc, char const*argv[])
 	{
 		create_ipc_mutex();
 
-		start_rtc_control(argc, argv, g_name.c_str());
+		if(!start_rtc_control(argc, argv, g_name.c_str()))
+			_rval=EXIT_FAILURE;
 
 		g_mutex_stream.MFree();  //remove mutex
 

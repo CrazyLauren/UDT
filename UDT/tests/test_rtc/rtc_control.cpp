@@ -26,24 +26,26 @@ static IRtc * g_rtc=NULL;
 static bool g_is_working=false;
 static requirement_msg_info_t g_receive_what;
 static const unsigned g_number_of_time=1500;
-static void test();
-static void doing_tests();
+static bool test();
+static bool doing_tests();
 static int msg_next_time_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA);
 
 template<typename _Function>
 static bool wait_for(_Function aF,CMutex& aMutex,double aTime=-1)
 {
-	for (double const _cur_time=NSHARE::get_time(); aF();)
+	for (double const _begin_time=NSHARE::get_time(); aF();)
 	{
 		if(aTime<0)
 			g_convar.MTimedwait(&aMutex);
 		else
-			if (!g_convar.MTimedwait(&aMutex,
-				NSHARE::get_time() - _cur_time + aTime))
-		{
-			if((NSHARE::get_time() - _cur_time)>aTime)
-				return false;
-		}
+        {
+		    auto _wait_time=_begin_time - NSHARE::get_time() + aTime;
+            if (!g_convar.MTimedwait(&aMutex, _wait_time) || _wait_time<=0.0)
+            {
+                if ((NSHARE::get_time() - _begin_time) > aTime)
+                    return false;
+            }
+        }
 	}
 	return true;
 }
@@ -80,15 +82,15 @@ static int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 
 static bool test_integer_timers();
 static bool test_double_timers();
-static void initialize(int argc, const char* aName, char const* argv[])
+static bool initialize(int argc, const char* aName, char const* argv[])
 {
 	const int _val = CCustomer::sMInit(argc, argv, aName,
-			NSHARE::version_t(1, 0), "./default_customer_config.xml"); ///< initialize UDT library
+			NSHARE::version_t(1, 0), "./default_customer_config.json"); ///< initialize UDT library
 	if (_val != 0)
 	{
 		LOCK_STREAM
 		std::cerr << "Cannot initialize library as " << _val << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 /*	{
 		///< When the UDT library will be connected to UDT kernel. The function
@@ -133,6 +135,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 		LOCK_STREAM
 		std::cout<<"Connected ..."<<std::endl;
 	}
+	return true;
 }
 void subscribe_to_msg()
 {
@@ -164,18 +167,20 @@ void wait_for_process_finished()
 				std::remove_if(_list.begin(), _list.end(),
 						[&](CThread::process_id_t aVal)
 						{
-							return !NSHARE::is_process_exist(aVal);
+							return !(NSHARE::is_process_exist(aVal) && _name==process_name(aVal));
 						}), _list.end());
 
 	} while (_list.size() != 1 && NSHARE::sleep(1));
 
 
 }
-void start_rtc_control(int argc, char const*argv[],char const * aName)
+bool start_rtc_control(int argc, char const*argv[],char const * aName)
 {
-	initialize(argc, aName, argv);
+	if(!initialize(argc, aName, argv))
+		return false;;
 
-	test();
+	if(!test())
+		return false;
 
 	{
 		LOCK_STREAM
@@ -194,9 +199,10 @@ void start_rtc_control(int argc, char const*argv[],char const * aName)
 		std::cout<<"Press any key... "<<std::endl;
 	}
 	getchar();
+	return true;
 }
 
-void test()
+bool test()
 {
 	CHECK_EQ(CCustomer::sMGetInstance().MGetMyWishForMSG().size(),0);
 
@@ -212,26 +218,32 @@ void test()
 
 	start_publishers();
 
-	doing_tests();
+	bool _rval=doing_tests();
 	stop_publishers();
 	CCustomer::sMGetInstance().MDoNotReceiveMSG(
 			g_receive_what);
+	return _rval;
 }
-static void doing_tests()
+static bool doing_tests()
 {
 	{
 		LOCK_STREAM
 		std::cout<< std::endl<< std::endl << "Test 1 ..." << std::endl;
 	}
+
 	if (!test_integer_timers())
-		exit(EXIT_FAILURE);
+	{
+		return false;
+	}
 	else
 	{
 		LOCK_STREAM
 		std::cout << "Test 1 finished successfully" << std::endl;
 	}
 	if (!test_double_timers())
-		exit(EXIT_FAILURE);
+	{
+		return false;
+	}
 	else
 	{
 		LOCK_STREAM
@@ -244,7 +256,9 @@ static void doing_tests()
 		std::cout << "Press any key ..."<< std::endl;
 		getchar();
 	}
+	return true;
 }
+
 static bool test_integer_timers()
 {
 
@@ -264,7 +278,7 @@ static bool test_integer_timers()
 
 	decltype(g_next_times) _next_timers;
 
-	auto _less_eq_then = [&](auto aVal,auto aMin)
+	auto _less_eq_then = [& _precision](decltype(_precision) aVal,decltype(_precision) aMin)
 	{	return aVal <= (aMin + _precision);};
 
 	for (unsigned i=0;i<g_number_of_time;++i)
@@ -272,7 +286,7 @@ static bool test_integer_timers()
 
 		{
 			CRAII<CMutex> _block(g_mutex);
-			bool const _is = wait_for([& ]()
+			 _is = wait_for([& ]()
 			{
 				return g_child_pid.size() != g_next_times.size();
 			}
@@ -338,7 +352,7 @@ static bool test_integer_timers()
 		}
 	}
 	{
-		bool _is = g_rtc->MLeaveFromRTC();
+		_is = g_rtc->MLeaveFromRTC();
 		if (_is)
 		{
 			if(g_rtc->MGetCurrentTimeMs()!=0)
@@ -371,7 +385,7 @@ static bool test_double_timers()
 
 	decltype(g_next_times) _next_timers;
 
-	auto _less_eq_then = [&](auto aVal,auto aMin)
+	auto _less_eq_then = [&](decltype(_precision) aVal,decltype(_precision) aMin) -> bool
 	{	return aVal <= (aMin + _precision);};
 
 	for (unsigned i=0;i<g_number_of_time;++i)

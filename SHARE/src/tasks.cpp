@@ -211,18 +211,18 @@ NSHARE::CText process_name(CThread::process_id_t pid)
 	FILE* fd_CmdLineFile = fopen(_paths, "rt"); // open the file for reading text
 	if (fd_CmdLineFile)
 	{
-		fscanf(fd_CmdLineFile, "%s", chrarry_NameOfProcess); // read from /proc/<NR>/cmdline
+		int _rval=fscanf(fd_CmdLineFile, "%s", chrarry_NameOfProcess); // read from /proc/<NR>/cmdline
 		fclose(fd_CmdLineFile); // close the file prior to exiting the routine
-		char* const _slash=strrchr(chrarry_NameOfProcess, '/');
-		if (_slash!=NULL)
-			chrptr_StringToCompare = _slash + 1;
-		else
-			chrptr_StringToCompare = chrarry_NameOfProcess;
+		if(_rval>0)
+		{
+			char* const _slash=strrchr(chrarry_NameOfProcess, '/');
+			if (_slash!=NULL)
+				chrptr_StringToCompare = _slash + 1;
+			else
+				chrptr_StringToCompare = chrarry_NameOfProcess;
 
-		//printf("Process name: %s\n", chrarry_NameOfProcess);
-		//printf("Pure Process name: %s\n", chrptr_StringToCompare );
-
-		return CText(chrptr_StringToCompare);
+			return CText(chrptr_StringToCompare);
+		}
 
 	}
 	return CText();

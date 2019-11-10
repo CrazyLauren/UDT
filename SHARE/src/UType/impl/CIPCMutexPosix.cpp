@@ -52,6 +52,7 @@ struct CIPCMutex::CImpl
 };
 namespace
 {
+COMPILE_ASSERT((__alignof(CIPCMutex::CImpl::data_t))<=__alignof(void*),InvalidAligOnData_t);
 COMPILE_ASSERT((sizeof(CIPCMutex::CImpl::data_t))<=CIPCMutex::eReguredBufSize,InvalidSizeMutex_t);
 COMPILE_ASSERT(sizeof(CIPCMutex::CImpl::data_t) ==(sizeof(uint32_t)*2//
 		+sizeof(pthread_mutex_t)//
