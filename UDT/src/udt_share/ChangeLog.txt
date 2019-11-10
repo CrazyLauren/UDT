@@ -1,3 +1,7 @@
+udt_share version:0.2
+-------------------
+  - fix died lock in debug version
+  
 udt_share version:0.1
 -------------------
   - Added version for "raw" protocol

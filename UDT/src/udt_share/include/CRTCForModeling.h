@@ -408,7 +408,7 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 
 			DVLOG(3) << "Request: " << aNewTime << "  minimal time:"
 					<< FTimeInfo->FNextTimer;
-			FSem.MUnlock();
+			_lock.MUnlock();
 
 			rtc_time_t _time= 0;
 			do
@@ -426,10 +426,10 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 
 			--FTimeInfo->FNumOfWait;
 #ifndef NDEBUG
-			if(MIsJoinToRTC())/*!< @Warning The  FSem is locked by #MJoinToRTC method
-			 	 	 	 	 	 And it wait for we unlock #FLeaveMutex
-			 	 	 	 	 	 Thus all operation thread safety*/
-				FSem.MLock();
+//			if(MIsJoinToRTC())/*!< @Warning The  FSem is locked by #MJoinToRTC method
+//			 	 	 	 	 	 And it wait for we unlock #FLeaveMutex
+//			 	 	 	 	 	 Thus all operation thread safety*/
+//				FSem.MLock();
 
 			DCHECK_LE(FTimeInfo->FTime, aNewTime);
 			DCHECK_GT(FTimeInfo->FNumOfWorking, FTimeInfo->FNumOfWait)
