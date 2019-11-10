@@ -153,6 +153,7 @@ private:
 	bool MInitializeSignals();
 	void MDeInitializeSignals();
 	void MUnlockWaiter() const;
+	bool MHasShouldContinue(rtc_time_t const& aTime) const;
 
 	NSHARE::CProgramName FName; //!< The unique name of RTC
 	NSHARE::IAllocater* FAllocator; //!<Pointer to allocator
@@ -351,6 +352,24 @@ inline void CRTCForModeling::MUnlockWaiter() const
 	for (unsigned i = 0; i < _post; ++i)
 		FTimeUpdated.MPost();
 }
+
+/** It has to continue wait
+ *
+ * @param aTime Wait time
+ * @return
+ */
+inline bool CRTCForModeling::MHasShouldContinue(rtc_time_t const& aTime) const
+{
+
+	///< Wait for the other thread unlocked
+	for(HANG_INIT; aTime == FTimeInfo->FTime//
+			&&FTimeInfo->FNumOfUnlocked!=0//
+			&& MIsJoinToRTC();
+			NSHARE::CThread::sMYield(),HANG_CHECK)
+		;
+	return aTime == FTimeInfo->FTime && MIsJoinToRTC();
+}
+
 inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 		rtc_time_t aNewTime) const
 {
@@ -396,16 +415,12 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 			{
 				_time = FTimeInfo->FTime;
 
-				for(HANG_INIT;FTimeInfo->FNumOfUnlocked!=0;
-						NSHARE::CThread::sMYield(),HANG_CHECK)
-					;//!<Wait for the other thread unlocked
-
 				FTimeUpdated.MWait();
 
 				DCHECK_GT(FTimeInfo->FNumOfUnlocked, 0);
 				--FTimeInfo->FNumOfUnlocked;
 
-			} while (_time == FTimeInfo->FTime && MIsJoinToRTC());
+			} while (MHasShouldContinue(_time));
 
 			DCHECK_GT(FTimeInfo->FNumOfWait, 0);
 

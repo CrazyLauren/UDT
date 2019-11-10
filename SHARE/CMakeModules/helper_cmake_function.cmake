@@ -239,14 +239,16 @@ function(configure_version aTARGET aFILE_PATH aOUT_PATH aMAJOR aMINOR )
 
 	find_package(Subversion)
 	if(Subversion_FOUND)
-		execute_process(COMMAND svn status
+		execute_process(COMMAND svn log -rHEAD
 				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 				RESULT_VARIABLE SVN_error
 				ERROR_VARIABLE serial_error
 				OUTPUT_VARIABLE _TARGET_REVISION_VERSION
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				ERROR_STRIP_TRAILING_WHITESPACE
-				)
+				OUTPUT_QUIET
+				ERROR_QUIET
+				)	
 		if(SVN_error EQUAL 0)
 			option(${_TARGET_UP}_TARGET_EMBED_REVISION_SVN "Embeds the SVN revision in the version code" ON)
 			mark_as_advanced(${_TARGET_UP}_TARGET_EMBED_REVISION_SVN)
@@ -262,6 +264,8 @@ function(configure_version aTARGET aFILE_PATH aOUT_PATH aMAJOR aMINOR )
                     OUTPUT_VARIABLE _TARGET_REVISION_VERSION
                     OUTPUT_STRIP_TRAILING_WHITESPACE
                     ERROR_STRIP_TRAILING_WHITESPACE
+                    OUTPUT_QUIET
+					ERROR_QUIET
 				)
 		if(GIT_error EQUAL 0)
 			option(${_TARGET_UP}_TARGET_EMBED_REVISION_GIT "Embeds the GIT SHA in the version code" ON)
