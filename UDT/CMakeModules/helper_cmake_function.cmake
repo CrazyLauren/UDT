@@ -205,10 +205,12 @@ function(set_revision_from_git aTARGET)
 endfunction()
 
 # Generating  revision number and path from SVN
-function(set_revision_from_svn aTARGET)
-	Subversion_WC_INFO(${CMAKE_SOURCE_DIR} _VERSION)
-	set(${_TARGET_UP}_TARGET_PATH ${_VERSION__WC_ROOT} CACHE STRING "" FORCE)
-	set(${_TARGET_UP}_TARGET_REVISION_VERSION ${_VERSION_WC_REVISION} CACHE STRING "" FORCE)
+function(set_revision_from_svn aTARGET)	
+	
+	Subversion_WC_INFO(${PROJECT_SOURCE_DIR} _TARGET_VERSION)
+	
+	set(${_TARGET_UP}_TARGET_PATH ${_TARGET_VERSION_WC_ROOT} CACHE STRING "" FORCE)
+	set(${_TARGET_UP}_TARGET_REVISION_VERSION ${_TARGET_VERSION_WC_REVISION} CACHE STRING "" FORCE)
 endfunction()
 # Make a version
 #	aTARGET - Name of the TARGET
@@ -237,7 +239,7 @@ function(configure_version aTARGET aFILE_PATH aOUT_PATH aMAJOR aMINOR )
 
 	find_package(Subversion)
 	if(Subversion_FOUND)
-		execute_process(COMMAND svn --status
+		execute_process(COMMAND svn status
 				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 				RESULT_VARIABLE SVN_error
 				ERROR_VARIABLE serial_error
