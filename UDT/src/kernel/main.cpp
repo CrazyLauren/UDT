@@ -63,6 +63,7 @@ DECLARATION_VERSION_FOR(Kernel)
 static NSHARE::version_t const g_version(MAJOR_VERSION_OF(Kernel), MINOR_VERSION_OF(Kernel), REVISION_OF(Kernel));
 CAutoSearchByEthernet* g_CAutoSearchByEthernet = NULL;
 CTimeDispatcher* g_CTimeDispatcher = NULL;
+bool g_wait_for_input=false;
 
 void initialize_def_main_channels();
 void remove_def_main_channels();
@@ -269,6 +270,10 @@ void initialize_core(int argc, char* argv[])
 	char const* _def_name = "?";
 	_pname = _pname ? _pname : _def_name;
 
+    ValueArg<bool> _wait_for("w", "wait",
+        "Stop if any character is entered", false, g_wait_for_input,
+        "true false", _cmd);
+
 	ValueArg<std::string> _name("n", "name",
 			"id name of kernel (by default program name)", false, _pname,
 			"string", _cmd);
@@ -281,6 +286,7 @@ void initialize_core(int argc, char* argv[])
 	{
 		_cmd.parse(argc, argv);
 		init_share_trace(_cmd.getProgramName().c_str());
+        g_wait_for_input=_wait_for.getValue();
 		init_id(_name.getValue().c_str(), E_KERNEL, g_version);
 
 	} catch (ArgException &e)  // catch any exceptions
@@ -320,12 +326,65 @@ void initialize_core(int argc, char* argv[])
 	}
 	new CParserFactoryState();
 }
+NSHARE::CCondvar g_condvar_wait;
+NSHARE::CMutex g_condvar_mutex;
+bool g_double_ctrl_c=false;
+
+#ifdef _WIN32
+BOOL WINAPI consoleHandler(DWORD signal)
+{
+    if (signal == CTRL_C_EVENT)
+    {
+#else
+#   include <signal.h>
+void consoleHandler(int s)
+{
+    {
+#endif
+        if (g_double_ctrl_c)
+        {
+            std::cout << "Double Ctrl-C..." << std::endl;
+            std::cout << "Force stopped..." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        g_double_ctrl_c = true;
+        std::cout << "Ctrl-C handled..." << std::endl;
+        std::cout << "Run stopping kernel..." << std::endl;
+        g_condvar_wait.MSignal();
+    }
+}
 
 void perpetual_loop()
 {
-	std::cout << "Press any key ..." << std::endl;
-	LOG(INFO)<<"The kernel is started";
-	getchar();
+    LOG(INFO)<<"The kernel is started";
+
+    if(g_wait_for_input)
+    {
+        std::cout << "Press any key ..." << std::endl;
+        getchar();
+    }
+    else
+    {
+
+#ifdef _WIN32
+        if (!SetConsoleCtrlHandler(consoleHandler, TRUE))
+        {
+            std::cerr<<"ERROR: Could not set control handler. Continue ..."<<std::endl;
+        }
+#else
+        struct sigaction sigIntHandler;
+
+        sigIntHandler.sa_handler = consoleHandler;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = 0;
+
+        sigaction(SIGINT, &sigIntHandler, NULL);
+#endif
+        NSHARE::CRAII<NSHARE::CMutex> _lock(g_condvar_mutex);
+
+        g_condvar_wait.MTimedwait(&g_condvar_mutex);
+    }
 }
 void stop()
 {
