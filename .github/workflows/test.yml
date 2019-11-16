@@ -11,7 +11,7 @@ jobs:
           ubuntu-gcc-6,
           ubuntu-gcc-9,
           ubuntu-clang-6,
-          ubuntu-clang-9,
+#          ubuntu-clang-9,
         ]
         include:
           - name: ubuntu-gcc-6
@@ -29,10 +29,10 @@ jobs:
             compiler: clang
             version: "6.0"
 
-          - name: ubuntu-clang-9
-            os: ubuntu-latest
-            compiler: clang
-            version: "9"
+#          - name: ubuntu-clang-9
+#            os: ubuntu-latest
+#            compiler: clang
+#            version: "9"
     steps:
       - uses: actions/checkout@v1
 
@@ -40,11 +40,11 @@ jobs:
         if: runner.os == 'Linux'
         run: |
             # LLVM 9 is not yet in Bionic's repositories.
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+            #sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
             sudo apt-get update
-            sudo apt-get install -y ninja-build clang-tidy-9
+            #sudo apt-get install -y ninja-build clang-tidy-9
             sudo apt-get install libboost-all-dev
-            sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+            #sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
             if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y g++-${{ matrix.version }}
               echo "::set-env name=CC::gcc-${{ matrix.version }}"
