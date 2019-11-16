@@ -1561,7 +1561,7 @@ template<class T, class Tlist>
 #if defined(_MSC_VER) &&  _MSC_VER>=1900
 __forceinline
 #endif
-std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
+static std::string handle_num(Tlist argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
@@ -1578,7 +1578,7 @@ template<class T, class Tlist>
 #if defined(_MSC_VER) &&  _MSC_VER>=1900
 __forceinline
 #endif
-std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
+static std::string handle_float(Tlist argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
