@@ -1558,6 +1558,9 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 	return aStream;
 }
 template<class T, class Tlist>
+#if defined(_MSC_VER) &&  _MSC_VER>=1900
+__forceinline
+#endif
 std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int base = 10)
 {
@@ -1572,6 +1575,9 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	return _num;
 }
 template<class T, class Tlist>
+#if defined(_MSC_VER) &&  _MSC_VER>=1900
+__forceinline
+#endif
 std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int precision = -1)
 {
