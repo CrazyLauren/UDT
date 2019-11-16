@@ -1578,7 +1578,7 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 }
 #if defined _MSC_VER && _MSC_VER>=1900//msvc bug fix
 template<class T>
-std::string handle_float(Tlist argptr, CText::const_iterator& _start,
+std::string handle_float(va_list argptr, CText::const_iterator& _start,
 #else
 template<class T, class Tlist>
 std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
