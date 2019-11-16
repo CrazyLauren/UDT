@@ -18,7 +18,7 @@ jobs:
       - name: pwd
         run: pwd
       - name: move to bin
-          run: cd ./builb
+        run: cd ./builb
       - name: build
         run: cmake --build . --target install
       - name: move to bin
