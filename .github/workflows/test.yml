@@ -57,8 +57,11 @@ jobs:
       - name: Print version
         run: |
           cmake --version
-          gcc --version
-          clang --version
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            gcc --version
+          else
+            clang --version
+          fi
 
       - name: configure
         run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost ..
