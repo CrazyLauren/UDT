@@ -4,15 +4,41 @@ on: [push]
 
 jobs:
   build-ubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [
+          ubuntu-gcc-6,
+          ubuntu-gcc-9,
+          ubuntu-clang-6,
+          ubuntu-clang-9,
+        ]
+        include:
+          - name: ubuntu-gcc-6
+            os: ubuntu-16.04
+            compiler: gcc
+            version: "6"
 
-    runs-on: ubuntu-latest
+          - name: ubuntu-gcc-9
+            os: ubuntu-latest
+            compiler: gcc
+            version: "9"
 
+          - name: ubuntu-clang-6
+            os: ubuntu-16.04
+            compiler: clang
+            version: "6.0"
+
+          - name: ubuntu-clang-9
+            os: ubuntu-latest
+            compiler: clang
+            version: "9"
     steps:
       - uses: actions/checkout@v1
       - name:
         run: cmake --version
       - name: configure
-        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
       - name: build
         run: cd build && cmake --build . --target install
       - name: Testing RTC
