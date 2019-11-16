@@ -2251,6 +2251,7 @@ void CSharedAllocator::MCleanUpByWatchDogImpl(leak_processes_t const& _list)
 	DVLOG(2) << "Unlock shared sem.";
 	MUnlock();
 	DVLOG(2) << "Wait For Watch Dog.";
+	NSHARE::CThread::sMYield();
 	_wd_sem.MWait();
 	DVLOG(2) << "Wait For Sem.";
 	MLock();

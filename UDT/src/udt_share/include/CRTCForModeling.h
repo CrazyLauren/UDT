@@ -143,6 +143,15 @@ public:
 	int MGetAmountOfJoined() const;
 private:
 
+    /**
+     * @brief It's used for force leave from rtc dispatcher
+     */
+    enum eWaitState
+    {
+        eStateNoWait,
+        eStateWaitNextTime/*,
+        eStateWaitReadTime,*/
+    };
 	/** Updates time and notifies
 	 * time receiver
 	 *
@@ -153,7 +162,9 @@ private:
 	bool MInitializeSignals();
 	void MDeInitializeSignals();
 	void MUnlockWaiter() const;
-	bool MHasShouldContinue(rtc_time_t const& aTime) const;
+//	bool MHasShouldContinue(rtc_time_t const& aTime) const;
+//    bool MIsWaitingOther(rtc_time_t const& aTime) const;
+	bool MCheckForTimeHasCome() const;
 
 	NSHARE::CProgramName FName; //!< The unique name of RTC
 	NSHARE::IAllocater* FAllocator; //!<Pointer to allocator
@@ -171,6 +182,8 @@ private:
 	bool FIsDone; //!< If true then dispatcher is working
 	bool FIsJoin;//!<If true then joined
 	bool FIsICreateInfo;//!< true I'm create time_info
+	mutable unsigned FMyStepNumber;//!< Number of step which i did
+    mutable NSHARE::atomic_t FIsWaitForNextStepState;//!< state of wait for next step
 };
 
 
@@ -179,9 +192,10 @@ inline CRTCForModeling::CRTCForModeling() :
 		FTimeInfo(NULL), //
 		FIsDone(true),//
 		FIsJoin(false),//
-		FIsICreateInfo(false)
+		FIsICreateInfo(false),//
+        FMyStepNumber(0)
 {
-
+    FIsWaitForNextStepState=eStateNoWait;
 }
 inline CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator, //
 		NSHARE::CProgramName const& aName) :
@@ -189,8 +203,10 @@ inline CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator, //
 		FTimeInfo(NULL), //
 		FIsDone(true),//
 		FIsJoin(false),//
-		FIsICreateInfo(false)
+		FIsICreateInfo(false),//
+        FMyStepNumber(0)
 {
+    FIsWaitForNextStepState=eStateNoWait;
 	DCHECK(aName.MIsValid());
 
 	time_info_t* _p = NSHARE::allocate_object<time_info_t>(*aAllocator);
@@ -208,8 +224,10 @@ inline CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator,
 				FTimeInfo(NULL), //
 				FIsDone(true),//
 				FIsJoin(false),//
-				FIsICreateInfo(false)
+				FIsICreateInfo(false),//
+                FMyStepNumber(0)
 {
+    FIsWaitForNextStepState=eStateNoWait;
 	MOpen(aAllocator,aName,aP);
 }
 inline bool CRTCForModeling::MOpen(NSHARE::IAllocater* aAllocator,
@@ -260,28 +278,114 @@ inline CRTCForModeling::~CRTCForModeling()
 }
 inline bool CRTCForModeling::MLeaveFromRTC()
 {
-	if (!MIsCreated())
-		return false;
-	NSHARE::CRAII < NSHARE::CIPCMutex > _lock(FSem);
+    if (!MIsCreated())
+        return false;
 
-	if (!MIsJoinToRTC())
-		return false;
+    if (!MIsJoinToRTC())
+        return false;
 
-	FIsJoin=false;
+    bool _is_lock=FLeaveMutex.MCanLock();
+    FSem.MLock();
+    FIsJoin = false;
+    eWaitState const _was_wait_state=(eWaitState)FIsWaitForNextStepState.MValue();
 
-	DVLOG(1) << "Leaving from RTC: " << FName << ", Num of working"
-			<< FTimeInfo->FNumOfWorking;
-	MUnlockWaiter();
+    if(!_is_lock)
+    {
+        ///< Into #MNextTime Method
 
-	{
-		NSHARE::CRAII < NSHARE::CMutex > _leave_lock(FLeaveMutex);
-		--FTimeInfo->FNumOfWorking;
-	}
+        ///< Try Again as on IPC Mutex
+        _is_lock=FLeaveMutex.MCanLock();
+        if(!_is_lock)
+        {
+            for(;FTimeInfo->FNumOfUnlocked!=0;)
+            {
+                FSem.MUnlock();
+                NSHARE::CThread::sMYield();
+                FSem.MLock();
+            }
+            _is_lock=FLeaveMutex.MCanLock();
+            if(!_is_lock)
+            {
 
-	if(FTimeInfo->FNumOfWorking==0)
-	{
-		MResetRTC();
-	}
+                ///< It's not locked, No problem can not lock
+                for (; FIsWaitForNextStepState==eStateWaitNextTime;)
+                {
+                    ///< Try force unlock
+                    CHECK_EQ(FTimeInfo->FNumOfUnlocked,0);
+                    ++FTimeInfo->FNumOfUnlocked;
+                    FTimeUpdated.MPost();
+                    for (; FTimeInfo->FNumOfUnlocked != 0//
+                                && FIsWaitForNextStepState!=/*eStateWaitReadTime*/eStateNoWait//
+                               && FTimeInfo->FNumOfLocked!=0;
+                               )
+                    {
+                        CHECK(FTimeInfo->FNumOfUnlocked==1 //
+                                  ||FTimeInfo->FNumOfUnlocked==0)<<FTimeInfo->FNumOfUnlocked;
+                        NSHARE::CThread::sMYield();
+                    }
+                    if(FTimeInfo->FNumOfUnlocked == 1
+                        && FTimeInfo->FNumOfLocked==0
+                     )
+                    {
+                        ///< No any wait thread
+                        FTimeUpdated.MWait();
+                        FTimeInfo->FNumOfUnlocked=0;
+                    }
+                }
+
+            }
+        }
+    }
+    DVLOG(1) << "Leaving from RTC: " << FName << ", Num of working"
+                 << FTimeInfo->FNumOfWorking;
+
+    --FTimeInfo->FNumOfWorking;
+    switch(_was_wait_state)
+    {
+        case eStateNoWait:break;
+        case eStateWaitNextTime:
+        {
+            /** Next mutex can lock dispatcher thus we should revert all change
+             * as it doesn't know about we force unlock one of dipsacther user
+             */
+            if(FIsWaitForNextStepState==eStateNoWait/*eStateWaitReadTime*/)
+            {
+                //FIsWaitForNextStepState=eStateNoWait;
+                ///< Revert change
+                if(FTimeInfo-> FNumOfWait!=0)
+                    --FTimeInfo->FNumOfWait;
+            }
+
+            break;
+        }
+/*        case eStateWaitReadTime:
+        {
+            *//** Next mutex can lock dispatcher thus we should decrease the number of
+             * locked thread force as we change the number of working
+             *//*
+             CHECK_EQ(FIsWaitForNextStepState,eStateWaitReadTime);
+
+            break;
+        }*/
+
+    }
+
+    if (FTimeInfo->FNumOfWorking == 0)
+        MResetRTC();
+    else
+    {
+        MCheckForTimeHasCome();
+    }
+
+
+
+    FMyStepNumber=0;
+    FSem.MUnlock();
+
+    if(!_is_lock)
+        ///< Wait end of working #MNextTime
+        FLeaveMutex.MLock();
+    FLeaveMutex.MUnlock();
 	return true;
 }
 inline int CRTCForModeling::MGetAmountOfJoined() const
@@ -320,6 +424,7 @@ inline bool CRTCForModeling::MJoinToRTC()
 	if(!MIsCreated())
 		return false;
 
+	NSHARE::CRAII < NSHARE::CMutex > _leave_lock(FLeaveMutex);
 	NSHARE::CRAII < NSHARE::CIPCMutex > _lock(FSem);
 
 	if(MIsJoinToRTC())
@@ -347,27 +452,69 @@ inline void CRTCForModeling::MUpdateTime(rtc_time_t aNewTime) const
 }
 inline void CRTCForModeling::MUnlockWaiter() const
 {
-	FTimeInfo->FNumOfUnlocked = FTimeInfo->FNumOfWait;
+    DCHECK_EQ(FTimeInfo->FNumOfUnlocked,0);
+
+    DCHECK_EQ(FTimeInfo->FNumOfUnlocked,0);
+	FTimeInfo->FNumOfUnlocked = FTimeInfo->FNumOfLocked;
 	unsigned _post = FTimeInfo->FNumOfUnlocked;
 	for (unsigned i = 0; i < _post; ++i)
 		FTimeUpdated.MPost();
 }
+/*inline bool CRTCForModeling::MIsWaitingOther(rtc_time_t const& aTime) const
+{
+    if(aTime == FTimeInfo->FTime && MIsJoinToRTC())//!< Force compare to avoid dead lock then it's forced unlocked
+    {
+        NSHARE::CRAII<NSHARE::CIPCMutex> _lock(FSem);
 
-/** It has to continue wait
+        if( aTime == FTimeInfo->FTime//
+            &&FTimeInfo->FNumOfUnlocked!=0//
+            && MIsJoinToRTC()//
+            )
+        {
+            CHECK_NE(FTimeInfo->FNextTimer,
+                std::numeric_limits<CRTCForModeling::rtc_time_t>::max())
+                <<"Time ="<<aTime
+                <<*FTimeInfo
+                <<"My step="<<FMyStepNumber;
+            return true;
+        };
+    }
+    return false;
+};
+*//** It has to continue wait
  *
  * @param aTime Wait time
  * @return
- */
+ *//*
 inline bool CRTCForModeling::MHasShouldContinue(rtc_time_t const& aTime) const
 {
 
 	///< Wait for the other thread unlocked
-	for(HANG_INIT; aTime == FTimeInfo->FTime//
-			&&FTimeInfo->FNumOfUnlocked!=0//
-			&& MIsJoinToRTC();
+	bool _is;
+	for(HANG_INIT; (_is=MIsWaitingOther(aTime))//
+			 ;
 			NSHARE::CThread::sMYield(),HANG_CHECK)
-		;
-	return aTime == FTimeInfo->FTime && MIsJoinToRTC();
+;
+	return _is;
+}*/
+
+inline bool CRTCForModeling::MCheckForTimeHasCome() const
+{
+	if (FTimeInfo->FNumOfWait == FTimeInfo->FNumOfWorking//
+	 	                    && FTimeInfo->FNumOfWorking>0
+	 	                    )
+	{
+		DVLOG(3) << "Current minimal value: " << FTimeInfo->FNextTimer;
+
+		CHECK_GT(FTimeInfo->FNextTimer,FTimeInfo->FTime)<<"Step ="<<FTimeInfo->FTimeStep;
+
+
+		FHasToBeUpdated.MSignal();
+		++FTimeInfo->FTimeStep;
+        FTimeInfo-> FNumOfWait=0;
+		return true;
+	}
+	return false;
 }
 
 inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
@@ -377,67 +524,87 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 	DCHECK(MIsCreated());
 
 	NSHARE::CRAII < NSHARE::CMutex > _leave_lock(FLeaveMutex);
-	if(!MIsJoinToRTC())
-	{
-		LOG(DFATAL)<<"Not joined to RTC";
 
-		return false;
-	}
+    LOG_IF(DFATAL,!MIsJoinToRTC())<<"Not joined to RTC";
+
 	rtc_time_t _rval = 0;
 	bool _done = false;
-	for (; !_done;)
+	for (; !_done && MIsJoinToRTC();)
 	{
-		if (FTimeInfo->FNumOfUnlocked == 0)
+		if (FTimeInfo->FNumOfUnlocked == 0 )
 		{
-            NSHARE::CRAII < NSHARE::CIPCMutex > _lock(FSem);
-			DCHECK_LE(FTimeInfo->FTime, aNewTime);
-			DCHECK_GT(FTimeInfo->FNumOfWorking, 0u);
+            rtc_time_t _time= 0;
+            NSHARE::atomic_t  _prev_step;
+            NSHARE::atomic_t  _start_num;
+            {
+                NSHARE::CRAII<NSHARE::CIPCMutex> _lock(FSem);
+                DCHECK_LE(FTimeInfo->FTime, aNewTime);
+                DCHECK_GT(FTimeInfo->FNumOfWorking, 0u);
 
-			DVLOG(3) << "New time is " << aNewTime;
+                DVLOG(3) << "New time is " << aNewTime;
 
-			FTimeInfo->FNextTimer = min(aNewTime, FTimeInfo->FNextTimer);
-			++FTimeInfo->FNumOfWait;
+                if(!MIsJoinToRTC())
+                {
+                	_rval = aNewTime;
+                	break;
+                }
 
-			if (FTimeInfo->FNumOfWait == FTimeInfo->FNumOfWorking)
-			{
-				DVLOG(3) << "Current minimal value: "
-						<< FTimeInfo->FNextTimer;
-				FHasToBeUpdated.MSignal();
-				++FTimeInfo->FTimeStep;
-			}
+                _prev_step=FTimeInfo->FTimeStep;
+                _start_num=FTimeInfo->FNumOfWorking;
 
-			DVLOG(3) << "Request: " << aNewTime << "  minimal time:"
-					<< FTimeInfo->FNextTimer;
-			_lock.MUnlock();
+                FTimeInfo->FNextTimer = min(aNewTime, FTimeInfo->FNextTimer);
+                FIsWaitForNextStepState=eStateWaitNextTime;
+                ++FTimeInfo->FNumOfLocked;
+                ++FTimeInfo->FNumOfWait;
 
-			rtc_time_t _time= 0;
+				MCheckForTimeHasCome();
+
+                DVLOG(3) << "Request: " << aNewTime << "  minimal time:"
+                         << FTimeInfo->FNextTimer;
+                _time = FTimeInfo->FTime;
+            }
+
 			do
 			{
-				_time = FTimeInfo->FTime;
-
 				FTimeUpdated.MWait();
 
-				DCHECK_GT(FTimeInfo->FNumOfUnlocked, 0);
-				--FTimeInfo->FNumOfUnlocked;
+                {
+                    --FTimeInfo->FNumOfUnlocked;
+                    CHECK_LT(FTimeInfo->FNumOfUnlocked, std::numeric_limits<unsigned short>::max());
+                }
+			} //while (MHasShouldContinue(_time));
+            while (_time == FTimeInfo->FTime && MIsJoinToRTC());
 
-			} while (MHasShouldContinue(_time));
+			DCHECK_GT(FTimeInfo->FNumOfLocked, 0);
 
-			DCHECK_GT(FTimeInfo->FNumOfWait, 0);
+            --FTimeInfo->FNumOfLocked;
+            //FIsWaitForNextStepState=eStateWaitReadTime;
+            {
+               // NSHARE::CRAII<NSHARE::CIPCMutex> _lock(FSem);//!< Can be removed
+                if(MIsJoinToRTC())
+                {
+                    CHECK(_prev_step == (FTimeInfo->FTimeStep - 1))
+                    << "Prev step=" << _prev_step << "Cut step=" << FTimeInfo->FTimeStep
+                      << " before=" << _start_num
+                      << "My step=" << FMyStepNumber << *FTimeInfo;
 
-			--FTimeInfo->FNumOfWait;
-#ifndef NDEBUG
-//			if(MIsJoinToRTC())/*!< @Warning The  FSem is locked by #MJoinToRTC method
-//			 	 	 	 	 	 And it wait for we unlock #FLeaveMutex
-//			 	 	 	 	 	 Thus all operation thread safety*/
-//				FSem.MLock();
+                    DCHECK_LE(FTimeInfo->FTime, aNewTime) << "My step=" << FMyStepNumber
+                                                          << *FTimeInfo;
+                    DCHECK(FTimeInfo->FNumOfWorking > FTimeInfo->FNumOfLocked)
+                    << "time= " << _time << " current=" << FTimeInfo->FTime << " Join:"
+                    << MIsJoinToRTC();
 
-			DCHECK_LE(FTimeInfo->FTime, aNewTime);
-			DCHECK_GT(FTimeInfo->FNumOfWorking, FTimeInfo->FNumOfWait)
-			    <<"time= "<<_time<<" current="<< FTimeInfo->FTime<<" Join:"
-			    <<MIsJoinToRTC();
-#endif
-			_rval = FTimeInfo->FTime;
-			_done = true;
+                    _rval = FTimeInfo->FTime;
+                    _done = true;
+                }
+                else
+                {
+                    _rval = aNewTime;
+                    _done = true;
+                }
+                FIsWaitForNextStepState=eStateNoWait;
+            }
+
 		}
 		else
 		{
@@ -445,7 +612,7 @@ inline CRTCForModeling::rtc_time_t CRTCForModeling::MNextTime(
 			DLOG_IF(FATAL, _done) << "Yield operation is not supported";
 		}
 	}
-
+    ++FMyStepNumber;
 	return _rval;
 }
 inline bool CRTCForModeling::MForceStopDispatcher()
@@ -477,10 +644,13 @@ inline bool CRTCForModeling::MDispatcher()
 			} while (_step == FTimeInfo->FTimeStep && !FIsDone);
 
 			DCHECK_EQ(FTimeInfo->FNumOfUnlocked, 0);
+            DCHECK_EQ(FTimeInfo->FNumOfLocked, FTimeInfo->FNumOfWorking);
+            DCHECK_EQ(FTimeInfo->FNumOfWait,0);
 
 			MUpdateTime(FTimeInfo->FNextTimer);
 
-			//FTimeInfo->FNumOfWait=0;
+
+
 		} while (!FIsDone //
 		&& FTimeInfo //
 				&& FTimeInfo->FTime != time_info_t::END_OF_TIME);

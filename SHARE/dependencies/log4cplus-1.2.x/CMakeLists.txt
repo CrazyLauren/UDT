@@ -141,4 +141,4 @@ if (LOG4CPLUS_QT5)
   add_subdirectory (qt5debugappender)
 endif (LOG4CPLUS_QT5)
 
-include(Log4CPlusCPack.cmake)
+#include(Log4CPlusCPack.cmake)

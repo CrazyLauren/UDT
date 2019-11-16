@@ -654,7 +654,8 @@ function(helper_export_library
 	set(_OUT_DIRECTORY ${CMAKE_BINARY_DIR}/include/${aTARGET_NAME}/cmake)
 
 	export(TARGETS ${aTARGET_NAME}
-			FILE "${_OUT_DIRECTORY}/${aTARGET_NAME}Targets.cmake" EXPORT_LINK_INTERFACE_LIBRARIES)
+			FILE "${_OUT_DIRECTORY}/${aTARGET_NAME}Targets.cmake"
+		   EXPORT_LINK_INTERFACE_LIBRARIES)
 
 	set(CONF_TARGET_NAME ${aTARGET_NAME})
 	set(CONF_LOOKING_FOR_FILES "deftype")

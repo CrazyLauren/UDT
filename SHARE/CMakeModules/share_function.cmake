@@ -56,16 +56,39 @@ function(configure_logging aTARGET_NAME)
 		
 			target_compile_definitions(${aTARGET_NAME}
 										PUBLIC CPLUS_LOG)
-			
-			target_link_libraries(${aTARGET_NAME}
-								 		PRIVATE ${LOG4CPLUS_LIBRARIES})
 
-			foreach(_INCL ${LOG4CPLUS_INCLUDES})
-			target_include_directories (${aTARGET_NAME}
-										PUBLIC $<BUILD_INTERFACE:${_INCL}>
-										)
-			endforeach()
-			set(USE_CPLUS 1 CACHE INTERNAL "" FORCE)	
+			if(NOT MSVC_VERSION)
+
+				get_property(_IS_STATIC TARGET log4cplus
+						 PROPERTY STATIC_LIBRARY
+						 )
+				#if(${_IS_STATIC})
+					target_link_libraries(${aTARGET_NAME}
+										  PRIVATE log4cplus)
+
+					get_property(LOG4CPLUS_INCLUDES TARGET log4cplus
+								 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+					foreach(_INCL ${LOG4CPLUS_INCLUDES})
+						target_include_directories (${aTARGET_NAME}
+													PUBLIC ${_INCL}
+													)
+					endforeach()
+				#[[else()
+					target_link_libraries(${aTARGET_NAME}
+										  PUBLIC log4cplus)
+				endif()]]
+			else()
+				target_link_libraries(${aTARGET_NAME}
+									  PUBLIC log4cplus)
+				foreach(_INCL ${LOG4CPLUS_INCLUDES})
+					target_include_directories (${aTARGET_NAME}
+												PUBLIC $<BUILD_INTERFACE:${_INCL}>
+												)
+				endforeach()
+			endif()
+
+
+			set(USE_CPLUS 1 CACHE INTERNAL "" FORCE)
 		elseif (${_TARGET_UP}_LOGGING_TO_COUT)
 			target_compile_definitions(${aTARGET_NAME}
 									   PUBLIC OUT_LOG)

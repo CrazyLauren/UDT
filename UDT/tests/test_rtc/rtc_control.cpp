@@ -233,6 +233,7 @@ static bool doing_tests()
 
 	if (!test_integer_timers())
 	{
+        getchar();
 		return false;
 	}
 	else
@@ -242,6 +243,7 @@ static bool doing_tests()
 	}
 	if (!test_double_timers())
 	{
+	    getchar();
 		return false;
 	}
 	else
@@ -281,7 +283,8 @@ static bool test_integer_timers()
 	auto _less_eq_then = [& _precision](decltype(_precision) aVal,decltype(_precision) aMin)
 	{	return aVal <= (aMin + _precision);};
 
-	for (unsigned i=0;i<g_number_of_time;++i)
+	auto _last_time=0;
+	for (unsigned i=0;i<g_number_of_time && _is;++i)
 	{
 
 		{
@@ -317,23 +320,33 @@ static bool test_integer_timers()
 			}
 			else
 			{
+                _is=false;
 				LOCK_STREAM
-				std::cerr<< "No data" << std::endl;
-				return false;
+				std::cerr<< "No data:"<<g_rtc->MGetCurrentTime() << std::endl;
 			}
 		}
-		IRtc::millisecond_t const _current_time = g_rtc->MNextTime();
+		if(_is)
+        {
+            IRtc::millisecond_t const _current_time = g_rtc->MNextTime();
 
-		for (auto const _event : _next_timers)
-		{
-			if (!_less_eq_then(_event,_current_time))
-			{
-				LOCK_STREAM
-				std::cerr<< "time is not valid  "<<_current_time<<" event time:"<<_event << std::endl;
-				return false;
-			}
-		}
+            for (auto const _event : _next_timers)
+            {
+                if (!_less_eq_then(_event, _current_time))
+                {
+                    LOCK_STREAM
+                    std::cerr << "time is not valid  " << _current_time << " event time:" << _event << std::endl;
+                    _is=false;
+                }
+            }
+            if(_last_time<=i || i==(g_number_of_time-1))
+            {
+                _last_time=i+g_number_of_time/10;
+                LOCK_STREAM
+                std::cout<< "Time:"<<g_rtc->MGetCurrentTime()<<" i="<<i << std::endl;
+            }
+        }
 	}
+	if(_is)
 	{
 		{
 			LOCK_STREAM
@@ -348,23 +361,25 @@ static bool test_integer_timers()
 			LOCK_STREAM
 			std::cerr<< "Amount of joined "<< g_rtc->MGetAmountOfJoined()<< std::endl;
 
-			return false;
+            _is=false;
 		}
 	}
 	{
-		_is = g_rtc->MLeaveFromRTC();
+		bool const _is_leave = g_rtc->MLeaveFromRTC();
+        _is=_is&&_is_leave;
+
 		if (_is)
 		{
 			if(g_rtc->MGetCurrentTimeMs()!=0)
 			{
 				LOCK_STREAM
 				std::cerr<< "Invalid current time is "<< g_rtc->MGetCurrentTimeMs()<< std::endl;
-				return false;
+                _is=false;
 			}
 			g_next_times.clear();
 		}
-		return _is;
 	}
+	return _is;
 }
 static bool test_double_timers()
 {
@@ -388,12 +403,13 @@ static bool test_double_timers()
 	auto _less_eq_then = [&](decltype(_precision) aVal,decltype(_precision) aMin) -> bool
 	{	return aVal <= (aMin + _precision);};
 
-	for (unsigned i=0;i<g_number_of_time;++i)
+	auto _last_time=0;
+	for (unsigned i=0;i<g_number_of_time && _is;++i)
 	{
 
 		{
 			CRAII<CMutex> _block(g_mutex);
-			bool const _is = wait_for([& ]()
+			_is = wait_for([& ]()
 			{
 				return g_child_pid.size() != g_next_times.size();
 			}
@@ -425,22 +441,32 @@ static bool test_double_timers()
 			else
 			{
 				LOCK_STREAM
-				std::cerr<< "No data" << std::endl;
-				return false;
+                std::cerr<< "No data:"<<g_rtc->MGetCurrentTime() << std::endl;
+                _is=false;
 			}
 		}
-		IRtc::millisecond_t const _current_time = g_rtc->MNextTime();
+		if(_is)
+        {
+            IRtc::millisecond_t const _current_time = g_rtc->MNextTime();
 
-		for (auto const _event : _next_timers)
-		{
-			if (!_less_eq_then(_event,_current_time))
-			{
-				LOCK_STREAM
-				std::cerr<< "time is not valid  "<<_current_time<<" event time:"<<_event << std::endl;
-				return false;
-			}
-		}
+            for (auto const _event : _next_timers)
+            {
+                if (!_less_eq_then(_event, _current_time))
+                {
+                    LOCK_STREAM
+                    std::cerr << "time is not valid  " << _current_time << " event time:" << _event << std::endl;
+                    _is=false;
+                }
+            }
+            if (_last_time <= i || i == (g_number_of_time - 1))
+            {
+                _last_time = i + g_number_of_time / 10;
+                LOCK_STREAM
+                std::cout << "Time:" << g_rtc->MGetCurrentTime() << " i=" << i << std::endl;
+            }
+        }
 	}
+	if(_is)
 	{
 		{
 			LOCK_STREAM
@@ -455,19 +481,20 @@ static bool test_double_timers()
 			LOCK_STREAM
 			std::cerr<< "Amount of joined "<< g_rtc->MGetAmountOfJoined()<< std::endl;
 
-			return false;
+            _is=false;
 		}
 	}
 	{
-		bool _is = g_rtc->MLeaveFromRTC();
+		bool _is_leave = g_rtc->MLeaveFromRTC();
+        _is=_is&&_is_leave;
 		if (_is)
 		{
 			LOCK_STREAM
 			std::cout<< "Current time is "<< g_rtc->MGetCurrentTimeMs()<< std::endl;
 
 		}
-		return _is;
 	}
+    return _is;
 }
 
 int msg_next_time_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)

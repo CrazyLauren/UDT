@@ -62,8 +62,8 @@ elseif (WIN32)
     win32consoleappender.cxx
     win32debugappender.cxx)
 
-  #add_definitions (-DLOG4CPLUS_STATIC)
-  #set (log4cplus_postfix "${log4cplus_postfix}S")
+  add_definitions (-DLOG4CPLUS_STATIC)
+  set (log4cplus_postfix "${log4cplus_postfix}S")
 endif ()
 
 if (UNICODE)
@@ -125,7 +125,13 @@ endif ()
 ###
 # Installation (https://github.com/forexample/package-example)
 
-set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(config_install_dir "" FORCE)
+
+if(DEFINED CMAKE_PACKAGE_INSTALL_DIR)
+	set(config_install_dir ${CMAKE_PACKAGE_INSTALL_DIR})
+else()
+	set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+endif()
 
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
