@@ -9,8 +9,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-        env:
-          LD_LIBRARY_PATH:$LD_LIBRARY_PATH:../lib:build/binary/lib
       - name:
         run: cmake --version
       - name: configure
@@ -18,6 +16,6 @@ jobs:
       - name: build
         run: cd build && cmake --build . --target install
       - name: Kernel  run
-        run: cd build/binary/bin && ./Kernel -c ./test/test_kernel.json
+        run: cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib &&./Kernel -c ./test/test_kernel.json
       - name: Test rtc  run
-        run: cd build/binary/bin && ./test_rtc
+        run: cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib && ./test_rtc
