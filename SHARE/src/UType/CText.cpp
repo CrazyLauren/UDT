@@ -1557,8 +1557,13 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 		VLOG(2) << "Print empty text";
 	return aStream;
 }
+#if __cplusplus >= 201103L
 template<class T>
-std::string handle_num(va_list& argptr, CText::const_iterator& _start,
+std::string handle_num(auto& argptr, CText::const_iterator& _start,
+#else
+template<class T, class Tlist>
+std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
+#endif
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
@@ -1571,8 +1576,13 @@ std::string handle_num(va_list& argptr, CText::const_iterator& _start,
 	(void) _result;
 	return _num;
 }
+#if __cplusplus >= 201103L
 template<class T>
-std::string handle_float(va_list& argptr, CText::const_iterator& _start,
+std::string handle_float(auto& argptr, CText::const_iterator& _start,
+#else
+template<class T, class Tlist>
+std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
+#endif
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
