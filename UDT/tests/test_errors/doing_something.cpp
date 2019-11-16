@@ -174,27 +174,20 @@ extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	return 0;
 }
 
-extern void doing_tests()
+extern bool doing_tests()
 {
 	NSHARE::sleep(1);
 
+	bool _is=test_invalid_uuid();
 
-	if(!test_invalid_uuid())
-		exit(EXIT_FAILURE);
+    _is=_is&&test_invalid_msg_version();
 
-	if(!test_invalid_msg_version())
-		exit(EXIT_FAILURE);
-
-	if (!test_parsing_error())
-		exit(EXIT_FAILURE);
+    _is=_is&&test_parsing_error();
 
 
-	if (!test_no_parser_error())
-		exit(EXIT_FAILURE);
+    _is=_is&&test_no_parser_error();
 
-
-	std::cout<<"Press any key... "<<std::endl;
-	getchar();
+    return _is;
 }
 
 bool test_invalid_uuid()

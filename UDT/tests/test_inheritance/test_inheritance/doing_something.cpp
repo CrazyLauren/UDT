@@ -209,7 +209,7 @@ bool send_message()
 	return CCustomer::sMGetInstance().MSend(TData::header(), PROTOCOL_NAME, _buf)>0;
 }
 
-void test_number_1()
+bool test_number_1()
 {
 	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
 	send_message<sub_msg_t>();
@@ -220,13 +220,15 @@ void test_number_1()
 			)
 	{
 		std::cout << "Invalid  hierarchy test number 1 " << std::endl;
+		return false;
 	}
 	else
 		std::cout << "Hierarchy test number 1  finished successfully " << std::endl;
 
 	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
+	return true;
 }
-void test_number_2()
+bool test_number_2()
 {
 	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
 	send_message<sub_sub_msg_t>();
@@ -238,11 +240,13 @@ void test_number_2()
 				)
 	{
 		std::cout << "Invalid  hierarchy test number 2" << std::endl;
+		return false;
 	}
 	else
-		std::cout << "Hierarchy test finished successfully " << std::endl;
+		std::cout << "Hierarchy test 2 finished successfully " << std::endl;
+	return true;
 }
-void test_number_3()
+bool test_number_3()
 {
 	memset(_amount_of_msg, 0, sizeof(_amount_of_msg));
 	send_message<parent_msg_t>();
@@ -254,22 +258,23 @@ void test_number_3()
 				)
 	{
 		std::cout << "Invalid  hierarchy test number 3" << std::endl;
+		return false;
 	}
 	else
-		std::cout << "Hierarchy test finished successfully " << std::endl;
+		std::cout << "Hierarchy test 3 finished successfully " << std::endl;
+	return true;
 }
-extern void doing_tests()
+extern bool doing_tests()
 {
 	NSHARE::sleep(1);
 
-	test_number_1();
+	bool _is=test_number_1();
 	std::cout<<std::endl<<std::endl;
-	test_number_2();
+    _is=_is&&test_number_2();
 	std::cout<<std::endl<<std::endl;
-	test_number_3();
-	std::cout<<"Press any key... "<<std::endl;
-	getchar();
+    _is=_is&&test_number_3();
 
+	return _is;
 }
 
 }

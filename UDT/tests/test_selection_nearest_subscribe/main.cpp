@@ -108,10 +108,10 @@ void parse_cmd(int argc, char const* argv[])
 		exit(EXIT_FAILURE);
 	}
 }
-void start_subscriber(int argc, char const *argv[], char const * aName);
-void start_publisher(int argc, char const *argv[], char const * aName);
+bool start_subscriber(int argc, char const *argv[], char const * aName);
+bool start_publisher(int argc, char const *argv[], char const * aName);
 
-void create_ipc_mutex()
+bool create_ipc_mutex()
 {
 	using namespace NSHARE;
 
@@ -119,24 +119,25 @@ void create_ipc_mutex()
 	if (!_is)
 	{
 		std::cerr << "Cannot create shared memory:" << g_sem_name << std::endl;
-		exit(EXIT_FAILURE);
+		return false;
 	}
 	void* const _p = g_memory.MMallocTo(NSHARE::CIPCSem::eReguredBufSize, 0);
 
 	if (!_p)
 	{
 		std::cerr << "Cannot allocate memory" << std::endl;
-		exit(EXIT_FAILURE);
+        return false;
 	}
 
 	if (!g_mutex_stream.MInit((uint8_t*) _p, CIPCSem::eReguredBufSize, 1,
 			CIPCSem::E_HAS_TO_BE_NEW))
 	{
 		std::cerr << "Semaphore  " << g_sem_name << " is exist" << std::endl;
-		exit(EXIT_FAILURE);
+        return false;
 	}
+	return true;
 }
-void initialize_ipc_mutex()
+bool initialize_ipc_mutex()
 {
 	using namespace NSHARE;
 
@@ -144,22 +145,23 @@ void initialize_ipc_mutex()
 	if (!_is)
 	{
 		std::cerr << "Cannot open shared memory:" << g_sem_name << std::endl;
-		exit(EXIT_FAILURE);
+        return false;
 	}
 	void* const _p = g_memory.MGetIfMalloced(0);
 
 	if (!_p)
 	{
 		std::cerr << "Cannot open memory" << std::endl;
-		exit(EXIT_FAILURE);
+        return false;
 	}
 
 	if (!g_mutex_stream.MInit((uint8_t*) _p, CIPCSem::eReguredBufSize, 1,
 			CIPCSem::E_HAS_EXIST))
 	{
 		std::cerr << "Semaphore  " << g_sem_name << " is exist" << std::endl;
-		exit(EXIT_FAILURE);
+        return false;
 	}
+    return  true;
 }
 }
 int main(int argc, char const*argv[])
@@ -171,11 +173,12 @@ int main(int argc, char const*argv[])
 
 	parse_cmd(argc, argv);
 
+	bool _is=true;
 	if (!g_is_child)
 	{
-		create_ipc_mutex();
+        _is=_is&&create_ipc_mutex();
 
-		start_subscriber(argc, argv, g_name.c_str());
+        _is=_is&&start_subscriber(argc, argv, g_name.c_str());
 
 		g_mutex_stream.MFree();  //remove mutex
 
@@ -185,16 +188,16 @@ int main(int argc, char const*argv[])
 	}
 	else
 	{
-		initialize_ipc_mutex();
+        _is=_is&&initialize_ipc_mutex();
 		{
 			LOCK_STREAM
 			std::cout<<"\t started:"<<getpid()<<" ("<<g_name<<")"<<std::endl;
 		}
-		start_publisher(argc, argv, g_name.c_str());
+        _is=_is&&start_publisher(argc, argv, g_name.c_str());
 		g_mutex_stream.MFree();
 		g_memory.MFree();
 	}
 
-	return EXIT_SUCCESS;
+	return _is?EXIT_SUCCESS:EXIT_FAILURE;
 }
 

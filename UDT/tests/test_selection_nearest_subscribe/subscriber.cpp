@@ -42,7 +42,7 @@ static int event_remove_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA);
 static int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA);
 static int event_customers_update_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA);
 static bool check_for_valid_of_sender(const std::string& aSender);
-static void testing();
+static bool testing();
 static void start_publishers();
 static void stop_publishers();
 extern  int start_child(char  const* aName);
@@ -188,7 +188,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 }
 
-void direct_test()
+bool direct_test()
 {
 	CHECK_EQ(g_amount_of_publisher,0);
 	CHECK_EQ(CCustomer::sMGetInstance().MGetMyWishForMSG().size(),0);
@@ -201,13 +201,14 @@ void direct_test()
 	callback_t _handler(msg_test_handler, NULL);
 	CCustomer::sMGetInstance().MIWantReceivingMSG(g_receive_what, _handler);
 	start_publishers();
-	testing();
+	bool _is=testing();
 	stop_publishers();
 	CCustomer::sMGetInstance().MDoNotReceiveMSG(
 			g_receive_what);
+	return _is;
 }
 
-void reverse_test()
+bool reverse_test()
 {
 	CHECK_EQ(g_amount_of_publisher,0);
 	CHECK_EQ(CCustomer::sMGetInstance().MGetMyWishForMSG().size(),0);
@@ -226,9 +227,10 @@ void reverse_test()
 	CCustomer::sMGetInstance().MIWantReceivingMSG(
 			g_receive_what, _handler);
 	start_publishers();
-	testing();
+	bool _is=testing();
 	stop_publishers();
 	CCustomer::sMGetInstance().MDoNotReceiveMSG(g_receive_what);
+	return _is;
 }
 void wait_for_process_finished()
 {
@@ -256,11 +258,11 @@ void wait_for_process_finished()
 
 
 }
-extern void start_subscriber(int argc, char const*argv[],char const * aName)
+extern bool start_subscriber(int argc, char const*argv[],char const * aName)
 {
 	initialize(argc, aName, argv);
 
-	direct_test();
+	bool _is=direct_test();
 
 	{
 		LOCK_STREAM
@@ -271,15 +273,15 @@ extern void start_subscriber(int argc, char const*argv[],char const * aName)
 		LOCK_STREAM
 		std::cout<<"All child process finished"<<std::endl;
 	}
-	reverse_test();
+    _is=_is&&reverse_test();
 
 	CCustomer::sMGetInstance().MClose();
+	if(_is)
 	{
 		LOCK_STREAM
 		std::cout<<"All test finished for:"<<g_name<<std::endl;
-		std::cout<<"Press any key... "<<std::endl;
 	}
-	getchar();
+	return _is;
 }
 
 static int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
@@ -544,15 +546,14 @@ static bool check_for_valid_of_sender(const std::string& aSender)
 	}
 	return true;
 }
-static void testing()
+static bool testing()
 {
 	{
 		LOCK_STREAM
 		std::cout<< std::endl<< std::endl << "Test 1 ..." << std::endl;
 	}
-	if (!test_stage_1())
-		exit(EXIT_FAILURE);
-	else
+	bool _is=test_stage_1();
+	if (_is)
 	{
 		LOCK_STREAM
 		std::cout << "Test 1 finished successfully" << std::endl;
@@ -561,9 +562,9 @@ static void testing()
 		LOCK_STREAM
 		std::cout << std::endl<< std::endl<< "Test 2 ..." << std::endl;
 	}
-	if (!test_stage_2())
-		exit(EXIT_FAILURE);
-	else
+    _is=_is&&test_stage_2();
+
+	if (_is)
 	{
 		LOCK_STREAM
 		std::cout << "Test 2 finished successfully" << std::endl;
@@ -572,9 +573,8 @@ static void testing()
 		LOCK_STREAM
 		std::cout << std::endl<< std::endl<< "Test 3 ..." << std::endl;
 	}
-	if (!test_stage_3())
-		exit(EXIT_FAILURE);
-	else
+    _is=_is&&test_stage_3();
+    if (_is)
 	{
 		LOCK_STREAM
 		std::cout << "Test 3 finished successfully" << std::endl;
@@ -583,13 +583,13 @@ static void testing()
 		LOCK_STREAM
 		std::cout << std::endl<< std::endl<< "Test 4 ..." << std::endl;
 	}
-	if (!test_stage_4())
-		exit(EXIT_FAILURE);
-	else
+    _is=_is&&test_stage_4();
+    if (_is)
 	{
 		LOCK_STREAM
 		std::cout << "Test 4 finished successfully" << std::endl;
 	}
+    return  _is;
 }
 void start_publishers()
 {

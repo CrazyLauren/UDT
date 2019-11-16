@@ -116,7 +116,7 @@ extern int event_customers_update_handler(NUDT::CCustomer* WHO, void* WHAT, void
 /*\brief Easiest example of sending(publishing) messages
  *
  */
-extern void send_messages();
+extern bool send_messages();
 
 /*\brief Main function of test
  *

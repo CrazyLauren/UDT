@@ -20,7 +20,7 @@ namespace test_of_speed
 {
 using namespace NUDT;
 
-static double g_test_working_time = 60;///< Time of working test
+static double g_test_working_time = 15;///< Time of working test
 static NSHARE::CMutex g_stream_mutex;///< A mutex for lock console output
 static double g_time = 0.0;///< Current time
 static double g_start_time = 0.0;///< Start time of the test
@@ -154,7 +154,7 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT,
 
 	return 0;
 }
-extern void send_messages()
+extern bool send_messages()
 {
 	///Algorithm:
 	g_time = NSHARE::get_time();
@@ -178,21 +178,22 @@ extern void send_messages()
 		else
 			++g_amount_of_doesnt_allocated;
 	};
-
+    double const _speed=(g_recv_bytes / 1024.0 / 1024.0)
+        / (NSHARE::get_time() - g_start_time);
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
 
 		std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
 			<< " md; Average speed ="
-			<< ((g_recv_bytes / 1024.0 / 1024.0)
-				/ (NSHARE::get_time() - g_start_time)) << " mb/s."
+			<< _speed << " mb/s."
 			<< std::endl;
 		std::cout << "Messages=" << g_amount_of_messages << "; fail sent="
 			<< g_amount_of_doesnt_send << "; fail allocated="
 			<< g_amount_of_doesnt_allocated << std::endl;
 		std::cout << "Press any key... " << std::endl;
-		getchar();
 	}
+	NSHARE::sleep(1);
+	return _speed>1000/*mb/sec*/;
 }
 }
 

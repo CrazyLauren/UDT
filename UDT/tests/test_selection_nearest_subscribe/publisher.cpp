@@ -123,7 +123,7 @@ static void initialize(int argc, const char* aName, char const* argv[])
 	}
 }
 
-extern void start_publisher(int argc, char const *argv[], char const * aName)
+extern bool start_publisher(int argc, char const *argv[], char const * aName)
 {
 	initialize(argc, aName, argv);
 	{
@@ -136,6 +136,7 @@ extern void start_publisher(int argc, char const *argv[], char const * aName)
 		LOCK_STREAM
 		std::cout <<"by"<<std::endl;
 	}
+	return true;
 }
 static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {

@@ -19,13 +19,13 @@ int main(int argc, char const*argv[])
 		return _rval;
 
 	///2) sending something by send_messages()
-	send_messages();
+	bool _is=send_messages();
 
 	CCustomer::sMGetInstance().MClose();
 
 	///3) wait for finished by NUDT::CCustomer::MJoin()
 	CCustomer::sMGetInstance().MJoin();
-	return EXIT_SUCCESS;
+	return _is?EXIT_SUCCESS:EXIT_FAILURE;
 }
 int initialize_library(int argc, char const*argv[])
 {

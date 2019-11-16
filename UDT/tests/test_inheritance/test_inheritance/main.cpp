@@ -19,11 +19,11 @@ int main(int argc, char const*argv[])
 		return _rval;
 
 	///2) sending something by send_messages()
-	doing_tests();
+	bool _is=doing_tests();
 
 	CCustomer::sMGetInstance().MClose();
 		
-	return EXIT_SUCCESS;
+	return _is?EXIT_SUCCESS:EXIT_FAILURE;
 }
 int initialize_library(int argc, char const*argv[])
 {

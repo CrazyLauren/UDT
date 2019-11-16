@@ -134,7 +134,7 @@ extern int event_fail_sent_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_D
 /*\brief Doing test
  *
  */
-extern void doing_tests();
+extern bool doing_tests();
 
 /*\brief Main function of test
  *

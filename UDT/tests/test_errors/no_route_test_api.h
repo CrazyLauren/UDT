@@ -139,7 +139,7 @@ extern bool test_no_parser_error();
 /*\brief Doing tests
  *
  */
-extern void doing_tests();
+extern bool doing_tests();
 
 /*\brief Main function of test
  *
