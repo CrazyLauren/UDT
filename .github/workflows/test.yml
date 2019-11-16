@@ -108,6 +108,7 @@ jobs:
         run: |
           choco install wget
           choco install tartool
+          choco install mingw
       - uses: actions/checkout@v1
 
       - name: Install boost
