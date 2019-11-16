@@ -92,7 +92,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [MSVC, MinGW]
+        compiler: [MinGW]
         arch: [Win32, x64]
         exclude:
           - configuration: Debug
