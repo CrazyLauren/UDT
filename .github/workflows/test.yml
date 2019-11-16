@@ -20,7 +20,7 @@ jobs:
       - name: build
         run: cmake --build . --target install
       - name: test
-        run: cd ./binary/bin
+        run: cd ./builb/binary/bin
       - name: Kernel  run
         run: ./Kernel -c ./test/test_kernel.json
       - name: Test rtc  run
