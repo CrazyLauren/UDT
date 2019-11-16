@@ -35,10 +35,33 @@ jobs:
             version: "9"
     steps:
       - uses: actions/checkout@v1
-      - name:
-        run: cmake --version
+
+      - name: Install (Linux)
+          if: runner.os == 'Linux'
+          run: |
+            # LLVM 9 is not yet in Bionic's repositories.
+            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+            sudo apt-get update
+            sudo apt-get install -y ninja-build clang-tidy-9
+            sudo apt-get install libboost-all-dev
+            sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+            if [ "${{ matrix.compiler }}" = "gcc" ]; then
+              sudo apt-get install -y g++-${{ matrix.version }}
+              echo "::set-env name=CC::gcc-${{ matrix.version }}"
+              echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            else
+              sudo apt-get install -y clang-${{ matrix.version }}
+              echo "::set-env name=CC::clang-${{ matrix.version }}"
+              echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+            fi
+      - name: Print version
+        run: |
+          cmake --version
+          gcc --version
+          clang --version
+
       - name: configure
-        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost ..
       - name: build
         run: cd build && cmake --build . --target install
       - name: Testing RTC
