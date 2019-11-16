@@ -16,6 +16,4 @@ jobs:
       - name: build
         run: cd build && cmake --build . --target install
       - name: Kernel  run
-        run: cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib &&./Kernel -c ./test/test_kernel.json
-      - name: Test rtc  run
-        run: cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib && ./test_rtc
+        run: cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib &&./Kernel -c ./test/test_kernel.json & && && ./test_rtc
