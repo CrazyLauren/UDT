@@ -107,9 +107,12 @@ jobs:
       - name: Prepare Environment
         run: choco install ninja
       - uses: actions/checkout@v1
-        name: Checkout
-        with:
-          submodules: true
+
+      - name: Install boost
+        shell: bash
+        run: |
+          wget -nv http://downloads.sourceforge.net/project/boost/boost/1.68.0/boost_1_68_0.tar.bz2
+          tar --bzip2 -xf boost_1_68_0.tar.bz2
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -120,9 +123,9 @@ jobs:
           mkdir build
           cd build
           if [ "$COMPILER" = "MinGW" ]; then
-              cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
+              cmake -DBOOST_ROOT=./boost_1_68_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
           else
-              cmake -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+              cmake -DBOOST_ROOT=./boost_1_68_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
           fi
       - name: Compile
         working-directory: ./build
