@@ -150,3 +150,8 @@ jobs:
         shell: bash
         run: |
           (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
