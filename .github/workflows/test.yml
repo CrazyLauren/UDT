@@ -37,8 +37,8 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: Install (Linux)
-          if: runner.os == 'Linux'
-          run: |
+        if: runner.os == 'Linux'
+        run: |
             # LLVM 9 is not yet in Bionic's repositories.
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
             sudo apt-get update
