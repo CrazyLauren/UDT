@@ -1,0 +1,25 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-ubuntu:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+        env:
+          LD_LIBRARY_PATH: ../lib
+      - name:
+        run: cmake --version
+      - name: configure
+        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+      - name: build
+        run: cmake --build . --target install
+      - name: test
+        run: cd ./binary/bin
+      - name: Kernel  run
+        run: ./Kernel -c ./test/test_kernel.json
+      - name: Test rtc  run
+        run: ./test_rtc
