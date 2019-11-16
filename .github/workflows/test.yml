@@ -15,15 +15,9 @@ jobs:
         run: cmake --version
       - name: configure
         run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
-      - name: pwd
-        run: pwd
-      - name: move to bin
-        run: cd ./build
       - name: build
-        run: cmake --build . --target install
-      - name: move to bin
-        run: cd ./binary/bin
+        run: cd build && cmake --build . --target install
       - name: Kernel  run
-        run: ./Kernel -c ./test/test_kernel.json
+        run: cd build/binary/bin && ./Kernel -c ./test/test_kernel.json
       - name: Test rtc  run
-        run: ./test_rtc
+        run: cd build/binary/bin && ./test_rtc
