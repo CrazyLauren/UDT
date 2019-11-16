@@ -126,7 +126,7 @@ jobs:
           mkdir build
           cd build
           if [ "$COMPILER" = "MinGW" ]; then
-              cmake -DBOOST_ROOT=./boost_1_68_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "MinGW Makefiles" ..
+              cmake -DBOOST_ROOT=./boost_1_68_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
           else
               cmake -DBOOST_ROOT=./boost_1_68_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
           fi
