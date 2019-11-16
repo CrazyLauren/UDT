@@ -87,3 +87,60 @@ jobs:
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
+
+  build_windows:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        compiler: [MSVC, MinGW]
+        arch: [Win32, x64]
+        exclude:
+          - configuration: Debug
+            compiler: MinGW
+            arch: x64
+          - configuration: Release
+            compiler: MinGW
+            arch: x64
+    name: Windows
+    runs-on: windows-2019
+    steps:
+      - name: Prepare Environment
+        run: choco install ninja
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
+          else
+              cmake -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+          fi
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake --build . --config "$CONFIGURATION"
+          else
+              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+          fi
+      - name: Run Tests
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
