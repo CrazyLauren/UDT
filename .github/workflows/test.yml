@@ -105,7 +105,10 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Prepare Environment
-        run: choco install ninja
+        run: |
+          choco install ninja
+          choco install wget
+          choco install tartool
       - uses: actions/checkout@v1
 
       - name: Install boost
