@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
         env:
-          LD_LIBRARY_PATH: ../lib
+          LD_LIBRARY_PATH:$LD_LIBRARY_PATH:../lib:build/binary/lib
       - name:
         run: cmake --version
       - name: configure

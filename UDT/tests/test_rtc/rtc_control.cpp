@@ -198,7 +198,7 @@ bool start_rtc_control(int argc, char const*argv[],char const * aName)
 		std::cout<<"All test finished for:"<<g_name<<std::endl;
 		std::cout<<"Press any key... "<<std::endl;
 	}
-	getchar();
+	//getchar();
 	return true;
 }
 
@@ -256,7 +256,7 @@ static bool doing_tests()
 		LOCK_STREAM
 		std::cout << "-------end of testing--------"<< std::endl;
 		std::cout << "Press any key ..."<< std::endl;
-		getchar();
+		//getchar();
 	}
 	return true;
 }
