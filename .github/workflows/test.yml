@@ -161,7 +161,8 @@ jobs:
         run: |
           timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &
           tasklist | grep Kernel | awk '{print $2}'
-          (timeout --signal=SIGABRT 10 ./test_rtc) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          timeout --signal=SIGABRT 10 ./test_rtc
+          windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
