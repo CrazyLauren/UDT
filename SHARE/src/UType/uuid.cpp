@@ -12,7 +12,6 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <boost/uuid/uuid_generators.hpp>
 #include <SHARE/random_value.h>
 
 namespace NSHARE
@@ -39,14 +38,15 @@ static uint64_t uuid_generate_time(CText const& aText = CText())
 		const unsigned _pos = rand() % 4 + 2;
 		out[_pos] = out[_pos] ^ (*_it & 0xFF);
 	}
-	boost::uuids::uuid _b_uuid = boost::uuids::random_generator()();
-	for (boost::uuids::uuid::const_iterator _it = _b_uuid.begin();
-			_it != _b_uuid.end(); ++_it)
-	{
-		const unsigned _pos=rand()%6;
-		out[_pos] = out[_pos] ^ (*_it& 0xFF);
-	}
-
+	if(is_RNG_available())
+    {
+	    ///< Don't use srand to avoid change default seek
+        //srand(get_random_value_by_RNG());
+        for (unsigned i = 0; i < 6; ++i)
+        {
+            out[i] = out[i] ^ (get_random_value_by_RNG() & 0xFF);
+        }
+    }
 	memcpy(&time, out, sizeof(time));
 	return time;
 }
