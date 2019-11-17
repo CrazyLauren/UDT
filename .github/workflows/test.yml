@@ -182,15 +182,6 @@ jobs:
         run: |
           (timeout --signal=SIGABRT 60 ./Kernel &) && (timeout --signal=SIGABRT 60 ./test_errors)
            taskkill //F //IM Kernel.exe
-      - name:  Testing selection
-        working-directory: ./build/binary/bin
-        env:
-          CONFIGURATION: ${{ matrix.configuration }}
-          COMPILER: ${{ matrix.compiler }}
-        shell: bash
-        run: |
-          (timeout --signal=SIGABRT 60 ./Kernel &) && (timeout --signal=SIGABRT 60 ./test_selection)
-           taskkill //F //IM Kernel.exe
       - name:  Testing speed
         working-directory: ./build/binary/bin
         env:
