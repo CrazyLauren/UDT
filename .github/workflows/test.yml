@@ -101,7 +101,7 @@ jobs:
         compiler: [MSVC,MinGW]
         arch: [Win32, x64]
         exclude:
-          - configuration: Debug
+          - configuration: [Debug,Release]
             compiler: MinGW
             arch: x64
           - configuration: Debug
@@ -114,7 +114,7 @@ jobs:
         run: |
           choco install wget
           choco install tartool
-          choco install mingw --version=7.3.0
+          choco install mingw --version=7.3.0 --allow-downgrade
           choco install windows-kill
           choco install grep
           choco install awk
