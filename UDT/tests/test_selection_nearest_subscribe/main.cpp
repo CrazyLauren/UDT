@@ -67,7 +67,7 @@ extern int start_child(char const* aName)
 	int const exit_val=posix_spawn((pid_t*)&_id, g_argv[0],NULL,NULL,(char *const*)_p,(char* const*)environ);
 	signal(SIGCHLD,SIG_IGN);
 #else
-	int const exit_val = spawnv(P_NOWAIT, g_argv[0], _p);
+	int const exit_val = spawnv(P_NOWAIT, g_argv[0], (char *const*)_p);
 	_id = exit_val;
 #endif
 	if (exit_val < 0)

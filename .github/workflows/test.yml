@@ -74,7 +74,7 @@ jobs:
       - name: Testing inheritance
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 20 ./Kernel &) && (timeout --signal=SIGABRT 20 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
       - name: Testing errors
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
@@ -82,7 +82,7 @@ jobs:
       - name: Testing selection
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 50 ./Kernel &) && (timeout --signal=SIGABRT 50 ./test_selection) && kill -SIGINT `pgrep Kernel`
       - name: Testing high load
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
