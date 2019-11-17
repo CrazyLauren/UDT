@@ -26,18 +26,8 @@ jobs:
         shell: cmd
         working-directory: msys64
         run: |
-            usr\bin\pacman.exe -S --noconfirm base-devel
-            usr\bin\pacman.exe -S --noconfirm mingw-w64-x86_64-gcc
-      - name: Prepare environment
-        shell: cmd
-        run: |
-          echo set MSYS_ROOT=msys64>> environment.bat
-          echo set PATH=%%MSYS_ROOT%%\usr\bin;%%PATH%%>> environment.bat
-          echo set PATH=%%MSYS_ROOT%%\mingw64\bin;%%PATH%%>> environment.bat
-          echo set MSYSTEM=MINGW64>> environment.bat
-          type environment.bat
-          call environment.bat
-          set
+          pacman --noconfirm -Syu
+          pacman --noconfirm -S mingw-w64-x86_64-gcc
       - name: Install boost
         shell: bash
         run: |
@@ -52,8 +42,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
-
+          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MSYS Makefiles" ..
       - name: Compile
         working-directory: ./build
         env:
