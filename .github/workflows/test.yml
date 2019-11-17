@@ -98,7 +98,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Release]
-        compiler: [MSVC,MinGW]
+        compiler: [MSVC]
         arch: [Win32, x64]
         exclude:
           - configuration: Release
