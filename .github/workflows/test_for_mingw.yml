@@ -12,8 +12,8 @@ jobs:
     name: Windows
     runs-on: windows-2019
     steps:
-      - name: Prepare Environment
-        run: |
+    - name: Prepare Environment
+      run: |
             $msyspath="msys64"
             choco install msys2 --params="/InstallDir:$msyspath /NoPath" -y
             echo "::add-path::$msyspath\usr\bin"
