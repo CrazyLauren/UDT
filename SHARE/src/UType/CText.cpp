@@ -1557,17 +1557,12 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 		VLOG(2) << "Print empty text";
 	return aStream;
 }
-#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
-template<class T>
-std::string handle_num(va_list argptr, CText::const_iterator& _start,
-#else
 template<class T, class Tlist>
 std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
-#endif
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
-	i = va_arg(argptr, T);
+	i = va_arg(static_cast<Tlist>(argptr), T);
 	std::string _num;
 	bool _result = NSHARE::num_to_str(i, _num, base); //FIXME format
 	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "
@@ -1576,13 +1571,8 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	(void) _result;
 	return _num;
 }
-/*#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
-template<class T>
-std::string handle_float(va_list argptr, CText::const_iterator& _start,
-#else*/
 template<class T, class Tlist>
 std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
-/*#endif*/
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
