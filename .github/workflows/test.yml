@@ -90,7 +90,7 @@ jobs:
 
       - name: Store artifact
         uses: actions/upload-artifact@master
-         with:
+        with:
           name: UDT-bunary-${{ matrix.name }}-${{ github.sha }}
           path: build/binary/
 
@@ -192,6 +192,6 @@ jobs:
 
       - name: Store artifact
         uses: actions/upload-artifact@master
-          with:
-            name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
-            path: build/binary/
+        with:
+          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build/binary/
