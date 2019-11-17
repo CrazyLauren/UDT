@@ -1557,7 +1557,7 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 		VLOG(2) << "Print empty text";
 	return aStream;
 }
-#if not defined va_list//msvc bug fix
+#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
 template<class T>
 std::string handle_num(va_list argptr, CText::const_iterator& _start,
 #else
@@ -1576,7 +1576,7 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	(void) _result;
 	return _num;
 }
-#if not defined va_list //msvc bug fix
+#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
 template<class T>
 std::string handle_float(va_list argptr, CText::const_iterator& _start,
 #else

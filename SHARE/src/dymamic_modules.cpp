@@ -16,13 +16,16 @@
 
 namespace NSHARE
 {
-
-#ifndef HAVE_DLFCN
-#undef __MINGW32__
-#undef __MINGW64__
+#if (defined(__MINGW32__)||defined(__MINGW64__))
+#	if !defined (HAVE_DLFCN)
+#		define MINGW_USE_DYN_LIB
+#	else
+#		define MINGW_USE_DLFCN
+#	endif
 #endif
 
-#if (defined(__WIN32__) || defined(_WIN32)) && !defined(__MINGW32__)
+
+#if (defined(__WIN32__) || defined(_WIN32)) && !defined(MINGW_USE_DLFCN)
 #   if defined(_MSC_VER)
 #       pragma warning(disable : 4552)  // warning: operator has no effect; expected operator with side-effect
 #	elif defined(__MINGW32__) && __GNUC__>=4 && __GNUC_MINOR__>=3
@@ -36,7 +39,7 @@ namespace NSHARE
 typedef HMODULE DYN_LIB_HANDLE;
 #endif
 
-#if defined(__linux__)  || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__QNX__)
+#if defined(__linux__)  || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(__CYGWIN__) || defined(MINGW_USE_DLFCN) || defined(__QNX__)
 #   include <dlfcn.h>
 #   define DYN_LIB_LOAD( a ) dlopen( (a).c_str(), RTLD_LAZY )
 #   define DYN_LIB_GETSYM( a, b ) dlsym( a, (b).c_str() )
@@ -192,7 +195,7 @@ CText NSHARE::CDynamicModule::sMGetLibraryNameInSystem(CText name)
 static NSHARE::CDynamicModule::string_t get_failure_str()
 {
 	NSHARE::CDynamicModule::string_t retMsg;
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__) || defined(__MINGW32__) ||defined(__QNX__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__) || defined(MINGW_USE_DLFCN) ||defined(__QNX__)
 	retMsg = dlerror();
 #elif defined(__WIN32__) || defined(_WIN32)
 	LPVOID msgBuffer;
