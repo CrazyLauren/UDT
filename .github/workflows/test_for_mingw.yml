@@ -24,10 +24,9 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install mingwX64 Packages
         shell: cmd
-        working-directory: msys64
         run: |
           pacman --noconfirm -Syu
-          pacman --noconfirm -S mingw-w64-x86_64-gcc
+          pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake
       - name: Install boost
         shell: bash
         run: |
