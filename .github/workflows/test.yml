@@ -115,6 +115,9 @@ jobs:
           choco install wget
           choco install tartool
           choco install mingw
+          choco install windows-kill
+          choco install grep
+          choco install awk
       - uses: actions/checkout@v1
 
       - name: Install boost
@@ -155,7 +158,7 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
@@ -163,7 +166,7 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing errors
         working-directory: ./build/binary/bin
         env:
@@ -172,7 +175,7 @@ jobs:
         shell: bash
         if: runner.configuration == 'Release'
         run: |
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing selection
         working-directory: ./build/binary/bin
         env:
@@ -180,7 +183,7 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing speed
         working-directory: ./build/binary/bin
         env:
@@ -188,7 +191,7 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
 
       - name: Store artifact
         uses: actions/upload-artifact@master
