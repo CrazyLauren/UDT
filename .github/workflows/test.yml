@@ -88,6 +88,12 @@ jobs:
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
 
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+         with:
+          name: UDT-bunary-${{ matrix.name }}-${{ github.sha }}
+          path: build/binary/
+
   build_windows:
     strategy:
       matrix:
@@ -138,11 +144,11 @@ jobs:
         shell: bash
         run: |
           if [ "$COMPILER" = "MinGW" ]; then
-              cmake --build . --config "$CONFIGURATION"
+              cmake --build . --config "$CONFIGURATION" --target install
           else
-              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+              cmake --build . --config "$CONFIGURATION" --target install -- /verbosity:minimal
           fi
-      - name: Run Tests
+      - name:  Testing RTC
         working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -150,8 +156,42 @@ jobs:
         shell: bash
         run: |
           (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
-          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+      - name:  Testing inheritance
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
           (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+      - name:  Testing errors
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        if: runner.configuration == 'Release'
+        run: |
           (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && kill -SIGINT `pgrep Kernel`
+      - name:  Testing selection
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
           (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && kill -SIGINT `pgrep Kernel`
+      - name:  Testing speed
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
           (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
+
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+          with:
+            name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+            path: build/binary/
