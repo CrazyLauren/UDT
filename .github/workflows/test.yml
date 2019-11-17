@@ -171,7 +171,6 @@ jobs:
         shell: bash
         run: |
           (timeout --signal=SIGABRT 50 ./Kernel &) && (timeout --signal=SIGABRT 50 ./test_inheritance)
-#          && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
           taskkill //IM Kernel.exe
       - name:  Testing errors
         working-directory: ./build/binary/bin
