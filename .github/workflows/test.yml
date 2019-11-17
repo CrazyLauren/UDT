@@ -101,7 +101,10 @@ jobs:
         compiler: [MSVC,MinGW]
         arch: [Win32, x64]
         exclude:
-          - configuration: [Debug,Release]
+          - configuration: Release
+            compiler: MinGW
+            arch: x64
+          - configuration: Debug
             compiler: MinGW
             arch: x64
           - configuration: Debug
