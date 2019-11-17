@@ -14,7 +14,6 @@ jobs:
     steps:
       - name: Prepare Environment
         run: |
-          mkdir msys64
           choco install wget
           choco install tartool
           choco install msys2 --params "/InstallDir:msys64"
