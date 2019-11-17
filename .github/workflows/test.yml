@@ -70,23 +70,23 @@ jobs:
       - name: Testing RTC
         run: |
          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-         (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+         (timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 100 ./test_rtc) && kill -SIGINT `pgrep Kernel`
       - name: Testing inheritance
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 20 ./Kernel &) && (timeout --signal=SIGABRT 20 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
       - name: Testing errors
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_errors) && kill -SIGINT `pgrep Kernel`
       - name: Testing selection
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 50 ./Kernel &) && (timeout --signal=SIGABRT 50 ./test_selection) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_selection) && kill -SIGINT `pgrep Kernel`
       - name: Testing high load
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
-          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
 
       - name: Store artifact
         uses: actions/upload-artifact@master
@@ -98,7 +98,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Release]
-        compiler: [MSVC]
+        compiler: [MSVC,MinGW]
         arch: [Win32, x64]
         exclude:
           - configuration: Debug
@@ -158,9 +158,8 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &
-          tasklist | grep Kernel | awk '{print $2}'
-          timeout --signal=SIGABRT 10 ./test_rtc
+          timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &
+          timeout --signal=SIGABRT 100 ./test_rtc
           taskkill //F //IM Kernel.exe
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
@@ -169,7 +168,8 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 50 ./Kernel &) && (timeout --signal=SIGABRT 50 ./test_inheritance)
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_inheritance
           taskkill //F //IM Kernel.exe
       - name:  Testing errors
         working-directory: ./build/binary/bin
@@ -179,8 +179,9 @@ jobs:
         shell: bash
         if: runner.configuration == 'Release'
         run: |
-          (timeout --signal=SIGABRT 60 ./Kernel &) && (timeout --signal=SIGABRT 60 ./test_errors)
-           taskkill //F //IM Kernel.exe
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_errors
+          taskkill //F //IM Kernel.exe
       - name:  Testing speed
         working-directory: ./build/binary/bin
         env:
@@ -188,9 +189,9 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed)
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_of_speed
           taskkill //F //IM Kernel.exe
-
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
