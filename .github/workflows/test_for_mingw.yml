@@ -12,16 +12,15 @@ jobs:
     name: Windows
     runs-on: windows-2019
     steps:
-    - name: Prepare Environment
-      run: |
-            $msyspath="msys64"
-            choco install msys2 --params="/InstallDir:$msyspath /NoPath" -y
-            echo "::add-path::$msyspath\usr\bin"
-            echo "::add-path::$msyspath"
-            echo "::add-path::$msyspath\mingw64\bin"
-            echo "::add-path::$msyspath\mingw64\lib"
-            echo "::add-path::$msyspath\mingw64\include"
-    - name: Install gcc and gmp
+      - name: Prepare Environment
+        run: |
+          $msyspath="msys64"
+          choco install msys2 --params="/InstallDir:$msyspath /NoPath" -y
+          echo "::add-path::$msyspath\usr\bin"
+          echo "::add-path::$msyspath"
+          echo "::add-path::$msyspath\mingw64\bin"
+          echo "::add-path::$msyspath\mingw64\lib"
+          echo "::add-path::$msyspath\mingw64\include"
       - uses: actions/checkout@v1
       - name: Install mingwX64 Packages
         shell: cmd
