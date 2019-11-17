@@ -98,7 +98,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Release]
-        compiler: [MSVC,MinGW]
+        #compiler: [MSVC,MinGW]
+        compiler: [MSVC]
         arch: [Win32, x64]
         exclude:
           - configuration: Debug
@@ -158,7 +159,9 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 10 ./test_rtc) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &
+          tasklist | grep Kernel | awk '{print $2}'
+          (timeout --signal=SIGABRT 10 ./test_rtc) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
