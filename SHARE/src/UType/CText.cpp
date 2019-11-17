@@ -1576,17 +1576,17 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	(void) _result;
 	return _num;
 }
-#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
+/*#if defined(_MSC_VER) && _MSC_VER>1900//msvc bug fix
 template<class T>
 std::string handle_float(va_list argptr, CText::const_iterator& _start,
-#else
+#else*/
 template<class T, class Tlist>
 std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
-#endif
+/*#endif*/
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
-	i = va_arg(argptr, T);
+	i = va_arg(static_cast<Tlist>(argptr), T);
 	std::string _num;
 	bool _result = false;
 	if (precision != -1)
