@@ -327,7 +327,7 @@ void initialize_core(int argc, char* argv[])
 	new CParserFactoryState();
 }
 NSHARE::CCondvar g_condvar_wait;
-NSHARE::CMutex g_condvar_mutex;
+NSHARE::CMutex g_condvar_mutex(NSHARE::CMutex::MUTEX_NORMAL);
 bool g_double_ctrl_c=false;
 
 #ifdef _WIN32
@@ -353,6 +353,9 @@ void consoleHandler(int s)
         std::cout << "Run stopping kernel..." << std::endl;
         g_condvar_wait.MSignal();
     }
+#ifdef _WIN32
+    return TRUE;
+#endif
 }
 
 void perpetual_loop()

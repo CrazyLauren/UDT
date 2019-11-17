@@ -28,10 +28,11 @@ enum class eMsgType:uint8_t
 	E_MSG_LAST_NUMBER
 };
 
-template<eMsgType> constexpr const char g_enum_name[8]="Unknown";//!< bag fix for msvc compiler
-template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>[]="sub_sub_msg";
-template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>[]="sub_msg";
-template<> constexpr const char g_enum_name<eMsgType::E_MSG_PARENT>[]="parent";
+///< Size specified for fix bag of msvc compiler
+template<eMsgType> constexpr const char g_enum_name[8]="Unknown";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_SUB_MESSAGE>[12]="sub_sub_msg";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_SUB_MESSAGE>[8]="sub_msg";
+template<> constexpr const char g_enum_name<eMsgType::E_MSG_PARENT>[7]="parent";
 
 
 
