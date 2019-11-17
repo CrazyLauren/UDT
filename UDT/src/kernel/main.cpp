@@ -333,7 +333,10 @@ bool g_double_ctrl_c=false;
 #ifdef _WIN32
 BOOL WINAPI consoleHandler(DWORD signal)
 {
-    if (signal == CTRL_C_EVENT)
+    if (signal == CTRL_C_EVENT//
+        ||signal == CTRL_CLOSE_EVENT//
+        ||signal == CTRL_BREAK_EVENT
+    )
     {
 #else
 #   include <signal.h>

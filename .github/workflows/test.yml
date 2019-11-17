@@ -162,7 +162,7 @@ jobs:
           timeout --signal=SIGABRT 10 ./Kernel -c ./test/test_kernel.json &
           tasklist | grep Kernel | awk '{print $2}'
           timeout --signal=SIGABRT 10 ./test_rtc
-          windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          taskkill //IM Kernel.exe
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
@@ -170,7 +170,9 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 10 ./Kernel &) && (timeout --signal=SIGABRT 10 ./test_inheritance) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          (timeout --signal=SIGABRT 50 ./Kernel &) && (timeout --signal=SIGABRT 50 ./test_inheritance)
+#          && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          taskkill //IM Kernel.exe
       - name:  Testing errors
         working-directory: ./build/binary/bin
         env:
@@ -179,7 +181,8 @@ jobs:
         shell: bash
         if: runner.configuration == 'Release'
         run: |
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_errors) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          (timeout --signal=SIGABRT 60 ./Kernel &) && (timeout --signal=SIGABRT 60 ./test_errors)
+           taskkill //IM Kernel.exe
       - name:  Testing selection
         working-directory: ./build/binary/bin
         env:
@@ -187,7 +190,8 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 30 ./Kernel &) && (timeout --signal=SIGABRT 30 ./test_selection) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          (timeout --signal=SIGABRT 60 ./Kernel &) && (timeout --signal=SIGABRT 60 ./test_selection)
+           taskkill //IM Kernel.exe
       - name:  Testing speed
         working-directory: ./build/binary/bin
         env:
@@ -195,7 +199,8 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed) && windows-kill -SIGINT `tasklist | grep Kernel | awk '{print $2}'`
+          (timeout --signal=SIGABRT 40 ./Kernel &) && (timeout --signal=SIGABRT 40 ./test_of_speed)
+          taskkill //IM Kernel.exe
 
       - name: Store artifact
         uses: actions/upload-artifact@master
