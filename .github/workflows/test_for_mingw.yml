@@ -14,15 +14,21 @@ jobs:
     steps:
       - name: Prepare Environment
         run: |
+          mkdir msys
           choco install wget
           choco install tartool
-          choco install mingw --version=7.3.0 --allow-downgrade
+          choco install msys2 --params "/InstallDir:msys"
       - uses: actions/checkout@v1
       - name: Install boost
         shell: bash
         run: |
           wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
           tar --bzip2 -xf boost_1_56_0.tar.bz2
+      - name: Install mingwX64 Packages
+        shell: cmd
+        run: |
+            msys\usr\bin\pacman.exe -S --noconfirm base-devel
+            msys\usr\bin\pacman.exe -S --noconfirm gcc
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
