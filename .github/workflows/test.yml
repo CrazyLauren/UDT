@@ -180,7 +180,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: runner.configuration == 'Release'
+        if: matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_errors
