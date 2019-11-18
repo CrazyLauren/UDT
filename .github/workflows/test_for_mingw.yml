@@ -37,7 +37,8 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin/
+          dir %GITHUB_WORKSPACE%/%MSYS_ROOT%/
+          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin/
           where cmake
           mkdir build
           cd build
