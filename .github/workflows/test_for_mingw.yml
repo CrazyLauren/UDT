@@ -12,7 +12,7 @@ jobs:
     name: Windows
     runs-on: windows-2019
     env:
-      MSYS_ROOT: ${{ matrix.compiler}}.${{ matrix.arch}}
+      MSYS_ROOT: ${{ matrix.compiler}}-${{ matrix.arch}}
     steps:
       - name: Prepare Environment
         shell: cmd
@@ -21,9 +21,14 @@ jobs:
       - name: Install mingwX86 Packages
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin;%PATH%
+          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%;%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin;%PATH%
           pacman --noconfirm -Syu
           pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: MINGW-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: ${{ matrix.compiler}}-${{ matrix.arch}}
       - uses: actions/checkout@v1
 #      - name: Install boost
 #        shell: bash
@@ -37,7 +42,7 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin
+          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin/
           mkdir build
           cd build
           set
