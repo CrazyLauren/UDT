@@ -115,12 +115,11 @@ jobs:
     steps:
       - name: Prepare Environment
         run: |
-          choco install wget
-          choco install tartool
-          choco install mingw --version=7.3.0 --allow-downgrade
-          choco install windows-kill
-          choco install grep
-          choco install awk
+          choco install wget --no-progress
+          choco install tartool --no-progress
+          choco install windows-kill --no-progress
+          choco install grep --no-progress
+          choco install awk --no-progress
       - uses: actions/checkout@v1
 
       - name: Install boost
