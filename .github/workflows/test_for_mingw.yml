@@ -35,14 +35,14 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
           ARCHITECTURE: ${{ matrix.arch }}
-        shell: cmd
+        shell: bash
         run: |
-          dir %GITHUB_WORKSPACE%\%MSYS_ROOT%\ /S
-          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin/;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin/
-          where cmake
+          ls $GITHUB_WORKSPACE\$MSYS_ROOT
+          export PATH=$GITHUB_WORKSPACE\$MSYS_ROOT\:$GITHUB_WORKSPACE\$MSYS_ROOT\usr\bin\:$GITHUB_WORKSPACE\$MSYS_ROOT\mingw64\bin\
+          which cmake
           mkdir build
           cd build
-          set
+          env
           cmake --version
           cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
