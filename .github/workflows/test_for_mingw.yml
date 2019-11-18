@@ -45,7 +45,8 @@ jobs:
           call environment.bat
           mkdir build
           cd build
-          type cmake
+          where cmake
+          set
           cmake --version
           cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
