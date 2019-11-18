@@ -28,7 +28,7 @@ jobs:
         run: |
           call environment.bat
           pacman --noconfirm -Syu
-          pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
+          pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
       - uses: actions/checkout@v1
 #      - name: Install boost
 #        shell: bash
@@ -40,11 +40,14 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
           ARCHITECTURE: ${{ matrix.arch }}
-        shell: bash
+        shell: cmd
         run: |
+          call environment.bat
           mkdir build
           cd build
-          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MSYS Makefiles" ..
+          type cmake
+          cmake --version
+          cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
         working-directory: ./build
         env:
