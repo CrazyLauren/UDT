@@ -83,7 +83,7 @@ CRTCForModelingModule::rtc_id_t CRTCForModelingModule::MGetNameByRTC(
 	for(unsigned i=0;i<_array.size();++i)
 		if(_array[i]->MGetRTCInfo().FName==aName)
 			return i;
-	return -1;
+	return std::numeric_limits<rtc_id_t>::max();
 }
 
 CRTCForModelingModule::array_of_RTC_t CRTCForModelingModule::MGetAllRTC() const

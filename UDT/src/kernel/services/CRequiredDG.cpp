@@ -2577,7 +2577,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 		if(_protocol.empty())
 		{
 			LOG(DFATAL)<<"Empty protocol detected";
-			return -1;
+			return 1;
 		}
 		msg_inheritance_tree_t::const_iterator _jt = _it->second.begin(),
 				_jt_end(_it->second.end());
@@ -2603,7 +2603,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 					if(_protocol.empty())
 					{
 						LOG(DFATAL)<<"Empty protocol detected";
-						return -1;
+						return 1;
 					}
 
 					bool const _is_insert = _unique.insert(*_kt).second;

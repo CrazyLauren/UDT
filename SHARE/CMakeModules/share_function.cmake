@@ -23,7 +23,7 @@ function(configure_logging aTARGET_NAME)
 	option(${_TARGET_UP}_LOGGING_TO_LOG4CPLUS "Using log4cplus for loging" ON)
 	option(${_TARGET_UP}_LOGGING_TO_COUT "Logging to cout" OFF)
 	option(${_TARGET_UP}_LOGGING_HAS_TO_BE_REMOVED "Removed logging" OFF)
-	option(${_TARGET_UP}_LOGGING_IS_DISABLED_IN "Disable logging in ${aTARGET_NAME} library" ON)
+	option(${_TARGET_UP}_LOGGING_IS_DISABLED_IN "Disable logging in ${aTARGET_NAME} library" OFF)
 	
 	set(${_TARGET_UP}_LOGGING_COMMAND_FLAG "v" CACHE STRING  "")
 	set(${_TARGET_UP}_LOGGING_COMMAND_LONG_NAME "verbose" CACHE STRING  "")

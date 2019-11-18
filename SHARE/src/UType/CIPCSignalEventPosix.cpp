@@ -224,7 +224,9 @@ bool CIPCSignalEvent::MTimedwait(IMutex *aMutex)
 }
 bool CIPCSignalEvent::MTimedwait(IMutex *aIMutex, double const aTime)
 {
+#ifndef __QNX__
 	DCHECK(dynamic_cast<CIPCMutex*>(aIMutex)!=NULL);
+#endif
 	CIPCMutex *aMutex=static_cast<CIPCMutex *>(aIMutex);
 
 	VLOG_IF(2,aTime>=0.0)

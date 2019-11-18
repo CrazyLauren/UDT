@@ -48,7 +48,9 @@ bool CCondvar::MTimedwait(IMutex *aMutex)
 }
 bool CCondvar::MTimedwait(IMutex *aIMutex, double const aTime)
 {
+#ifndef __QNX__
 	DCHECK(dynamic_cast<CMutex*>(aIMutex)!=NULL);
+#endif
 	CMutex *aMutex=static_cast<CMutex *>(aIMutex);
 
 	VLOG_IF(2,aTime>=0.0)
