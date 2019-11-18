@@ -15,13 +15,12 @@ jobs:
       - name: Prepare Environment
         shell: cmd
         run: |
-          set MSYS_ROOT=%CD%\msys64;
+          set MSYS_ROOT=%CD%\msys64
           choco install msys2 --params="/InstallDir:%MSYS_ROOT% /NoPath" -y --no-progress
           echo set MSYS_ROOT=%MSYS_ROOT%>> environment.bat
-          echo set PATH=%MSYS_ROOT%\usr\bin;%%PATH%%>> environment.bat
-          echo set PATH=%MSYS_ROOT%\mingw64\bin;%%PATH%%>> environment.bat
+          echo set PATH=%%MSYS_ROOT%%\usr\bin;%%PATH%%>> environment.bat
+          echo set PATH=%%MSYS_ROOT%%\mingw64\bin;%%PATH%%>> environment.bat
           echo set MSYSTEM=MINGW64>> environment.bat
-          type environment.bat
           call environment.bat
           set
       - name: Install mingwX86 Packages
