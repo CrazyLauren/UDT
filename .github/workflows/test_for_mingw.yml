@@ -13,25 +13,29 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Prepare Environment
-        run: |
-          $msyspath="msys64"
-          choco install msys2 --params="/InstallDir:$msyspath /NoPath" -y
-          echo "::add-path::$msyspath\usr\bin"
-          echo "::add-path::$msyspath"
-          echo "::add-path::$msyspath\mingw64\bin"
-          echo "::add-path::$msyspath\mingw64\lib"
-          echo "::add-path::$msyspath\mingw64\include"
-      - uses: actions/checkout@v1
-      - name: Install mingwX64 Packages
         shell: cmd
         run: |
-          pacman --noconfirm -Syu
-          pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake
-      - name: Install boost
-        shell: bash
+          set MSYS_ROOT=%CD%\msys64;
+          choco install msys2 --params="/InstallDir:%MSYS_ROOT% /NoPath" -y
+          echo set MSYS_ROOT=%%MSYS_ROOT%%>> environment.bat
+          echo set PATH=%%MSYS_ROOT%%\usr\bin;%%PATH%%>> environment.bat
+          echo set PATH=%%MSYS_ROOT%%\mingw64\bin;%%PATH%%>> environment.bat
+          echo set MSYSTEM=MINGW64>> environment.bat
+          type environment.bat
+          call environment.bat
+          set
+      - name: Install mingwX86 Packages
+        shell: cmd
         run: |
-          wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
-          tar --bzip2 -xf boost_1_56_0.tar.bz2
+          call environment.bat
+          pacman --noconfirm -Syu
+          pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
+      - uses: actions/checkout@v1
+#      - name: Install boost
+#        shell: bash
+#        run: |
+#          wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
+#          tar --bzip2 -xf boost_1_56_0.tar.bz2
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
