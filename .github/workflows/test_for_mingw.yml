@@ -24,11 +24,6 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%;%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin;%PATH%
           pacman --noconfirm -Syu
           pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
-      - name: Store artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: MINGW-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
-          path: ${{ matrix.compiler}}-${{ matrix.arch}}
       - uses: actions/checkout@v1
 #      - name: Install boost
 #        shell: bash
