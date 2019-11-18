@@ -15,18 +15,12 @@ jobs:
       - name: Prepare Environment
         shell: cmd
         run: |
-          set MSYS_ROOT=%CD%\msys64
+          setx MSYS_ROOT=%CD%\msys64
+          setx PATH=%MSYS_ROOT%\usr\bin;%MSYS_ROOT%\mingw64\bin;%PATH%\
           choco install msys2 --params="/InstallDir:%MSYS_ROOT% /NoPath" -y --no-progress
-          echo set MSYS_ROOT=%MSYS_ROOT%>> environment.bat
-          echo set PATH=%%MSYS_ROOT%%\usr\bin;%%PATH%%>> environment.bat
-          echo set PATH=%%MSYS_ROOT%%\mingw64\bin;%%PATH%%>> environment.bat
-          echo set MSYSTEM=MINGW64>> environment.bat
-          call environment.bat
-          set
       - name: Install mingwX86 Packages
         shell: cmd
         run: |
-          call environment.bat
           pacman --noconfirm -Syu
           pacman --noconfirm -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
       - uses: actions/checkout@v1
@@ -42,7 +36,7 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: cmd
         run: |
-          call environment.bat
+          echo %cd%
           mkdir build
           cd build
           where cmake
