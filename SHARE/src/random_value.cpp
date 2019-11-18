@@ -18,10 +18,10 @@
 #include <SHARE/random_value.h>
 #include <SHARE/get_cpuid.h>
 
-#if defined(_MSC_VER) && _MSC_VER >= 1700
+#if defined(_MSC_VER) && defined(HAVE_INTRIN_H)
 /* Microsoft C/C++-compatible compiler */
      #include <intrin.h>
-#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__)) && defined(HAVE_X86INTRIN_H)
 /* GCC-compatible compiler, targeting x86/x86-64 */
 #   include <x86intrin.h>
 #endif
@@ -69,7 +69,7 @@ static uint32_t get_rdrand_seed(void)
 
 #ifdef _MSC_VER
 
-#	if _MSC_VER >= 1700
+#if	defined(HAVE_INTRIN_H)
 #		define HAVE_RDRAND 1
 
 // get_rdrand_seed - Visual Studio 2012 and above

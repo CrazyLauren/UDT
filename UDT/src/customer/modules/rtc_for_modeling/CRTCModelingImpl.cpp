@@ -117,7 +117,7 @@ CRTCModelingImpl::millisecond_t CRTCModelingImpl::MSleepUntil(millisecond_t aTim
 /*	aTime*=1000*1000/time_info_t::E_TIME_PRECISION;
 
 	return FDispatcher.MNextTime(static_cast<CRTCForModeling::rtc_time_t>(aTime));*/
-	return -1;
+	return std::numeric_limits<millisecond_t>::max();
 }
 /** Gets next time to waking up
  *
