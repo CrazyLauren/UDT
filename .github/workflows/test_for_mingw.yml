@@ -18,41 +18,39 @@ jobs:
       - name: Prepare Environment
         shell: cmd
         run: |
-              git clone https://github.com/msys2/msys2-ci-base.git %CD:~0,2%\msys64
-              %CD:~0,2%\msys64\usr\bin\rm -rf %CD:~0,2%\msys64\.git
+              git clone https://github.com/msys2/msys2-ci-base.git %GITHUB_WORKSPACE%\msys64
+              %GITHUB_WORKSPACE%\msys64\usr\bin\rm -rf %GITHUB_WORKSPACE%\msys64\.git
       - name: Update
         shell: cmd
         run: |
-          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Syyuu
+          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Syyuu
       - name: Install mingwX86 Packages
         env:
           MINGW_ARCH: ${{ matrix.arch }}
         shell: cmd
         run: |
-          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
-          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
+          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
         run: |
-          set PATH=%CD:~0,2%\msys64\mingw64\bin;%CD:~0,2%\msys64\mingw32\bin;%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          where cmake
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           mkdir build
           cd build
-          cmake --version
-          cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+          cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
         working-directory: ./build
         env:
           CONFIGURATION: ${{ matrix.configuration }}
-          COMPILER: ${{ matrix.compiler }}
-        shell: bash
+        shell: cmd
         run: |
-          cmake --build . --config "$CONFIGURATION" --target install
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          cmake --build . --config "%CONFIGURATION%" --target install
       - name:  Testing RTC
         working-directory: ./build/binary/bin
         env:
