@@ -8,7 +8,7 @@ jobs:
       matrix:
         configuration: [Release]
         compiler: [MinGW]
-        arch: [Win32]
+        arch: [i686,x86_64]
     name: Windows
     runs-on: windows-2019
     env:
@@ -16,35 +16,33 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Prepare Environment
-        shell: bash
+        shell: cmd
         run: |
-          choco install msys2 --params="/InstallDir:$GITHUB_WORKSPACE/$MSYS_ROOT /NoPath" -y --no-progress
+              git clone https://github.com/msys2/msys2-ci-base.git %CD:~0,2%\msys64
+              %CD:~0,2%\msys64\usr\bin\rm -rf %CD:~0,2%\msys64\.git
+      - name: Update
+        shell: cmd
+        run: |
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Syyuu
       - name: Install mingwX86 Packages
-        shell: bash
+        env:
+          MINGW_ARCH:${{ matrix.arch }}
+        shell: cmd
         run: |
-          export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin
-          pacman --noconfirm -Syu
-          pacman --noconfirm  --verbose -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
-
-#      - name: Install boost
-#        shell: bash
-#        run: |
-#          wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
-#          tar --bzip2 -xf boost_1_56_0.tar.bz2
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
-          ARCHITECTURE: ${{ matrix.arch }}
-        shell: bash
+        shell: cmd
         run: |
-          pwd
-          ls $GITHUB_WORKSPACE
-          export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT/:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin/:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin/
-          which cmake
+          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          where cmake
           mkdir build
           cd build
-          env
           cmake --version
           cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
