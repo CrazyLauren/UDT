@@ -22,7 +22,7 @@ jobs:
       - name: Install mingwX86 Packages
         shell: bash
         run: |
-          export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin:$PATH
+          export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin
           pacman --noconfirm -Syu
           pacman --noconfirm  --verbose -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
 
