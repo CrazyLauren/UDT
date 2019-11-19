@@ -39,7 +39,7 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
         run: |
-          set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          set PATH=%CD:~0,2%\msys64\mingw64\bin;%CD:~0,2%\msys64\mingw32\bin;%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           where cmake
           mkdir build
           cd build
