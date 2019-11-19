@@ -42,7 +42,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
       - name: Compile
         working-directory: ./build
         env:

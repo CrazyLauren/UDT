@@ -4,15 +4,20 @@ include(FindPackageHandleStandardArgs)
 #Look for packages
 ################################################################################
 
-if(NOT DEFINED BOOST_ROOT)
-	SET(BOOST_ROOT ${${PROJECT_NAME}_DEPENDENCIES_PATH} CACHE PATH "boost path")
-endif(NOT DEFINED BOOST_ROOT)
-	
-find_package(Boost REQUIRED)
+find_package(Boost)
 
 if(NOT Boost_FOUND)
-	message(FATAL_ERROR "Failed to find boost.")	
-	return()
+
+	if(NOT DEFINED BOOST_ROOT)
+		set(BOOST_ROOT ${${PROJECT_NAME}_DEPENDENCIES_PATH} CACHE PATH "boost path")
+	endif(NOT DEFINED BOOST_ROOT)
+
+	find_package(Boost REQUIRED)
+
+	if(NOT Boost_FOUND)
+		message(FATAL_ERROR "Failed to find boost.")
+		return()
+	endif()
 endif()
 
 find_package(rapidjson REQUIRED)
