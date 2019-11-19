@@ -31,7 +31,7 @@ jobs:
         shell: cmd
         run: |
           set PATH=%CD:~0,2%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
+          %CD:~0,2%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-i686-toolchain mingw-w64-i686-boost mingw-w64-i686-cmake
           %CD:~0,2%\msys64\usr\bin\pacman --noconfirm -Scc
       - name: Configure CMake
         env:
