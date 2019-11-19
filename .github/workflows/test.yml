@@ -18,21 +18,20 @@ jobs:
             os: ubuntu-16.04
             compiler: gcc
             version: "6"
+            configuration: release
 
           - name: ubuntu-gcc-9
             os: ubuntu-latest
             compiler: gcc
             version: "9"
+            configuration: release
 
           - name: ubuntu-clang-6
             os: ubuntu-16.04
             compiler: clang
             version: "6.0"
+            configuration: release
 
-#          - name: ubuntu-clang-9
-#            os: ubuntu-latest
-#            compiler: clang
-#            version: "9"
     steps:
       - uses: actions/checkout@v1
 
@@ -84,6 +83,7 @@ jobs:
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_selection) && kill -SIGINT `pgrep Kernel`
       - name: Testing high load
+        if: matrix.configuration == 'Release'
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
@@ -166,12 +166,13 @@ jobs:
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_errors
           taskkill //F //IM Kernel.exe
-      - name:  Testing speed
+      - name:  Testing high load
         working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
+        if: matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_of_speed
