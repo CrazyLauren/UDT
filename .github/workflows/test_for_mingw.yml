@@ -37,7 +37,8 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-          ls
+          pwd
+          ls $GITHUB_WORKSPACE
           export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT/:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin/:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin/
           which cmake
           mkdir build
