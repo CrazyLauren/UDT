@@ -14,17 +14,18 @@ jobs:
     env:
       MSYS_ROOT: ${{ matrix.compiler}}${{ matrix.arch}}
     steps:
+      - uses: actions/checkout@v1
       - name: Prepare Environment
-        shell: cmd
+        shell: bash
         run: |
-          choco install msys2 --params="/InstallDir:%GITHUB_WORKSPACE%/%MSYS_ROOT% /NoPath" -y --no-progress
+          choco install msys2 --params="/InstallDir:$GITHUB_WORKSPACE/$MSYS_ROOT /NoPath" -y --no-progress
       - name: Install mingwX86 Packages
-        shell: cmd
+        shell: bash
         run: |
-          set PATH=%GITHUB_WORKSPACE%/%MSYS_ROOT%;%GITHUB_WORKSPACE%/%MSYS_ROOT%/usr/bin;%GITHUB_WORKSPACE%/%MSYS_ROOT%/mingw64/bin;%PATH%
+          export PATH=$GITHUB_WORKSPACE/$MSYS_ROOT:$GITHUB_WORKSPACE/$MSYS_ROOT/usr/bin:$GITHUB_WORKSPACE/$MSYS_ROOT/mingw64/bin:$PATH
           pacman --noconfirm -Syu
           pacman --noconfirm  --verbose -S base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-boost
-      - uses: actions/checkout@v1
+
 #      - name: Install boost
 #        shell: bash
 #        run: |
