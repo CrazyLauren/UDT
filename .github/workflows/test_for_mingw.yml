@@ -52,12 +52,12 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           cmake --build . --config "%CONFIGURATION%" --target install
       - name:  Testing RTC
-        working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
         run: |
+          cd /build/binary/bin
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           timeout --signal=SIGABRT 100 Kernel.exe -c test/test_kernel.json &
           timeout --signal=SIGABRT 100 test_rtc
