@@ -61,7 +61,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe -c test/test_kernel.json
           timeout --signal=SIGABRT 100 ./test_rtc
-          taskkill /F /IM ./Kernel.exe || exit /b
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
@@ -72,7 +72,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
           timeout --signal=SIGABRT 100 ./test_inheritance
-          taskkill /F /IM Kernel.exe
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
       - name:  Testing errors
         working-directory: ./build/binary/bin
         env:
@@ -84,7 +84,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
           timeout --signal=SIGABRT 100 ./test_errors
-          taskkill /F /IM Kernel.exe
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
       - name:  Testing high load
         working-directory: ./build/binary/bin
         env:
@@ -96,7 +96,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
           timeout --signal=SIGABRT 100 ./test_of_speed
-          taskkill /F /IM Kernel.exe
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
