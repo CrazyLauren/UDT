@@ -61,7 +61,7 @@ jobs:
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe -c test/test_kernel.json
           timeout --signal=SIGABRT 100 ./test_rtc
-          taskkill /F /IM Kernel
+          taskkill /F /IM ./Kernel.exe || exit /b
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
