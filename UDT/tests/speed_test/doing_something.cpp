@@ -28,6 +28,7 @@ static double g_last_print_time = 0.0;///< Current time
 
 static unsigned long long g_recv_bytes = 0;///< Amount of received bytes
 static unsigned g_amount_of_messages = 0;///< Amount of received messages
+static unsigned g_amount_of_send_messages = 0;///< Amount of send messages
 static unsigned g_amount_of_doesnt_send = 0;///< Amount of not sent message
 static unsigned g_amount_of_doesnt_allocated = 0;///< Amount of not allocated buffers
 
@@ -174,6 +175,8 @@ extern bool send_messages()
 		{
 			if (CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf) < 0)
 				++g_amount_of_doesnt_send;
+			else
+			    ++g_amount_of_send_messages;
 		}
 		else
 			++g_amount_of_doesnt_allocated;
@@ -187,13 +190,14 @@ extern bool send_messages()
 			<< " md; Average speed ="
 			<< _speed << " mb/s."
 			<< std::endl;
-		std::cout << "Messages=" << g_amount_of_messages << "; fail sent="
+		std::cout << "Recv Messages=" << g_amount_of_messages<<" Send msg="<< g_amount_of_send_messages<< "; fail sent="
 			<< g_amount_of_doesnt_send << "; fail allocated="
 			<< g_amount_of_doesnt_allocated << std::endl;
 		std::cout << "Press any key... " << std::endl;
 	}
-	NSHARE::sleep(1);
-	return _speed>1000/*mb/sec*/;
+	NSHARE::sleep(5);
+
+	return g_amount_of_send_messages==g_amount_of_messages;
 }
 }
 
