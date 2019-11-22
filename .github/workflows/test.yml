@@ -141,13 +141,10 @@ jobs:
         run: |
           cmake --build . --config "$CONFIGURATION" --target install -- /verbosity:minimal
       - name:  SHARE unit test
-          working-directory: ./build/binary/bin
-          env:
-            CONFIGURATION: ${{ matrix.configuration }}
-            COMPILER: ${{ matrix.compiler }}
-          shell: bash
-          run: |
-                ./unit_tests
+        working-directory: ./build/binary/bin
+        shell: bash
+        run: |
+            ./unit_tests
       - name:  Testing RTC
         working-directory: ./build/binary/bin
         env:
