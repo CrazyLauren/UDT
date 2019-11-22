@@ -67,8 +67,8 @@ jobs:
       - name: build
         run: cd build && cmake --build . --target install
       - name:  SHARE unit test
-          shell: bash
-          run: |
+        shell: bash
+        run: |
             cd build/binary/bin
             ./unit_tests
       - name: Testing RTC
