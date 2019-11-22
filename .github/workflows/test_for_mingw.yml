@@ -51,6 +51,12 @@ jobs:
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           cmake --build . --config "%CONFIGURATION%" --target install
+      - name:  SHARE unit test
+          shell: cmd
+          run: |
+            cd build/binary/bin
+            set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+            unit_tests
       - name:  Testing RTC
         env:
           CONFIGURATION: ${{ matrix.configuration }}

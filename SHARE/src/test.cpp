@@ -53,6 +53,13 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 {
 	std::cout << "Share testing ..." << std::endl;
 	_volatile_test();
+
+	if (!NSHARE::CText::sMUnitTest())
+	{
+		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+
 	if (!NSHARE::CMutex::sMUnitTest())
 	{
 		std::cerr << "CMutex::sMUnitTest() - " << "***Failed***" << std::endl;
@@ -72,11 +79,6 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 	if (!NSHARE::CIPCSignalEvent::sMUnitTest())
 	{
 		std::cerr << "CIPCSignalEvent::sMUnitTest() - " << "***Failed***" << std::endl;
-		return false;
-	}
-	if (!NSHARE::CText::sMUnitTest())
-	{
-		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
 
@@ -245,6 +247,10 @@ bool CIPCMutex::sMUnitTest()
 	uint8_t _buf1[CIPCMutex::eReguredBufSize];
 	uint8_t _buf2[CIPCMutex::eReguredBufSize];
 	uint8_t _buf3[CIPCMutex::eReguredBufSize];
+	memset(_buf1,0,sizeof(_buf1));
+	memset(_buf2,0,sizeof(_buf2));
+	memset(_buf3,0,sizeof(_buf3));
+
 
 	CIPCMutex _mutex1(_buf1,sizeof(_buf1),CIPCMutex::E_HAS_TO_BE_NEW);
 	CIPCMutex _mutex2(_buf2,sizeof(_buf2),CIPCMutex::E_HAS_TO_BE_NEW);

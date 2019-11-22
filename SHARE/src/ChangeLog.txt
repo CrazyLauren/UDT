@@ -1,7 +1,8 @@
 UDT SHARE version:0.7
 -------------------
 	- Fix invald process name bug
-	- Fix get_reveision_number for GIT 
+	- Fix get_reveision_number for GIT
+	- Add stream operation for CText
 	
 UDT SHARE version:0.6
 -------------------

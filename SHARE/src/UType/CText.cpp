@@ -2596,6 +2596,15 @@ bool CText::sMUnitTest()
 		s2.MPrintf("Number 18: %s", s1.c_str());
 		CHECK_EQ(s2, "Number 18: 18");
 	}
+    //Format stream
+    {
+        CText s1, s2;
+        s1<<18;
+        CHECK_EQ(s1, "18");
+
+        s2<<"Number "<<18<<": "<<s1;
+        CHECK_EQ(s2, "Number 18: 18");
+    }
 	{
 		static const size_t lengths[] =
 		{ 1, 512, 1024, 1025, 2048, 4096, 4097 };
@@ -2618,6 +2627,19 @@ bool CText::sMUnitTest()
 
 		CText s3;
 		s3.MPrintf("Для паши %s", s2.c_str());
+
+		CHECK_EQ(s3, "Для паши Номер 18: 18");
+	}
+	{
+		CText s1, s2;
+		s1<<18;
+		CHECK_EQ(s1, "18");
+
+		s2<<"Номер "<<18<<": "<<s1;
+		CHECK_EQ(s2, "Номер 18: 18");
+
+		CText s3;
+		s3<<"Для паши "<<s2;
 
 		CHECK_EQ(s3, "Для паши Номер 18: 18");
 	}

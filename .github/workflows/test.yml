@@ -66,6 +66,11 @@ jobs:
         run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost ..
       - name: build
         run: cd build && cmake --build . --target install
+      - name:  SHARE unit test
+          shell: bash
+          run: |
+            cd build/binary/bin
+            ./unit_tests
       - name: Testing RTC
         run: |
          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
@@ -135,6 +140,14 @@ jobs:
         shell: bash
         run: |
           cmake --build . --config "$CONFIGURATION" --target install -- /verbosity:minimal
+      - name:  SHARE unit test
+          working-directory: ./build/binary/bin
+          env:
+            CONFIGURATION: ${{ matrix.configuration }}
+            COMPILER: ${{ matrix.compiler }}
+          shell: bash
+          run: |
+                ./unit_tests
       - name:  Testing RTC
         working-directory: ./build/binary/bin
         env:
