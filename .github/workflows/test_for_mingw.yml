@@ -6,7 +6,7 @@ jobs:
   build_mingw:
     strategy:
       matrix:
-        configuration: [Release]
+        configuration: [Release,Debug]
         compiler: [MinGW]
         arch: [i686]
     name: Windows
@@ -85,7 +85,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration != 'Debug'
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
@@ -97,7 +97,6 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
-        if: matrix.configuration == 'Release'
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe

@@ -69,7 +69,7 @@ jobs:
       - name:  SHARE unit test
         shell: bash
         run: |
-            cd build/binary/bin
+            cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../li
             ./unit_tests
       - name: Testing RTC
         run: |
