@@ -1,0 +1,132 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build_windows:
+    strategy:
+      matrix:
+        configuration: [Release, Debug]
+        compiler: [MSVC]
+        arch: [Win32, x64]
+    name: Windows
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          # Set git branch or git tag as slug
+          if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
+            GIT_TYPE=TAG
+          else
+            GIT_TYPE=BRANCH
+            if [ -n "${GITHUB_HEAD_REF}" ]; then
+              GIT_SLUG="${GITHUB_HEAD_REF}"
+            else
+              GIT_SLUG="${GITHUB_REF/refs\/heads\//}"
+            fi
+          fi
+          # Export variable
+          # # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env
+          echo ::set-env name=GIT_TYPE::${GIT_TYPE}
+          echo ::set-env name=GIT_SLUG::${GIT_SLUG}
+      - name: Install packages
+        run: |
+          choco install wget --no-progress
+          choco install tartool --no-progress
+          choco install windows-kill --no-progress
+          choco install grep --no-progress
+          choco install awk --no-progress
+      - name: Install boost
+        shell: bash
+        run: |
+          wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
+          tar --bzip2 -xf boost_1_56_0.tar.bz2
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          cmake -DBOOST_ROOT=./boost_1_56_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          cmake --build . --config "$CONFIGURATION" --target install -- /verbosity:minimal
+      - name:  SHARE unit test
+        working-directory: ./build/binary/bin
+        shell: bash
+        run: |
+            timeout --signal=SIGABRT 100 ./unit_tests
+      - name:  Testing RTC
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &
+          timeout --signal=SIGABRT 100 ./test_rtc
+          taskkill //F //IM Kernel.exe
+      - name:  Testing inheritance
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_inheritance
+          taskkill //F //IM Kernel.exe
+      - name:  Testing errors
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        if: matrix.configuration == 'Release'
+        run: |
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_errors
+          taskkill //F //IM Kernel.exe
+      - name:  Testing high load
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        if: matrix.configuration == 'Release'
+        run: |
+          timeout --signal=SIGABRT 100 ./Kernel &
+          timeout --signal=SIGABRT 100 ./test_of_speed
+          taskkill //F //IM Kernel.exe
+      - name: create binary
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+            tar -czvf UDT-bunary-$COMPILER-$ARCHITECTURE-$CONFIGURATION-$GITHUB_SHA.tar.gz build/binary
+          
+      - uses: ncipollo/release-action@v1
+        if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
+          && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
+        with:
+          artifacts: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build/binary/

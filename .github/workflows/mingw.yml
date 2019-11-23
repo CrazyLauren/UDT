@@ -15,7 +15,25 @@ jobs:
       MSYS_ROOT: ${{ matrix.compiler}}${{ matrix.arch}}
     steps:
       - uses: actions/checkout@v1
-      - name: Prepare Environment
+      - name: Set variables
+        id: vars
+        run: |
+          # Set git branch or git tag as slug
+          if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
+            GIT_TYPE=TAG
+          else
+            GIT_TYPE=BRANCH
+            if [ -n "${GITHUB_HEAD_REF}" ]; then
+              GIT_SLUG="${GITHUB_HEAD_REF}"
+            else
+              GIT_SLUG="${GITHUB_REF/refs\/heads\//}"
+            fi
+          fi
+          # Export variable
+          # # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env
+          echo ::set-env name=GIT_TYPE::${GIT_TYPE}
+          echo ::set-env name=GIT_SLUG::${GIT_SLUG}
+      - name: Downloas Msys
         shell: cmd
         run: |
               git clone https://github.com/msys2/msys2-ci-base.git %GITHUB_WORKSPACE%\msys64
@@ -56,7 +74,7 @@ jobs:
         run: |
             cd build/binary/bin
             set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-            unit_tests
+            timeout --signal=SIGABRT 100 unit_tests
       - name:  Testing RTC
         env:
           CONFIGURATION: ${{ matrix.configuration }}
