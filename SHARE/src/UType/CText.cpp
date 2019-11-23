@@ -1570,11 +1570,11 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 	return aStream;
 }
 template<class T, class Tlist>
-std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
+std::string handle_num(Tlist/*&*/ argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
-	i = va_arg(static_cast<Tlist>(argptr), T);
+	i = va_arg(/*static_cast<Tlist>(*/argptr/*)*/, T);
 	std::string _num;
 	bool _result = NSHARE::num_to_str(i, _num, base); //FIXME format
 	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "
@@ -1584,11 +1584,11 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	return _num;
 }
 template<class T, class Tlist>
-std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
+std::string handle_float(Tlist/*&*/ argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
-	i = va_arg(static_cast<Tlist>(argptr), T);
+	i = va_arg(/*static_cast<Tlist>(*/argptr/*)*/, T);
 	std::string _num;
 	bool _result = false;
 	if (precision != -1)
