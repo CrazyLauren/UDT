@@ -2641,7 +2641,7 @@ bool CText::sMUnitTest()
     }
     {
         CText _text,_text2;
-        uint8_t const _this[] = {0xFE,0xAA,0x1,0x20,0x10,0xFA,0xF1,0x1F};
+        unsigned const _this[] = {0xFE,0xAA,0x1,0x20,0x10,0xFA,0xF1,0x1F};
         _text2.MPrintf("%02x-%02x-"
                       "%02x-%02x-"
                       "%02x-%02x-"
@@ -2649,10 +2649,11 @@ bool CText::sMUnitTest()
             _this[5], _this[6], _this[7]);
         _text2.MToLowerCase();
         _text<<std::showbase<< std::setfill('0')<< std::setw(2)<<std::hex ;
-        for (unsigned i=0; i<sizeof(_this); i++)
+        unsigned _count_array=sizeof(_this)/sizeof(_this[0]);
+        for (unsigned i=0; i<_count_array; i++)
         {
             _text<<(unsigned)_this[i];
-            if(i!=(sizeof(_this)-1))
+            if(i!=(_count_array-1))
                 _text<<'-';
         }
         CHECK_EQ(_text, _text2)<<"Prinf:"<<_text2<<" stream:"<<_text;
