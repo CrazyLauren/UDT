@@ -27,11 +27,11 @@ static double g_start_time = 0.0;///< Start time of the test
 static double g_last_print_time = 0.0;///< Current time
 
 static unsigned long long g_recv_bytes = 0;///< Amount of received bytes
-static unsigned long long g_amount_of_messages = 0;///< Amount of received messages
+static NSHARE::atomic_t g_amount_of_messages;///< Amount of received messages
 static unsigned long long g_amount_of_send_messages = 0;///< Amount of send messages
 static unsigned long long g_amount_of_doesnt_send = 0;///< Amount of not sent message
 static unsigned long long g_amount_of_doesnt_allocated = 0;///< Amount of not allocated buffers
-static unsigned long long g_amount_of_fail_send = 0;///< Amount of not sended
+static NSHARE::atomic_t  g_amount_of_fail_send;///< Amount of not sended
 
 extern int msg_speed_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
@@ -142,6 +142,8 @@ extern bool send_messages()
 	g_time = NSHARE::get_time();
 	g_start_time = NSHARE::get_time();
 	g_last_print_time= NSHARE::get_time();
+    g_amount_of_messages=0;
+    g_amount_of_fail_send=0;
 	for (unsigned i=0;
 		(i%10000)!=0//Check only every 10000 sent message
 		|| (NSHARE::get_time()-g_start_time)<g_test_working_time//stop after timeout
