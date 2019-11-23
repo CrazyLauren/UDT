@@ -126,7 +126,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Store artifact
-        uses: actions/upload-artifact@master
+        uses: softprops/action-gh-release@v1
         with:
-          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
-          path: build/binary/
+          files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
