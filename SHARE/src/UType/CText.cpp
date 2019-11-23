@@ -1852,7 +1852,7 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			case _h:
 			case _l:
             {
-                HANDLE_NUM(size_t,base);
+                HANDLE_NUM(unsigned ,base);
             }
 				break;			
 			case _ll:
