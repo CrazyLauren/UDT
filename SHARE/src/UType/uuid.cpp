@@ -12,6 +12,7 @@
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
+#include <iomanip>
 #include <SHARE/random_value.h>
 
 namespace NSHARE
