@@ -1571,11 +1571,11 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 }
 
 template<class T,class Tlist>
-std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
+std::string handle_num(Tlist* argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
-	i = va_arg(argptr, T);
+	i = va_arg(*argptr, T);
 	std::string _num;
 	bool _result = NSHARE::num_to_str(i, _num, base); //FIXME format
 	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "
@@ -1585,11 +1585,11 @@ std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
 	return _num;
 }
 template<class T,class Tlist>
-std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
+std::string handle_float(Tlist* argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
-	i = va_arg(argptr, T);
+	i = va_arg(*argptr, T);
 	std::string _num;
 	bool _result = false;
 	if (precision != -1)
@@ -1784,26 +1784,26 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			switch (length_mod)
 			{
 			case _none:
-				subst += handle_num<int>(argptr, _start, _it);
+				subst += handle_num<int>(&argptr, _start, _it);
 				break;
 			case _hh:
-				subst += handle_num<int>(argptr, _start, _it);
+				subst += handle_num<int>(&argptr, _start, _it);
 				break;
 			case _h:
-				subst += handle_num<int>(argptr, _start, _it);
+				subst += handle_num<int>(&argptr, _start, _it);
 				break;
 			case _l:
 			case _j:
-				subst += handle_num<long int>(argptr, _start, _it);
+				subst += handle_num<long int>(&argptr, _start, _it);
 				break;
 			case _ll:
-				subst += handle_num<long long>(argptr, _start, _it);
+				subst += handle_num<long long>(&argptr, _start, _it);
 				break;
 			case _z:
-				subst += handle_num<size_t>(argptr, _start, _it);
+				subst += handle_num<size_t>(&argptr, _start, _it);
 				break;
 			case _t:
-				subst += handle_num<int>(argptr, _start, _it);
+				subst += handle_num<int>(&argptr, _start, _it);
 				break;
 			default:
 				break;
@@ -1838,14 +1838,14 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			case _hh:
 			case _h:
 			case _l:
-				subst += handle_num<unsigned>(argptr, _start, _it, base);
+				subst += handle_num<unsigned>(&argptr, _start, _it, base);
 				break;			
 			case _ll:
-				subst += handle_num<unsigned long long>(argptr, _start, _it,
+				subst += handle_num<unsigned long long>(&argptr, _start, _it,
 						base);
 				break;
 			case _z:
-				subst += handle_num<size_t>(argptr, _start, _it, base);
+				subst += handle_num<size_t>(&argptr, _start, _it, base);
 				break;
 			default:
 				break;
@@ -1864,10 +1864,10 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 		{
 			//FIXME fromating
 			if (length_mod == _L)
-				subst += handle_float<long double>(argptr, _start, _it,
+				subst += handle_float<long double>(&argptr, _start, _it,
 						precision);
 			else
-				subst += handle_float<double>(argptr, _start, _it, precision);
+				subst += handle_float<double>(&argptr, _start, _it, precision);
 			break;
 		}
 		case 'b':
