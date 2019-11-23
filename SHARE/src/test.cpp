@@ -54,79 +54,103 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 	std::cout << "Share testing ..." << std::endl;
 	_volatile_test();
 
+    std::cout << "Testing CText" << std::endl;
 	if (!NSHARE::CText::sMUnitTest())
 	{
 		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
 
+    std::cout << "Testing CMutex" << std::endl;
 	if (!NSHARE::CMutex::sMUnitTest())
 	{
 		std::cerr << "CMutex::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCondvar" << std::endl;
 	if (!NSHARE::CCondvar::sMUnitTest())
 	{
 		std::cerr << "CCondvar::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CIPCMutex" << std::endl;
 	if (!NSHARE::CIPCMutex::sMUnitTest())
 	{
 		std::cerr << "CIPCMutex::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
 
+    std::cout << "Testing CIPCSignalEvent" << std::endl;
 	if (!NSHARE::CIPCSignalEvent::sMUnitTest())
 	{
 		std::cerr << "CIPCSignalEvent::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
 
+    std::cout << "Testing CBuffer" << std::endl;
 	if (!NSHARE::CBuffer::sMUnitTest(NULL))//todo for several allocators
 	{
 		std::cerr << "CBuffer::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CProgramName" << std::endl;
 	if (!NSHARE::CProgramName::sMUnitTest())
 	{
 		std::cerr << "CAddress::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<int>" << std::endl;
 	if (!NSHARE::CCOWPtr<int>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<int>::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<uint64_t>" << std::endl;
 	if (!NSHARE::CCOWPtr<uint64_t>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<uint16_t>" << std::endl;
 	if (!NSHARE::CCOWPtr<uint16_t>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<_non_alligned>" << std::endl;
 	if (!NSHARE::CCOWPtr<_non_alligned>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<_non_alligned>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CFlags" << std::endl;
 	if (!NSHARE::CFlags<>::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CFlags<>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CSemaphore" << std::endl;
 	if (!NSHARE::CSemaphore::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CSemaphore::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CConfig" << std::endl;
 	if (!NSHARE::CConfig::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CConfig::sMUnitTest() - " << "***Failed***"

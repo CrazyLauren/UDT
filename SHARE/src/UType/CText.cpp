@@ -2656,7 +2656,7 @@ bool CText::sMUnitTest()
             if(i!=(_count_array-1))
                 _text<<'-';
         }
-        CHECK_EQ(_text, _text2)<<"Prinf:"<<_text2<<" stream:"<<_text;
+        CHECK_EQ(_text, _text2)<<"Printf:"<<_text2<<" stream:"<<_text;
     }
 	{
 		static const size_t lengths[] =
