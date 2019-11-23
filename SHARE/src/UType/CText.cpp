@@ -17,6 +17,7 @@
 #include <deftype>
 #include <stdarg.h>
 #include <locale>
+#include <iomanip>
 
 #include <SHARE/random_value.h>
 // Start of NSHARE namespace section
@@ -55,13 +56,16 @@ std::locale utf8_locale()
 	return loc;
 }
 CText::CText(allocator_type*aAllocator):
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
+
 {
 	MInit();
 }
 CText::CText(const CText& str):
 		FImpl(str.FImpl),//
-		FCodePointLength(str.FCodePointLength)//
+		FCodePointLength(str.FCodePointLength),//
+        FStream(new CTextStream(*this))
 {
 	//assign(str);
 }
@@ -78,12 +82,14 @@ CText& CText::operator=(const CText& str)
 }
 CText::CText(const CText& str, size_type str_idx, size_type str_num):
 				FImpl(str.FImpl),//
-				FCodePointLength(str.FCodePointLength)//
+				FCodePointLength(str.FCodePointLength),//
+                FStream(new CTextStream(*this))
 {
 	assign(str, str_idx, str_num);
 }
 CText::CText(const std::string& std_str,allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(std_str);
@@ -94,28 +100,32 @@ CText& CText::operator=(const std::string& std_str)
 }
 CText::CText(const std::string& std_str, size_type str_idx, size_type str_num,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(std_str, str_idx, str_num);
 }
 CText::CText(size_type num, utf32 code_point,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(num, code_point);
 }
 CText::CText(const_iterator const& iter_beg, const_iterator const& iter_end,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	append(iter_beg, iter_end);
 }
 CText::CText(utf8 const* cstr, ICodeConv const& aType,
 		allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(cstr, aType);
@@ -126,7 +136,8 @@ CText& CText::operator=(utf8 const* cstr)
 }
 CText::CText(utf8 const* chars, size_type chars_len, ICodeConv const& aType,
 		allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(chars, chars_len, aType);
@@ -182,6 +193,7 @@ CText::impl_t::~impl_t()
 }
 CText::~CText()
 {
+
 }
 CText::reference CText::at(size_type idx)
 {
@@ -2604,6 +2616,27 @@ bool CText::sMUnitTest()
 
         s2<<"Number "<<18<<": "<<s1;
         CHECK_EQ(s2, "Number 18: 18");
+    }
+    {
+        CText _text,_text2;
+        uint8_t const _this[] = {0xFE,0xAA,0x1,0x20,0x10,0xFA,0xF1,0x1F};
+        _text2.MPrintf("%02x-%02x-"
+                      "%02x-%02x-"
+                      "%02x-%02x-"
+                      "%02x-%02x", _this[0], _this[1], _this[2], _this[3], _this[4],
+            _this[5], _this[6], _this[7]);
+        _text2.MToLowerCase();
+        _text<<std::showbase<< std::setfill('0')<< std::setw(2)<<std::hex ;
+        for (unsigned i=0; i<sizeof(_this); i++)
+        {
+            _text<<(unsigned)_this[i];
+            if(i!=(sizeof(_this)-1))
+                _text<<'-';
+        }
+        //std::ios::copyfmt
+        std::cout<<_text2<<std::endl;
+        std::cout<<_text<<std::endl;
+        CHECK_EQ(_text, _text2);
     }
 	{
 		static const size_t lengths[] =

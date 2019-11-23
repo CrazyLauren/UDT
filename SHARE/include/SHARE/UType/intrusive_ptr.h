@@ -12,6 +12,8 @@
 #ifndef INTRUSIVE_PTR_H_
 #define INTRUSIVE_PTR_H_
 
+#include <SHARE/UType/CTypeInfo.h>
+
 namespace NSHARE
 {
 /**\brief intrusive pointer
@@ -27,14 +29,14 @@ public:
 	intrusive_ptr()
 	{
 		MSet(NULL);
-		VLOG(5) << "Construct empty intrusive_ptr" << ":" << this;
+		DVLOG(5) << "Construct empty intrusive_ptr" << ":" << this;
 	}
 	explicit intrusive_ptr(T* ptr)
 	{
 		LOG_IF(WARNING,!ptr) << "Empty pointer in Constructor.";
 
 		MSet(ptr /*? &ptr : NULL*/);
-		VLOG(5) << "Construct intrusive_ptr for "
+		DVLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << ptr << " :"
 				<< this;
 		if (MPtr() && (IIntrusived::sMRef(MPtr()) == 0))
@@ -60,13 +62,13 @@ public:
 		FPtrBase(NULL)
 	{
 		MSet(aRht.MPtr());
-		VLOG(5) << "Construct intrusive_ptr for "
+		DVLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << aRht.MPtr()
 				<< " out of intrusive_ptr. :" << this;
 		if (MPtr()) //MRef cann't return 0;
 			IIntrusived::sMRef(MPtr());
 		else
-			VLOG(1) << "Empty pointer in Constructor.";
+			DVLOG(1) << "Empty pointer in Constructor.";
 	}
 	/**\brief initialization by convertible object
 	 *
@@ -76,24 +78,24 @@ public:
 		FPtrBase(NULL)
 	{
 		MSet(aCopy.MPtr());
-		VLOG(5) << "Construct intrusive_ptr for "
+		DVLOG(5) << "Construct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << aCopy.MPtr()
 				<< ", out of intrusive_ptr type "
 				<< NSHARE::get_type_info<U>().MName() << ". :" << this;
 
-		CHECK_EQ(aCopy.MPtr(), MPtr()) << "To "
+		DCHECK_EQ(aCopy.MPtr(), MPtr()) << "To "
 				<< NSHARE::get_type_info<T>().MName() << ", from type "
 				<< NSHARE::get_type_info<U>().MName();
 
 		if (MPtr())
 			IIntrusived::sMRef (MPtr()); //MRef cann't return 0;
 		else
-			VLOG(1) << "Empty pointer in Constructor.";
+			DVLOG(1) << "Empty pointer in Constructor.";
 	}
 
 	~intrusive_ptr()
 	{
-		VLOG(5) << "Destruct intrusive_ptr for "
+		DVLOG(5) << "Destruct intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << MPtr() << ". :"
 				<< this;
 		if (MPtr())
@@ -102,7 +104,7 @@ public:
 
 	inline intrusive_ptr& operator =(const intrusive_ptr& aRht)
 	{
-		VLOG(5) << "Assignment intrusive_ptr for "
+		DVLOG(5) << "Assignment intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << aRht.MPtr()
 				<< " out of intrusive_ptr. :" << this;
 		MAssign(aRht);
@@ -112,7 +114,7 @@ public:
 	template<class U>
 	inline intrusive_ptr& operator =(const intrusive_ptr<U>& aRht)
 	{
-		VLOG(5) << "Assignment intrusive_ptr for "
+		DVLOG(5) << "Assignment intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << aRht.FPtrBase
 				<< ", out of intrusive_ptr type "
 				<< NSHARE::get_type_info<U>().MName() << ". :" << this;
@@ -121,7 +123,7 @@ public:
 	}
 	inline intrusive_ptr& operator =(T* aP)
 	{
-		VLOG(5) << "Assignment intrusive_ptr for "
+		DVLOG(5) << "Assignment intrusive_ptr for "
 				<< NSHARE::get_type_info<T>().MName() << ":" << "" << ". :"
 				<< this;
 		intrusive_ptr _tmp(aP);
@@ -174,17 +176,17 @@ public:
 	}
 	inline T const* MGetConst() const
 	{
-		//CHECK_NOTNULL (MPtr());
+		//DCHECK_NOTNULL (MPtr());
 		return MPtr();
 	}
 	T * operator->() const
 	{
-		CHECK_NOTNULL (MPtr());
+		DCHECK_NOTNULL (MPtr());
 		return MPtr();
 	}
 	inline T * MGet() const
 	{
-		//CHECK_NOTNULL (MPtr());
+		//DCHECK_NOTNULL (MPtr());
 		return MPtr();
 	}
 
@@ -195,7 +197,7 @@ public:
 
 	T* MRelease()
 	{
-		VLOG(5) << "Release pointer :" << MPtr() << ". :" << this;
+		DVLOG(5) << "Release pointer :" << MPtr() << ". :" << this;
 		if (!MPtr())
 			return NULL;
 		T* _tmp = MPtr();
@@ -207,7 +209,7 @@ public:
 
 	void MSwap(intrusive_ptr& rp)
 	{
-		VLOG(5) << "Swap :" << MPtr() << " to " << rp.MPtr() << ". :" << this;
+		DVLOG(5) << "Swap :" << MPtr() << " to " << rp.MPtr() << ". :" << this;
 		T* _tmp = MPtr();
 		FPtrBase = rp.MPtr();
 		rp.FPtrBase = _tmp;

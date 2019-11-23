@@ -43,7 +43,7 @@ public:
 			const required_header_t& aHeader) const
 	{
 		NSHARE::CText _text;
-		_text.MPrintf("# %d", aHeader.FNumber);
+        _text<<"# "<<aHeader.FNumber;
 		return _text;
 	}
 	std::pair<NUDT::required_header_t, bool> MHeader(

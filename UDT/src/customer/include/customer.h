@@ -42,8 +42,8 @@
 #include <SHARE/UType/atomic_t.h>
 #include <SHARE/UType/IAllocater.h>
 #include <SHARE/UType/CCOWPtr.h>
-#include <SHARE/UType/CText.h>
 #include <SHARE/logging/share_trace.h>
+#include <SHARE/UType/CText.h>
 #include <SHARE/UType/CSingleton.h>
 
 

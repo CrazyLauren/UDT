@@ -8,7 +8,7 @@ jobs:
       matrix:
         configuration: [Release,Debug]
         compiler: [MinGW]
-        arch: [i686]
+        arch: [i686,x86_x64]
     name: Windows
     runs-on: windows-2019
     env:
@@ -75,7 +75,7 @@ jobs:
         run: |
             cd build/binary/bin
             set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-            timeout --signal=SIGABRT 100 unit_tests
+            timeout --signal=SIGABRT 100 ./unit_tests
       - name:  Testing RTC
         env:
           CONFIGURATION: ${{ matrix.configuration }}

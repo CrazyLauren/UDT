@@ -16,6 +16,9 @@
 #include <stdexcept>
 #include <cstddef>
 #include <SHARE/UType/CCodeConv.h>
+#include <SHARE/UType/IIntrusived.h>
+#include <SHARE/UType/intrusive_ptr.h>
+
 #if defined(_MSC_VER)
 #	pragma warning (push)
 #	pragma warning (disable:4251)
@@ -348,7 +351,7 @@ private:
 	class SHARE_EXPORT CTextBuf: public std::streambuf
 	{
 	public:
-		CTextBuf(CText& aText) ;
+		explicit CTextBuf(CText& aText) ;
 	protected:
 		virtual int overflow(int c);
 
@@ -362,14 +365,14 @@ private:
 	/** Stream to write to CText
 	 *
 	 */
-	class SHARE_EXPORT CTextStream: public std::ostream
+	class SHARE_EXPORT CTextStream: public std::ostream,IIntrusived
 	{
 	public:
 		/** Creates stream for CText
 		 *
 		 * @param aText reference for CText
 		 */
-		CTextStream(CText& aText);
+		explicit CTextStream(CText& aText);
 		virtual ~CTextStream();
 
 		CText& FText;
@@ -465,7 +468,7 @@ private:
 
 	cow_impl_t FImpl;///< Copy on write data
 	size_type FCodePointLength;///< holds length of string in code points (not including null termination)
-
+    intrusive_ptr<CTextStream> FStream;
 };
 typedef std::deque<CText> Strings;
 

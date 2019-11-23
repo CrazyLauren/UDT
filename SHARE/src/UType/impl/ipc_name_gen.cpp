@@ -22,10 +22,9 @@ namespace NSHARE
 		_rand.MMakeRandom(10);
 		NSHARE::CText _mutex_name;
 		if (aPreifix)
-			_mutex_name.MPrintf("%s_%d_%s_%d", aPreifix, NSHARE::CThread::sMPid(), _rand.c_str(), ++g_counter);
-		else
-			_mutex_name.MPrintf("%d_%s_%d", NSHARE::CThread::sMPid(), _rand.c_str(), ++g_counter);
+            _mutex_name<<aPreifix<<"_";
 
+        _mutex_name<<NSHARE::CThread::sMPid()<<"_"<<_rand<<++g_counter;
 		size_t _name_len = (_mutex_name.length_code());
 		_name_len =
 			_name_len <= (aSize - 1) ?

@@ -65,7 +65,7 @@ inline CText::CTextStream::~CTextStream()
 template<typename T>
 inline CText& CText::operator<<(const T& aVal)
 {
-	CTextStream _stream(*this);
+	CTextStream& _stream(*FStream);
 	_stream<<aVal;
 	return *this;
 }
