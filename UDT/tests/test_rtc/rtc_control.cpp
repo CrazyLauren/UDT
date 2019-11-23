@@ -161,6 +161,7 @@ void wait_for_process_finished()
 						return NSHARE::process_name(aVal)!=_name;
 					}), _list.end());
 
+	unsigned _i=0;
 	do
 	{
 		_list.erase(
@@ -169,8 +170,14 @@ void wait_for_process_finished()
 						{
 							return !(NSHARE::is_process_exist(aVal) && _name==process_name(aVal));
 						}), _list.end());
-
-	} while (_list.size() != 1 && NSHARE::sleep(1));
+		if(_list.size() != 1)
+        {
+            std::cout << "Wait for process stopped" << std::endl;
+            for(auto _it:_list)
+                if(_it!=NSHARE::CThread::sMPid())
+                    std::cout<<_it<<std::endl;
+        }
+	} while (_list.size() != 1 && ( ++_i<10 ) && NSHARE::sleep(1));
 
 
 }
