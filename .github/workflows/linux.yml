@@ -1,4 +1,4 @@
-name: CI
+name: Gcc and Clang
 
 on: [push]
 jobs:

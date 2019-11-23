@@ -1,4 +1,4 @@
-name: CI
+name: Msvc
 
 on: [push]
 
