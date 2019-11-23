@@ -1569,8 +1569,8 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 		VLOG(2) << "Print empty text";
 	return aStream;
 }
-template<class T, class Tlist>
-std::string handle_num(Tlist/*&*/ argptr, CText::const_iterator& _start,
+template<class T>
+std::string handle_num(va_list/*&*/ argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int base = 10)
 {
 	T i;
@@ -1583,8 +1583,8 @@ std::string handle_num(Tlist/*&*/ argptr, CText::const_iterator& _start,
 	(void) _result;
 	return _num;
 }
-template<class T, class Tlist>
-std::string handle_float(Tlist/*&*/ argptr, CText::const_iterator& _start,
+template<class T/*, class Tlist*/>
+std::string handle_float(va_list/*&*/ argptr, CText::const_iterator& _start,
 		CText::const_iterator& _it, int precision = -1)
 {
 	T i;
@@ -2633,10 +2633,7 @@ bool CText::sMUnitTest()
             if(i!=(sizeof(_this)-1))
                 _text<<'-';
         }
-        //std::ios::copyfmt
-        std::cout<<_text2<<std::endl;
-        std::cout<<_text<<std::endl;
-        CHECK_EQ(_text, _text2);
+        CHECK_EQ(_text, _text2)<<"Prinf:"<<_text2<<" stream:"<<_text;
     }
 	{
 		static const size_t lengths[] =
