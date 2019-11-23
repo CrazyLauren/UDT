@@ -8,7 +8,7 @@ jobs:
       matrix:
         configuration: [Release,Debug]
         compiler: [MinGW]
-        arch: [i686,x86_x64]
+        arch: [i686,x86_64]
     name: Windows
     runs-on: windows-2019
     env:
