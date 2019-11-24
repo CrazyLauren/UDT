@@ -124,7 +124,7 @@ jobs:
         with:
           files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Store artifact
         uses: actions/upload-artifact@master
