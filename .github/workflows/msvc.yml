@@ -120,14 +120,14 @@ jobs:
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
           && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')))
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Store artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN
+
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build/binary/
