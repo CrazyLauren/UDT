@@ -291,9 +291,14 @@ char buffer[50] = "";
 IMutex *bufferLock;
 IConditionVariable* cond;
 bool ok = true;
+bool g_is_lock=false;
 eCBRval thread1_run(void*, void*, void*)
 {
-	NSHARE::usleep(1000);
+    for(;!g_is_lock;)
+    {
+        std::cout<<"wait for consumer"<<std::endl;
+        NSHARE::usleep(1000);
+    }
 	for (int i = 0; i < 10; ++i, NSHARE::usleep(rand() % 500))
 	{
 		CRAII<IMutex> _lock(*bufferLock);
@@ -309,6 +314,7 @@ eCBRval thread2_run(void*, void*, void*)
 	{
 		{
 			CRAII<IMutex> _lock(*bufferLock);
+            g_is_lock=true;
 			for (HANG_INIT; buffer[0] == '\0'; HANG_CHECK)
 			{
 				cond->MTimedwait(bufferLock);
@@ -333,8 +339,9 @@ bool CCondvar::sMUnitTest()
 	CThread t2;
 	t2 += CB_t(condvar_test_impl::thread2_run, NULL);
 
-	t1.MCreate();
-	t2.MCreate();
+    condvar_test_impl::g_is_lock=false;
+    t2.MCreate();
+    t1.MCreate();
 
 	t1.MJoin();
 	t2.MJoin();
@@ -359,8 +366,10 @@ bool CIPCSignalEvent::sMUnitTest()
 	CThread t2;
 	t2 += CB_t(condvar_test_impl::thread2_run, NULL);
 
+    condvar_test_impl::g_is_lock=false;
+    t2.MCreate();
 	t1.MCreate();
-	t2.MCreate();
+
 
 	t1.MJoin();
 	t2.MJoin();

@@ -109,6 +109,12 @@ jobs:
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_of_speed
           taskkill //F //IM Kernel.exe
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build/binary/
+
       - name: create binary
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -116,18 +122,12 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-            tar -czvf UDT-bunary-$COMPILER-$ARCHITECTURE-$CONFIGURATION-$GITHUB_SHA.tar.gz build/binary
+          tar -czvf UDT-bunary-$COMPILER-$ARCHITECTURE-$CONFIGURATION-$GITHUB_SHA.tar.gz build/binary
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
-          && (github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')))
+          && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v1
         with:
           files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Store artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
-          path: build/binary/
