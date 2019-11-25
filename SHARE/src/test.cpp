@@ -362,6 +362,9 @@ bool CIPCSignalEvent::sMUnitTest()
 	uint8_t _buf_mutex[CIPCMutex::eReguredBufSize];
 	uint8_t _buf_condvar[CIPCSignalEvent::eReguredBufSize];
 
+    memset(_buf_mutex,0,sizeof(_buf_mutex));
+    memset(_buf_condvar,0,sizeof(_buf_condvar));
+
 	condvar_test_impl::bufferLock = new CIPCMutex(_buf_mutex, sizeof(_buf_mutex),
 			CIPCMutex::E_HAS_TO_BE_NEW);
 
