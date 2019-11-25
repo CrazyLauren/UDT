@@ -63,18 +63,35 @@ inline CText::CTextStream::~CTextStream()
 }
 
 template<typename T>
-inline CText& CText::operator<<(const T& aVal)
+inline CText& CText::MArg(const T& aVal)
 {
 	CTextStream& _stream(*FStream);
 	_stream<<aVal;
 	return *this;
 }
 template<>
-inline CText& CText::operator<< <NSHARE::CText>(const NSHARE::CText& aVal)
+inline CText& CText::MArg<NSHARE::CText>(const NSHARE::CText& aVal)
 {
 	append(aVal);
 	return *this;
 }
+template<typename T>
+inline CText& CText::MArg(T& (&aVal)(T&))
+{
+	CTextStream& _stream(*FStream);
+	_stream<<aVal;
+	return *this;
 }
 
+template<class T>
+inline NSHARE::CText& operator<<(NSHARE::CText& s, const T& aWhat)
+{
+    return s.MArg(aWhat);
+}
+template<class T>
+inline NSHARE::CText& operator<<(NSHARE::CText& s, T& (&aWhat)(T&))
+{
+    return s.MArg(aWhat);
+}
+}
 #endif /* CTEXTSTREAM_H_ */

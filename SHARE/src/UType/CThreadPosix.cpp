@@ -32,9 +32,17 @@ struct CThread::CImpl
 	typedef pthread_attr_t attr_t;
 
 	CImpl(CThread& aThis) :
-			FID(pthread_t()),FThis(aThis), FMutex(CMutex::MUTEX_NORMAL)
+			FID(pthread_t()),//
+			FThis(aThis),//
+			FMutex(CMutex::MUTEX_NORMAL),//
+			FWorkingMutex(CMutex::MUTEX_NORMAL)//
 	{
 
+	}
+
+	~CImpl()
+	{
+		NSHARE::CRAII<CMutex> _lock(FWorkingMutex);
 	}
 
 	static void* sMThreadFunc(void* p);
@@ -50,6 +58,7 @@ private:
 	pthread_t FID;
 	CThread& FThis;
 	CMutex FMutex;
+	CMutex FWorkingMutex;//!< Don't destruct object until thread is working
 	CCondvar FCondvar;
 	friend class CThread;
 };
@@ -224,13 +233,20 @@ void* CThread::CImpl::sMThreadFunc(void* aData)
 	CThread::CImpl* _pThis = static_cast<CThread::CImpl*>(aData);
 	pthread_cleanup_push(&CThread::CImpl::sMCleanUpHandler, aData)
 		;
-		_pThis->FThis.MSetRunnig(true);
 		{
-			NSHARE::CRAII<CMutex> _block(_pThis->FMutex);
-			_pThis->FCondvar.MBroadcast();
+			NSHARE::CRAII<CMutex> _lock(_pThis->FWorkingMutex);
+			{
+				NSHARE::CRAII<CMutex> _block(_pThis->FMutex);
+				_pThis->FThis.MSetRunnig(true);
+				_pThis->FCondvar.MBroadcast();
+			}
+			_pThis->FThis.MRun();
+
+			{
+				NSHARE::CRAII<CMutex> _block(_pThis->FMutex);
+				_pThis->FThis.MSetRunnig(false);
+			}
 		}
-		_pThis->FThis.MRun();
-		_pThis->FThis.MSetRunnig(false);
 		pthread_cleanup_pop(0);
 	return 0;
 }

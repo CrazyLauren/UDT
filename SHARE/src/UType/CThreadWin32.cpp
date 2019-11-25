@@ -34,16 +34,17 @@ struct CThread::CImpl
 	CImpl(CThread& aThis) :
 			FThis(aThis)
 	{
+        FIsStarted=false;
 		FID=0;
 		FPThread=INVALID_HANDLE_VALUE;
 	}
 	~CImpl()
 	{
-
+		NSHARE::CRAII<CMutex> _lock(FWorkingMutex);
 	}
 	static unsigned WINAPI sMThreadFunc(void* p);
 
-	inline void MStart(const param_t& aParam);
+	inline bool MStart(const param_t& aParam);
 	void MWaitForCreated();
 private:
 	void MSetCpuNum();
@@ -52,13 +53,14 @@ private:
 	unsigned int   FID;
 	HANDLE FPThread;
 	CThread& FThis;
-	NSHARE::CMutex FMutex;
+	NSHARE::CMutex FWorkingMutex;
 	NSHARE::CCondvar FCond;
 	friend class CThread;
+	bool FIsStarted;
 };
 void CThread::CImpl::MWaitForCreated()
 {
-	for (; !FThis.MIsRunning(); sMYield())
+	for (; !FIsStarted; sMYield())
 		;
 }
 void CThread::CImpl::MSetCpuNum()
@@ -105,23 +107,38 @@ void CThread::CImpl::MSetPriority()
 	SetThreadPriority(FPThread, prio);
 }
 
-inline void CThread::CImpl::MStart(const param_t& aP)
+inline bool CThread::CImpl::MStart(const param_t& aP)
 {
-	FPThread = (HANDLE) _beginthreadex(NULL, 0, CThread::CImpl::sMThreadFunc,
+	bool _is=false;
+	if(FWorkingMutex.MCanLock())
+	{
+		FIsStarted=false;
+		FPThread = (HANDLE) _beginthreadex(NULL, 0, CThread::CImpl::sMThreadFunc,
 			this, 0, &FID);
 
-	if(FPThread != INVALID_HANDLE_VALUE)
-		FThis.MSetRunnig(false);
-	else
-		ResumeThread(FPThread);
+		if(FPThread != INVALID_HANDLE_VALUE)
+		{
+			FThis.MSetRunnig(false);
+			_is=true;
+		}
+		else
+			ResumeThread(FPThread);
+
+		FWorkingMutex.MUnlock();
+	}
+	return _is;
 }
 
 unsigned CThread::CImpl::sMThreadFunc(void* aData)
 {
 	CThread::CImpl* _pThis = static_cast<CThread::CImpl*>(aData);
+	{
+	NSHARE::CRAII<CMutex> _lock(_pThis->FWorkingMutex);
 	_pThis->MSetPriority();
 	_pThis->MSetCpuNum();
-	_pThis->FThis.MSetRunnig(true);
+    _pThis->FThis.MSetRunnig(true);
+    _pThis->FIsStarted = true;
+
 	try
 	{
 		_pThis->FThis.MRun();
@@ -146,13 +163,11 @@ unsigned CThread::CImpl::sMThreadFunc(void* aData)
 		CloseHandle(_tmp);
 	}
 
-	{
-		CRAII<CMutex> _lock(_pThis->FMutex);
-		_pThis->FThis.MSetRunnig(false);
-		_pThis->FCond.MBroadcast();
+	_pThis->FThis.MSetRunnig(false);
+	_pThis->FCond.MBroadcast();
+
+
 	}
-
-
 	VLOG(2)<<"Thread closed...";
 	_endthreadex(0);
 	return 0;
@@ -276,14 +291,14 @@ void CThread::MDetach()
 }
 bool CThread::MJoin(uint64_t aTime)
 {
-	CRAII<CMutex> _lock(FImpl->FMutex);
+	CRAII<CMutex> _lock(FImpl->FWorkingMutex);
 	 if (!MIsRunning() ||FIsDetached)
 		 return false;
 	 DWORD exit_code = -1;
 	 GetExitCodeThread(FImpl->FPThread, &exit_code);
 	 if (exit_code != STILL_ACTIVE)
 		 return false;
-	 FImpl->FCond.MTimedwait(&FImpl->FMutex);
+	 FImpl->FCond.MTimedwait(&FImpl->FWorkingMutex);
 	/*
 	{
 		CRAII<CMutex> _lock(FImpl->FMutex);

@@ -299,11 +299,17 @@ eCBRval thread1_run(void*, void*, void*)
         std::cout<<"wait for consumer"<<std::endl;
         NSHARE::usleep(1000);
     }
-	for (int i = 0; i < 10; ++i, NSHARE::usleep(rand() % 500))
+	for (int i = 0; i < 10; NSHARE::usleep(rand() % 500))
 	{
-		CRAII<IMutex> _lock(*bufferLock);
-		sprintf(buffer, "%d", i);
-		cond->MSignal();
+        {
+            CRAII<IMutex> _lock(*bufferLock);
+            if(buffer[0] == '\0')
+            {
+                sprintf(buffer, "%d", i);
+                cond->MSignal();
+                ++i;
+            }
+        }
 	}
 	return E_CB_SAFE_IT;
 }

@@ -177,7 +177,7 @@
 #include <SHARE/UType/CBuffer.h>
 #include <SHARE/UType/CConfig.h>
 #include <SHARE/UType/version.h>
-#include <SHARE/UType/uuid.h>
+#include <SHARE/UType/share_uuid_t.h>
 #include <SHARE/UType/cb_t.h>
 #include <SHARE/UType/CEvent.h>
 #include <SHARE/UType/CEvents.h>

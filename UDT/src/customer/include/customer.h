@@ -52,7 +52,7 @@
 #include <SHARE/UType/CConfig.h>
 #include <SHARE/UType/version.h>
 
-#include <SHARE/UType/uuid.h>
+#include <SHARE/UType/share_uuid_t.h>
 #include <udt/programm_id.h>
 #include <SHARE/UType/CAddress.h>
 #include <udt/CCustomer.h>

@@ -341,8 +341,22 @@ public:
 
 	static bool sMUnitTest();
 
+	/** Append the value to CText by << operation
+	 *
+	 * @param aStream An value
+	 * @return Object
+	 */
 	template<typename T>
-	inline CText& operator<<(const T& aStream);
+	inline CText& MArg(const T& aStream);
+
+
+	/** Append the iomanip to CText
+	 *
+	 * @param aStream An value
+	 * @return Object
+	 */
+	template<typename T>
+	inline CText& MArg(T& (&_p)(T&));
 private:
 	/** Stream buffer to pass data to CText
 	 *

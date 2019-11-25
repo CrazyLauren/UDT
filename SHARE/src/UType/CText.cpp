@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <locale>
 #include <iomanip>
+#include <iostream>
 
 #include <SHARE/random_value.h>
 // Start of NSHARE namespace section
@@ -48,8 +49,14 @@ std::locale utf8_locale()
 			{
 				loc = std::locale(_strs[i]);
 				break;
-			} catch (std::runtime_error&)
+			} catch (std::runtime_error const&)
 			{
+				LOG(ERROR)<<"Unknown locale "<<_strs[i];
+				continue;
+			}
+			catch (...)
+			{
+				LOG(ERROR)<<"Unknown locale "<<_strs[i];
 				continue;
 			}
 	}
@@ -2012,11 +2019,13 @@ CText CText::sMPrintf(ICodeConv const& aType, const char* format, ...)
 	va_list argptr;
 	va_start(argptr, format);
 
+#if !defined(NDEBUG) && !defined(__QNX__)
 	if (CCodeUTF8 const* _utf8 = dynamic_cast<CCodeUTF8 const*>(&aType))
 	{
 		(void) _utf8;
 		CHECK(_utf8->MIsBufValid(format, format + strlen(format)));
 	}
+#endif
 	CText _to = string_printf_v(aType, CText(format, aType), argptr);
 
 	va_end(argptr);
@@ -2342,6 +2351,7 @@ void CText::MWillBeenChanged()
 		_impl.FSingleByteDatalen = 0;
 	}
 }
+
 bool CText::sMUnitTest()
 {
 	using namespace NSHARE;

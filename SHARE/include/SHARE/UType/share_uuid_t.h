@@ -1,5 +1,5 @@
 /*
- * uuid.h
+ * share_uuid_t.h
  *
  * Copyright © 2016  https://github.com/CrazyLauren
  *
@@ -9,8 +9,8 @@
  * Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
  * https://www.mozilla.org/en-US/MPL/2.0)
  */
-#ifndef UUID_H_
-#define UUID_H_
+#ifndef UUID_SHARE_H_
+#define UUID_SHARE_H_
 
 #ifdef __MINGW32__
 #	ifdef uuid_t
@@ -171,4 +171,4 @@ inline std::istream& operator>>(std::istream& aStream,
 }
 }
 
-#endif /* UUID_H_ */
+#endif /* UUID_SHARE_H_ */
