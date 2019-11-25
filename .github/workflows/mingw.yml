@@ -134,7 +134,7 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-          tar -czvf UDT-bunary-$COMPILER-$ARCHITECTURE-$CONFIGURATION-$GITHUB_SHA.tar.gz build/binary
+          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
           && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
