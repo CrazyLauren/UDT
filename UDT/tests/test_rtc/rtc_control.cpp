@@ -162,6 +162,7 @@ void wait_for_process_finished()
 					}), _list.end());
 
 	unsigned _i=0;
+	auto const _time=NSHARE::get_time();
 	do
 	{
 		_list.erase(
@@ -177,7 +178,7 @@ void wait_for_process_finished()
                 if(_it!=NSHARE::CThread::sMPid())
                     std::cout<<_it<<std::endl;
         }
-	} while (_list.size() != 1 && ( ++_i<10 ) && NSHARE::sleep(1));
+	} while (_list.size() != 1 && ( ++_i<5 )&&(_time+5)>NSHARE::get_time() && NSHARE::sleep(1));
 
 
 }
