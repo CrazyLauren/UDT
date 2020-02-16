@@ -1,0 +1,133 @@
+name: Gcc and Clang
+
+on: [push]
+jobs:
+  build-ubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [
+          ubuntu-gcc-6,
+          ubuntu-gcc-9,
+          ubuntu-clang-6,
+#          ubuntu-clang-9,
+        ]
+        include:
+          - name: ubuntu-gcc-6
+            os: ubuntu-16.04
+            compiler: gcc
+            version: "6"
+            configuration: release
+
+          - name: ubuntu-gcc-9
+            os: ubuntu-latest
+            compiler: gcc
+            version: "9"
+            configuration: release
+
+          - name: ubuntu-clang-6
+            os: ubuntu-16.04
+            compiler: clang
+            version: "6.0"
+            configuration: release
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set variables
+        id: vars
+        run: |
+          # Set git branch or git tag as slug
+          if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
+            GIT_TYPE=TAG
+          else
+            GIT_TYPE=BRANCH
+            if [ -n "${GITHUB_HEAD_REF}" ]; then
+              GIT_SLUG="${GITHUB_HEAD_REF}"
+            else
+              GIT_SLUG="${GITHUB_REF/refs\/heads\//}"
+            fi
+          fi
+          # Export variable
+          # # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env
+          echo ::set-env name=GIT_TYPE::${GIT_TYPE}
+          echo ::set-env name=GIT_SLUG::${GIT_SLUG}
+      - name: Install (Linux)
+        if: runner.os == 'Linux'
+        run: |
+            # LLVM 9 is not yet in Bionic's repositories.
+            #sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+            sudo apt-get update
+            #sudo apt-get install -y ninja-build clang-tidy-9
+            sudo apt-get install libboost-all-dev
+            #sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+            if [ "${{ matrix.compiler }}" = "gcc" ]; then
+              sudo apt-get install -y g++-${{ matrix.version }}
+              echo "::set-env name=CC::gcc-${{ matrix.version }}"
+              echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            else
+              sudo apt-get install -y clang-${{ matrix.version }}
+              echo "::set-env name=CC::clang-${{ matrix.version }}"
+              echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+            fi
+      - name: Print version
+        run: |
+          cmake --version
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            gcc --version
+          else
+            clang --version
+          fi
+
+      - name: configure
+        run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost ..
+      - name: build
+        run: cd build && cmake --build . --target install
+      - name:  SHARE unit test
+        shell: bash
+        run: |
+            cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+            timeout --signal=SIGABRT 100 ./unit_tests
+      - name: Testing RTC
+        run: |
+         cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+         (timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 100 ./test_rtc) && kill -SIGINT `pgrep Kernel`
+      - name: Testing inheritance
+        run: |
+          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
+      - name: Testing errors
+        run: |
+          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_errors) && kill -SIGINT `pgrep Kernel`
+      - name: Testing selection
+        run: |
+          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_selection) && kill -SIGINT `pgrep Kernel`
+      - name: Testing high load
+        if: matrix.configuration == 'Release'
+        run: |
+          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
+          (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
+
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: UDT-bunary-${{ matrix.name }}-${{ github.sha }}
+          path: build/binary/
+
+      - name: create binary
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          VERSION: ${{ matrix.version }}
+        shell: bash
+        run: |
+          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
+      - name: GitHub Releases
+        if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
+          && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

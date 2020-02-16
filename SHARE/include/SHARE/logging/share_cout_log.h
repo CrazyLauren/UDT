@@ -14,7 +14,6 @@
 #define SHARE_COUT_LOG_H_
 
 #include <logging/trace_macros.h>
-#include <logging/vlog_is_on.h>
 
 #	undef INFO
 #	undef WARNING

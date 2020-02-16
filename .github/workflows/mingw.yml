@@ -1,0 +1,145 @@
+name: MinGW
+
+on: [push]
+
+jobs:
+  build_mingw:
+    strategy:
+      matrix:
+        configuration: [Release,Debug]
+        compiler: [MinGW]
+        arch: [i686,x86_64]
+    name: Windows
+    runs-on: windows-2019
+    env:
+      MSYS_ROOT: ${{ matrix.compiler}}${{ matrix.arch}}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          # Set git branch or git tag as slug
+          if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
+            GIT_TYPE=TAG
+          else
+            GIT_TYPE=BRANCH
+            if [ -n "${GITHUB_HEAD_REF}" ]; then
+              GIT_SLUG="${GITHUB_HEAD_REF}"
+            else
+              GIT_SLUG="${GITHUB_REF/refs\/heads\//}"
+            fi
+          fi
+          # Export variable
+          # # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env
+          echo ::set-env name=GIT_TYPE::${GIT_TYPE}
+          echo ::set-env name=GIT_SLUG::${GIT_SLUG}
+      - name: Downloas Msys
+        shell: cmd
+        run: |
+              git clone https://github.com/msys2/msys2-ci-base.git %GITHUB_WORKSPACE%\msys64
+              %GITHUB_WORKSPACE%\msys64\usr\bin\rm -rf %GITHUB_WORKSPACE%\msys64\.git
+      - name: Update
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Syyuu
+      - name: Install mingwX86 Packages
+        env:
+          MINGW_ARCH: ${{ matrix.arch }}
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          mkdir build
+          cd build
+          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          cmake --build . --config "%CONFIGURATION%" --target install
+      - name:  SHARE unit test
+        shell: cmd
+        run: |
+            cd build/binary/bin
+            set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+            timeout --signal=SIGABRT 100 ./unit_tests
+      - name:  Testing RTC
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: cmd
+        run: |
+          cd build/binary/bin
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          start /B timeout --signal=SIGABRT 100 ./Kernel.exe -c test/test_kernel.json
+          timeout --signal=SIGABRT 100 ./test_rtc
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+      - name:  Testing inheritance
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./test_inheritance
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+      - name:  Testing errors
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: cmd
+        if: matrix.configuration != 'Debug'
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./test_errors
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+      - name:  Testing high load
+        working-directory: ./build/binary/bin
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: cmd
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./test_of_speed
+          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+      - name: Store artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build/binary/
+
+      - name: create binary
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
+      - name: GitHub Releases
+        if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
+          && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/binary/UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

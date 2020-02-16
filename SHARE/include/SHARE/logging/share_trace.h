@@ -307,5 +307,6 @@ extern "C" SHARE_EXPORT void install_failure_signal_handler();
 //\}
 
 #include <SHARE/logging/share_trace_config.h>
+#include <SHARE/logging/vlog_is_on.h>
 
 #endif /*SHARE_TRACE_H_*/

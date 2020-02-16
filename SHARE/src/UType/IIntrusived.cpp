@@ -40,10 +40,10 @@ struct IIntrusived::_w_counter_t
 	int MUnref() 
 	{
 		--FCount;
-		CHECK_LT(FCount, std::numeric_limits<unsigned>::max() / 2);
+		DCHECK_LT(FCount, std::numeric_limits<unsigned>::max() / 2);
 		if (FCount == 0)
 		{
-			VLOG(2) << "Remove ";
+			DVLOG(8) << "Remove ";
 			delete this;
 			return 0;
 		}
@@ -66,13 +66,13 @@ protected:
 IIntrusived::w_counter_t::w_counter_t(IIntrusived* aP) :
 		FWCounter(new _w_counter_t(aP))
 {
-	CHECK_NOTNULL(FWCounter);
+	DCHECK_NOTNULL(FWCounter);
 	FWCounter->MRef();
 }
 IIntrusived::w_counter_t::w_counter_t(w_counter_t const & aRht) :
 		FWCounter(aRht.FWCounter)
 {
-	CHECK_NOTNULL(FWCounter);
+	DCHECK_NOTNULL(FWCounter);
 	if (FWCounter->MRef() == 0)
 		FWCounter = NULL;
 }
@@ -84,7 +84,7 @@ IIntrusived::w_counter_t& IIntrusived::w_counter_t::operator =(
 		if (FWCounter && FWCounter->MUnref() == 0)
 			FWCounter = NULL;
 		FWCounter = aRht.FWCounter;
-		CHECK_NOTNULL(FWCounter);
+		DCHECK_NOTNULL(FWCounter);
 		if (FWCounter->MRef() == 0)
 			FWCounter = NULL;
 	}
@@ -107,7 +107,7 @@ IIntrusived::IIntrusived() :
 	FCount=0;
 	FReferedCount = 0;
 	FIsFirst=P_NOT_INITED;
-	VLOG(2) << "Construct object " << this;
+	DVLOG(8) << "Construct object " << this;
 }
 IIntrusived::IIntrusived(const IIntrusived& aRht) :
 		FWn(this)
@@ -115,17 +115,17 @@ IIntrusived::IIntrusived(const IIntrusived& aRht) :
 	FCount = 0;
 	FReferedCount = 0;
 	FIsFirst = P_NOT_INITED;
-	VLOG(2) << "Constract object " << this;
+	DVLOG(8) << "Constract object " << this;
 	DCHECK(aRht.MCountRef() > 0);
 }
 IIntrusived::~IIntrusived()
 {
-	LOG_IF(DFATAL, MCountRef() != 0) << "Ref not null";
-	VLOG(2) << "Destruct object " << this;
+	DLOG_IF(DFATAL, MCountRef() != 0) << "Ref not null";
+	DVLOG(8) << "Destruct object " << this;
 }
 IIntrusived& IIntrusived::operator =(const IIntrusived& aVal)
 {
-	LOG(DFATAL)<< "operator = (" << this << ", " << (&aVal);
+	DLOG(DFATAL)<< "operator = (" << this << ", " << (&aVal);
 	return *this;
 }
 
@@ -167,7 +167,7 @@ int IIntrusived::MUnrefImpl() const
 }
 int IIntrusived::MUnrefWithoutDelete() const
 {
-	VLOG(3) << "MUnrefWithoutDelete() " << this;
+	DVLOG(3) << "MUnrefWithoutDelete() " << this;
 	--FCount;
 	return FCount;
 }
@@ -181,7 +181,7 @@ unsigned IIntrusived::MReferedCount() const
 }
 void IIntrusived::MDelete() const
 {
-	VLOG(2) << "Delete object " << this;
+	DVLOG(8) << "Delete object " << this;
 	FWn.FWCounter->FWPtr = NULL;
 	delete this;
 }

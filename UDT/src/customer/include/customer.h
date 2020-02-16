@@ -42,8 +42,8 @@
 #include <SHARE/UType/atomic_t.h>
 #include <SHARE/UType/IAllocater.h>
 #include <SHARE/UType/CCOWPtr.h>
-#include <SHARE/UType/CText.h>
 #include <SHARE/logging/share_trace.h>
+#include <SHARE/UType/CText.h>
 #include <SHARE/UType/CSingleton.h>
 
 
@@ -52,7 +52,7 @@
 #include <SHARE/UType/CConfig.h>
 #include <SHARE/UType/version.h>
 
-#include <SHARE/UType/uuid.h>
+#include <SHARE/UType/share_uuid_t.h>
 #include <udt/programm_id.h>
 #include <SHARE/UType/CAddress.h>
 #include <udt/CCustomer.h>

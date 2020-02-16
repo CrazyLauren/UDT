@@ -538,6 +538,7 @@ struct CJsonReader
 	}
 	bool Null()
 	{
+        MAddLeaf(NSHARE::CText());
 		return true;
 	}
 	bool Bool(bool b)
@@ -573,13 +574,13 @@ struct CJsonReader
 	bool RawNumber(const char* str, SizeType length, bool copy)
 	{
 
-		MAddLeaf(NSHARE::CText(str, length));
+		MAddLeaf(NSHARE::CText(str/*, length*/));
 		return true;
 	}
 	bool String(const char* str, SizeType length, bool copy)
 	{
 
-		MAddLeaf(NSHARE::CText(str, length));
+		MAddLeaf(NSHARE::CText(str/*, length*/));///bug fix lengh - is size
 		return true;
 	}
 

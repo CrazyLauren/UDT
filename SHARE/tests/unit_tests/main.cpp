@@ -9,7 +9,8 @@ using namespace NSHARE;
 namespace share_unit_tests
 {
 int main(int argc, char const*argv[])
-{		
+{
+    init_trace(argc,argv);
 	unit_testing();
 	return EXIT_SUCCESS;
 }

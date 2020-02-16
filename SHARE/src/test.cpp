@@ -53,78 +53,104 @@ UNIT_TEST_FUNC_ATTR bool unit_testing()
 {
 	std::cout << "Share testing ..." << std::endl;
 	_volatile_test();
-	if (!NSHARE::CMutex::sMUnitTest())
-	{
-		std::cerr << "CMutex::sMUnitTest() - " << "***Failed***" << std::endl;
-		return false;
-	}
-	if (!NSHARE::CCondvar::sMUnitTest())
-	{
-		std::cerr << "CCondvar::sMUnitTest() - " << "***Failed***" << std::endl;
-		return false;
-	}
-	if (!NSHARE::CIPCMutex::sMUnitTest())
-	{
-		std::cerr << "CIPCMutex::sMUnitTest() - " << "***Failed***" << std::endl;
-		return false;
-	}
 
-	if (!NSHARE::CIPCSignalEvent::sMUnitTest())
-	{
-		std::cerr << "CIPCSignalEvent::sMUnitTest() - " << "***Failed***" << std::endl;
-		return false;
-	}
+    std::cout << "Testing CText" << std::endl;
 	if (!NSHARE::CText::sMUnitTest())
 	{
 		std::cerr << "CText::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
 
+    std::cout << "Testing CMutex" << std::endl;
+	if (!NSHARE::CMutex::sMUnitTest())
+	{
+		std::cerr << "CMutex::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+
+    std::cout << "Testing CCondvar" << std::endl;
+	if (!NSHARE::CCondvar::sMUnitTest())
+	{
+		std::cerr << "CCondvar::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+
+    std::cout << "Testing CIPCMutex" << std::endl;
+	if (!NSHARE::CIPCMutex::sMUnitTest())
+	{
+		std::cerr << "CIPCMutex::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+
+    std::cout << "Testing CIPCSignalEvent" << std::endl;
+	if (!NSHARE::CIPCSignalEvent::sMUnitTest())
+	{
+		std::cerr << "CIPCSignalEvent::sMUnitTest() - " << "***Failed***" << std::endl;
+		return false;
+	}
+
+    std::cout << "Testing CBuffer" << std::endl;
 	if (!NSHARE::CBuffer::sMUnitTest(NULL))//todo for several allocators
 	{
 		std::cerr << "CBuffer::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CProgramName" << std::endl;
 	if (!NSHARE::CProgramName::sMUnitTest())
 	{
 		std::cerr << "CAddress::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<int>" << std::endl;
 	if (!NSHARE::CCOWPtr<int>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<int>::sMUnitTest() - " << "***Failed***" << std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<uint64_t>" << std::endl;
 	if (!NSHARE::CCOWPtr<uint64_t>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<uint16_t>" << std::endl;
 	if (!NSHARE::CCOWPtr<uint16_t>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<uint64_t>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CCOWPtr<_non_alligned>" << std::endl;
 	if (!NSHARE::CCOWPtr<_non_alligned>::sMUnitTest())
 	{
 		std::cerr << "CCOWPtr<_non_alligned>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CFlags" << std::endl;
 	if (!NSHARE::CFlags<>::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CFlags<>::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CSemaphore" << std::endl;
 	if (!NSHARE::CSemaphore::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CSemaphore::sMUnitTest() - " << "***Failed***"
 				<< std::endl;
 		return false;
 	}
+
+    std::cout << "Testing CConfig" << std::endl;
 	if (!NSHARE::CConfig::sMUnitTest())
 	{
 		std::cerr << "NSHARE::CConfig::sMUnitTest() - " << "***Failed***"
@@ -245,6 +271,10 @@ bool CIPCMutex::sMUnitTest()
 	uint8_t _buf1[CIPCMutex::eReguredBufSize];
 	uint8_t _buf2[CIPCMutex::eReguredBufSize];
 	uint8_t _buf3[CIPCMutex::eReguredBufSize];
+	memset(_buf1,0,sizeof(_buf1));
+	memset(_buf2,0,sizeof(_buf2));
+	memset(_buf3,0,sizeof(_buf3));
+
 
 	CIPCMutex _mutex1(_buf1,sizeof(_buf1),CIPCMutex::E_HAS_TO_BE_NEW);
 	CIPCMutex _mutex2(_buf2,sizeof(_buf2),CIPCMutex::E_HAS_TO_BE_NEW);
@@ -261,14 +291,25 @@ char buffer[50] = "";
 IMutex *bufferLock;
 IConditionVariable* cond;
 bool ok = true;
+bool g_is_lock=false;
 eCBRval thread1_run(void*, void*, void*)
 {
-	NSHARE::usleep(1000);
-	for (int i = 0; i < 10; ++i, NSHARE::usleep(rand() % 500))
+    for(;!g_is_lock;)
+    {
+        std::cout<<"wait for consumer"<<std::endl;
+        NSHARE::usleep(1000);
+    }
+	for (int i = 0; i < 10; NSHARE::usleep(rand() % 500))
 	{
-		CRAII<IMutex> _lock(*bufferLock);
-		sprintf(buffer, "%d", i);
-		cond->MSignal();
+        {
+            CRAII<IMutex> _lock(*bufferLock);
+            if(buffer[0] == '\0')
+            {
+                sprintf(buffer, "%d", i);
+                cond->MSignal();
+                ++i;
+            }
+        }
 	}
 	return E_CB_SAFE_IT;
 }
@@ -279,6 +320,7 @@ eCBRval thread2_run(void*, void*, void*)
 	{
 		{
 			CRAII<IMutex> _lock(*bufferLock);
+            g_is_lock=true;
 			for (HANG_INIT; buffer[0] == '\0'; HANG_CHECK)
 			{
 				cond->MTimedwait(bufferLock);
@@ -303,8 +345,9 @@ bool CCondvar::sMUnitTest()
 	CThread t2;
 	t2 += CB_t(condvar_test_impl::thread2_run, NULL);
 
-	t1.MCreate();
-	t2.MCreate();
+    condvar_test_impl::g_is_lock=false;
+    t2.MCreate();
+    t1.MCreate();
 
 	t1.MJoin();
 	t2.MJoin();
@@ -319,6 +362,9 @@ bool CIPCSignalEvent::sMUnitTest()
 	uint8_t _buf_mutex[CIPCMutex::eReguredBufSize];
 	uint8_t _buf_condvar[CIPCSignalEvent::eReguredBufSize];
 
+    memset(_buf_mutex,0,sizeof(_buf_mutex));
+    memset(_buf_condvar,0,sizeof(_buf_condvar));
+
 	condvar_test_impl::bufferLock = new CIPCMutex(_buf_mutex, sizeof(_buf_mutex),
 			CIPCMutex::E_HAS_TO_BE_NEW);
 
@@ -329,8 +375,10 @@ bool CIPCSignalEvent::sMUnitTest()
 	CThread t2;
 	t2 += CB_t(condvar_test_impl::thread2_run, NULL);
 
+    condvar_test_impl::g_is_lock=false;
+    t2.MCreate();
 	t1.MCreate();
-	t2.MCreate();
+
 
 	t1.MJoin();
 	t2.MJoin();

@@ -12,6 +12,12 @@
 #ifndef CSHAREDMEMORYIMPL_H_
 #define CSHAREDMEMORYIMPL_H_
 
+#include <boost/version.hpp>
+
+#if BOOST_VERSION>=105400
+#   define BOOST_INTERPROCESS_BOOTSTAMP_IS_LASTBOOTUPTIME
+#endif
+
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <SHARE/UType/CSharedMemory.h>

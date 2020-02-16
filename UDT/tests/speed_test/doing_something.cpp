@@ -27,9 +27,11 @@ static double g_start_time = 0.0;///< Start time of the test
 static double g_last_print_time = 0.0;///< Current time
 
 static unsigned long long g_recv_bytes = 0;///< Amount of received bytes
-static unsigned g_amount_of_messages = 0;///< Amount of received messages
-static unsigned g_amount_of_doesnt_send = 0;///< Amount of not sent message
-static unsigned g_amount_of_doesnt_allocated = 0;///< Amount of not allocated buffers
+static NSHARE::atomic_t g_amount_of_messages;///< Amount of received messages
+static unsigned long long g_amount_of_send_messages = 0;///< Amount of send messages
+static unsigned long long g_amount_of_doesnt_send = 0;///< Amount of not sent message
+static unsigned long long g_amount_of_doesnt_allocated = 0;///< Amount of not allocated buffers
+static NSHARE::atomic_t  g_amount_of_fail_send;///< Amount of not sended
 
 extern int msg_speed_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
@@ -97,27 +99,7 @@ extern int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 }
 extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 {
-	NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
-	/*! Algorithm:*/
-	/*! 1) Convention void pointer to pointer to #NUDT::fail_sent_args_t structure */
-	fail_sent_args_t const* _recv_arg = (fail_sent_args_t const*) aWHAT;
-
-	/*! 2) Print information about for whom messages aren't delivered .*/
-	std::cerr << "The packet " << _recv_arg->FPacketNumber
-			<< " has not been delivered to ";
-
-	for (auto const& _it :_recv_arg->FFails)
-	{
-		std::cerr << (_it) << ", ";
-	}
-
-	/*! 3) Print information about why the messages aren't delivered .*/
-	CCustomer::sMPrintError(std::cerr, _recv_arg->FErrorCode);
-
-	if (_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIST)
-		std::cerr << " user's code=" << (unsigned) _recv_arg->FUserCode;
-	std::cerr << std::endl;
-
+    ++g_amount_of_fail_send;
 	return 0;
 }
 extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT,
@@ -160,6 +142,8 @@ extern bool send_messages()
 	g_time = NSHARE::get_time();
 	g_start_time = NSHARE::get_time();
 	g_last_print_time= NSHARE::get_time();
+    g_amount_of_messages=0;
+    g_amount_of_fail_send=0;
 	for (unsigned i=0;
 		(i%10000)!=0//Check only every 10000 sent message
 		|| (NSHARE::get_time()-g_start_time)<g_test_working_time//stop after timeout
@@ -174,26 +158,29 @@ extern bool send_messages()
 		{
 			if (CCustomer::sMGetInstance().MSend(MESSAGE_NUMBER, _buf) < 0)
 				++g_amount_of_doesnt_send;
+			else
+			    ++g_amount_of_send_messages;
 		}
 		else
 			++g_amount_of_doesnt_allocated;
 	};
     double const _speed=(g_recv_bytes / 1024.0 / 1024.0)
         / (NSHARE::get_time() - g_start_time);
-	{
-		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	NSHARE::sleep(5);
 
-		std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
-			<< " md; Average speed ="
-			<< _speed << " mb/s."
-			<< std::endl;
-		std::cout << "Messages=" << g_amount_of_messages << "; fail sent="
-			<< g_amount_of_doesnt_send << "; fail allocated="
-			<< g_amount_of_doesnt_allocated << std::endl;
-		std::cout << "Press any key... " << std::endl;
-	}
-	NSHARE::sleep(1);
-	return _speed>1000/*mb/sec*/;
+    {
+        NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+
+        std::cout << "Receive <==" << (g_recv_bytes / 1024 / 1024)
+                  << " md; Average speed ="
+                  << _speed << " mb/s."
+                  << std::endl;
+        std::cout << "Recv Messages=" << g_amount_of_messages<<" Send msg="<< g_amount_of_send_messages<< "; fail sent="
+                  << g_amount_of_doesnt_send << "; fail allocated="
+                  << g_amount_of_doesnt_allocated<<" Not delivered="<<g_amount_of_fail_send << std::endl;
+        std::cout << "Press any key... " << std::endl;
+    }
+	return g_amount_of_send_messages==g_amount_of_messages;
 }
 }
 

@@ -17,6 +17,8 @@
 #include <deftype>
 #include <stdarg.h>
 #include <locale>
+#include <iomanip>
+#include <iostream>
 
 #include <SHARE/random_value.h>
 // Start of NSHARE namespace section
@@ -47,21 +49,30 @@ std::locale utf8_locale()
 			{
 				loc = std::locale(_strs[i]);
 				break;
-			} catch (std::runtime_error&)
+			} catch (std::runtime_error const&)
 			{
+				LOG(ERROR)<<"Unknown locale "<<_strs[i];
+				continue;
+			}
+			catch (...)
+			{
+				LOG(ERROR)<<"Unknown locale "<<_strs[i];
 				continue;
 			}
 	}
 	return loc;
 }
 CText::CText(allocator_type*aAllocator):
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
+
 {
 	MInit();
 }
 CText::CText(const CText& str):
 		FImpl(str.FImpl),//
-		FCodePointLength(str.FCodePointLength)//
+		FCodePointLength(str.FCodePointLength),//
+        FStream(new CTextStream(*this))
 {
 	//assign(str);
 }
@@ -78,12 +89,14 @@ CText& CText::operator=(const CText& str)
 }
 CText::CText(const CText& str, size_type str_idx, size_type str_num):
 				FImpl(str.FImpl),//
-				FCodePointLength(str.FCodePointLength)//
+				FCodePointLength(str.FCodePointLength),//
+                FStream(new CTextStream(*this))
 {
 	assign(str, str_idx, str_num);
 }
 CText::CText(const std::string& std_str,allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(std_str);
@@ -94,28 +107,32 @@ CText& CText::operator=(const std::string& std_str)
 }
 CText::CText(const std::string& std_str, size_type str_idx, size_type str_num,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(std_str, str_idx, str_num);
 }
 CText::CText(size_type num, utf32 code_point,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(num, code_point);
 }
 CText::CText(const_iterator const& iter_beg, const_iterator const& iter_end,
 		allocator_type*aAllocator) :
-		FImpl(impl_t(aAllocator),aAllocator)
+		FImpl(impl_t(aAllocator),aAllocator),//
+        FStream(new CTextStream(*this))
 {
 	MInit();
 	append(iter_beg, iter_end);
 }
 CText::CText(utf8 const* cstr, ICodeConv const& aType,
 		allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(cstr, aType);
@@ -126,7 +143,8 @@ CText& CText::operator=(utf8 const* cstr)
 }
 CText::CText(utf8 const* chars, size_type chars_len, ICodeConv const& aType,
 		allocator_type*aAllocator):
-				FImpl(impl_t(aAllocator),aAllocator)
+				FImpl(impl_t(aAllocator),aAllocator),//
+                FStream(new CTextStream(*this))
 {
 	MInit();
 	assign(chars, chars_len, aType);
@@ -182,6 +200,7 @@ CText::impl_t::~impl_t()
 }
 CText::~CText()
 {
+
 }
 CText::reference CText::at(size_type idx)
 {
@@ -1557,38 +1576,38 @@ std::ostream& CText::MPrint(std::ostream& aStream, ICodeConv const& aType) const
 		VLOG(2) << "Print empty text";
 	return aStream;
 }
-template<class T, class Tlist>
-std::string handle_num(Tlist& argptr, CText::const_iterator& _start,
-		CText::const_iterator& _it, int base = 10)
-{
-	T i;
-	i = va_arg(static_cast<Tlist>(argptr), T);
-	std::string _num;
-	bool _result = NSHARE::num_to_str(i, _num, base); //FIXME format
-	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "
-									<< CText(_start, _it)
-									<< " interpret as non-escape text";
-	(void) _result;
-	return _num;
-}
-template<class T, class Tlist>
-std::string handle_float(Tlist& argptr, CText::const_iterator& _start,
-		CText::const_iterator& _it, int precision = -1)
-{
-	T i;
-	i = va_arg(static_cast<Tlist>(argptr), T);
-	std::string _num;
-	bool _result = false;
-	if (precision != -1)
-		_result = NSHARE::float_to_str(i, _num, precision); //FIXME format
-	else
-		_result = NSHARE::float_to_str(i, _num); //FIXME format
-	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "
-									<< CText(_start, _it)
-									<< " interpret as non-escape text";
-	(void) _result;
-	return _num;
-}
+
+#define HANDLE_NUM(T , base )\
+{\
+	T i;\
+	i = va_arg(argptr, T);\
+	std::string _num;\
+	bool _result = NSHARE::num_to_str(i, _num, base); /*FIXME format*/ \
+	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in " \
+									<< CText(_start, _it) \
+									<< " interpret as non-escape text"; \
+	(void) _result; \
+	subst+=_num;\
+}\
+/*END*/
+
+#define HANDLE_FLOAT(T , precision )\
+{\
+	T i;\
+	i = va_arg(argptr, T);\
+	std::string _num;\
+	bool _result = false;\
+	if (precision != -1)\
+		_result = NSHARE::float_to_str(i, _num, precision); /*FIXME format*/\
+	else\
+		_result = NSHARE::float_to_str(i, _num); /*FIXME format*/\
+	LOG_IF(DFATAL,!_result) << "Cannot read  the field width in "\
+									<< CText(_start, _it)\
+									<< " interpret as non-escape text";\
+	(void) _result;\
+	subst+=_num;\
+}\
+/*END*/
 enum _mode
 {
 	_none, _hh, _h, _l, _ll, _L, _j, _z, _t
@@ -1771,26 +1790,40 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			switch (length_mod)
 			{
 			case _none:
-				subst += handle_num<int>(argptr, _start, _it);
+            {
+                HANDLE_NUM(int,10);
+            }
 				break;
 			case _hh:
-				subst += handle_num<int>(argptr, _start, _it);
+            {
+                HANDLE_NUM(int,10);
+            }
 				break;
 			case _h:
-				subst += handle_num<int>(argptr, _start, _it);
+            {
+                HANDLE_NUM(int,10);
+            }
 				break;
 			case _l:
 			case _j:
-				subst += handle_num<long int>(argptr, _start, _it);
+            {
+                HANDLE_NUM(long int,10);
+            }
 				break;
 			case _ll:
-				subst += handle_num<long long>(argptr, _start, _it);
+            {
+                HANDLE_NUM(long long,10);
+            }
 				break;
 			case _z:
-				subst += handle_num<size_t>(argptr, _start, _it);
+            {
+                HANDLE_NUM(size_t,10);
+            }
 				break;
 			case _t:
-				subst += handle_num<int>(argptr, _start, _it);
+            {
+                HANDLE_NUM(int,10);
+            }
 				break;
 			default:
 				break;
@@ -1825,14 +1858,19 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			case _hh:
 			case _h:
 			case _l:
-				subst += handle_num<unsigned>(argptr, _start, _it, base);
+            {
+                HANDLE_NUM(unsigned ,base);
+            }
 				break;			
 			case _ll:
-				subst += handle_num<unsigned long long>(argptr, _start, _it,
-						base);
+            {
+                HANDLE_NUM(unsigned long long,base);
+            }
 				break;
 			case _z:
-				subst += handle_num<size_t>(argptr, _start, _it, base);
+            {
+                HANDLE_NUM(size_t,base);
+            }
 				break;
 			default:
 				break;
@@ -1851,10 +1889,13 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 		{
 			//FIXME fromating
 			if (length_mod == _L)
-				subst += handle_float<long double>(argptr, _start, _it,
-						precision);
+            {
+                HANDLE_FLOAT(long double,precision)
+            }
 			else
-				subst += handle_float<double>(argptr, _start, _it, precision);
+            {
+                HANDLE_FLOAT(double,precision)
+            }
 			break;
 		}
 		case 'b':
@@ -1978,11 +2019,13 @@ CText CText::sMPrintf(ICodeConv const& aType, const char* format, ...)
 	va_list argptr;
 	va_start(argptr, format);
 
+#if !defined(NDEBUG) && !defined(__QNX__)
 	if (CCodeUTF8 const* _utf8 = dynamic_cast<CCodeUTF8 const*>(&aType))
 	{
 		(void) _utf8;
 		CHECK(_utf8->MIsBufValid(format, format + strlen(format)));
 	}
+#endif
 	CText _to = string_printf_v(aType, CText(format, aType), argptr);
 
 	va_end(argptr);
@@ -2308,6 +2351,7 @@ void CText::MWillBeenChanged()
 		_impl.FSingleByteDatalen = 0;
 	}
 }
+
 bool CText::sMUnitTest()
 {
 	using namespace NSHARE;
@@ -2596,6 +2640,34 @@ bool CText::sMUnitTest()
 		s2.MPrintf("Number 18: %s", s1.c_str());
 		CHECK_EQ(s2, "Number 18: 18");
 	}
+    //Format stream
+    {
+        CText s1, s2;
+        s1<<18;
+        CHECK_EQ(s1, "18");
+
+        s2<<"Number "<<18<<": "<<s1;
+        CHECK_EQ(s2, "Number 18: 18");
+    }
+    {
+        CText _text,_text2;
+        unsigned const _this[] = {0xFE,0xAA,0x1,0x20,0x10,0xFA,0xF1,0x1F};
+        _text2.MPrintf("%02x-%02x-"
+                      "%02x-%02x-"
+                      "%02x-%02x-"
+                      "%02x-%02x", _this[0], _this[1], _this[2], _this[3], _this[4],
+            _this[5], _this[6], _this[7]);
+        _text2.MToLowerCase();
+        _text<<std::showbase<< std::setfill('0')<< std::setw(2)<<std::hex ;
+        unsigned _count_array=sizeof(_this)/sizeof(_this[0]);
+        for (unsigned i=0; i<_count_array; i++)
+        {
+            _text<<(unsigned)_this[i];
+            if(i!=(_count_array-1))
+                _text<<'-';
+        }
+        CHECK_EQ(_text, _text2)<<"Printf:"<<_text2<<" stream:"<<_text;
+    }
 	{
 		static const size_t lengths[] =
 		{ 1, 512, 1024, 1025, 2048, 4096, 4097 };
@@ -2618,6 +2690,19 @@ bool CText::sMUnitTest()
 
 		CText s3;
 		s3.MPrintf("Для паши %s", s2.c_str());
+
+		CHECK_EQ(s3, "Для паши Номер 18: 18");
+	}
+	{
+		CText s1, s2;
+		s1<<18;
+		CHECK_EQ(s1, "18");
+
+		s2<<"Номер "<<18<<": "<<s1;
+		CHECK_EQ(s2, "Номер 18: 18");
+
+		CText s3;
+		s3<<"Для паши "<<s2;
 
 		CHECK_EQ(s3, "Для паши Номер 18: 18");
 	}

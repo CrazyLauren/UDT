@@ -12,6 +12,8 @@
 #ifndef TRACE_MACROS_H_
 #define TRACE_MACROS_H_
 
+#include <SHARE/logging/vlog_is_on.h>
+
 /*! Undefining macros if need
  * @{
  */
@@ -94,38 +96,38 @@
              << "Check failed: " #condition " "
 
 #define CHECK_EQ(val1, val2)\
-	for(; !((val1)==(val2)); NSHARE::sleep(1))\
+	for(; !((val1)==(val2)); )\
 	LOG(FATAL)<<(val1)<<" != "<<(val2)
 
 #define CHECK_NE(val1, val2)\
-	for( ;!((val1)!=(val2));NSHARE::sleep(1))\
+	for( ;!((val1)!=(val2));)\
 	LOG(FATAL)<<(val1)<<" == "<<(val2)
 
 #define CHECK_LE(val1, val2)\
-	for( ;!((val1)<=(val2)); NSHARE::sleep(1))\
+	for( ;!((val1)<=(val2)); )\
 	LOG(FATAL)<<(val1)<<" > "<<(val2)
 
 #define CHECK_LT(val1, val2)\
-	for( ;!((val1)<(val2)); NSHARE::sleep(1))\
+	for( ;!((val1)<(val2)); )\
 	LOG(FATAL)<<(val1)<<" >= "<<(val2)
 
 #define CHECK_GE(val1, val2)\
-	for(; !((val1)>=(val2));NSHARE::sleep(1))\
+	for(; !((val1)>=(val2));)\
 	LOG(FATAL)<<(val1)<<" < "<<(val2)
 
 #define CHECK_GT(val1, val2)\
-	for(; !((val1)>(val2)); NSHARE::sleep(1))\
+	for(; !((val1)>(val2)); )\
 	LOG(FATAL)<<(val1)<<" <= "<<(val2)
 
 #define CHECK_NOTNULL(val) \
 		LOG_IF(FATAL, val==NULL)<<"'"<< #val<< "' Must be non NULL. "
 
 #define CHECK_STREQ(s1, s2) \
-		for( ;strcmp(s1,s2); NSHARE::sleep(1))\
+		for( ;strcmp(s1,s2); )\
 		LOG(FATAL)<<(s1)<<" -not equal- "<<(s2)
 
 #define CHECK_STRNE(s1, s2) \
-		for(; !(strcmp(s1,s2));NSHARE::sleep(1))\
+		for(; !(strcmp(s1,s2));)\
 		LOG(FATAL)<<(s1)<<" -equal- "<<(s2)
 
 #define PLOG(severity) LOG(severity)<<(errno==0?"": ::strerror(errno))<<" "

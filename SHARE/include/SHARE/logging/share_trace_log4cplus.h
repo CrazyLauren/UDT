@@ -23,7 +23,6 @@
 #include <string.h>
 #include <iomanip>
 #include <SHARE/logging/trace_macros.h>
-#include <SHARE/logging/vlog_is_on.h>
 
 #	undef INFO
 #	undef WARNING

@@ -25,7 +25,7 @@ public:
 	 *
 	 */
 	explicit CMutex(eMutexType aType = MUTEX_RECURSIVE);
-	~CMutex(void);
+	virtual ~CMutex(void);
 
 	/** @copydoc IMutex::MLock
 	 *

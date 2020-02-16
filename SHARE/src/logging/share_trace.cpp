@@ -46,9 +46,10 @@
 #include <SHARE/UType/atomic_t.h>
 #include <SHARE/UType/IAllocater.h>
 #include <SHARE/UType/CCOWPtr.h>
+#include <SHARE/logging/share_trace.h>
 #include <SHARE/UType/CText.h>
 #include <SHARE/logging/vlog_is_on.h>
-#include <SHARE/logging/share_trace.h>
+
 
 #if defined(CPLUS_LOG)
 #	include <log4cplus/logger.h>

@@ -16,6 +16,9 @@
 #include <stdexcept>
 #include <cstddef>
 #include <SHARE/UType/CCodeConv.h>
+#include <SHARE/UType/IIntrusived.h>
+#include <SHARE/UType/intrusive_ptr.h>
+
 #if defined(_MSC_VER)
 #	pragma warning (push)
 #	pragma warning (disable:4251)
@@ -30,6 +33,7 @@ typedef utf8 encoded_char;
 //don't use memcpy!!!!!!!!!!!!!!!!!!!!!!!
 class SHARE_EXPORT CText
 {
+	class CTextStream;
 public:
 	/*************************************************************************
 	 Integral Types
@@ -45,6 +49,8 @@ public:
 
 	class SHARE_EXPORT iterator;
 	class SHARE_EXPORT const_iterator;
+
+
 
 	typedef std::reverse_iterator<iterator> reverse_iterator;
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
@@ -334,7 +340,59 @@ public:
 //	bool isxdigit ();
 
 	static bool sMUnitTest();
+
+	/** Append the value to CText by << operation
+	 *
+	 * @param aStream An value
+	 * @return Object
+	 */
+	template<typename T>
+	inline CText& MArg(const T& aStream);
+
+
+	/** Append the iomanip to CText
+	 *
+	 * @param aStream An value
+	 * @return Object
+	 */
+	template<typename T>
+	inline CText& MArg(T& (&_p)(T&));
 private:
+	/** Stream buffer to pass data to CText
+	 *
+	 * @todo Utf8
+	 */
+	class SHARE_EXPORT CTextBuf: public std::streambuf
+	{
+	public:
+		explicit CTextBuf(CText& aText) ;
+	protected:
+		virtual int overflow(int c);
+
+	private:
+		CText& FText;
+		CCodeUTF8 FCode;
+		utf8 FStr[4];
+		size_t FSize;
+		size_t FBufI;
+	};
+	/** Stream to write to CText
+	 *
+	 */
+	class SHARE_EXPORT CTextStream: public std::ostream,IIntrusived
+	{
+	public:
+		/** Creates stream for CText
+		 *
+		 * @param aText reference for CText
+		 */
+		explicit CTextStream(CText& aText);
+		virtual ~CTextStream();
+
+		CText& FText;
+	private:
+		CTextBuf msb;
+	};
 	struct SHARE_EXPORT impl_t
 	{
 		impl_t(allocator_type*);
@@ -361,6 +419,8 @@ private:
 		}
 	};
 	typedef CCOWPtr<impl_t> cow_impl_t;
+
+
 
 	// string management
 	// change size of allocated buffer so it is at least 'new_size'.
@@ -422,6 +482,7 @@ private:
 
 	cow_impl_t FImpl;///< Copy on write data
 	size_type FCodePointLength;///< holds length of string in code points (not including null termination)
+    intrusive_ptr<CTextStream> FStream;
 };
 typedef std::deque<CText> Strings;
 
@@ -448,6 +509,7 @@ struct CStringFastLessCompare
 } //namespace NSHARE
 #include <SHARE/UType/CTextIterator.h>
 #include <SHARE/UType/CTextImpl.h>
+#include <SHARE/UType/CTextStream.h>
 
 #if defined(_MSC_VER)
 #	pragma warning (pop)

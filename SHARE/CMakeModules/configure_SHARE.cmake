@@ -70,6 +70,9 @@ if(NOT HAVE_IPHLPAPI_H AND NOT HAVE_GETIFADDRS)
 	message(FATAL_ERROR "Cannot implemente function for get interface addresses ")
 endif()
 
+check_include_files(x86intrin.h HAVE_X86INTRIN_H)
+check_include_files(intrin.h HAVE_INTRIN_H)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(${PROJECT_NAME}_PLATFORM_DEFENITIONS  "" CACHE STRING "" FORCE)

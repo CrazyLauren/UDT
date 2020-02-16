@@ -13,9 +13,8 @@
 #define PROGRAMM_ID_H_
 
 #include "udt_share_macros.h"
-
 #ifdef uuid_t
-#error "Fucking programmer"
+#   error "Fucking programmer"
 #endif
 namespace NUDT
 {
@@ -75,7 +74,7 @@ struct UDT_SHARE_EXPORT id_t
 #ifdef SHARE_CONFIG_DEFINED
 	static const NSHARE::CText NAME;///< A serializing key
 	static const NSHARE::CText KEY_NAME;///< A key of #FName
-	
+
 	/*!\brief Deserialize object
 	 *
 	 * To check the result of deserialization,
@@ -136,7 +135,7 @@ struct UDT_SHARE_EXPORT program_id_t
 	static const NSHARE::CText KEY_PATH;///< A key of #FPath
 	static const NSHARE::CText KEY_TYPE;///< A key of #FType
 	static const NSHARE::CText KEY_ENDIAN;///< A key of #FEndian
-	
+
 	/*!\brief Deserialize object
 	 *
 	 * To check the result of deserialization,

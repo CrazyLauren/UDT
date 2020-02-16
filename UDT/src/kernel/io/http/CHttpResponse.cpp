@@ -133,8 +133,7 @@ NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 {
 	{
 		NSHARE::CText _text_response;
-		_text_response.MPrintf("HTTP/%d.%d %d %s\r\n", FVersion.FMajor,
-				FVersion.FMinor, FCode, FCodeMsg.c_str());
+        _text_response<<"HTTP/"<<(unsigned)FVersion.FMajor<<"."<<(unsigned)FVersion.FMinor<<" "<<(int)FCode<<" "<<FCodeMsg<<"\r\n";
 		aBuf << _text_response;
 	}
 	{
@@ -143,7 +142,7 @@ NSHARE::CBuffer CHttpResponse::MRaw(NSHARE::CBuffer aBuf/*,NSHARE::ICodeConv*/)
 		{
 			//LOG(WARNING)<<g_length_key<<" is not setting.Chucked is not supported";
 			CText _num;
-			_num.MPrintf("%d",FBody.size());
+            _num<<FBody.size();
 			MAppendHeader(g_length_key,_num);
 		}
 #ifdef _WIN32
