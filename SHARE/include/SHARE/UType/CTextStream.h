@@ -93,5 +93,17 @@ inline NSHARE::CText& operator<<(NSHARE::CText& s, T& (&aWhat)(T&))
 {
     return s.MArg(aWhat);
 }
+template<class T>
+inline NSHARE::CText operator<<(NSHARE::CText const& s, const T& aWhat)
+{
+	NSHARE::CText _rval(s);
+    return _rval.MArg(aWhat);
+}
+template<class T>
+inline NSHARE::CText operator<<(NSHARE::CText const& s, T& (&aWhat)(T&))
+{
+	NSHARE::CText _rval(s);
+    return _rval.MArg(aWhat);
+}
 }
 #endif /* CTEXTSTREAM_H_ */
