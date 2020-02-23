@@ -7,6 +7,7 @@ include(CheckIncludeFiles)
 include(CheckCXXSourceCompiles)
 include(CheckTypeSize)
 include(FindPackageHandleStandardArgs)
+include(CheckCXXCompilerFlag)
 
 
 check_library_exists(dex dex_open "" HAVE_DEX)
@@ -72,6 +73,8 @@ endif()
 
 check_include_files(x86intrin.h HAVE_X86INTRIN_H)
 check_include_files(intrin.h HAVE_INTRIN_H)
+
+check_cxx_compiler_flag(-Wno-deprecated HAVE_GCC_NO_DEPRECATED)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 

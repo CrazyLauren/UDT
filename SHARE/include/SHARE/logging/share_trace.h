@@ -305,7 +305,17 @@ extern SHARE_EXPORT std::terminate_handler get_log_terminate_handler();
 extern SHARE_EXPORT void log_terminate_handler();
 extern "C" SHARE_EXPORT void install_failure_signal_handler();
 //\}
-
-#include <SHARE/logging/share_trace_config.h>
-
+#ifdef __GNUC__
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#   pragma warning( push )
+#   pragma warning(disable : 4996)
+#endif
+#   include <SHARE/logging/share_trace_config.h>
+#ifdef __GNUC__
+#   pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#   pragma warning( pop )
+#endif
 #endif /*SHARE_TRACE_H_*/
