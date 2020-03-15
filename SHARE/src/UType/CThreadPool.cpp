@@ -305,7 +305,7 @@ void CPoolThread::MRun()
 				break;
 			}
 
-			LOG_IF(WARNING,!operation.MIs()) << "Empty operation.";
+			DLOG_IF(WARNING,!operation.MIs()) << "Empty operation.";
 
 			if (operation.MIs())
 			{

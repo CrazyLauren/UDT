@@ -85,6 +85,7 @@ namespace rapidjson
 #include <rapidjson/ostreamwrapper.h>
 namespace NSHARE
 {
+const NSHARE::CText CConfig::XML_VALUE_NAME = "value";
 static size_t base64_encode(NSHARE::CText& _dest, const char* src, size_t aLen);
 CConfig::data_t::data_t(const CText& key) :
 		FKey(key)
@@ -386,7 +387,6 @@ std::ostream& CConfig::MPrint(std::ostream & aStream) const
 	}
 	return aStream;
 }
-
 template<>
 inline void CConfig::MReadFrom(ptree_t const& aTree, bool aFirst)
 {
@@ -440,6 +440,11 @@ inline void CConfig::MReadFrom(ptree_t const& aTree, bool aFirst)
 					if (!_child.MIsEmpty())
 						MAdd(_child);
 				}
+			}
+			if (!aTree.data().empty())
+			{
+				CConfig _child(XML_VALUE_NAME, aTree.data());
+				MAdd(_child);
 			}
 		}
 		VLOG(2) << "End reading";
@@ -853,7 +858,7 @@ bool CConfig::MFromJSON(NSHARE::CText const& aText)
 {
 	if (aText.empty())
 	{
-		LOG(ERROR)<<"Empty string.";
+		DLOG(ERROR)<<"Empty string.";
 		return false;
 	}
 	Reader _reader;

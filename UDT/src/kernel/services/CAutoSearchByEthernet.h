@@ -24,7 +24,7 @@ namespace NUDT
  * and connected it by TCP
  *
  */
-class CAutoSearchByEthernet: public ICore, public NSHARE::CSingleton<CAutoSearchByEthernet>
+class CAutoSearchByEthernet: public NSHARE::CSingleton<CAutoSearchByEthernet>,public ICore
 {
 public:
 	static const NSHARE::CText NAME;///< A serialization key

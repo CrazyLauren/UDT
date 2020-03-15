@@ -34,6 +34,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <SHARE/config/arch_specific_conf.h>
 #include <SHARE/macro_attributes.h>
 
 #include <string.h>

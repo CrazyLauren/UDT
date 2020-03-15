@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <functional>
 #include <ctime>
+#include <SHARE/config/arch_specific_conf.h>
 #include <SHARE/macro_attributes.h>
 #include <SHARE/endian_type.h>
 #include <SHARE/UType/CDenyCopying.h>

@@ -101,16 +101,25 @@ IIntrusived::w_counter_t::~w_counter_t()
 		FWCounter = NULL;
 }
 
-IIntrusived::IIntrusived() :
-		 FWn(this)
+IIntrusived::IIntrusived(bool aIsThreadSafety) :
+		 FWn(this),
+		 FMutex(aIsThreadSafety?
+				 smart_mutex_t(new CMutex(CMutex::MUTEX_RECURSIVE)):
+				 smart_mutex_t()
+				 )
 {
+
 	FCount=0;
 	FReferedCount = 0;
 	FIsFirst=P_NOT_INITED;
 	DVLOG(8) << "Construct object " << this;
 }
 IIntrusived::IIntrusived(const IIntrusived& aRht) :
-		FWn(this)
+		FWn(this),//
+        FMutex(aRht.FMutex?
+           smart_mutex_t(new CMutex(CMutex::MUTEX_RECURSIVE)):
+           smart_mutex_t()
+    )
 {
 	FCount = 0;
 	FReferedCount = 0;
@@ -123,6 +132,24 @@ IIntrusived::~IIntrusived()
 	DLOG_IF(DFATAL, MCountRef() != 0) << "Ref not null";
 	DVLOG(8) << "Destruct object " << this;
 }
+bool IIntrusived::MThreadSafetyLock() const
+{
+	if(FMutex)
+    {
+	    FMutex->MLock();
+	    return true;
+    }
+	return false;
+}
+bool IIntrusived::MThreadSafetyUnLock() const
+{
+	if (FMutex)
+    {
+	    FMutex->MUnlock();
+        return true;
+    }
+	return false;
+}
 IIntrusived& IIntrusived::operator =(const IIntrusived& aVal)
 {
 	DLOG(DFATAL)<< "operator = (" << this << ", " << (&aVal);
@@ -131,6 +158,7 @@ IIntrusived& IIntrusived::operator =(const IIntrusived& aVal)
 
 int IIntrusived::MRefImpl() const
 {
+	CRAII<IIntrusived> _lock(*this);
 	if (FIsFirst == P_NOT_INITED)
 	{
 		FIsFirst= P_INITED;

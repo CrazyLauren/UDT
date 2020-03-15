@@ -1,3 +1,8 @@
+UDT SHARE version:0.8
+-------------------
+	- Fix xml problems
+	- Add to IIntrusived thread safety flag	
+
 UDT SHARE version:0.7
 -------------------
 	- Fix invald process name bug

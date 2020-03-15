@@ -31,6 +31,7 @@ typedef std::vector<CConfig> ConfigSet;
 class SHARE_EXPORT CConfig
 {
 public:
+	static NSHARE::CText const XML_VALUE_NAME;//!< A key of XML value
 	static CConfig const& sMGetEmpty();
 
 

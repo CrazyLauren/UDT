@@ -24,6 +24,7 @@ inline void intrusive_ptr_release(NSHARE::IIntrusived* p);
 
 namespace NSHARE
 {
+class CMutex;
 /**\brief base class for intrusive pointer to object
  *
  * Stores an embedded counter.
@@ -33,7 +34,10 @@ namespace NSHARE
 class  SHARE_EXPORT IIntrusived
 {
 public:
-	IIntrusived();
+	/**
+	 * @param aIsThreadSafety is create class thread safety
+	 */
+	IIntrusived(bool aIsThreadSafety=false);
 	IIntrusived(const IIntrusived& aRht);
 
 	unsigned MReferedCount() const;
@@ -43,7 +47,11 @@ protected:
 
 	virtual ~IIntrusived();
 	IIntrusived& operator =(const IIntrusived& aVal);
+
+	bool MThreadSafetyLock() const;
+	bool MThreadSafetyUnLock() const;
 private:
+	typedef SHARED_PTR<NSHARE::CMutex> smart_mutex_t;
 	struct _w_counter_t;
 	enum
 	{
@@ -72,6 +80,7 @@ private:
 	mutable atomic_t FReferedCount;
 	mutable atomic_t FIsFirst;
 	w_counter_t FWn;
+	smart_mutex_t const FMutex;
 
 	template<class U> friend class w_ptr;
 	template<class U> friend class intrusive_ptr;
@@ -79,6 +88,8 @@ private:
 	friend void boost::intrusive_ptr_add_ref(IIntrusived* p);
 	friend void boost::intrusive_ptr_release(IIntrusived* p);
 
+	template<typename U>
+	friend class CRAII;
 };
 template<class T>
 inline int IIntrusived::sMRef(T* aP)
@@ -113,6 +124,31 @@ inline int IIntrusived::sMUnref(T* aP)
 	}
 	return _val;
 }
+template<> class  CRAII<IIntrusived> : public CDenyCopying
+{
+public:
+	explicit CRAII(IIntrusived const& aMutex) :
+			FMutex(aMutex)
+	{
+		MLock();
+	}
+	~CRAII()
+	{
+		MUnlock();
+	}
+	inline void MUnlock()
+	{
+		FIsLock && FMutex.MThreadSafetyUnLock();
+		FIsLock = false;
+	}
+private:
+	inline void MLock()
+	{
+		FIsLock = FMutex.MThreadSafetyLock();
+	}
+	IIntrusived const&FMutex;
+	volatile bool FIsLock;
+};
 }
 namespace boost
 {

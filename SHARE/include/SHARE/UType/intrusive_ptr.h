@@ -33,7 +33,7 @@ public:
 	}
 	explicit intrusive_ptr(T* ptr)
 	{
-		LOG_IF(WARNING,!ptr) << "Empty pointer in Constructor.";
+		DVLOG_IF(5,!ptr) << "Empty pointer in Constructor.";
 
 		MSet(ptr /*? &ptr : NULL*/);
 		DVLOG(5) << "Construct intrusive_ptr for "
