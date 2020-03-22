@@ -40,3 +40,4 @@ install ( FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/FindUDT.cmake
 		DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 		)
+include (CMakeModules/configure_CPack.cmake)		

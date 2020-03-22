@@ -40,6 +40,6 @@ add_subdirectory(tests)
 		${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/FindSHARE.cmake              
          DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} 
 		 )]]
-
+include (CMakeModules/configure_CPack.cmake)
 
 		  
