@@ -1,32 +1,16 @@
 cmake_minimum_required(VERSION 3.1)
 
 project(UDT C CXX)
-set(${PROJECT_NAME}_NAMESPACE "CRAZY_LAUREN" CACHE STRING "Namespace ")
 
+set(${PROJECT_NAME}_ORGANIZATION "Free Software" CACHE STRING "Organization ")
+set(${PROJECT_NAME}_AUTHORS "https://github.com/CrazyLauren" CACHE STRING "Authors")
+set(${PROJECT_NAME}_SUPPORT_ADDRESS "https://github.com/CrazyLauren" CACHE 
+												STRING "Address to support")
+set(${PROJECT_NAME}_NAMESPACE "CRAZY_LAUREN" CACHE STRING "Namespace of project")
+set(${PROJECT_NAME}_LICENCE ${PROJECT_SOURCE_DIR}/LICENCE.txt CACHE PATH "Path to license")
 
-set(CMAKE_MODULE_PATH
-		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"
-		CACHE STRING "Path to search modules" FORCE)
-
-include(helper_cmake_function)
-
-install_default_directory(${PROJECT_NAME})
-
-# default to Release build (it's what most people will use)
-if (NOT CMAKE_BUILD_TYPE)
-	set( CMAKE_BUILD_TYPE
-			Release
-			CACHE STRING
-			"Sets the configuration to build (Release, Debug, etc...)"
-			)
-endif()
-
-include (CMakeModules/configure_${PROJECT_NAME}.cmake)
-include (CMakeModules/dependencies_search.cmake)
-include (CMakeModules/configure_doxygen.cmake)
-#include (CMakeModules/share_function.cmake)
-
-
+include(CMakeModules/helper_cmake_function.cmake)
+configure_project(${PROJECT_NAME})
 
 ################################################################################
 # descend into subdirs
@@ -36,8 +20,3 @@ add_subdirectory(tools)
 add_subdirectory(examples)
 add_subdirectory(tests)
 
-install ( FILES
-		${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/FindUDT.cmake
-		DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
-		)
-include (CMakeModules/configure_CPack.cmake)		

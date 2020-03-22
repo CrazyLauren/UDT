@@ -30,7 +30,10 @@ helper_target_link_libraries(${_TARGET_NAME}
 							_PUBLIC_LIBRARIS
 							_PRIVATE_LIBRARIS
 							)				
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sniffer.cfg DESTINATION "bin")			 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sniffer.cfg 
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" 
+				COMPONENT config
+				)			 
 
 
 		

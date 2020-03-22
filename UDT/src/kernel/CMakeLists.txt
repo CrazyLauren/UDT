@@ -50,6 +50,6 @@ helper_target_link_libraries(${_TARGET_NAME}
 install(DIRECTORY
 			${CMAKE_CURRENT_SOURCE_DIR}/gui/
 		DESTINATION
-			${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/gui
+			"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/gui" COMPONENT applications
 		)
 include(create_default_config.cmake)

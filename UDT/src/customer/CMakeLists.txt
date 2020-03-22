@@ -108,11 +108,11 @@ install(FILES 	${CMAKE_CURRENT_SOURCE_DIR}/include/udt/CCustomer.h
 				${CMAKE_CURRENT_SOURCE_DIR}/include/udt/customer_export.h
 				${CMAKE_CURRENT_SOURCE_DIR}/include/udt/IRtc.h
 				${CMAKE_CURRENT_SOURCE_DIR}/include/udt/IRtcControl.h
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/include/udt/)
+		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/udt/" COMPONENT headers)
 
 install(FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/include/customer.h
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
+		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/" COMPONENT headers)
 
 helper_export_library(${_TARGET_NAME})
 

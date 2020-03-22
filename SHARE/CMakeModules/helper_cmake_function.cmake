@@ -23,7 +23,7 @@ function(install_default_directory
 			"${CMAKE_BINARY_DIR}/binary" 
 			CACHE PATH "Default installation Directory" FORCE)
 	endif()
-	
+
 	set(${aPROJECT_NAME}_ROOT_DIR 
 		${CMAKE_CURRENT_SOURCE_DIR} 
 		CACHE PATH  "root directory")	
@@ -75,7 +75,9 @@ function(install_default_directory
 			Use ; to separate multiple paths."
 			FORCE )
 	endif()
-	
+
+
+	include(GNUInstallDirs)
 
 	if(NOT DEFINED CMAKE_PACKAGE_INSTALL_DIR)
 		set(CMAKE_PACKAGE_INSTALL_DIR 
@@ -85,25 +87,22 @@ function(install_default_directory
 			)
 	endif()
 
-	include(GNUInstallDirs)
-	
-  #[[  set(CMAKE_INSTALL_INCLUDE_DIR
-            "${CMAKE_INSTALL_PREFIX}/include"
-            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
-			where header  is installed"
-            )
+	if(NOT ${CMAKE_INSTALL_DOCDIR})
+		set(CMAKE_INSTALL_DOCDIR
+			"doc"
+			CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+			where documetation   is installed"
+			FORCE
+			)
+	endif()
 
-    set(CMAKE_INSTALL_LIBDIR
-            "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
-            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
-			where library  is installed"
-            )
-			
-    set(CMAKE_INSTALL_BINDIR
-            "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
-            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
-			where binary  is installed"
-            )]]
+
+	
+
+
+
+
+
 	mark_as_advanced (
 		${aPROJECT_NAME}_LIBRARIES	
 		${aPROJECT_NAME}_DEPENDENCIES_PATH
@@ -113,6 +112,7 @@ function(install_default_directory
 		CMAKE_LIBRARY_PATH
 		CMAKE_FIND_ROOT_PATH
 		CMAKE_PACKAGE_INSTALL_DIR
+		CMAKE_INSTALL_DOCDIR
     )
 	set(CMAKE_MODULE_PATH_HELPER
 			"${CMAKE_MODULE_PATH}"
@@ -126,6 +126,59 @@ function(install_default_directory
 		FORCE
 		)
 
+	if ("${CMAKE_INSTALL_PREFIX}" STREQUAL ""
+		)
+		set(${aPROJECT_NAME}_INSTALL_PREFIX "" CACHE INTERNAL "" FORCE)
+	else()
+		set(${aPROJECT_NAME}_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/" CACHE INTERNAL "" FORCE)
+	endif()
+
+endfunction()
+
+function(install_target_binary_impl
+		 aTARGET_NAME # - Name of the library to create.
+		 aIS_EXPORT
+		 )
+	if (DEFINED DIRECTORY_TYPE)
+
+		set(_COMONENT_TYPE ${DIRECTORY_TYPE})
+
+		if (NOT ${_COMONENT_TYPE} STREQUAL "tests" AND NOT ${_COMONENT_TYPE} STREQUAL "examples")
+			message(FATAL_ERROR "Invalid type of component" ${_COMONENT_TYPE})
+		endif ()
+
+		set(_INSTALL_PREFIX	${${PROJECT_NAME}_INSTALL_PREFIX})
+
+		if(aIS_EXPORT)
+			install(TARGETS ${aTARGET_NAME}
+				EXPORT ${aTARGET_NAME}-export
+				LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMONENT_TYPE}
+				ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMONENT_TYPE}
+				RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT ${_COMONENT_TYPE}
+				)
+		else()
+			install(TARGETS ${aTARGET_NAME}
+					LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMONENT_TYPE}
+					ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMONENT_TYPE}
+					RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT ${_COMONENT_TYPE}
+					)
+		endif()
+	else ()
+		if(aIS_EXPORT)
+			install(TARGETS ${aTARGET_NAME}
+				EXPORT ${aTARGET_NAME}-export
+				LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
+				ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}"  COMPONENT libraries
+				RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT applications
+				)
+		else()
+			install(TARGETS ${aTARGET_NAME}
+					LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
+					ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
+					RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT applications
+					)
+		endif()
+	endif ()
 
 endfunction()
 
@@ -186,7 +239,7 @@ function(set_revision_from_git aTARGET)
 	git_describe(_TARGET_PATH --always --long)
 
 	get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-	
+
 	if(GIT_EXECUTABLE AND NOT DEFINED ${PROJECT_NAME}_REVISION_VERSION)
 		execute_process(COMMAND git rev-list --count ${GIT_SHA1}
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -513,19 +566,14 @@ function (helper_add_library
     if (${aINSTALL_BIN})
 
 		if(TARGET ${aTARGET_NAME} )
-			install(TARGETS ${aTARGET_NAME}
-						EXPORT ${aTARGET_NAME}-export
-						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+			install_target_binary_impl(${aTARGET_NAME} TRUE)
 		endif()
 
         if (TARGET ${${aTARGET_NAME}_Static})
-            install(TARGETS ${aTARGET_NAME}_Static
-   						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-						ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+			install_target_binary_impl(${aTARGET_NAME}_Static FALSE)
         endif()
+
+
     endif()
 	#${CMAKE_CURRENT_BINARY_DIR}/$(Configuration)/${aTARGET_NAME}    		
 	set(${_TARGET_NAME_UPPER}_LIBRARIES
@@ -624,7 +672,8 @@ function (helper_add_executable
 			aHEADER_FILES_VAR # - the header file names.
 			aINCLUDE_DIR # - include dir			
 			aDEFINITIONS # - defenitions	
-			aINSTALL_BIN #- TRUE if the lib should be installed			
+			aINSTALL_BIN #- TRUE if the lib should be installed
+		  	#aCOMONENT_TYPE #- type of component (examples or tests)
 			)
 	string(TOUPPER ${aTARGET_NAME}
 			_TARGET_NAME_UPPER
@@ -646,11 +695,7 @@ function (helper_add_executable
 							PRIVATE ${${aDEFINITIONS}})
     #Install
 	if (${aINSTALL_BIN})
-		install(TARGETS ${aTARGET_NAME} 
-						LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
-
+		install_target_binary_impl(${aTARGET_NAME} FALSE)
 	endif()
 endfunction()
 
@@ -685,8 +730,14 @@ function(helper_export_library
 								INSTALL_DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
 								)
 
+	set(_COMONENT_TYPE "cmake")
+	if ( DEFINED DIRECTORY_TYPE)
+		set(_COMONENT_TYPE ${DIRECTORY_TYPE})
+	endif()
+
+
 	install(FILES  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 	if( ${_TARGET_UP}_TARGET_VERSION)				
 		set(_VERSION_CONFIG "${_OUT_DIRECTORY}/${aTARGET_NAME}ConfigVersion.cmake")
@@ -698,20 +749,47 @@ function(helper_export_library
 		)
 		
 		install(FILES "${_VERSION_CONFIG}"
-						DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+						DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 					)
 	endif()
 
 	install ( EXPORT ${aTARGET_NAME}-export
 			FILE "${aTARGET_NAME}Targets.cmake"
 			#NAMESPACE ${PROJECT_NAME}_NAMESPACE::
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 
 	install ( FILES
 			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake"
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 	unset(CONF_LOOKING_FOR_FILES)
 	unset(CONF_TARGET_NAME)
 endfunction()
+
+# Configure project
+macro(configure_project
+		 aPROJECT_NAME #	aPROJECT_NAME - Name of the project
+		 )
+	set(CMAKE_MODULE_PATH
+		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"
+		CACHE STRING "Path to search modules" FORCE)
+	install_default_directory(${aPROJECT_NAME})
+
+	# default to Release build (it's what most people will use)
+	if (NOT CMAKE_BUILD_TYPE)
+		set( CMAKE_BUILD_TYPE
+			 Release
+			 CACHE STRING
+			 "Sets the configuration to build (Release, Debug, etc...)"
+			 )
+	endif()
+
+	include (CMakeModules/configure_${aPROJECT_NAME}.cmake)
+	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/CMakeLists.txt")
+		add_subdirectory(dependencies)
+	endif()
+	include (CMakeModules/dependencies_search.cmake)
+	include (CMakeModules/configure_doxygen.cmake)
+	include (CMakeModules/configure_CPack.cmake)
+endmacro()

@@ -62,7 +62,7 @@ install(FILES 	include/udt/udt_types.h
 				include/udt/IExtParser.h
 				include/udt/CParserFactory.h
 				include/udt/udt_rtc.h
-				DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/udt
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/udt" COMPONENT headers
 		)
 
 string(TOUPPER ${_TARGET_NAME} _TARGET_NAME_UP)

@@ -4,7 +4,7 @@
 #---------------------------------------------------------------------------
 PROJECT_NAME           = "${SHARE_TARGET_NAME}"
 PROJECT_NUMBER         = "${${SHARE_TARGET_NAME}_MAJOR_VERSION}.${${SHARE_TARGET_NAME}_MINOR_VERSION}.${${SHARE_TARGET_NAME}_REVISION_VERSION}"
-OUTPUT_DIRECTORY       = "@CMAKE_INSTALL_PREFIX@/doc/share"
+OUTPUT_DIRECTORY       = "@DOC_PATH@"
 OUTPUT_LANGUAGE        = English
 DOXYFILE_ENCODING      = UTF-8
 BRIEF_MEMBER_DESC      = YES

@@ -9,5 +9,5 @@ unset(_CONFIG_PLUGIN_DIR)
 install(FILES
         ${_OUT_DIRECTORY}/default_kernel_config.json
         DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
+        "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT config
         )

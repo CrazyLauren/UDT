@@ -1,3 +1,4 @@
+set(DIRECTORY_TYPE examples)
 add_subdirectory(example_easy_program)
 
 add_subdirectory(example_of_user_protocol_parser)

@@ -1,3 +1,4 @@
+set(DIRECTORY_TYPE tests)
 if(${CMAKE_VERSION} VERSION_LESS "3.1.3")
 	message(WARNING "\nCannot build tests as cmake version less than 3.1.3")
 else()
@@ -14,7 +15,7 @@ else()
 		add_subdirectory(test_rtc)
 		
 		install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel.json 
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/test)
+		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/test" COMPONENT tests)
 	else()
 		message(WARNING "\nCannot build tests as c++11 is not available")		
 	endif()	

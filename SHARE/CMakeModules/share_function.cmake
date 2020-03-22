@@ -117,6 +117,6 @@ function(configure_logging aTARGET_NAME)
 				ESCAPE_QUOTES
 				)
 	install(FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logging/share_trace_config.h
-				DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/logging/
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/${PROJECT_NAME}/logging/" COMPONENT headers
 		)			
 endfunction()

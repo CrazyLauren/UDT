@@ -9,7 +9,7 @@ endif()
 
 include(FindPackageHandleStandardArgs)
 
-set(CMAKE_PREFIX_PATH @CMAKE_INSTALL_PREFIX@/@CMAKE_PACKAGE_INSTALL_DIR@)
+set(CMAKE_PREFIX_PATH "${${PROJECT_NAME}_INSTALL_PREFIX}@CMAKE_PACKAGE_INSTALL_DIR@")
 
 find_package(customer REQUIRED)
 find_package(udt_share REQUIRED)
