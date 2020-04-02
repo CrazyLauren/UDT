@@ -123,6 +123,8 @@ jobs:
         run: |
             cmake -DBOOST_ROOT=./boost_1_56_0  -DCMAKE_INSTALL_PREFIX="" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
             cmake --build . --target package
+            cd ./binary/package
+            for file in *.exe ; do mv "$file" "${file%%.exe}${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:

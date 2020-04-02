@@ -118,6 +118,8 @@ jobs:
         run: |
           cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost -DCMAKE_INSTALL_PREFIX="" ..
           cmake --build . --target package
+          cd ./binary/package
+          for file in *.deb ; do mv "$file" "${file%%.deb}${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}.deb" ; done
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
