@@ -111,13 +111,13 @@ jobs:
           timeout --signal=SIGABRT 100 ./test_of_speed
           taskkill //F //IM Kernel.exe
       - name: build package
-          working-directory: ./build
-          env:
-            CONFIGURATION: ${{ matrix.configuration }}
-            COMPILER: ${{ matrix.compiler }}
-            ARCHITECTURE: ${{ matrix.arch }}
-          shell: bash
-          run: |
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
             cmake -DBOOST_ROOT=./boost_1_56_0  -DCMAKE_INSTALL_PREFIX="" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
             cmake --build . --target package
       - name: Store artifact
