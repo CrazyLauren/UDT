@@ -82,8 +82,6 @@ jobs:
         run: mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost ..
       - name: build
         run: cd build && cmake --build . --target install
-      - name: build package
-        run: cd build && cmake --build . --target package
       - name:  SHARE unit test
         shell: bash
         run: |
@@ -111,6 +109,10 @@ jobs:
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
 
+      - name: build package
+        run: |
+          cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost -DCMAKE_INSTALL_PREFIX="" ..
+          cmake --build . --target package
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
