@@ -46,7 +46,7 @@ IRtcControl::rtc_id_t CRTCForModelingModule::MPushRTC(CRTCModelingImpl* aRtc)
 {
 	protected_RTC_array_t::WAccess<> _access=FRTCArray.MGetWAccess();
 	_access->FRtc.push_back(aRtc);
-	return _access->FRtc.size()-1;
+	return static_cast<IRtcControl::rtc_id_t>(_access->FRtc.size()-1);
 }
 /** Open share memory for RTC
  *

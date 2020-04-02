@@ -1084,7 +1084,7 @@ void CCustomer::_pimpl::MPutModule(IModule* aModule)
 void CCustomer::_pimpl::MPopModule(IModule* aModule)
 {
 	CRAII<CMutex> _block(FCommonMutex);
-	std::remove(FModules.begin(), FModules.end(), aModule);
+	FModules.erase(std::remove(FModules.begin(), FModules.end(), aModule), FModules.end());
 }
 ICustomer::array_of_modules_t CCustomer::_pimpl::MGetModules() const
 {

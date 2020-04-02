@@ -457,7 +457,7 @@ int loocal_addr_ip4(interfaces_addr_t* aTo)
 		LOG(DFATAL)<<"Cannot call GetAdaptersInfo error:"<<_error;
 	}
 	free(buf);
-	return aTo->size();
+	return (int)aTo->size();
 }
 }
 #else

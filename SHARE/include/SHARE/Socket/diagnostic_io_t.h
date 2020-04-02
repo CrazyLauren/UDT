@@ -369,12 +369,12 @@ inline void sent_state_t::operator+=(const sent_state_t &aError)
 inline void diagnostic_io_t::MRecv(size_t aCount)
 {
 	++FRecvCount;
-	FRecvData+=aCount;
+	FRecvData+=static_cast<atomic_t::value_type>(aCount);
 }
 inline void diagnostic_io_t::MSend(size_t aCount)
 {
 	++FSentCount;
-	FSentData+=aCount;
+	FSentData+= static_cast<atomic_t::value_type>(aCount);
 }
 inline void diagnostic_io_t::diagnostic_io_t::MSend(sent_state_t const& aState)
 {

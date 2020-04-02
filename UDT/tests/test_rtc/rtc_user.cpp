@@ -122,6 +122,10 @@ void start_rtc_user(int argc, char const *argv[], char const * aName)
 		for (; g_is_working;)
 			g_convar.MTimedwait(&g_mutex);
 	}
+    {
+        LOCK_STREAM
+        std::cout <<"close socket"<<std::endl;
+    }
 	CCustomer::sMGetInstance().MClose();
 	{
 		LOCK_STREAM
@@ -142,6 +146,10 @@ static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	}
 	if (_control->FCommand.MGetFlag(msg_control_t::eFINISH))
 	{
+        {
+            LOCK_STREAM
+            std::cout << "Finish now"<< std::endl;
+        }
 		CRAII<CMutex> _block(g_mutex);
 		g_is_working = false;
 		g_is_rtc_working=false;

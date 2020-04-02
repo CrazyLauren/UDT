@@ -291,7 +291,7 @@ static bool test_integer_timers()
 	auto _less_eq_then = [& _precision](decltype(_precision) aVal,decltype(_precision) aMin)
 	{	return aVal <= (aMin + _precision);};
 
-	auto _last_time=0;
+	unsigned _last_time=0;
 	for (unsigned i=0;i<g_number_of_time && _is;++i)
 	{
 
@@ -411,7 +411,7 @@ static bool test_double_timers()
 	auto _less_eq_then = [&](decltype(_precision) aVal,decltype(_precision) aMin) -> bool
 	{	return aVal <= (aMin + _precision);};
 
-	auto _last_time=0;
+	unsigned _last_time=0;
 	for (unsigned i=0;i<g_number_of_time && _is;++i)
 	{
 

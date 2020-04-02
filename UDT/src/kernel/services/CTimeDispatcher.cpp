@@ -202,7 +202,7 @@ CTimeDispatcher::rtc_id_t CTimeDispatcher::MPushNewRTC(
 	{
 		array_of_rtc_t::value_type _ptr(new CRTCForModeling(FMemory.MGetAllocator(), aRtcGroup));
 		_rtc.push_back(_ptr);
-		_rval = _rtc.size() - 1;
+		_rval = static_cast<rtc_id_t>(_rtc.size()) - 1;
 	}
 	else
 		LOG(DFATAL) << "The RTC " << aRtcGroup << " is exist";
