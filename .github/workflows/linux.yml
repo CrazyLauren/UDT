@@ -115,11 +115,15 @@ jobs:
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
 
       - name: build package
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          VERSION: ${{ matrix.version }}
         run: |
           cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/include/boost -DCMAKE_INSTALL_PREFIX="" ..
           cmake --build . --target package
           cd ./binary/package
-          for file in *.deb ; do mv "$file" "${file%%.deb}${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}.deb" ; done
+          for file in *.deb ; do mv "$file" "${file%%.deb}${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}.deb" ; done
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
