@@ -66,7 +66,7 @@ jobs:
       - name:  SHARE unit test
         working-directory: ./build/binary/bin
         shell: bash
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
             timeout --signal=SIGABRT 100 ./unit_tests
       - name:  Testing RTC
@@ -75,7 +75,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &
           timeout --signal=SIGABRT 100 ./test_rtc
@@ -86,7 +86,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_inheritance
@@ -97,7 +97,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: !startsWith(github.ref, 'refs/tags/') && matrix.configuration == 'Release'
+        if: startsWith(github.ref, 'refs/tags/') == false && matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_errors
@@ -108,7 +108,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: !startsWith(github.ref, 'refs/tags/') &&  matrix.configuration == 'Release'
+        if: startsWith(github.ref, 'refs/tags/') == false &&  matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_of_speed
