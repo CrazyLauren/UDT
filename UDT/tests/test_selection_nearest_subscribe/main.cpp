@@ -22,13 +22,15 @@ size_t const g_buf_shm_size = 1024;
 
 extern std::string const g_subscriber_name = "subscriber@gudt.test.control";
 
-extern std::string g_name = g_subscriber_name;
+extern std::string g_name;
+std::string g_name= g_subscriber_name;
 
 static std::string const g_sem_name = g_subscriber_name;
 
 #define LOCK_STREAM NSHARE::CRAII<NSHARE::CIPCSem> _block(g_mutex_stream);
 
-extern std::vector<std::pair<ptrdiff_t, std::string> > g_child_pid =
+extern std::vector<std::pair<ptrdiff_t, std::string> > g_child_pid;
+std::vector<std::pair<ptrdiff_t, std::string> > g_child_pid =
 {
 { 0, "publisher@gudt" },
 { 0, "publisher@gudt.test" },

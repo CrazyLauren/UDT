@@ -39,4 +39,10 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
               )
 
     set(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE_OK true CACHE INTERNAL "" FORCE)
+
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-Wno-deprecated HAVE_GCC_NO_DEPRECATED)
+    if(HAVE_GCC_NO_DEPRECATED)
+        set_property(TARGET log4cplus APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
+    endif(HAVE_GCC_NO_DEPRECATED)
 endif()

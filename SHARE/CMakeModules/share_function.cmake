@@ -111,7 +111,11 @@ function(configure_logging aTARGET_NAME)
 	if(NOT EXISTS ${${_TARGET_UP}_LOGGING_CONFIG_FILE})
 		message(FATAL_ERROR "Cannot find file share_trace_config.h.cmake")
 	endif()
-	
+
+	if(HAVE_GCC_NO_DEPRECATED)
+		set_property(TARGET ${aTARGET_NAME} APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
+	endif(HAVE_GCC_NO_DEPRECATED)
+
 	configure_file(${${_TARGET_UP}_LOGGING_CONFIG_FILE}
 				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logging/share_trace_config.h
 				ESCAPE_QUOTES

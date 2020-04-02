@@ -44,6 +44,12 @@ Before starting the installation, it is recommended that you read about it. <br 
 | Tclap | 1.2.1 and higher | Header only files | The required version <br />  is already in the <br /> UDT/SHARE/dependencies <br /> directory|
 | Log4cplus | 1.1.3 and 1.2. * | No if option is not  <br /> specified LOGGING_TO_LOG4CPLUS | It compiles automatically  <br />  if the option is specified: <br />  LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE|
 
+<aside class="warning">
+If you have some problems during compilation check the path to the directory containing Boost 
+headers (Boost_INCLUDE_DIR) in cmake. The used version of the boost library  can be not compatible
+ with newer compilers.
+</aside>
+
 # ​Download the source
 Download and extract the latest version of the source code from from [https://github.com/CrazyLauren/UDT](https://github.com/CrazyLauren/UDT)
 press button "Clone or download"
@@ -242,23 +248,23 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
 6. A check will then be performed to ensure all source dependencies are exists. 
   Wait until it's finished, of course, without errors.
 
-  a) The compiled applications, libraries and configured headers are installed onto the 
+    a) The compiled applications, libraries and configured headers are installed onto the 
   	directory which indicated in the CMAKE_INSTALL_PREFIX CMake's variable.
   	Thus, change the option for CMAKE_INSTALL_PREFIX. If You won't do it,
   	the administrator (root) access can be required for the installation operation.
 
-  b)  You can customize the requirement build type by changing the variable 
+    b)  You can customize the requirement build type by changing the variable 
   	CMAKE_BUILD_TYPE to "Release" for compilation in release mode (add -O3 flag)
   	or "Debug" debug mode with -g flag
 
-  c) OPTIONAL: You can choose the correct version of eclipse  that corresponds to 
+    c) OPTIONAL: You can choose the correct version of eclipse  that corresponds to 
   	QNX Momentics by changing the variable CMAKE_ECLIPSE_VERSION.
   	The requirement version of eclipse you can see into file .eclipseproduct in the 
   	QNX Momentics directory.
 
-  d) OPTIONAL: You can change the used boost version be changing the Boost_INCLUDE_DIR variable.
+    d) OPTIONAL: You can change the used boost version be changing the Boost_INCLUDE_DIR variable.
 
-  e) Choose the requirement version of compiler (3.3.5 and above) by changing the QNX_COMPILER_VERSION
+    e) Choose the requirement version of compiler (3.3.5 and above) by changing the QNX_COMPILER_VERSION
 
 7. Press button `configure` again.
 
@@ -266,17 +272,17 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
 
 9. Run QNX Momentics
 
-  a) In the menu, choose `File -> Import`.
+    a) In the menu, choose `File -> Import`.
 
-  b) Expand the `General folder` and select `Existing Projects into Workspace`
+    b) Expand the `General folder` and select `Existing Projects into Workspace`
 
-  c) Press button  `Next`
+    c) Press button  `Next`
 
-  d) Choose `Select root directory` and Press button  `Browse`
+    d) Choose `Select root directory` and Press button  `Browse`
 
-  e) Specify the path to the directory similar to `the build directory` of CMake-GUI
+    e) Specify the path to the directory similar to `the build directory` of CMake-GUI
 
-  f) Choose the project and press button `Finish`
+    f) Choose the project and press button `Finish`
 
 10. Click right mouse button on the project in `Project Explorer`.
     Choose `Build Targets -> Build`.
@@ -292,3 +298,26 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
     in the directory that is specified in the variable CMAKE_INSTALL_PREFIX.
 
 13. To build documentation, in the item 13 You need choose a target with the name `doc`
+
+## Qt creator
+
+1. Do `Open file or project` and open the CMakeLists.txt file of in the project root directory.
+
+2. Choose the Build directory properly and press `Configure project`. 
+    Qt Creator will create a .cbp file here with the name of the "UDT_NET" project.
+
+3. Open the "project view".
+
+    a) In the "Build & Run" tab choose "Build".
+  
+    b) Press to "Detail" in "Build Steps" field.
+    
+    c) In "Tools arguments" input "install"
+    
+    d) In result you has to see in the field "Build": "cmake --build . --target all -- install"
+    
+4. Open the "edit view" and click the "UDT_NET" button in left column and you will be able to set the command options to `build`.
+ the "UDT_NET" button in left column and you will be able to set the command options to build.
+ 
+5. Open the "Compile output" window and wait for process to ended.  The path of compiled 
+libraries you can see in the "Installing".
