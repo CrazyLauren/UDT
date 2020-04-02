@@ -66,6 +66,7 @@ jobs:
       - name:  SHARE unit test
         working-directory: ./build/binary/bin
         shell: bash
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
             timeout --signal=SIGABRT 100 ./unit_tests
       - name:  Testing RTC
@@ -74,6 +75,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &
           timeout --signal=SIGABRT 100 ./test_rtc
@@ -84,6 +86,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_inheritance
@@ -94,7 +97,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: matrix.configuration == 'Release'
+        if: !startsWith(github.ref, 'refs/tags/') && matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_errors
@@ -105,7 +108,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
-        if: matrix.configuration == 'Release'
+        if: !startsWith(github.ref, 'refs/tags/') &&  matrix.configuration == 'Release'
         run: |
           timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_of_speed
@@ -123,7 +126,7 @@ jobs:
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
-          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          name: UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
           path: build/binary/
 
       - name: create binary
@@ -133,12 +136,12 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
+          tar -czvf UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
           && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v1
         with:
-          files: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+          files: build/binary/package/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

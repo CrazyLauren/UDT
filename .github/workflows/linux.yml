@@ -88,23 +88,27 @@ jobs:
             cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
             timeout --signal=SIGABRT 100 ./unit_tests
       - name: Testing RTC
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
          (timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 100 ./test_rtc) && kill -SIGINT `pgrep Kernel`
       - name: Testing inheritance
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
       - name: Testing errors
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_errors) && kill -SIGINT `pgrep Kernel`
       - name: Testing selection
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_selection) && kill -SIGINT `pgrep Kernel`
       - name: Testing high load
-        if: matrix.configuration == 'Release'
+        if: !startsWith(github.ref, 'refs/tags/') && matrix.configuration == 'Release'
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
@@ -116,7 +120,7 @@ jobs:
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
-          name: UDT-bunary-${{ matrix.name }}-${{ github.sha }}
+          name: UDT-binary-${{ matrix.name }}-${{ github.sha }}
           path: build/binary/
 
       - name: create binary
@@ -126,12 +130,12 @@ jobs:
           VERSION: ${{ matrix.version }}
         shell: bash
         run: |
-          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
+          tar -czvf UDT-binary-${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
           && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v1
         with:
-          files: UDT-bunary-${{ matrix.compiler }}-${{ matrix.version }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+          files: build/binary/package/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

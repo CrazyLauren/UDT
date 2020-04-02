@@ -72,6 +72,7 @@ jobs:
           cmake --build . --config "%CONFIGURATION%" --target install
       - name:  SHARE unit test
         shell: cmd
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
             cd build/binary/bin
             set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
@@ -81,6 +82,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           cd build/binary/bin
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
@@ -93,6 +95,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
@@ -104,7 +107,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
-        if: matrix.configuration != 'Debug'
+        if: !startsWith(github.ref, 'refs/tags/') && matrix.configuration != 'Debug'
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
@@ -116,6 +119,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
+        if: !startsWith(github.ref, 'refs/tags/')
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
@@ -124,7 +128,7 @@ jobs:
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
-          name: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          name: UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
           path: build/binary/
 
       - name: create binary
@@ -134,12 +138,12 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-          tar -czvf UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
+          tar -czvf UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz build/binary
       - name: GitHub Releases
         if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
           && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v1
         with:
-          files: UDT-bunary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+          files: UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
