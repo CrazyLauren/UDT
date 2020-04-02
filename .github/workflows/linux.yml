@@ -93,22 +93,22 @@ jobs:
          cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
          (timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &) && (timeout --signal=SIGABRT 100 ./test_rtc) && kill -SIGINT `pgrep Kernel`
       - name: Testing inheritance
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_inheritance) && kill -SIGINT `pgrep Kernel`
       - name: Testing errors
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_errors) && kill -SIGINT `pgrep Kernel`
       - name: Testing selection
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_selection) && kill -SIGINT `pgrep Kernel`
       - name: Testing high load
-        if: !startsWith(github.ref, 'refs/tags/') && matrix.configuration == 'Release'
+        if: startsWith(github.ref, 'refs/tags/') == false && matrix.configuration == 'Release'
         run: |
           cd build/binary/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
           (timeout --signal=SIGABRT 100 ./Kernel &) && (timeout --signal=SIGABRT 100 ./test_of_speed) && kill -SIGINT `pgrep Kernel`
