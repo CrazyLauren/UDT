@@ -17,7 +17,7 @@
 function(install_default_directory 
 			aPROJECT_NAME #	aPROJECT_NAME - Name of the project
 			)
-
+	
 	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 		set(CMAKE_INSTALL_PREFIX 
 			"${CMAKE_BINARY_DIR}/binary" 
@@ -96,13 +96,6 @@ function(install_default_directory
 			)
 	endif()
 
-
-	
-
-
-
-
-
 	mark_as_advanced (
 		${aPROJECT_NAME}_LIBRARIES	
 		${aPROJECT_NAME}_DEPENDENCIES_PATH
@@ -115,13 +108,14 @@ function(install_default_directory
 		CMAKE_INSTALL_DOCDIR
     )
 	set(CMAKE_MODULE_PATH_HELPER
-			"${CMAKE_MODULE_PATH}"
+			"${CMAKE_MODULE_PATH}/functions/"
 			CACHE INTERNAL "Path to search modules"
 			FORCE
 			)
 	set(CMAKE_MODULE_PATH 
 		"${CMAKE_MODULE_PATH}"
 		"${CMAKE_MODULE_PATH}/find"
+		"${CMAKE_MODULE_PATH}/functions"
 		CACHE STRING "Path to search modules"
 		FORCE
 		)
@@ -772,8 +766,8 @@ macro(configure_project
 		 aPROJECT_NAME #	aPROJECT_NAME - Name of the project
 		 )
 	set(CMAKE_MODULE_PATH
-		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"
-		CACHE STRING "Path to search modules" FORCE)
+		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"		
+		CACHE STRING "Path to search modules" FORCE)		 
 	install_default_directory(${aPROJECT_NAME})
 
 	# default to Release build (it's what most people will use)
@@ -786,10 +780,18 @@ macro(configure_project
 	endif()
 
 	include (CMakeModules/configure_${aPROJECT_NAME}.cmake)
+	configure_file(CMakeModules/config.h.cmake 
+				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
+				ESCAPE_QUOTES
+				)
+
+	install(FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/${PROJECT_NAME}/config/" COMPONENT headers
+		)
 	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/CMakeLists.txt")
 		add_subdirectory(dependencies)
 	endif()
 	include (CMakeModules/dependencies_search.cmake)
-	include (CMakeModules/configure_doxygen.cmake)
-	include (CMakeModules/configure_CPack.cmake)
+	include (CMakeModules/functions/configure_doxygen.cmake)
+	include (CMakeModules/functions/configure_CPack.cmake)
 endmacro()

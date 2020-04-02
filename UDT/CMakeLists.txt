@@ -9,7 +9,7 @@ set(${PROJECT_NAME}_SUPPORT_ADDRESS "https://github.com/CrazyLauren" CACHE
 set(${PROJECT_NAME}_NAMESPACE "CRAZY_LAUREN" CACHE STRING "Namespace of project")
 set(${PROJECT_NAME}_LICENCE ${PROJECT_SOURCE_DIR}/LICENCE.txt CACHE PATH "Path to license")
 
-include(CMakeModules/helper_cmake_function.cmake)
+include(CMakeModules/functions/helper_cmake_function.cmake)
 configure_project(${PROJECT_NAME})
 
 ################################################################################

@@ -100,11 +100,3 @@ if (MSVC)
 endif()
 
 
-configure_file(CMakeModules/config.h.cmake 
-				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
-				ESCAPE_QUOTES
-				)
-
-install(FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
-				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/${PROJECT_NAME}/config/" COMPONENT headers
-		)

@@ -28,12 +28,3 @@ set(${PROJECT_NAME}_DEFAULT_PLUGIN_PATH
 	"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR}"
 	CACHE PATH  "UDT plugins path"
 	FORCE)
-
-configure_file(CMakeModules/config.h.cmake 
-				${CMAKE_BINARY_DIR}/include/udt/config/config.h
-				ESCAPE_QUOTES
-				)
-				
-install(FILES ${CMAKE_BINARY_DIR}/include/udt/config/config.h
-				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/udt/config/" COMPONENT headers
-		)
