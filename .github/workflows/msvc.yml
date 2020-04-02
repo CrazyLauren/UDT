@@ -77,7 +77,7 @@ jobs:
         shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
-          timeout --signal=SIGABRT 100 ./Kernel -c ./test/test_kernel.json &
+          timeout --signal=SIGABRT 100 ./Kernel -c ./tests/test_kernel.json &
           timeout --signal=SIGABRT 100 ./test_rtc
           taskkill //F //IM Kernel.exe
       - name:  Testing inheritance

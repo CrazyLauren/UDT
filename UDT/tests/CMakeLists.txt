@@ -15,7 +15,7 @@ else()
 		add_subdirectory(test_rtc)
 		
 		install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel.json 
-		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/test" COMPONENT tests)
+		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/tests" COMPONENT tests)
 	else()
 		message(WARNING "\nCannot build tests as c++11 is not available")		
 	endif()	
