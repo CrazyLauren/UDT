@@ -15,7 +15,7 @@ if (NOT TCLAP_FOUND)
 	)
 	
 	include (FindPackageHandleStandardArgs)
-	find_package_handle_standard_args (TCLAP DEFAULT_MSG TCLAP_INCLUDES)
+	find_package_handle_standard_args (tclap DEFAULT_MSG TCLAP_INCLUDES)
 	
 	mark_as_advanced (
 		TCLAP_ROOT

@@ -28,7 +28,7 @@ endif()
 
 find_package(tclap REQUIRED)
 if(NOT TCLAP_FOUND)
-	message(FATAL_ERROR "TCLAP (http://tclap.sourceforge.net/) could not be found. Set TCLAP_INCLUDE_PATH to point to the headers adding '-DTCLAP_INCLUDE_PATH=/path/to/tclap' to the cmake command.")	
+	message(FATAL_ERROR "TCLAP (http://tclap.sourceforge.net/) could not be found. Set TCLAP_INCLUDE_PATH to point to the headers adding '-DTCLAP_INCLUDE_PATH=/path/to/tclap' to the cmake command.")
 	return()
 endif()
 
