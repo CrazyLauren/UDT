@@ -7,5 +7,5 @@ install(FILES ${_OUT_DIRECTORY}/CMakeLists.txt
         api_example_customer.h
         doing_something.cpp
         main.cpp
-        DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}example_number_one/" COMPONENT examples
+        DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/example_number_one/" COMPONENT examples
         )

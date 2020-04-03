@@ -11,9 +11,11 @@ include(FindPackageHandleStandardArgs)
 
 set(CMAKE_PREFIX_PATH "${${PROJECT_NAME}_INSTALL_PREFIX}@CMAKE_PACKAGE_INSTALL_DIR@")
 
-find_package(customer REQUIRED)
-find_package(udt_share REQUIRED)
 find_package(SHARE REQUIRED)
+find_package(udt_share REQUIRED)
+find_package(customer REQUIRED)
+
+
 
 
 add_executable(example_number_one main.cpp doing_something.cpp)

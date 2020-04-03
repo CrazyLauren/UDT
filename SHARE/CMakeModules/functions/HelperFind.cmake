@@ -15,7 +15,7 @@ endif ()
 find_path(@CONF_TARGET_NAME@_EXPORT
           NAMES @CONF_TARGET_NAME@Targets.cmake
           HINTS ${${_TARGET_UP}_ROOT} ${CMAKE_INSTALL_PREFIX}
-          PATH_SUFFIXES cmake
+          PATH_SUFFIXES @CMAKE_PACKAGE_INSTALL_DIR@
           )
 if (@CONF_TARGET_NAME@_EXPORT)
 

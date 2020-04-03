@@ -1,6 +1,6 @@
 # Quick start!
 
-In the installation directory you can find an example project: "example_number_one".
+In the installation directory you can find an example project: "example_number_one" (share/UDT/).
 At the beginning build it for your favorite integrated development environment (IDE).
 
 ## Building the example project

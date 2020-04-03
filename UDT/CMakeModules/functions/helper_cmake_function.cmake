@@ -80,11 +80,19 @@ function(install_default_directory
 	include(GNUInstallDirs)
 
 	if(NOT DEFINED CMAKE_PACKAGE_INSTALL_DIR)
-		set(CMAKE_PACKAGE_INSTALL_DIR 
-			"cmake"
-			CACHE PATH "The directory relative to CMAKE_PREFIX_PATH 
-			where cmake   is installed"		
-			)
+		if(WIN32)
+			set(CMAKE_PACKAGE_INSTALL_DIR
+				"cmake"
+				CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+				where cmake   is installed"
+				)
+		else()
+			set(CMAKE_PACKAGE_INSTALL_DIR
+				${CMAKE_INSTALL_LIBDIR}/cmake
+				CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+				where cmake   is installed"
+				)
+		endif()
 	endif()
 
 	if(NOT ${CMAKE_INSTALL_DOCDIR})
@@ -719,9 +727,20 @@ function(helper_export_library
 	if(NOT ${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH)
 		set(${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH ${CMAKE_MODULE_PATH_HELPER}/Config.cmake.in)
 	endif()
+
+	if(WIN32)
+		set(_CMAKE_PACKAGE_INSTALL_DIR
+			${CMAKE_PACKAGE_INSTALL_DIR}
+			)
+	else()
+		set(_CMAKE_PACKAGE_INSTALL_DIR
+			${CMAKE_PACKAGE_INSTALL_DIR}/${aTARGET_NAME}
+			)
+	endif()
+
 	configure_package_config_file( ${${_TARGET_UP}_CONFIG_CMAKE_FILE_PATH}
 								  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
-								INSTALL_DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+								INSTALL_DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR}
 								)
 
 	set(_COMONENT_TYPE "cmake")
@@ -731,7 +750,7 @@ function(helper_export_library
 
 
 	install(FILES  "${_OUT_DIRECTORY}/${aTARGET_NAME}Config.cmake"
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
+			DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 	if( ${_TARGET_UP}_TARGET_VERSION)				
 		set(_VERSION_CONFIG "${_OUT_DIRECTORY}/${aTARGET_NAME}ConfigVersion.cmake")
@@ -743,19 +762,19 @@ function(helper_export_library
 		)
 		
 		install(FILES "${_VERSION_CONFIG}"
-						DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
+						DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 					)
 	endif()
 
 	install ( EXPORT ${aTARGET_NAME}-export
 			FILE "${aTARGET_NAME}Targets.cmake"
 			#NAMESPACE ${PROJECT_NAME}_NAMESPACE::
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
+			DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 
 	install ( FILES
 			"${_OUT_DIRECTORY}/Find${aTARGET_NAME}.cmake"
-			DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
+			DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 	unset(CONF_LOOKING_FOR_FILES)
 	unset(CONF_TARGET_NAME)

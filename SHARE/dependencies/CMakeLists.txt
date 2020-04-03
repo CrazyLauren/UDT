@@ -14,7 +14,17 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
     set(BUILD_SHARED_LIBS FALSE CACHE BOOL "If TRUE, log4cplus is built as a shared library, otherwise as a static library")
     option(LOG4CPLUS_ENABLE_DECORATED_LIBRARY_NAME  "Turns on resulting file name decoration for static and UNICODE builds." OFF)
 
-    set(config_install_dir  ${CMAKE_PACKAGE_INSTALL_DIR}  CACHE INTERNAL "" FORCE)
+    if(WIN32)
+        set(_CMAKE_PACKAGE_INSTALL_DIR
+            ${CMAKE_PACKAGE_INSTALL_DIR}
+            )
+    else()
+        set(_CMAKE_PACKAGE_INSTALL_DIR
+            ${CMAKE_PACKAGE_INSTALL_DIR}/${aTARGET_NAME}
+            )
+    endif()
+
+    set(config_install_dir  ${_CMAKE_PACKAGE_INSTALL_DIR}  CACHE INTERNAL "" FORCE)
     add_subdirectory(log4cplus-1.2.x)
 
 	set(LOG4CPLUS_FOUND true CACHE INTERNAL "" FORCE)
@@ -35,7 +45,7 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
 
     install ( FILES
               "${_OUT_DIRECTORY}/Findlog4cplus.cmake"
-              DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
+              DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR}
               )
 
     set(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE_OK true CACHE INTERNAL "" FORCE)
