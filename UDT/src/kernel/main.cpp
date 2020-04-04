@@ -23,6 +23,7 @@
 #include <udt/CParserFactory.h>
 #include <tclap/CmdLine.h>
 #include <SHARE/logging/CShareLogArgsParser.h>
+#include <UDT/config/config.h>
 
 #include "core/CCore.h"
 
@@ -279,8 +280,11 @@ void initialize_core(int argc, char* argv[])
 			"string", _cmd);
 
 	ValueArg<std::string> _config("c", "config",
-			"configure path (json or xml). By default ./default_kernel_config.json.", false,
-			"./default_kernel_config.json", "path to json or xml config", _cmd);
+			"configure path (json or xml). By default:"
+            UDT_CONFIG_DEFAULT_PATH
+			"default_kernel_config.json.", false,
+            UDT_CONFIG_DEFAULT_PATH
+            "default_kernel_config.json", "path to json or xml config", _cmd);
 
 	try
 	{

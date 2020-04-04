@@ -20,4 +20,4 @@
     endforeach()
 ]]
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/default_customer_config.json
-        DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT config)
+        DESTINATION "${UDT_INSTALL_CONFIG_DEFAULT_PATH}" COMPONENT config)

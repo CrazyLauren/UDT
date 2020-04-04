@@ -20,6 +20,7 @@
 #include <core/CConfigure.h>
 #include <core/CCore.h>
 #include <io/CKernelIo.h>
+#include <UDT/config/config.h>
 
 #include "CHttpRequest.h"
 
@@ -34,7 +35,7 @@ NSHARE::CText const CHttpIOManger::PORT = "port";
 NSHARE::CText const CHttpIOManger::BUF_MAX_SIZE="maxbuf";
 NSHARE::CText const CHttpIOManger::PARSER_ERROR = "par_fail";
 NSHARE::CText const CHttpIOManger::SNIFFER = "sniffer";
-NSHARE::CText const CHttpIOManger::WWW_PATH = "./gui";
+NSHARE::CText const CHttpIOManger::WWW_PATH = UDT_GUI_PATH "gui";
 NSHARE::CText const CHttpIOManger::I_WHAT_RECEIVE = "i_what_receive";
 NSHARE::CText const CHttpIOManger::DO_NOT_RECEIVE_MSG = "do_not_receive_msg";
 NSHARE::CText const CHttpIOManger::SNIFFER_STATE = "snif_state";

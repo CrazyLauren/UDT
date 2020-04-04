@@ -13,7 +13,7 @@
 #ifndef CCUSTOMER_H_
 #define CCUSTOMER_H_
 
-
+#include <UDT/config/config.h>
 #include "customer_export.h"
 #include <udt/udt_types.h>
 #include <udt/programm_id.h>
@@ -542,7 +542,10 @@ public:
 	*\return 0 - EOK
 	 *			else bitwise error code
 	 */
-	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),const NSHARE::CText& aConfPath="default_customer_config.json");
+	static int sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const&  aVersion=NSHARE::version_t(),
+	    const NSHARE::CText& aConfPath=
+            UDT_CONFIG_DEFAULT_PATH
+	        "default_customer_config.json");
 
 	/*!\brief Initialize library
 	 *
