@@ -14,17 +14,19 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
     set(BUILD_SHARED_LIBS FALSE CACHE BOOL "If TRUE, log4cplus is built as a shared library, otherwise as a static library")
     option(LOG4CPLUS_ENABLE_DECORATED_LIBRARY_NAME  "Turns on resulting file name decoration for static and UNICODE builds." OFF)
 
-    if(WIN32)
-        set(_CMAKE_PACKAGE_INSTALL_DIR
-            ${CMAKE_PACKAGE_INSTALL_DIR}
-            )
-    else()
-        set(_CMAKE_PACKAGE_INSTALL_DIR
-            ${CMAKE_PACKAGE_INSTALL_DIR}/${aTARGET_NAME}
+    set(_OLD_CMAKE_PACKAGE_INSTALL_DIR
+        ${CMAKE_PACKAGE_INSTALL_DIR}
+        )
+    if(UNIX)
+        set(CMAKE_PACKAGE_INSTALL_DIR
+            ${CMAKE_PACKAGE_INSTALL_DIR}/log4cplus
+            CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+				where cmake   is installed"
+            FORCE
             )
     endif()
 
-    set(config_install_dir  ${_CMAKE_PACKAGE_INSTALL_DIR}  CACHE INTERNAL "" FORCE)
+    set(config_install_dir  ${CMAKE_PACKAGE_INSTALL_DIR}  CACHE INTERNAL "" FORCE)
     add_subdirectory(log4cplus-1.2.x)
 
 	set(LOG4CPLUS_FOUND true CACHE INTERNAL "" FORCE)
@@ -45,7 +47,7 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
 
     install ( FILES
               "${_OUT_DIRECTORY}/Findlog4cplus.cmake"
-              DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR}
+              DESTINATION ${CMAKE_PACKAGE_INSTALL_DIR}
               )
 
     set(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE_OK true CACHE INTERNAL "" FORCE)
@@ -55,4 +57,11 @@ if(LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE)
     if(HAVE_GCC_NO_DEPRECATED)
         set_property(TARGET log4cplus APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
     endif(HAVE_GCC_NO_DEPRECATED)
+
+    set(CMAKE_PACKAGE_INSTALL_DIR
+        ${_OLD_CMAKE_PACKAGE_INSTALL_DIR}
+        CACHE PATH "The directory relative to CMAKE_PREFIX_PATH
+				where cmake   is installed"
+        FORCE
+        )
 endif()

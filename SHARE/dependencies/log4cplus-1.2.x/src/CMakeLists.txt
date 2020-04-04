@@ -155,19 +155,23 @@ configure_file("cmake/Config.cmake.in" "${project_config}" @ONLY)
 install(
     FILES "${project_config}" "${version_config}"
     DESTINATION "${config_install_dir}"
+	COMPONENT cmake
 )
 
 install(
     EXPORT "${targets_export_name}"
     NAMESPACE "${namespace}"
     DESTINATION "${config_install_dir}"
+	COMPONENT cmake
 )
 
 install(TARGETS ${log4cplus} EXPORT "${targets_export_name}"
                           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-                          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+                          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT headers
+                          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT headers
+                          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT headers
+						  
+						  )
 
 install(FILES ../include/log4cplus/appender.h
               ../include/log4cplus/asyncappender.h
@@ -197,10 +201,12 @@ install(FILES ../include/log4cplus/appender.h
               ../include/log4cplus/version.h
               ../include/log4cplus/win32debugappender.h
               ../include/log4cplus/win32consoleappender.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus  
+		COMPONENT headers)
 
 install(FILES ../include/log4cplus/boost/deviceappender.hxx
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/boost )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/boost  
+		COMPONENT headers)
 
 
 install(FILES ../include/log4cplus/helpers/appenderattachableimpl.h
@@ -219,12 +225,14 @@ install(FILES ../include/log4cplus/helpers/appenderattachableimpl.h
               ../include/log4cplus/helpers/stringhelper.h
               ../include/log4cplus/helpers/thread-config.h
               ../include/log4cplus/helpers/timehelper.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/helpers )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/helpers 
+		COMPONENT headers )
 
 install(FILES ../include/log4cplus/internal/env.h
               ../include/log4cplus/internal/internal.h
               ../include/log4cplus/internal/socket.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/internal )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/internal  
+		COMPONENT headers)
 
 install(FILES ../include/log4cplus/spi/appenderattachable.h
               ../include/log4cplus/spi/factory.h
@@ -234,7 +242,8 @@ install(FILES ../include/log4cplus/spi/appenderattachable.h
               ../include/log4cplus/spi/loggingevent.h
               ../include/log4cplus/spi/objectregistry.h
               ../include/log4cplus/spi/rootlogger.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/spi )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/spi  
+		COMPONENT headers)
 
 install(FILES ../include/log4cplus/thread/impl/syncprims-cxx11.h
               ../include/log4cplus/thread/impl/syncprims-impl.h
@@ -243,15 +252,18 @@ install(FILES ../include/log4cplus/thread/impl/syncprims-cxx11.h
               ../include/log4cplus/thread/impl/syncprims-win32.h
               ../include/log4cplus/thread/impl/threads-impl.h
               ../include/log4cplus/thread/impl/tls.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/thread/impl )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/thread/impl  
+		COMPONENT headers)
 
 install(FILES ../include/log4cplus/thread/syncprims-pub-impl.h
               ../include/log4cplus/thread/syncprims.h
               ../include/log4cplus/thread/threads.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/thread )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/thread  
+		COMPONENT headers)
 
 install(FILES ../include/log4cplus/config/macosx.h
               ../include/log4cplus/config/win32.h
               ../include/log4cplus/config/windowsh-inc.h
               ${log4cplus_BINARY_DIR}/include/log4cplus/config/defines.hxx
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/config )
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/log4cplus/config  
+		COMPONENT headers)

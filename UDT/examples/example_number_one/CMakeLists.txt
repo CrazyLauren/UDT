@@ -1,5 +1,6 @@
 
 set(_OUT_DIRECTORY ${CMAKE_BINARY_DIR}/src/example_number_one)
+set(_CMAKE_CMAKE_PREFIX_PATH "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_PACKAGE_INSTALL_DIR}")
 configure_file(CMakeLists.txt.in
                ${_OUT_DIRECTORY}/CMakeLists.txt @ONLY)
 
