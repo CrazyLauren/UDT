@@ -34,6 +34,7 @@ const NSHARE::CText CResources::NAME = "modules";
 const NSHARE::CText CResources::MODULES_PATH = "modules_path";
 const NSHARE::CText CResources::LIST_OF_LOADED_LIBRARY = "libraries";
 const NSHARE::CText CResources::ONLY_SPECIFIED_LIBRARY = "only_specified";
+const NSHARE::CText CResources::ENV_MODULE_PATH = "UDT_CUSTOMER_MODULE_PATH";
 
 CResources::CResources(NSHARE::CConfig const& aConf)
 {
@@ -58,11 +59,16 @@ CResources::CResources(NSHARE::CConfig const& aConf)
             }
         }
     }
-    aConf.MGetIfSet(MODULES_PATH,FExtLibraryPath);
-    if(FExtLibraryPath.length())
+    NSHARE::CText _path;
+    if(aConf.MGetIfSet(MODULES_PATH,_path))
+        FExtLibraryPath.push_back(_path);
+
+    if(const char* envModuleDir = getenv(ENV_MODULE_PATH.c_str()))
+        FExtLibraryPath.push_back(envModuleDir);
+/*    if(FExtLibraryPath.length())
     {
         LOG(ERROR)<<"Not implemented";
-    }
+    }*/
     //aConf.MGetIfSet(ONLY_SPECIFIED_LIBRARY,FDontSearchLibrary);
 }
 
@@ -100,28 +106,40 @@ void CResources::MLoadLibrariess()
 			// load dynamic module
 			if (!_it->FDynamic.get())
 			{
-				try
-				{
-					SHARED_PTR<CDynamicModule> _module(new CDynamicModule(_it->FName));//throw std::invalid_argument if failed
-					_it->FDynamic=_module;
+                bool _is_find = false;
+                for (unsigned i = 0;
+                     i < FExtLibraryPath.size()//
+                         && !_is_find; ++i)
+                {
+                    try
+                    {
+                        SHARED_PTR<CDynamicModule> _module
+                            (new CDynamicModule(_it->FName, FExtLibraryPath[i]));//throw std::invalid_argument if failed
+                        _it->FDynamic = _module;
 
-					factory_registry_func_t _func = (factory_registry_func_t)(
-							_it->FDynamic->MGetSymbolAddress(FACTORY_REGISTRY_FUNC_NAME));
+                        factory_registry_func_t _func = (factory_registry_func_t) (
+                            _it->FDynamic->MGetSymbolAddress(FACTORY_REGISTRY_FUNC_NAME));
 
-					LOG_IF(DFATAL,!_func)<<
-					"Required function export '"<<FACTORY_REGISTRY_FUNC_NAME<<
-					"' was not found in dynamic module '" << _it->FName<< "'.";
-					if(!_func)
-					continue;
-					
-					_it->FRegister = _func(NULL);
-					CHECK_NOTNULL(_it->FRegister);
-				}
-				catch(...)
-				{
-					LOG(ERROR)<<"Library "<<_it->FName<<" is not exist. Ignoring ...";
-					continue;
-				}
+                        LOG_IF(DFATAL, !_func) <<
+                                               "Required function export '" << FACTORY_REGISTRY_FUNC_NAME <<
+                                               "' was not found in dynamic module '" << _it->FName << "'.";
+                        if (!_func)
+                            continue;
+
+                        _it->FRegister = _func(NULL);
+                        CHECK_NOTNULL(_it->FRegister);
+                        _is_find = true;
+                    }
+                    catch (...)
+                    {
+                        continue;
+                    }
+                }
+                if (!_is_find)
+                {
+                    LOG(ERROR) << "Library " << _it->FName << " is not exist. in "<<FExtLibraryPath<<" Ignoring ...";
+                    continue;
+                }
 			}
 		}
 		VLOG(2) << "adding all	available factories.";

@@ -25,6 +25,8 @@ public:
     static const NSHARE::CText ONLY_SPECIFIED_LIBRARY;/*!< A name of key for specification
 										loaded only library which is specified by #LIST_OF_LOADED_LIBRARY*/
 
+    static const NSHARE::CText ENV_MODULE_PATH;/*!< THe Enviroment name  which is hold path to looking for modules*/
+
 	CResources(NSHARE::CConfig const& aConf);
 
 	~CResources();
@@ -49,7 +51,7 @@ private:
 	};
 	typedef std::list<module_t> mod_channels_t;
 
-	NSHARE::CText FExtLibraryPath;
+    NSHARE::Strings  FExtLibraryPath;
 	mod_channels_t FModules;
 };
 }//

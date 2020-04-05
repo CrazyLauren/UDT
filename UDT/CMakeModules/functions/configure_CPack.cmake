@@ -234,5 +234,7 @@ if(NOT CPACK_GENERATOR)
 		endif()
 	endif()
 endif()
-
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
+	include("${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
+endif()
 include(CPack)

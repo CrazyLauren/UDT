@@ -121,7 +121,7 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 		if (!_name.empty())
 		{
 			_stream.open(_name.c_str());
-			LOG_IF(DFATAL,!_stream.is_open())
+			LOG_IF(DFATAL,!_stream.is_open() && !envModuleDir)
 														<< "***ERROR***:Configuration file - "
 														<< _name << ".";
 		}
@@ -131,7 +131,7 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 			_name=envModuleDir;
 			_stream.open(envModuleDir);
 			LOG_IF(DFATAL,!_stream.is_open())
-														<< "***ERROR***:Cannot open configuration file from Environment "
+														<< "***ERROR***:Cannot open configuration file from Environment and from local path"
 														<< ENV_CONFIG_PATH
 														<< " == "
 														<< envModuleDir<< ".";
