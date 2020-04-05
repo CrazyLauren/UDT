@@ -10,8 +10,9 @@ if(CPACK_GENERATOR STREQUAL "NSIS")
          )
 
         list(APPEND CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
-             "DeleteRegValue \\\${env_hklm} UDT_CUSTOMER_CONFIG_PATH
+             "
                  DeleteRegValue \\\${env_hklm} UDT_CUSTOMER_MODULE_PATH
+                 DeleteRegValue \\\${env_hklm} UDT_CUSTOMER_CONFIG_PATH
                  SendMessage \\\${HWND_BROADCAST} \\\${WM_WININICHANGE} 0 \\\"STR:Environment\\\" /TIMEOUT=5000
             ")
 endif()
