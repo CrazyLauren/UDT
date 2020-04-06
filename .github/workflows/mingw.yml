@@ -51,7 +51,8 @@ jobs:
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc doxygen mingw-w64-%MINGW_ARCH%-nsis
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S  doxygen mingw-w64-%MINGW_ARCH%-nsis
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -139,8 +140,6 @@ jobs:
           cmake --build . --target doc_SHARE
           cmake --build . --target doc_UDT
           cmake --build . --target package
-          cd ./binary/package
-          for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-latest-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
       - name: Rename package
         working-directory: ./build
         env:
