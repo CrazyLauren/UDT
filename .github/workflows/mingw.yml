@@ -51,7 +51,7 @@ jobs:
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc
+          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc doxygen mingw-w64-%MINGW_ARCH%-nsis
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -125,6 +125,23 @@ jobs:
           start /B timeout --signal=SIGABRT 100 ./Kernel.exe
           timeout --signal=SIGABRT 100 ./test_of_speed
           taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+      - name: build package
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
+
+          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_INSTALL_PREFIX="" -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+          cmake --build . --target doc_SHARE
+          cmake --build . --target doc_UDT
+          cmake --build . --target package
+          cd ./binary/package
+          for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-latest-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
+
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
@@ -144,6 +161,6 @@ jobs:
           && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v1
         with:
-          files: UDT-binary-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}.tar.gz
+          files: build/binary/package/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

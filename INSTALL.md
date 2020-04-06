@@ -8,7 +8,14 @@ Before starting the installation, it is recommended that you read about it. <br 
  keeping on only the directories of the target compiler, <br />
  first of all it concerns the PATH variable. <br />
  (For example, if you build a project for mingw, <br />
- cmake can "pick up" sh.exe from another compiler).
+ cmake can "pick up" sh.exe from another compiler). <br />
+
+<aside class="warning">
+If you have some problems during compilation check the path to the directory containing Boost 
+headers (Boost_INCLUDE_DIR) in cmake. The used version of the boost library  can be not compatible
+ with newer compilers.<br />
+ If you don't want problems, install the latest version of Boost library!
+</aside>
 
 # Requirements
 ### Common Requirements
@@ -44,11 +51,7 @@ Before starting the installation, it is recommended that you read about it. <br 
 | Tclap | 1.2.1 and higher | Header only files | The required version <br />  is already in the <br /> UDT/SHARE/dependencies <br /> directory|
 | Log4cplus | 1.1.3 and 1.2. * | No if option is not  <br /> specified LOGGING_TO_LOG4CPLUS | It compiles automatically  <br />  if the option is specified: <br />  LOGGING_BUILD_LOG4CPLUS_FROM_SOURCE|
 
-<aside class="warning">
-If you have some problems during compilation check the path to the directory containing Boost 
-headers (Boost_INCLUDE_DIR) in cmake. The used version of the boost library  can be not compatible
- with newer compilers.
-</aside>
+
 
 # ​Download the source
 Download and extract the latest version of the source code from from [https://github.com/CrazyLauren/UDT](https://github.com/CrazyLauren/UDT)

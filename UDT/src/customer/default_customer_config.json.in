@@ -8,7 +8,7 @@ plugins.
 		{
 			/** Where the customer is looking for plugins*/
 			
-			"modules_path":"./",
+			"modules_path":"@_CONFIG_PLUGIN_DIR@",
 			
 			/** if true the customer loaded only specialized in key "libraries"
 				library.

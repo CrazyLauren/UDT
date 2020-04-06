@@ -1,23 +1,11 @@
+set(_OUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/${_TARGET_NAME})
+set(_CONFIG_PLUGIN_DIR ${${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR})
 
-#[[	foreach(_source
-            ${${_TARGET_NAME_UP}_LIST_STATIC_MODULES}
-            )
-#[=[        list(APPEND _PRIVATE_LIBRARIS
-                "${_source}_Static"
-                )
-        string(TOUPPER	${_source}
-                _LIB_NAME_UP
-                )
-        list(APPEND DEF_MODULES
-                ${_LIB_NAME_UP}_STATIC
-                )]=]
-    endforeach()]]
+configure_file(default_customer_config.json.in
+               "${_OUT_DIRECTORY}/default_customer_config.json" @ONLY)
 
-   #[[ foreach(_source
-            ${CUSTOMER_AVAILABLE_MODULES}
-            )
+unset(_CONFIG_PLUGIN_DIR)
 
-    endforeach()
-]]
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/default_customer_config.json
-        DESTINATION "${UDT_INSTALL_CONFIG_DEFAULT_PATH}" COMPONENT config)
+install(FILES ${_OUT_DIRECTORY}/default_customer_config.json
+        DESTINATION
+        "${UDT_INSTALL_CONFIG_DEFAULT_PATH}" COMPONENT config)

@@ -178,6 +178,9 @@ set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS ON)
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER
 	${CPACK_PACKAGE_VENDOR}
 	)
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_SECTION "libs")
+set(CPACK_DEBIAN_DEVELOPMENT_PACKAGE_SECTION "devel")
+
 if(NOT "${CPACK_PACKAGE_VERSION}" STREQUAL "")
 	set(CPACK_DEBIAN_PACKAGE_VERSION
 		"${CPACK_PACKAGE_VERSION}"
@@ -208,6 +211,40 @@ if(WIN32 AND NOT UNIX)
 		"Delete '$INSTDIR\\\\${CMAKE_INSTALL_BINDIR}\\\\${CMAKE_PACKAGE_INSTALL_DIR}.lnk'"
 		)
 
+	list(APPEND CPACK_NSIS_CREATE_ICONS_EXTRA
+		 "CreateShortCut '$DESKTOP\\\\${PROJECT_NAME}.lnk' '$INSTDIR\\\\'")
+
+	list(APPEND CPACK_NSIS_DELETE_ICONS_EXTRA
+		 "Delete '$DESKTOP\\\\${PROJECT_NAME}.lnk'")
+
+	if (MINGW)
+		get_filename_component(CXX_PATH ${CMAKE_CXX_COMPILER} DIRECTORY)
+
+		set(_MINGW_RUNTIME_LIBS "")
+		if (EXISTS ${CXX_PATH}/libgcc_s_dw2-1.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libgcc_s_dw2-1.dll)
+		endif ()
+
+		if (EXISTS ${CXX_PATH}/libstdc++-6.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libstdc++-6.dll)
+		endif ()
+
+		if (EXISTS ${CXX_PATH}/mingwm10.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/mingwm10.dll)
+		endif ()
+
+		if (EXISTS ${CXX_PATH}/libwinpthread-1.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libwinpthread-1.dll)
+		endif ()
+
+		if (_MINGW_RUNTIME_LIBS)
+			install(FILES
+					${_MINGW_RUNTIME_LIBS}
+					DESTINATION
+					"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}"
+					COMPONENT applications)
+		endif ()
+	endif()
 endif()
 
 #set generators
@@ -227,7 +264,7 @@ if(NOT CPACK_GENERATOR)
 			   OR _DISTIBUTION STREQUAL "Ubuntu"
 			   OR _DISTIBUTION MATCHES "AstraLinux.*"
 			   )
-				set(CPACK_GENERATOR "DEB;TGZ")
+				set(CPACK_GENERATOR "DEB")
 			elseif(_DISTIBUTION MATCHES "RedHat.*")
 				set(CPACK_GENERATOR "RPM")
 			endif()

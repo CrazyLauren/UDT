@@ -816,10 +816,45 @@ endfunction()
 macro(configure_project
 		 aPROJECT_NAME #	aPROJECT_NAME - Name of the project
 		 )
+
 	set(CMAKE_MODULE_PATH
 		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"		
 		CACHE STRING "Path to search modules" FORCE)		 
 	install_default_directory(${aPROJECT_NAME})
+
+	# make sure that the required libraries are
+	# always found independent from LD_LIBRARY_PATH and the install
+	# location
+	if (UNIX)
+		if (NOT DEFINED CMAKE_SKIP_BUILD_RPATH)
+			set(CMAKE_SKIP_BUILD_RPATH FALSE)
+			mark_as_advanced(CMAKE_SKIP_BUILD_RPATH)
+		endif ()
+
+		if (NOT DEFINED CMAKE_BUILD_WITH_INSTALL_RPATH)
+			set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+			mark_as_advanced(CMAKE_BUILD_WITH_INSTALL_RPATH)
+		endif ()
+
+		if (NOT DEFINED CMAKE_INSTALL_RPATH)
+			set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}")
+			mark_as_advanced(CMAKE_INSTALL_RPATH)
+		endif ()
+
+		if (NOT DEFINED CMAKE_INSTALL_RPATH)
+			list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+			if ("${isSystemDir}" STREQUAL "-1")
+				set(CMAKE_INSTALL_RPATH "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}")
+				mark_as_advanced(CMAKE_INSTALL_RPATH)
+			endif ()
+		endif ()
+
+
+		if (NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_PATH)
+			set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+			mark_as_advanced(CMAKE_INSTALL_RPATH_USE_LINK_PATH)
+		endif ()
+	endif ()
 
 	# default to Release build (it's what most people will use)
 	if (NOT CMAKE_BUILD_TYPE)

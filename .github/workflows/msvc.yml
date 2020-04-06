@@ -127,7 +127,7 @@ jobs:
             cmake --build . --target doc_UDT
             cmake --build . --target package
             cd ./binary/package
-            for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
+            for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-v142-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
