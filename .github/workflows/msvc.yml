@@ -122,7 +122,7 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: bash
         run: |
-            cmake -DBOOST_ROOT=./boost_1_56_0  -DCMAKE_INSTALL_PREFIX="" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+            cmake -DCMAKE_BUILD_TYPE=$CONFIGURATION -DBOOST_ROOT=./boost_1_56_0  -DCMAKE_INSTALL_PREFIX="" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
             cmake --build . --target doc_SHARE
             cmake --build . --target doc_UDT
             cmake --build . --target package
