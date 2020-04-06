@@ -131,7 +131,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
           ARCHITECTURE: ${{ matrix.arch }}
-        shell: bash
+        shell: cmd
         run: |
           set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
 
@@ -141,7 +141,16 @@ jobs:
           cmake --build . --target package
           cd ./binary/package
           for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-latest-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
-
+      - name: Rename package
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          cd ./binary/package
+          for file in *.exe ; do mv "$file" "${file%%.exe}-${{ matrix.compiler }}-latest-${{ matrix.arch }}-${{ matrix.configuration }}.exe" ; done
       - name: Store artifact
         uses: actions/upload-artifact@master
         with:
