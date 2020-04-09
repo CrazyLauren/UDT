@@ -800,7 +800,7 @@ function(helper_export_library
 
 	install ( EXPORT ${aTARGET_NAME}-export
 			FILE "${aTARGET_NAME}Targets.cmake"
-			#NAMESPACE ${PROJECT_NAME}_NAMESPACE::
+			NAMESPACE ${${PROJECT_NAME}_NAMESPACE}::
 			DESTINATION ${_CMAKE_PACKAGE_INSTALL_DIR} COMPONENT ${_COMONENT_TYPE}
 			)
 
