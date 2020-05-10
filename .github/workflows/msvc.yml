@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
-          tar --bzip2 -xvf boost_1_56_0.tar.bz2
+          tar --bzip2 -xf boost_1_56_0.tar.bz2
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DBOOST_ROOT=./boost_1_56_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+          cmake -DBOOST_ROOT=../boost_1_56_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
       - name: Compile
         working-directory: ./build
         env:
