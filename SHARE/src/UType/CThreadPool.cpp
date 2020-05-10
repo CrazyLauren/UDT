@@ -337,7 +337,12 @@ void CPoolThread::MRun()
 			}
 		}
 	} while (!FDone.MIsOne());
-	FInOperation = false;
+
+	{
+		CRAII<CMutex> lock(FMutex);
+		FIsWaitNextOperation = 0;
+		FInOperation = false;
+	}
 	VLOG(2) << "exit loop ";
 }
 //
