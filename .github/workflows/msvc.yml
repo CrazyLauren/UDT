@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           wget -nv http://downloads.sourceforge.net/project/boost/boost/1.56.0/boost_1_56_0.tar.bz2
-          tar --bzip2 -xf boost_1_56_0.tar.bz2
+          tar --bzip2 -xvf boost_1_56_0.tar.bz2
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
