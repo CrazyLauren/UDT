@@ -487,7 +487,7 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 		output_user_data_t* const aSendToDescriptors,fail_send_array_t* const aErrorList) const
 {
 	user_datas_t& _from(*aWhat);
-	user_datas_t& _to(*aHasNotRoute);
+	user_datas_t& _error_data(*aHasNotRoute);
 	output_user_data_t& _send_to_desc(*aSendToDescriptors);
 	fail_send_array_t& _errors_list(*aErrorList);
 
@@ -510,15 +510,6 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 
 			if (!_descr.empty())
 			{
-				if (!_has_not_route.empty())//it's not fatal error
-				{
-					_to.push_back(_data);
-					_to.back().FDataId.FRouting.swap(_has_not_route);
-
-					fail_send_t _sent(_to.back().FDataId);
-					_sent.MSetError(E_NO_ROUTE);
-					_errors_list.push_back(_sent);
-				}
 
 				VLOG_IF(1,_descr.size()<_data.FDataId.FRouting.size())
 																				<< "It has been reduced the number of packets for "
@@ -536,6 +527,16 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 				{
 					LOG(ERROR)<< " WTF?";
 					_error = E_NO_ROUTE;
+				}
+
+				if (_error != E_NO_ERROR && !_has_not_route.empty())//it's not fatal error as some packets was send
+				{
+//					_error_data.push_back(_data);
+//					_error_data.back().FDataId.FRouting.swap(_has_not_route);
+					fail_send_t _sent(_data.FDataId,
+							_has_not_route,
+							E_NO_ROUTE);
+					_errors_list.push_back(_sent);
 				}
 			}
 			else
@@ -557,10 +558,11 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 			_sent.MSetError(_error);
 			_errors_list.push_back(_sent);
 
-			++_it;
+			_error_data.splice(_error_data.end(), _from, _it++);//only post increment!!!
 		}
 		else
-			_to.splice(_to.end(), _from, _it++);//only post increment!!!
+			++_it;
+
 	}
 }
 inline void CRoutingService::MRoutingMsgToDescriptor(user_data_t const & aMsg,
@@ -689,6 +691,11 @@ void CRoutingService::MSendMessages(user_datas_t*const aFrom,
  */
 void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 {
+#if __cplusplus >=201103L
+	FState.FNumPackets+=aData.FData.size();
+#else
+	++FState.FNumPackets;
+#endif
 	DCHECK(!aData.FData.empty());
 	VLOG(2) << "New  From: " << aData.FDesc;
 	DLOG_IF(ERROR,!CDescriptors::sMGetInstance().MIsInfo(aData.FDesc))<<aData.FDesc<<" has been closed already. The msg is ignored...";
@@ -708,16 +715,28 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	MExtractMsgThatHasToBeSwaped(&_has_route,&_has_to_swaped);
 
 	if (!_has_route.empty())
+	{
+#if __cplusplus >=201103L
+		FState.FNumSended+=_has_route.size();
+#else
+		++FState.FNumSended;
+#endif
 		MSendMessages(&_has_route, &_has_not_route, &_errors_list);
-
+	}
 	if (!_has_to_swaped.empty())
 	{
 		MSwapEndianIfNeed(_has_to_swaped,_has_route,_errors_list);
+#if __cplusplus >=201103L
+		FState.FNumSended+=_has_route.size();
+#else
+		++FState.FNumSended;
+#endif
 		MSendMessages(&_has_route, &_has_not_route, &_errors_list);
 	}
 
 	if (!_errors_list.empty())
 	{
+		++FState.FSendError;
 		MNoteFailSend(_errors_list);
 	}
 
@@ -726,6 +745,12 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	{
 		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
 		aData.FData.swap(_has_not_route);
+#if  __cplusplus >=201103L
+		FState.FNoRoute+=_has_not_route.size();
+		FState.FNumSended-=_has_not_route.size();
+#else
+		++FState.FNoRoute;
+#endif
 	}
 }
 /*!\brief Return whither the data has to be sent that
@@ -838,6 +863,7 @@ NSHARE::CConfig CRoutingService::MSerialize() const
 		//_conf.MAdd(_route.FGraph.MSerialize());
 		_conf.MAdd(_route.FRequiredDG.MSerialize());
 	}
+	_conf.MAdd(FState.MSerialize());
 	return _conf;
 }
 void CRoutingService::MInformNewReceiver(std::pair<demand_dgs_for_t, demand_dgs_for_t> * const aWhat)
@@ -941,4 +967,15 @@ int CRoutingService::sMHandleUserDataId(CHardWorker* WHO, args_data_t* WHAT,
 	_this->MHandleFrom(_p);
 	return 0;
 }
+NSHARE::CConfig CRoutingService::state_t::MSerialize() const
+{
+	NSHARE::CConfig _conf("rs_state");
+	_conf.MAdd("err",FSendError);
+	_conf.MAdd("np",FNumPackets);
+	_conf.MAdd("no_route",FNoRoute);
+	_conf.MAdd("snd",FNumSended);
+
+	return _conf;
+}
+
 } /* namespace NUDT */

@@ -178,8 +178,12 @@ extern bool send_messages()
         std::cout << "Recv Messages=" << g_amount_of_messages<<" Send msg="<< g_amount_of_send_messages<< "; fail sent="
                   << g_amount_of_doesnt_send << "; fail allocated="
                   << g_amount_of_doesnt_allocated<<" Not delivered="<<g_amount_of_fail_send << std::endl;
-        std::cout << "Press any key... " << std::endl;
     }
+/*    if(g_amount_of_send_messages!=g_amount_of_messages)
+    {
+    	std::cout << "Press any key... " << std::endl;
+    	getchar();
+    }*/
 	return g_amount_of_send_messages==g_amount_of_messages;
 }
 }
