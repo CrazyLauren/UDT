@@ -522,7 +522,6 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 				if (!_ouput.empty())
 				{
 					MSortedSplice(_ouput, _send_to_desc);
-					_it=_from.erase(_it);
 				}
 				else
 				{
@@ -561,8 +560,8 @@ void CRoutingService::MDistributeMsgByDescriptors(user_datas_t* const aWhat,
 
 			_error_data.splice(_error_data.end(), _from, _it++);//only post increment!!!
 		}
-//		else
-//			++_it;
+		else
+			_it=_from.erase(_it);
 
 	}
 }
