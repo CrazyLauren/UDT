@@ -26,6 +26,7 @@ static double g_time = 0.0;///< Current time
 static double g_start_time = 0.0;///< Start time of the test
 static double g_last_print_time = 0.0;///< Current time
 
+static unsigned g_receivers=0;///< Number of receivers
 static unsigned long long g_recv_bytes = 0;///< Amount of received bytes
 static NSHARE::atomic_t g_amount_of_messages;///< Amount of received messages
 static unsigned long long g_amount_of_send_messages = 0;///< Amount of send messages
@@ -83,6 +84,7 @@ extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
 				<< _it.FWhat.FFrom << std::endl;
 		std::cout <<"-------------------------------------"<< std::endl;
 	}
+	++g_receivers;
 	return 0;
 }
 extern int event_connect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
@@ -138,6 +140,13 @@ extern int event_customers_update_handler(CCustomer* WHO, void* aWHAT,
 }
 extern bool send_messages()
 {
+	for(;g_receivers==0;NSHARE::usleep(10000))
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+
+		std::cout <<"Wait for receivers"<< std::endl;
+
+	}
 	///Algorithm:
 	g_time = NSHARE::get_time();
 	g_start_time = NSHARE::get_time();

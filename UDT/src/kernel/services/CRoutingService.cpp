@@ -22,7 +22,7 @@
 
 #include "CRoutingService.h"
 #include "CInfoService.h"
-
+//#define UDT_NO_ROUTE_IS_ERROR
 template<>
 NUDT::CRoutingService::singleton_pnt_t NUDT::CRoutingService::singleton_t::sFSingleton =
 		NULL;
@@ -710,7 +710,18 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 	DCHECK(aData.FData.empty());
 
 	if (!_has_not_route.empty())
+		{
 			MFillMsgReceivers(_has_not_route, _has_route, _errors_list);
+#ifdef UDT_NO_ROUTE_IS_ERROR
+			user_datas_t::iterator _it = _has_not_route.begin();
+			for (; _it != _has_not_route.end();++_it)
+			{
+				fail_send_t _sent(_it->FDataId);
+				_sent.MSetError(E_NO_ROUTE);
+				_errors_list.push_back(_sent);
+			}
+#endif
+		}
 
 	MExtractMsgThatHasToBeSwaped(&_has_route,&_has_to_swaped);
 
@@ -738,7 +749,6 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 
 	if (!_has_not_route.empty())
 	{
-		CHECK(!_errors_list.empty());
 		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
 		aData.FData.swap(_has_not_route);
 #if  __cplusplus >=201103L

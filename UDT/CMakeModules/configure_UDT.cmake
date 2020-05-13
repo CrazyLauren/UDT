@@ -19,7 +19,9 @@ if (WIN32)
 	endif(BUILD_BY_MP)
 
 endif()
-
+set(UDT_NO_ROUTE_IS_ERROR
+	false 
+	CACHE BOOL  "Is no route for packet is error?")
 
 if(NOT DEFINED INSTALL_PREFIX_OLD OR
    NOT ("${INSTALL_PREFIX_OLD}" STREQUAL "${${PROJECT_NAME}_INSTALL_PREFIX}")
