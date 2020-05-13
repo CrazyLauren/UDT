@@ -687,7 +687,7 @@ bool CSharedAllocator::heap_head_t::MIsWaitUnlock() const
 struct CSharedAllocator::process_node_t *CSharedAllocator::heap_head_t::MFirstProcessNode(
 		void* aBaseAddr)
 {
-	DCHECK(FOffsetToProcessNode>= sizeof(heap_head_t) ||FOffsetToProcessNode==NULL);
+	DCHECK_GE(FOffsetToProcessNode, sizeof(heap_head_t));
 	return sMPointerFromBase<process_node_t>(FOffsetToProcessNode, aBaseAddr);
 }
 struct CSharedAllocator::block_node_t *CSharedAllocator::heap_head_t::MFirstBlockNode(
@@ -1593,14 +1593,14 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	
 	DCHECK_GE(std::numeric_limits<reserve_t>::max(), _p_node->MGetBlockSize());
 	_p->FUsedUpReserv-= static_cast<reserve_t>(_p_node->MGetBlockSize());
-	volatile bool _is_merged_prev=false;
-	volatile bool _is_merged_next=false;
+	//volatile bool _is_merged_prev=false;
+	//volatile bool _is_merged_next=false;
 	//merge
 	if (_prev
 			&& (((uint8_t *) _prev + sizeof(block_node_t) + _prev->MGetBlockSize())
 					== (uint8_t *) _p_node))
 	{
-		_is_merged_prev=true;
+		//_is_merged_prev=true;
 		DVLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
 		MUnkeepBlock(_p_node,_p);
@@ -1615,7 +1615,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 			&& (((uint8_t *) _p_node + sizeof(block_node_t)
 					+ _p_node->MGetBlockSize()) == (uint8_t *) _next))
 	{
-		_is_merged_next=true;
+		//_is_merged_next=true;
 		DVLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
 		MUnkeepBlock(_next,_p);

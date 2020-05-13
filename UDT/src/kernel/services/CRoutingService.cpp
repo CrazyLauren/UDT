@@ -734,15 +734,11 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		MSendMessages(&_has_route, &_has_not_route, &_errors_list);
 	}
 
-	if (!_errors_list.empty())
-	{
-		++FState.FSendError;
-		MNoteFailSend(_errors_list);
-	}
+	CHECK(_has_route.empty());
 
-	CHECK(aData.FData.empty());
 	if (!_has_not_route.empty())
 	{
+		CHECK(!_errors_list.empty());
 		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
 		aData.FData.swap(_has_not_route);
 #if  __cplusplus >=201103L
@@ -752,9 +748,17 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		++FState.FNoRoute;
 #endif
 	}
+
+	if (!_errors_list.empty())
+	{
+		++FState.FSendError;
+		MNoteFailSend(_errors_list);
+	}
+
 #if  __cplusplus >=201103L
 	FState.FNumNonHandled+=_has_route.size()+aData.FData.size();
 #endif
+
 }
 /*!\brief Return whither the data has to be sent that
  * it will be delivery to uuid
