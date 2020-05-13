@@ -77,6 +77,7 @@ private:
 			FNumPackets = 0;
 			FNoRoute=0;
 			FNumSended=0;
+			FNumNonHandled=0;
 		}
 		NSHARE::CConfig MSerialize() const;
 
@@ -84,6 +85,7 @@ private:
 		uint64_t FSendError;
 		NSHARE::atomic_t FNumPackets;
 		NSHARE::atomic_t FNumSended;
+		NSHARE::atomic_t FNumNonHandled;
 	};
 	struct _route_t
 	{

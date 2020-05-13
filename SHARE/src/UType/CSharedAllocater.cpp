@@ -687,7 +687,7 @@ bool CSharedAllocator::heap_head_t::MIsWaitUnlock() const
 struct CSharedAllocator::process_node_t *CSharedAllocator::heap_head_t::MFirstProcessNode(
 		void* aBaseAddr)
 {
-	DCHECK_GE(FOffsetToProcessNode, sizeof(heap_head_t));
+	DCHECK(FOffsetToProcessNode>= sizeof(heap_head_t) ||FOffsetToProcessNode==NULL);
 	return sMPointerFromBase<process_node_t>(FOffsetToProcessNode, aBaseAddr);
 }
 struct CSharedAllocator::block_node_t *CSharedAllocator::heap_head_t::MFirstBlockNode(
@@ -2251,8 +2251,11 @@ void CSharedAllocator::MCleanUpByWatchDogImpl(leak_processes_t const& _list)
 	DVLOG(2) << "Unlock shared sem.";
 	MUnlock();
 	DVLOG(2) << "Wait For Watch Dog.";
-	NSHARE::CThread::sMYield();
-	_wd_sem.MWait();
+
+	for(;_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY;)
+		NSHARE::CThread::sMYield();
+
+	//_wd_sem.MWait();
 	DVLOG(2) << "Wait For Sem.";
 	MLock();
 	DVLOG(2) << "Watch dog is cleaned up resources.";
@@ -2430,14 +2433,18 @@ bool CSharedAllocator::MCleanUpResourceByWatchDog(clean_up_f_t aFunction,
 
 	DLOG(INFO) << "Watch dog stands guard.";
 
-	CRAII<CIPCSem> _block2(_wd_sem);
+	//CRAII<CIPCSem> _block2(_wd_sem);
+	_wd_sem.MWait();
+	++FState.FWatchDog;
 	if (!(_pid == _p_head->FWacthDogPid && _tid == _p_head->FWacthDogTid))
 	{
+		_p_head->FMutexFlags &= ~heap_head_t::WACTH_DOG_PRIORITY;
 		DLOG(INFO)<<"The watch dog no longer "<<_pid<<":"<<_tid<<" stand guard...";
-		_block2.MUnlock();
+		//_block2.MUnlock();
 		_wd_sem.MFree();
 		return false;
 	}
+	CHECK(_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY);
 
 	MWatchDogLock();		//!---
 	DLOG(INFO) << "Clean up by watch dog.";
@@ -2909,7 +2916,7 @@ void CSharedAllocator::MFillInfo(memory_info_t & _info,
 NSHARE::CConfig CSharedAllocator::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-
+	_conf.MAdd(FState.MSerialize());
 	shared_info_t _shared_info;
 	MGetInfo(_shared_info);
 	MSerializeImpl(_conf, _shared_info);
@@ -3154,5 +3161,11 @@ bool CSharedAllocator::MUnlock() const
 bool CSharedAllocator::MIsInited() const
 {
 	return FBase != NULL;
+}
+NSHARE::CConfig  CSharedAllocator::state_t::MSerialize() const
+{
+	NSHARE::CConfig _conf("st");
+	_conf.MAdd("nwdg",FWatchDog);
+	return _conf;
 }
 } /* namespace NSHARE */

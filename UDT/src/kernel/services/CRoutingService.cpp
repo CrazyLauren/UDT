@@ -740,18 +740,21 @@ void CRoutingService::MHandleFrom(routing_user_data_t& aData)
 		MNoteFailSend(_errors_list);
 	}
 
-	DCHECK(aData.FData.empty());
+	CHECK(aData.FData.empty());
 	if (!_has_not_route.empty())
 	{
 		LOG(WARNING)<<"Some packets not handled, maybe the other callbacks is handled.";
 		aData.FData.swap(_has_not_route);
 #if  __cplusplus >=201103L
 		FState.FNoRoute+=_has_not_route.size();
-		FState.FNumSended-=_has_not_route.size();
+//		FState.FNumSended-=_has_not_route.size();
 #else
 		++FState.FNoRoute;
 #endif
 	}
+#if  __cplusplus >=201103L
+	FState.FNumNonHandled+=_has_route.size()+aData.FData.size();
+#endif
 }
 /*!\brief Return whither the data has to be sent that
  * it will be delivery to uuid
@@ -974,6 +977,7 @@ NSHARE::CConfig CRoutingService::state_t::MSerialize() const
 	_conf.MAdd("np",FNumPackets);
 	_conf.MAdd("no_route",FNoRoute);
 	_conf.MAdd("snd",FNumSended);
+	_conf.MAdd("no_handled",FNumNonHandled);
 
 	return _conf;
 }

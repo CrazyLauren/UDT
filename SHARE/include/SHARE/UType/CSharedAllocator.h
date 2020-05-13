@@ -366,6 +366,16 @@ public:
 	struct heap_head_t;
 	struct pid_offset_t;
 private:
+	struct state_t
+	{
+		state_t()
+		{
+			FWatchDog = 0;
+		}
+		NSHARE::CConfig MSerialize() const;
+
+		NSHARE::atomic_t FWatchDog;
+	};
 	bool MLock() const;
 	bool MUnlock() const;
 
@@ -497,6 +507,7 @@ private:
 	//не надёжно - можно зависнуть в цикле если Post !=  Wait
 	mutable NSHARE::CIPCSem FWaitForUnlock;//!<Wait for memory unlock memory
 	mutable size_t FReserv;
+	mutable state_t FState;
 
 
 	friend class CRAII<CSharedAllocator>;
