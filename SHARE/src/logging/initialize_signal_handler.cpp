@@ -58,6 +58,7 @@ void signal_handler(int aSignal)
 	<<"Thread id: "<<_thread_id<<" Errno: "
 	<<errno<<". "<<strerror(errno)<<".";
 
+
 	std::cerr<<"Signal:"<<aSignal<<std::endl;
 	get_log_terminate_handler()();
 
