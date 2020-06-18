@@ -236,10 +236,27 @@ if(WIN32 AND NOT UNIX)
 		get_filename_component(CXX_PATH ${CMAKE_CXX_COMPILER} DIRECTORY)
 
 		set(_MINGW_RUNTIME_LIBS "")
+
+		if (EXISTS ${CXX_PATH}/libatomic-1.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libatomic-1.dll)
+		endif ()
+		
 		if (EXISTS ${CXX_PATH}/libgcc_s_dw2-1.dll)
 			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libgcc_s_dw2-1.dll)
 		endif ()
 
+		if (EXISTS ${CXX_PATH}/libgomp-1.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libgomp-1.dll)
+		endif ()
+		
+		if (EXISTS ${CXX_PATH}/libquadmath-0.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libquadmath-0.dll)
+		endif ()
+
+		if (EXISTS ${CXX_PATH}/libssp-0.dll)
+			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libssp-0.dll)
+		endif ()
+		
 		if (EXISTS ${CXX_PATH}/libstdc++-6.dll)
 			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libstdc++-6.dll)
 		endif ()
@@ -256,6 +273,9 @@ if(WIN32 AND NOT UNIX)
 			list(APPEND _MINGW_RUNTIME_LIBS ${CXX_PATH}/libgcc_s_seh-1.dll)
 		endif ()				
 
+
+
+		
 		if (_MINGW_RUNTIME_LIBS)
 			install(FILES
 					${_MINGW_RUNTIME_LIBS}

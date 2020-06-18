@@ -390,6 +390,19 @@ void CConfig::MAddIfSet<CConfig>(const CText& key,
 }
 
 template<> inline
+bool CConfig::MGetIfSet<CConfig>(const CText& key,
+		smart_field_t<CConfig>& output) const
+{
+	if (MIsChild(key))
+	{
+		output = MChild(key);
+		return true;
+	}
+	else
+	return false;
+}
+#endif
+template<> inline
 bool CConfig::MUpdateIfSet<CConfig>(const CText& key, const CConfig& value)
 {
 	CConfig* _child = MMutableChild(key);
@@ -404,7 +417,7 @@ bool CConfig::MUpdateIfSet<CConfig>(const CText& key, const CConfig& value)
 }
 template<> inline
 bool CConfig::MGetIfSet<CConfig>(const CText& key,
-		smart_field_t<CConfig>& output) const
+		CConfig& output) const
 {
 	if (MIsChild(key))
 	{
@@ -412,9 +425,8 @@ bool CConfig::MGetIfSet<CConfig>(const CText& key,
 		return true;
 	}
 	else
-	return false;
+		return false;
 }
-#endif
 template<> inline
 CConfig& CConfig::MAdd<CText>(const CText& key, const CText& value)
 {

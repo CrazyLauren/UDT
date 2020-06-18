@@ -1581,11 +1581,11 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 			}
 		}
 	//for safety reset flags
-	_p_node->MAllocate(false);
-	if (_prev)
-		_prev->MAllocate(false);
-	if (_next)
-		_next->MAllocate(false);
+//	_p_node->MAllocate(false);
+//	if (_prev)
+//		_prev->MAllocate(false);
+//	if (_next)
+//		_next->MAllocate(false);
 
 	DVLOG(2) << "Cur reserv=" << _p->FUsedUpReserv << " add "
 						<< _p_node->MGetBlockSize() << " prev=" << _prev << " next="
@@ -1593,11 +1593,14 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	
 	DCHECK_GE(std::numeric_limits<reserve_t>::max(), _p_node->MGetBlockSize());
 	_p->FUsedUpReserv-= static_cast<reserve_t>(_p_node->MGetBlockSize());
+	//volatile bool _is_merged_prev=false;
+	//volatile bool _is_merged_next=false;
 	//merge
 	if (_prev
 			&& (((uint8_t *) _prev + sizeof(block_node_t) + _prev->MGetBlockSize())
 					== (uint8_t *) _p_node))
 	{
+		//_is_merged_prev=true;
 		DVLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
 		MUnkeepBlock(_p_node,_p);
@@ -1612,6 +1615,7 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 			&& (((uint8_t *) _p_node + sizeof(block_node_t)
 					+ _p_node->MGetBlockSize()) == (uint8_t *) _next))
 	{
+		//_is_merged_next=true;
 		DVLOG(2)
 							<< "Create one big reserve block from the two reserve blocks.";
 		MUnkeepBlock(_next,_p);
@@ -1622,11 +1626,11 @@ void CSharedAllocator::MFreeReservedBlock(const offset_t _offset,
 	}
 
 	_p_node->MSetReserveFree(true);
-	_p_node->MAllocate(true);
-	if (_prev)
-		_prev->MAllocate(true);
-	if (_next)
-		_prev->MAllocate(true);
+//	_p_node->MAllocate(true);
+//	if (_prev)
+//		_prev->MAllocate(true);
+//	if (_next)
+//		_prev->MAllocate(true);
 }
 size_t CSharedAllocator::MFree(void *aP)
 {
@@ -2251,8 +2255,11 @@ void CSharedAllocator::MCleanUpByWatchDogImpl(leak_processes_t const& _list)
 	DVLOG(2) << "Unlock shared sem.";
 	MUnlock();
 	DVLOG(2) << "Wait For Watch Dog.";
-	NSHARE::CThread::sMYield();
-	_wd_sem.MWait();
+
+	for(;_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY;)
+		NSHARE::CThread::sMYield();
+
+	//_wd_sem.MWait();
 	DVLOG(2) << "Wait For Sem.";
 	MLock();
 	DVLOG(2) << "Watch dog is cleaned up resources.";
@@ -2430,14 +2437,18 @@ bool CSharedAllocator::MCleanUpResourceByWatchDog(clean_up_f_t aFunction,
 
 	DLOG(INFO) << "Watch dog stands guard.";
 
-	CRAII<CIPCSem> _block2(_wd_sem);
+	//CRAII<CIPCSem> _block2(_wd_sem);
+	_wd_sem.MWait();
+	++FState.FWatchDog;
 	if (!(_pid == _p_head->FWacthDogPid && _tid == _p_head->FWacthDogTid))
 	{
+		_p_head->FMutexFlags &= ~heap_head_t::WACTH_DOG_PRIORITY;
 		DLOG(INFO)<<"The watch dog no longer "<<_pid<<":"<<_tid<<" stand guard...";
-		_block2.MUnlock();
+		//_block2.MUnlock();
 		_wd_sem.MFree();
 		return false;
 	}
+	CHECK(_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY);
 
 	MWatchDogLock();		//!---
 	DLOG(INFO) << "Clean up by watch dog.";
@@ -2909,7 +2920,7 @@ void CSharedAllocator::MFillInfo(memory_info_t & _info,
 NSHARE::CConfig CSharedAllocator::MSerialize() const
 {
 	NSHARE::CConfig _conf(NAME);
-
+	_conf.MAdd(FState.MSerialize());
 	shared_info_t _shared_info;
 	MGetInfo(_shared_info);
 	MSerializeImpl(_conf, _shared_info);
@@ -3154,5 +3165,11 @@ bool CSharedAllocator::MUnlock() const
 bool CSharedAllocator::MIsInited() const
 {
 	return FBase != NULL;
+}
+NSHARE::CConfig  CSharedAllocator::state_t::MSerialize() const
+{
+	NSHARE::CConfig _conf("st");
+	_conf.MAdd("nwdg",FWatchDog);
+	return _conf;
 }
 } /* namespace NSHARE */
