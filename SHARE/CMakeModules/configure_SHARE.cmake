@@ -73,6 +73,13 @@ endif()
 check_include_files(x86intrin.h HAVE_X86INTRIN_H)
 check_include_files(intrin.h HAVE_INTRIN_H)
 
+include(CMakeModules/FindSharedPtr.cmake)
+find_shared_ptr()
+
+if(NOT SHARED_PTR_FOUND)
+	message(FATAL_ERROR " shared_ptr has not founded, specialize boost library search path Boost_INCLUDE_DIR ")
+endif()
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(${PROJECT_NAME}_PLATFORM_DEFENITIONS  "" CACHE STRING "" FORCE)

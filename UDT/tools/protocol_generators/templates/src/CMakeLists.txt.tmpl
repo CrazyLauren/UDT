@@ -1,0 +1,56 @@
+set(_TARGET_NAME {{ name|lower }})
+
+file (GLOB _SOURCE_FILES *.cpp)
+file (GLOB _HEADER_FILES *.hpp *.h)
+
+set (_PUBLIC_INCLUDE_DIR
+		${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}/include
+		)
+
+set (_PRIVATE_INCLUDE_DIR
+		${Boost_INCLUDE_DIRS}		
+		)
+set (_PRIVATE_DEFINITIONS
+		BOOST_ALL_NO_LIB
+		)
+
+set (_PUBLIC_DEFINITIONS
+		#
+		)
+
+helper_add_library(${_TARGET_NAME}
+		_SOURCE_FILES
+		_HEADER_FILES
+		_PUBLIC_INCLUDE_DIR
+		_PRIVATE_INCLUDE_DIR
+		_PRIVATE_DEFINITIONS
+		_PUBLIC_DEFINITIONS
+		FALSE)
+
+set (_PUBLIC_LIBRARIS
+	 	CRAZY_LAUREN::udt_share
+		)
+
+set (_PRIVATE_LIBRARIS
+		#
+		)
+
+helper_target_link_libraries(${_TARGET_NAME}
+		_PUBLIC_LIBRARIS
+		_PRIVATE_LIBRARIS
+		)
+
+if(NOT UDT_DEFAULT_PLUGIN_PATH)
+	set(UDT_DEFAULT_PLUGIN_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/plugins)
+endif()
+
+install(TARGETS ${_TARGET_NAME}
+		LIBRARY DESTINATION ${UDT_DEFAULT_PLUGIN_PATH} COMPONENT applications
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} COMPONENT applications
+		RUNTIME DESTINATION ${UDT_DEFAULT_PLUGIN_PATH} COMPONENT applications
+		)
+{%- set file_protocol_name = name | lower + '_protocol.h' %}
+install(FILES    {{ file_protocol_name }}
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/{{ name | upper }}" COMPONENT headers
+		)

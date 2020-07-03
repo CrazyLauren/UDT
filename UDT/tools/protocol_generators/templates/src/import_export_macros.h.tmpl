@@ -1,0 +1,27 @@
+{%- set file_name = name | lower + '_import_export' %}
+{%- import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{%- autoescape false %}
+
+{%- set export_name = common.get_export_name(name) %}
+{%- set exports_name = name | upper + '_EXPORTS' %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+
+
+#if  defined( _WIN32 )
+#   ifdef {{ exports_name }}
+#       define {{ export_name }} __declspec(dllexport)
+#   else
+#       define {{ export_name }} __declspec(dllimport)
+#   endif
+#else
+#       define {{ export_name }}
+#endif
+
+
+
+#endif /* {{ file_name | upper }}_H */
+{%- endautoescape %}

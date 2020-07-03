@@ -13,6 +13,8 @@
 #ifndef ARCH_SPECIFIC_CONF_H
 #define ARCH_SPECIFIC_CONF_H
 
+#include <SHARE/config/config.h>
+
 #ifdef ENABLE_VTUNE
 #	include <profiler_vtune.h>
 #else
@@ -76,28 +78,8 @@
 /**\brief define shared ptr
  *\{
  */
-#if defined (__QNX__)
-#	include <boost/shared_ptr.hpp>
-#	define SHARED_PTR boost::shared_ptr
-#elif defined(unix) || defined(__MINGW32__)//#if defined (__QNX__)
-
-#	if (__cplusplus>= 201103L)
-#		ifdef __MINGW32__//version of gcc
-#			include <tr1/memory>
-#			include<tr1/shared_ptr.h>
-#			define SHARED_PTR std::tr1::shared_ptr
-#		else
-//#			include<SHAREd_ptr.h>
-#			include<memory>
-#			define SHARED_PTR std::shared_ptr
-#		endif
-#	else //#if (__cplusplus>= 201103L)
-# 		include <tr1/memory>
-#		define SHARED_PTR std::tr1::shared_ptr
-#	endif//#if (__cplusplus>= 201103L)
-#elif defined(_WIN32)
-#	define SHARED_PTR std::shared_ptr
-#endif //#elif defined(_WIN32)
+#include SHARED_PTR_HEADER
+#define SHARED_PTR SHARED_PTR_NAMESPACE::shared_ptr
 //\}
 
 /**\brief define system headers

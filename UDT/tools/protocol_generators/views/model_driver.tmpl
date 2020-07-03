@@ -1,0 +1,11 @@
+    nodeFactory.registerType&lt;{{ name }}&gt;("{{ name }}", // type name
+      "{{ description }}", // type description
+      "{{ category }}", // type category
+      {{ instantiable }}, // can be instantiated as a to-level model (Case)
+      {
+{% for option in integerOptions %}        Libpf::User::IntegerOption("{{ option.name }}", "{{ option.description }}", {{ option.value }}, {{ option.min }}, {{ option.max }}){% if not loop.last %},{% endif %}
+{% endfor %}      }, // integer options
+      {
+{% for option in stringOptions %}        Libpf::User::StringOption("{{ option.name }}", "{{ option.description }}", "{{ option.value }}", "{{ option.enumerator }}"){% if not loop.last %},{% endif %}
+{% endfor %}      }, // string options
+      "{{ name }}", 80.0, 80.0); // icon and icon size

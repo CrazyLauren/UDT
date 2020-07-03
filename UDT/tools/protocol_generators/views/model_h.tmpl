@@ -1,0 +1,53 @@
+/** @file {{ name }}.h
+ *  @brief Interface for the {{ name }} class
+ *  @author {{ author }}
+ */
+
+#ifndef {{ name | upper }}_H
+#define {{ name | upper }}_H
+{% autoescape false %}
+/* SYSTEM INCLUDES */
+
+/* PROJECT INCLUDES */
+#include <libpf/core/Model.h>
+#include <libpf/flowsheet/FlowSheet.h>
+
+/* LOCAL INCLUDES */
+
+/* FORWARD REFERENCES */
+
+/** @class {{ name }}
+ * @brief {{ description }}
+ * 
+{% if stringOptions | length > 0 %} * string options:
+{% for option in stringOptions %} * - {{ option.name }}: {{ option.description }}
+{% endfor %}{% endif %}{% if integerOptions | length > 0 %} * integer options:
+{% for option in integerOptions %} * - {{ option.name }}: {{ option.description }}
+{% endfor %}{% endif %} */
+class {{ name }} : public FlowSheet {
+private:
+  const static std::string type_;
+public:
+  // LIFECYCLE
+  {{ name }}(Libpf::Persistency::Defaults defaults, uint32_t id=0, Persistency *persistency=nullptr, Persistent *parent=nullptr, Persistent *root=nullptr);
+
+  // CUSTOM variables
+{% for variable in variables %}  Quantity {{ variable.name }}; ///< {{ variable.description }}
+{% endfor %}
+{% for option in stringOptions %}  String {{ option.name }}; ///< {{ option.description }}
+{% endfor %}
+{% for option in integerOptions %}  Integer {{ option.name }}; ///< {{ option.description }}
+{% endfor %}
+  // CUSTOM function
+
+  // MANDATORY
+  const std::string &type(void) const { return type_; }
+  void makeUserEquations(std::list<Assignment *>::iterator &p) { }
+  void setup(void);
+  void pre(SolutionMode solutionMode, int level) { }
+  void post(SolutionMode solutionMode, int level) { }
+
+  // NON-MANDATORY
+}; // {{ name }}
+{% endautoescape %}
+#endif // {{ name | upper }}_H

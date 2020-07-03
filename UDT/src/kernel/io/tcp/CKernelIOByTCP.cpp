@@ -569,9 +569,9 @@ void CKernelIOByTCP::MDisconnectImpl(const NSHARE::net_address& _addr)
 		CHECK(FServiceChannels[i].FLink);
 
 		CHECK_NOTNULL(FIo);
-		FIo->MRemoveChannelFor(i, this);
-
 		_it->second.FLink->MClose();
+
+		FIo->MRemoveChannelFor(i, this);
 
 		FActiveLinks.erase(_it_client);
 

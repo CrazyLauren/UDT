@@ -69,6 +69,24 @@ public:
 	template<class T>
 	void MRoute(routing_t& aFrom,routing_t& aTo, const T& aDemands);
 private:
+	struct state_t
+	{
+		state_t()
+		{
+			FSendError = 0;
+			FNumPackets = 0;
+			FNoRoute=0;
+			FNumSended=0;
+			FNumNonHandled=0;
+		}
+		NSHARE::CConfig MSerialize() const;
+
+		uint64_t FNoRoute;
+		uint64_t FSendError;
+		NSHARE::atomic_t FNumPackets;
+		NSHARE::atomic_t FNumSended;
+		NSHARE::atomic_t FNumNonHandled;
+	};
 	struct _route_t
 	{
 		CRequiredDG FRequiredDG;
@@ -126,6 +144,7 @@ private:
 			fail_send_array_t*const aErrorList);
 
 	route_data_t FRouteData;
+	state_t FState;
 };
 template<class T>
 inline void CRoutingService::MSendTo(routing_t& aTo,routing_t & aNotSend, const T & aWhat)

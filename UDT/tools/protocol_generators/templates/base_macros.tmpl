@@ -1,0 +1,15 @@
+{% macro add_file_secription (file_name,author,version) -%}
+/** @file {{ file_name }}
+ *  @brief Implementation of {{ name }} protocol
+ *  @author {{ author }}
+ *  @date {{ now }} UTC
+ *
+ *	@copyright Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
+ *	https://www.mozilla.org/en-US/MPL/2.0)
+ */
+{%- endmacro %}
+
+
+{% macro get_export_name(name) %}
+    {{- name | upper }}_EXPORT
+{%- endmacro %}

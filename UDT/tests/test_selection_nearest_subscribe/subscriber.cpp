@@ -484,9 +484,10 @@ static bool test_stage_3()
 }
 static bool test_stage_4()
 {
-	start_child(g_child_pid.front().second.c_str());
-
 	const unsigned _old=g_amount_of_publisher;
+	start_child(g_child_pid.front().second.c_str());
+	NSHARE::sleep(1);
+
 	if(!wait_for([&]()
 					{
 						return _old==g_amount_of_publisher;
@@ -496,6 +497,10 @@ static bool test_stage_4()
 		LOCK_STREAM
 		std::cerr<< "time out" << std::endl;
 		return false;
+	}else
+	{
+		LOCK_STREAM
+		std::cout<< g_child_pid.front().second.c_str()<<" has to be started" << std::endl;
 	}
 
 	{

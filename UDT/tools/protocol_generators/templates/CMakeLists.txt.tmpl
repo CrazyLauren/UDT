@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.0.1)
+
+project({{ name|upper }} C CXX)
+
+set(${PROJECT_NAME}_NAMESPACE "UDT_PROTOCOLS" CACHE STRING "Namespace ")
+
+set(${PROJECT_NAME}_ORGANIZATION "{{organization}}" CACHE STRING "Organization ")
+set(${PROJECT_NAME}_AUTHORS "{{ author }}" CACHE STRING "Authors")
+set(${PROJECT_NAME}_SUPPORT_ADDRESS "no" CACHE 
+												STRING "Address to support")
+set(${PROJECT_NAME}_LICENCE ${PROJECT_SOURCE_DIR}/LICENCE.txt CACHE PATH "Path to license")
+
+include(CMakeModules/functions/helper_cmake_function.cmake)
+configure_project(${PROJECT_NAME})
+	
+################################################################################
+# Sub directories
+################################################################################
+add_subdirectory(src)
+add_subdirectory(tests)
+add_subdirectory(tools)
+add_subdirectory(examples)

@@ -14,6 +14,7 @@
 namespace NSHARE
 {
 class CThreadPool;
+class CPoolThread;
 struct operation_t;
 /**\brief сигнатура функции используемая в CThreadPool
  *
@@ -56,12 +57,15 @@ struct SHARE_EXPORT operation_t: NSHARE::Callback_t<op_signal_t, operation_t>
 	 *
 	 */
 	unique_id_t MGetUniqueId() const;
+	CThread::process_id_t MGetPoolThreadId() const;
 private:
 
 	static unique_id_t sMGetNextId();
 	eType FType;
 	unique_id_t FUniqueId;
+	CThread::process_id_t FPoolThreadId;
 //	SHARED_PTR<bool> FKeep;
+	friend class CPoolThread;
 };
 
 /**\brief Пул потоков
@@ -147,6 +151,8 @@ public:
 	 */
 	unsigned MThreadNum() const;
 	unsigned MGetMaxNumberOfIOThread() const;
+
+	unsigned MLatestThreadId() const;
 
 	/**\brief ожидает окончания выполнения операций
 	 *

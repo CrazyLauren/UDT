@@ -66,7 +66,7 @@ protected:
 class SHARE_EXPORT CPoolThread: public NSHARE::CThread
 {
 public:
-	CPoolThread();
+	CPoolThread(process_id_t const& aUniqueId);
 	virtual ~CPoolThread();
 
 	void MSetQueue(SHARED_PTR<COperationQueue> opq);
@@ -89,6 +89,8 @@ public:
 	}
 	bool MCancel();
 	bool MIsFree() const;
+
+	const process_id_t FPoolThreadId;//!<Unique id of thread
 protected:
 
 	/** Run does the opertion thread run loop.*/
@@ -108,11 +110,12 @@ struct CThreadPool::CImpl
 	CImpl() :
 			FTask(new COperationQueue), FIOTask(new COperationQueue)
 	{
-
+		FTheadUniqueId.MWrite(0);
 	}
 	bool MAddIOThreadIfNeed(unsigned aMaxNumber);
 	bool MAddIOThread();
 	bool MRemoveIOThread(unsigned aId);
+	atomic_t FTheadUniqueId;
 	SHARED_PTR<COperationQueue> FTask;
 	threads_t FThreads;
 

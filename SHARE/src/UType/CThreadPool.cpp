@@ -180,8 +180,9 @@ void COperationQueue::MRemoveThread(CPoolThread* thread)
 	FThreads.erase(thread);
 }
 
-CPoolThread::CPoolThread() :
-		FInOperation(0)
+CPoolThread::CPoolThread(process_id_t const& aUniqueId) :
+		FInOperation(0),//
+		FPoolThreadId(aUniqueId)
 {
 	FDone=0;
 	FIsWaitNextOperation=0;
@@ -292,6 +293,7 @@ void CPoolThread::MRun()
 		if (!FDone.MIsOne())
 		{
 			operation_t operation(operationQueue->MNextOperation(true));
+			operation.FPoolThreadId=FPoolThreadId;
 
 			{
 				CRAII<CMutex> lock(FMutex);
@@ -350,7 +352,8 @@ void CPoolThread::MRun()
 //
 CThreadPool::CThreadPool(int aVal,unsigned aMaxNumberOfIOThread) :
 		FImpl(new CImpl),//
-		FMaxNumberOfIOThread(aMaxNumberOfIOThread)
+		FMaxNumberOfIOThread(aMaxNumberOfIOThread),//
+		FIs(false)
 {
 	FIs = MCreate(aVal);
 }
@@ -376,15 +379,16 @@ CThreadPool::CThreadPool(NSHARE::CConfig const& aConfig) :
 }
 CThreadPool::CThreadPool(int aNum, CThread::param_t const& aParam,unsigned aMaxNumberOfIOThread):
 				FImpl(new CImpl),//
+				FIs(false),//
 				FMaxNumberOfIOThread(aMaxNumberOfIOThread)
 {
 	FIs = MCreate(aNum,&aParam);
 }
 CThreadPool::CThreadPool() :
 		FImpl(new CImpl),//
+		FIs(false),//
 		FMaxNumberOfIOThread(std::numeric_limits<unsigned>::max())
 {
-	FIs = false;
 }
 CThreadPool::~CThreadPool()
 {
@@ -423,7 +427,7 @@ bool CThreadPool::MCreate(int aNum, CThread::param_t const* aParam)
 	unsigned i = 0;
 	do
 	{
-		SHARED_PTR<CPoolThread> newThread(new CPoolThread);
+		SHARED_PTR<CPoolThread> newThread(new CPoolThread(++FImpl->FTheadUniqueId));
 		FImpl->FIOThreads.push_back(newThread);
 		newThread->MSetQueue(FImpl->FIOTask);
 		newThread->MCreate(aParam);
@@ -438,7 +442,7 @@ bool CThreadPool::MAddThread(CThread::param_t const* aParam)
 	CRAII<CMutex> _blocked(FImpl->FMutex);
 	if (!FImpl->FTask.get())
 		return false;
-	SHARED_PTR<CPoolThread> newThread(new CPoolThread);
+	SHARED_PTR<CPoolThread> newThread(new CPoolThread(++FImpl->FTheadUniqueId));
 	FImpl->FThreads.push_back(newThread);
 	CHECK_NOTNULL(FImpl->FTask.get());
 	newThread->MSetQueue(FImpl->FTask);
@@ -503,7 +507,7 @@ bool CThreadPool::CImpl::MAddIOThread()
 	CRAII<CMutex> _blocked(FMutex);
 	if (!FIOTask.get())
 		return false;
-	SHARED_PTR<CPoolThread> newThread(new CPoolThread);
+	SHARED_PTR<CPoolThread> newThread(new CPoolThread(++FTheadUniqueId));
 	FIOThreads.push_back(newThread);
 	CHECK_NOTNULL(FIOTask.get());
 	newThread->MSetQueue(FIOTask);
@@ -674,7 +678,10 @@ void CThreadPool::MExecuteOtherTasks()
 {
 	LOG(FATAL)<<"It's not implemented.";
 }
-
+unsigned CThreadPool::MLatestThreadId() const
+{
+	return (unsigned)FImpl->FTheadUniqueId.MValue();
+}
 //////////////////////////////////////////////////
 unsigned CThreadPool::MThreadNum() const
 {
@@ -688,20 +695,23 @@ operation_t::unique_id_t operation_t::sMGetNextId()
 operation_t::operation_t(eType const& aType) :
 		cb_t(),//
 		FType(aType),//
-		FUniqueId(sMGetNextId())
+		FUniqueId(sMGetNextId()),//
+		FPoolThreadId(std::numeric_limits<CThread::process_id_t>::max())
 {
 }
 operation_t::operation_t(pM const& aSignal, void * const aData,
 		eType const& aType) :
 		cb_t(aSignal, aData), //
 		FType(aType),//
-		FUniqueId(sMGetNextId())
+		FUniqueId(sMGetNextId()),//
+		FPoolThreadId(std::numeric_limits<CThread::process_id_t>::max())
 {
 }
 operation_t::operation_t(operation_t const& aCB) :
 		cb_t(aCB),//
 		FType(aCB.FType),//
-		FUniqueId(sMGetNextId())
+		FUniqueId(sMGetNextId()),//
+		FPoolThreadId(aCB.FPoolThreadId)
 {
 	;
 }
@@ -714,6 +724,10 @@ operation_t& operation_t::operator=(operation_t const& aCB)
 operation_t::unique_id_t operation_t::MGetUniqueId() const
 {
 	return FUniqueId;
+}
+CThread::process_id_t operation_t::MGetPoolThreadId() const
+{
+	return FPoolThreadId;
 }
 //void operation_t::MKeep(bool aKeep)
 //{

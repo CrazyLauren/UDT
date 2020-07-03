@@ -1,0 +1,88 @@
+/** @file {{ name }}.cc
+ *  @brief Implementation of {{ name }} class
+ *  @author {{ author }}
+ */
+
+/* SYSTEM INCLUDES */
+//
+
+/* PROJECT INCLUDES */
+//
+#include &lt;libpf/utility/diagnostic.h&gt;
+
+/* LOCAL INCLUDES */
+//
+#include "{{ name }}.h"
+
+/* LOCAL VARIABLES */
+//
+static const int verbosityFile = 0;
+
+/* FUNCTIONS */
+//
+
+const std::string {{ name }}::type_("{{ name }}");
+
+{{ name }}::{{ name }}(Libpf::Persistency::Defaults defaults, uint32_t id, Persistency *persistency, Persistent *parent, Persistent *root) :
+  Model(defaults, id, persistency, parent, root),
+  VertexBase(defaults, id, persistency, parent, root),
+  FlowSheet(defaults, id, persistency, parent, root){% if variables | length + stringOptions | length + integerOptions | length > 0 %},{% endif %}
+{% for variable in variables %}{% if variable.unit %}  DEFINE({{ variable.name }}, "{{ variable.description }}", {{ variable.value }}, "{{ variable.unit }}"){% else %}  DEFINE({{ variable.name }}, "{{ variable.description }}", {{ variable.value }}, ""){% endif %}{% if not loop.last %},{% endif %}{% if loop.last and stringOptions | length + integerOptions | length > 0 %},{% endif %}
+{% endfor %}
+{% for option in stringOptions %}  DEFINE({{ option.name }}, "{{ option.description }}", "{{ option.value }}"){% if not loop.last %},{% endif %}{% if loop.last and integerOptions | length > 0 %},{% endif %}
+{% endfor %}
+{% for option in integerOptions %}  DEFINE({{ option.name }}, "{{ option.description }}", {{ option.value }}){% if not loop.last %},{% endif %}
+{% endfor %}{
+  static const int verbosityLocal = 0;
+
+  diagnostic(2, "Entered");
+{% for variable in variables %}  addVariable({{ variable.name }});
+{% endfor %}
+{% for option in stringOptions %}  addVariable({{ option.name }});
+{% endfor %}
+{% for option in integerOptions %}  addVariable({{ option.name }});
+{% endfor %}
+  diagnostic(3, "Retrieve string options");
+{% for option in stringOptions %}  {{ option.name }} = retrieveString(defaults, id, persistency, "{{ option.name }}", "{{ option.value }}"); // {{ option.description }}
+{% endfor %}
+  diagnostic(3, "Retrieve integer options");
+{% for option in integerOptions %}  {{ option.name }} = retrieveInteger(defaults, id, persistency, "{{ option.name }}", {{ option.min }}, {{ option.max }}, {{ option.value }}); // {{ option.description }}
+{% endfor %}
+  if (!persistency) {
+    diagnostic(2, "Define unit operations");
+{% for unit in units %}    addUnit("{{ unit.type }}", defaults.relay("{{ unit.name }}", "{{ unit.description }}"){% for option in unit.integerOptions %} ("{{ option.name }}", "{{ option.value }}"){% endfor %}{% for option in unit.stringOptions %} ("{{ option.name }}", "{{ option.value }}"){% endfor %});
+{% endfor %}
+    diagnostic(2, "Define stream objects and connect");
+{% for stream in streams %}    addStream("{{ stream.type }}", defaults.relay("{{ stream.name }}", "{{ stream.description }}"){% for option in stream.integerOptions %} ("{{ option.name }}", "{{ option.value }}"){% endfor %}{% for option in stream.stringOptions %} ("{{ option.name }}", "{{ option.value }}"){% endfor %}, "{{ stream.from }}", "{{ stream.portFrom }}", "{{ stream.to }}", "{{ stream.portTo }}");
+{% endfor %}  }
+} // {{ name }}::{{ name }}
+
+void {{ name }}::setup(void) {
+  static const int verbosityLocal = 0;
+  try {
+    diagnostic(2, "Entered for " << tag());
+
+    diagnostic(3, "Calling flowsheet::setup to initialize any sub-flowsheet");
+    FlowSheet::setup();
+
+    diagnostic(3, "Setting input variables: feed streams");
+    /// @TODO
+
+    diagnostic(3, "Setting input variables: operating conditions for the unit operations");
+    /// @TODO
+
+    diagnostic(3, "Initializing cut streams");
+    /// @TODO
+
+{% if cuts | length > 0 %}    diagnostic(3, "Defining cut streams");
+{% for cut in cuts %}    addCut("{{ cut }}");
+{% endfor %}{% endif %}
+    diagnostic(3, "Making selected inputs/outputs visible in GUI");
+{% for variable in variables %}{% if variable.input %}    {{ variable.name }}.setInput();
+{% endif %}{% if variable.output %}    {{ variable.name }}.setOutput();{% endif %}
+{% endfor %}  } // try
+  catch(Error &e) {
+    e.append(CURRENT_FUNCTION);
+    throw;
+  } // catch
+} // {{ name }}::setup
