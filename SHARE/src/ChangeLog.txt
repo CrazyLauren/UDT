@@ -1,3 +1,7 @@
+UDT SHARE version:0.9
+-------------------
+	- Fix some insignificant bugs
+
 UDT SHARE version:0.8
 -------------------
 	- Fix xml problems
