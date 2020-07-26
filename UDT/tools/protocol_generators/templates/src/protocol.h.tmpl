@@ -1,8 +1,8 @@
-{%- set file_name = 'protocol_' + name | lower %}
-{%- import "base_macros.tmpl" as common %}
+{% set file_name = 'protocol_' + name | lower %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
 {{ common.add_file_secription(file_name+'.h',author,version) }}
-{%- autoescape false %}
-
+{% autoescape False %}
 #ifndef {{ file_name | upper }}_H
 #define {{ file_name | upper }}_H
 
@@ -12,28 +12,28 @@
 #  include <stdint.h>
 #endif
 #include <string.h>
-#include <iostream>
 
-#if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED) || defined(__BORLANDC__) || defined(__LCC__)
-#	define ATTRIBUTE_PACKED( ... ) __pragma(pack(push,1) ) __VA_ARGS__; __pragma( pack(pop) )
-#elif defined( __GNUC__ ) ||defined(__QNX__)
-#	define ATTRIBUTE_PACKED(...)  __VA_ARGS__  __attribute__((packed))
-#else
-# 	warning "The packed attribute is not defined"
-#	define ATTRIBUTE_PACKED ( ... ) __VA_ARGS__
-#endif
+#include "{{ common.get_namespace(name) }}_attribute_packed.h"
+{% set attribute_packed = name|upper+'_ATTRIBUTE_PACKED'%}
 
-namespace {{ file_name }}
+namespace {{ common.get_namespace(name) }}
 {
-#define PROTOCOL_NAME "{{ name }}" ///<Unique protocol name.Recommended using a short name
+/*! Returns unique protocol name
+*
+* Recommended using a short name.
+*/
+inline char const* protocol()
+{
+    return "{{ name }}";
+}
 
 /*!\brief A message numbers of {{ name }}
  *
  */
 enum  eMessage
 {
-{% for msg in messages|sort(attribute='number') %}  {{ msg.name.rjust(20)|upper }} = {{ msg.number }}, //!< {{ msg.description }}
-{% endfor -%}
+{% for msg in messages|sort(attribute='___number') %}  {{ msg.___name.rjust(20)|upper }} = {{ msg.___number }}, //!< {{ msg.___description }}
+{% endfor %}
 };
 
 /*!\brief A user error number which is passed
@@ -45,130 +45,83 @@ enum eParserError
 	E_INVALID_HEADER_SIZE   = 1,//!< The message of header is invalid
 	E_INVALID_MSG_SIZE      = 2,//!<The message size is invalid
 	E_INVALID_MSG_TYPE      = 3,//!<The message type is invalid
+	E_INVALID_MSG_CRC       = 4,//!<The message crc is invalid
 };
 
-{% macro generate_message(aMsg, aParent) -%}
+{% macro generate_message(aMsg, aParent) %}
 
-/*!\brief {{ aMsg.description }}
+{%  set struct_name =  aMsg.___name+'_t' %}
+{%  set parent_name =  aParent.___name+'_t' if aParent else '' %}
+{%  set paret_inherent =  ':'+parent_name if parent_name else '' %}
+{%  set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{%  set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+/*!\brief {{ aMsg.___description }}
  *
+{% if dynamic_msg %}
+ * @note serialized version is #{{ aMsg.___name }}_dynamic_t
+{% endif %}
  */
-{%  set struct_name =  aMsg.name+'_t' -%}
-{%  set paret_name =  ':'+aParent+'_t' if aParent else '' -%}
-
-ATTRIBUTE_PACKED(struct {{ struct_name }}{{ paret_name }}
+{% if not dynamic_msg %}
+{{ attribute_packed }}(
+{% endif %}
+struct {{ struct_name }}{{ paret_inherent }}
 {
-    {% for field in aMsg.fields -%}
-        {%  if  'bits' in field and field.bits > 0  -%}
-            {{  field.type }} {{  field.id }}:{{  field.bits -}}
-        {% else %}
-        {%if 'array_len' in field and field.array_len  > 0 -%}
-            {{  field.type }} {{  field.id }}[{{  field.array_len }}]
-        {% else %}
-            {{  field.type }} {{  field.id -}}
-        {% endif -%}
-        {% endif -%}
-        ; //!< {{ field.description }}
+    {% if  parent_name %}
+    typedef {{ parent_name }} parent_t;//!< parent type
+    {% endif %}
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+    typedef std::vector<{{field.DynamicType}}> {{field.id}}_dynamic_t;//!< array of {{field.id}}
     {% endfor %}
+    {{- fm.add_constants(aMsg,aParent) }}
 
+    {{- fm.append_fields(aMsg.___fields,["dynamic array"]) }}
+
+    {%- if '___size' in  aMsg %}
+        {{ fm.append_reserv(aMsg) }}
+    {% endif %}
+
+    {{- fm.add_functions(aMsg.___fields ,aParent) -}}
+
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+    {{field.id}}_dynamic_t {{field.id}}; //!< {{ field.description }}
+    {% endfor %}
+{% if not dynamic_msg %}
 	/*! @brief default constructor
 	 *
 	 */
     {{ struct_name }}()
     {
-        memset(this,0,sizeof(*this));
+        memset(this, 0, sizeof(*this));
     }
-#ifdef SHARE_CONFIG_DEFINED
-	/*! @brief Deserialize message of {{ aMsg.name }}
-	 */
-    {{ struct_name }}(NSHARE::CConfig const& aConf);
-
-    /*! @brief Serialize message of {{ aMsg.name }}
-	 */
-	NSHARE::CConfig MSerialize() const;
-
-    /*! @brief check is valid message
-    */
-	bool MIsValid()const
-    {
-        return true;
-    }
-#endif
-});
-#ifdef SHARE_CONFIG_DEFINED
-inline {{ struct_name }}::{{ struct_name }}(NSHARE::CConfig const& aConf)
-{
-    memset(this,0,sizeof(*this));
-
-    {% for field in aMsg.fields -%}
-         {%if 'array_len' in field and field.array_len  > 0 -%}
-            {
-	        const NSHARE::ConfigSet& _child = aConf.MChildren("{{ field.id }}");
-	        {
-		        NSHARE::ConfigSet::const_iterator _it = _child.begin(), _it_end =
-				    _child.end();
-
-		        for (unsigned i=0; i< sizeof({{ field.id }})/sizeof({{ field.id }}[0]) &&//
-                                _it != _it_end ; ++i,++_it)
-			        {{ field.id }}[i]=_it->MValue({{  field.type }}());
-	        }
-            }
-        {% else %}
-            {
-            {{  field.type }} _tmp_{{ field.id }};
-            if(aConf.MGetIfSet("{{ field.id }}", _tmp_{{ field.id }} ))
-                {{ field.id }}=_tmp_{{ field.id }} ;
-            }
-        {% endif -%}
-
-    {% endfor %}
-}
-inline NSHARE::CConfig {{ struct_name }}::MSerialize() const
-{
-	NSHARE::CConfig _conf("{{ name }}");
-    {% for field in aMsg.fields -%}
-         {%if 'array_len' in field and field.array_len  > 0 -%}
-             for (unsigned i = 0; i < sizeof({{ field.id }})/sizeof({{ field.id }}[0]); ++i)
-             {
-		        _conf.MAdd("{{ field.id }}", {{ field.id }}[i]);
-             }
-        {% else %}
-            _conf.MSet("{{ field.id }}", {{ field.id }} );
-        {% endif -%}
-
-    {% endfor %}
-	return _conf;
-}
-#endif
-{% if full_size in  aMsg %}
-#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800)
-    static_assert(sizeof({{ struct_name }}) == sizeof({{ aMsg.full_size }}), "invalid size of message {{ aMsg.name }}");
-#endif
 {% endif %}
-
-inline std::ostream& operator<<(std::ostream & aStream,
-    {{ struct_name }} const& aVal)
-{
-    {% for field in aMsg.fields -%}
-        aStream<<"{{  field.id }} = "<<aVal.{{ field.id }}<<std::endl;
-    {% endfor %}
-	return aStream;
 }
+{% if not dynamic_msg %}
+);
+#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800)
+    static_assert(sizeof({{ struct_name }}) == {{ struct_name }}::SIZE_FULL,
+                            "invalid size of message {{ aMsg.___name }}");
+#elif defined(COMPILE_ASSERT)
+    COMPILE_ASSERT(sizeof({{ struct_name }}) == {{ struct_name }}::SIZE_FULL,
+        InvalidSizeOfMessage_{{ aMsg.___name }});
+    )
+#endif
+{% else %}
+;
+{% endif %}
 {% endmacro %}
 
 {{ generate_message(header) }}
 
 {% for msg in messages-%}
-    {%  if  'parent' in msg -%}
-        {% for parent in messages if parent.number|string() == msg.parent|string() -%}
-            {{ generate_message(msg,parent.name) }}
+    {%  if  '___parent' in msg and msg.___parent
+            -%}
+        {% for ___parent in messages if ___parent.___number|string() == msg.___parent|string() -%}
+            {{ generate_message(msg,___parent) }}
         {% endfor %}
     {% else %}
-        {{ generate_message(msg,header.name) }}
+        {{ generate_message(msg,header) }}
     {% endif %}
 {% endfor %}
-
-
 }
-#undef ATTRIBUTE_PACKED
 #endif /* {{ file_name | upper }}_H */
-{%- endautoescape %}
+{% endautoescape %}

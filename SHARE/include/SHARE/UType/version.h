@@ -11,7 +11,9 @@
  */
 #ifndef VERSION_H_
 #define VERSION_H_
-
+#ifndef SHARE_VERSION_DEFINED
+#	define SHARE_VERSION_DEFINED
+#endif
 namespace NSHARE
 {
 #ifdef SHARE_CONFIG_DEFINED

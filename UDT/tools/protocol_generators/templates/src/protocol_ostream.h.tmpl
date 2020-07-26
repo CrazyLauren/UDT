@@ -1,0 +1,99 @@
+{% set file_name = 'protocol_' + name | lower + '_ostream' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <ostream>
+#include <{{ name | upper }}/config/config.h>
+#include "{{ common.get_namespace(name) }}.h"
+
+{% macro recursive_valid(aMsg) %}
+    {% set struct_name =  aMsg.___name+'_t' %}
+    {% if  '___number' in aMsg %}
+        || aObject.getNumber()=={{ struct_name }}::NUMBER
+        {% for msg in messages if msg.___parent|string() ==aMsg.___number|string()  %}
+            {{ recursive_valid(msg) }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+namespace std
+{
+{% macro generate_ostream(aMsg, aParent) %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+
+inline std::ostream& operator<<(std::ostream & aStream,
+    {{ common.get_namespace(name) }}::{{ struct_name }} const& aVal)
+{
+    using namespace {{ common.get_namespace(name) }};
+
+    {% if parent_name %}
+    aStream << static_cast< {{ parent_name }} const & >(aVal) << std::endl;
+    {% endif %}
+
+    {% for field in aMsg.___fields %}
+         {% set static_cast_to = '(int)' if 'char'  == field.type
+                                            or 'uint8_t' == field.type
+                                            or 'int8_t' == field.type
+                                         else ''%}
+            {% if 'array_len' in field and field.array_len  > 0 %}
+    aStream << "{{  field.id }} : ";
+    for (unsigned i = 0; i < sizeof(aVal.{{ field.id }})/sizeof(aVal.{{ field.id }}[0]); ++i)
+    {
+        if(i!=0)
+            aStream <<", ";
+        aStream << {{ static_cast_to }} aVal.{{ field.id }}[i];
+    }
+    aStream << std::endl;
+            {% else %}
+                {% if field.LogicalType|string() == "dynamic array"  %}
+    {
+        unsigned const {{ field.id }}_len=aVal.{{ field.id }}.size();
+
+        if ( {{ field.id }}_len >0)
+            aStream << "{{  field.id }} : ";
+        else
+            aStream << "{{  field.id }} :  empty ";
+
+        for (unsigned i = 0; i < {{ field.id }}_len; ++i)
+        {
+            if(i!=0)
+                aStream << ", ";
+            aStream << {{ static_cast_to }} aVal.{{ field.id }}[i];
+        }
+        aStream << std::endl;
+    }
+                {%else%}
+         {% set static_cast_dynamic_to = '(int)' if 'char'  == field.DynamicType
+                                            or 'uint8_t' == field.DynamicType
+                                            or 'int8_t' == field.DynamicType
+                                         else ''%}
+    aStream << "{{  field.id }} = " << {{ static_cast_dynamic_to }} aVal.{{ field.id }} << std::endl;
+                {% endif %}
+        {% endif %}
+    {% endfor %}
+	return aStream;
+}
+
+{% endmacro %}
+
+{{ generate_ostream(header) }}
+
+{% for msg in messages%}
+    {%  if  '___parent' in msg and msg.___parent
+            %}
+        {% for ___parent in messages if ___parent.___number|string() == msg.___parent|string() %}
+            {{ generate_ostream(msg,___parent) }}
+        {% endfor %}
+    {% else %}
+        {{ generate_ostream(msg,header) }}
+    {% endif %}
+{% endfor %}
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

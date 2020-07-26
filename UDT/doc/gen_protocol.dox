@@ -1,0 +1,6 @@
+/**
+@page  gen_protocol Protocol generator
+
+As the "kernel" need to identify the messages all message of \n
+user's protocol has to have unique id into the message.
+*/

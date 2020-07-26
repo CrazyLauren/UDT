@@ -12,7 +12,9 @@
 
 #ifndef DYMAMIC_MODULES_H_
 #define DYMAMIC_MODULES_H_
-
+#ifndef SHARE_DYMAMIC_MODULES_DEFINED
+#	define SHARE_DYMAMIC_MODULES_DEFINED
+#endif
 #include <SHARE/macro_attributes.h>
 
 namespace NSHARE

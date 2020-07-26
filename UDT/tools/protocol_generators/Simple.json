@@ -9,31 +9,27 @@
     "revision": 52
   },
   "license": "",
-  "integerOptions": [{
-    "name": "n",
-    "description": "number of stages",
-    "min": 3,
-    "max": 999,
-    "value": 4
-  }],
   "header":
   {
-    "name": "msg_head",
-    "description": "A message header",
-    "full_size": "1",
-    "fields":
+    "___name": "msg_head",
+    "___description": "A message header",
+    "___size": 4,
+    "___fields":
     [
       {
         "type": "uint32_t",
         "bits": 8,
         "id": "number",
-        "description": "Message number"
+        "description": "Message number",
+        "LogicalType": "number"
       },
       {
         "type": "uint32_t",
         "bits": 16,
         "id": "size",
-        "description": "Message size"
+        "description": "Message size",
+        "max_value": 1024,
+        "LogicalType": "size"
       },
       {
         "type": "uint32_t",
@@ -50,11 +46,13 @@
     ]
   },
   "messages": [ {
-    "number": 1,
-    "name": "sub_sub_msg",
-    "description": "The Grand child message",
-    "full_size": "1",
-    "fields":
+    "___number": 1,
+    "___name": "sub_sub_msg",
+    "___description": "The Grand child message",
+    "___size": 1,
+    "___parent": "",
+    "___type": "static",
+    "___fields":
     [
       {
         "type": "char",
@@ -64,27 +62,31 @@
       }
     ]
   },{
-    "number": 0,
-    "name": "sub_msg",
-    "description": "The child message",
-    "full_size": "12",
-    "parent": "1",
-    "fields":
+    "___number": 0,
+    "___name": "sub_msg",
+    "___description": "The child message",
+    "___size": 12,
+    "___parent": "1",
+    "___type": "static",
+    "___fields":
     [
       {
         "type": "char",
         "array_len": 8,
         "id": "child_msg",
-        "description": "message of child child"
+        "description": "message of child child",
+        "min_value": 10,
+        "max_value": 127
       }
     ]
   },{
-    "number": 2,
-    "name": "parent_msg",
-    "description": "The parent message",
-    "full_size": "12",
-    "parent": "0",
-    "fields":
+    "___number": 2,
+    "___name": "parent_msg",
+    "___description": "The parent message",
+    "___size": 12,
+    "___parent": "0",
+    "___type": "static",
+    "___fields":
     [
       {
         "type": "char",

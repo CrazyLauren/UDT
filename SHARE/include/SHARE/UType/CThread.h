@@ -11,7 +11,9 @@
  */ 
 #ifndef _CTHREAD_H_
 #define _CTHREAD_H_
-
+#ifndef SHARE_THREAD_DEFINED
+#	define SHARE_THREAD_DEFINED
+#endif
 namespace NSHARE
 {
 /**\brief Класс инкапсулирующий работу с потоками

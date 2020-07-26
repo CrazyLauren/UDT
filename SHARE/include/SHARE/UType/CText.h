@@ -11,7 +11,9 @@
  */ 
 #ifndef CTEXT_H_
 #define CTEXT_H_
-
+#ifndef SHARE_TEXT_DEFINED
+#	define SHARE_TEXT_DEFINED
+#endif
 #include <cstring>
 #include <stdexcept>
 #include <cstddef>

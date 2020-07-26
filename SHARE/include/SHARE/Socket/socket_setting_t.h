@@ -81,7 +81,7 @@ struct SHARE_EXPORT socket_setting_t
 
 
 	long FSendBufferSize;///< The maximum send buffer size by default  #DEF_BUF_SIZE
-	long FRecvBufferSize;///< The maximum send buffer size by default  1.5* #DEF_BUF_SIZE
+	long FRecvBufferSize;///< The maximum receive buffer size by default  1.5* #DEF_BUF_SIZE
 	unsigned FKeepAliveTime;///<  Seconds between probe attempts and time before probing starts
 	unsigned FKeepAliveCount;///<  The number of keepalive probe attempts
 	flags_t FFlags;///< Flags see #eFlags

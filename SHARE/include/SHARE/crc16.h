@@ -11,7 +11,9 @@
  */
 #ifndef CRC16_H_
 #define CRC16_H_
-
+#ifndef SHARE_CRC16_DEFINED
+#	define SHARE_CRC16_DEFINED
+#endif
 #include <stdint.h>
 #include <iostream>
 #include <assert.h>
@@ -65,7 +67,8 @@ struct crc16_t
 	template<class T>
 	inline static type_t sMCalcCRCofBuf(/*register*/T const* pBegin,
 			T const*  pEnd,
-			/*register*/type_t aOffset = Offset) //register has been deprecated since c++11
+			/*register*/type_t aOffset = Offset,
+			 unsigned const aOldCrc=std::numeric_limits<unsigned>::max()) //register has been deprecated since c++11
 	{
 		static table_t const _table;
 		using namespace std;
@@ -76,6 +79,10 @@ struct crc16_t
 		uint8_t const* __restrict _begin = (uint8_t const*) (pBegin);
 		for (size_t i = 0; i < _size; ++i)
 		{
+			if(aOldCrc != std::numeric_limits<unsigned>::max() && //
+					(aOldCrc <= i || i < aOldCrc + sizeof(type_t))
+					)
+				continue;
 			aOffset = (aOffset << 8)
 					^ _table.FCrc[((aOffset >> 8) ^ _begin[i]) & 0xff]; //sMCalcNextCRC is not used for for optimization
 		}

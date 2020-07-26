@@ -1,0 +1,79 @@
+   table.message_scheme {
+            font-family: "Arial Black", Gadget,sans-serif;
+            color: #e6e6e6;
+            border: 1px solid white;
+            background-color: #4A4A4A;
+            padding: 10px;
+            text-align: center;
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+            direction: rtl;
+        }
+
+        table.message_scheme td, .message_scheme th {
+            padding: 3px 2px;
+            border: 1px solid white;
+        }
+
+        table.message_scheme tbody:not(:first-of-type) {
+            border-top: 3px solid green;
+        }
+        table.message_scheme tbody td {
+            font-size: 13px;
+            color: #e6e6e6;
+            padding: 3px 2px;
+            overflow: hidden;
+            height: 2em;
+        }
+        table.message_scheme tbody td.dynamic_array{
+            background: linear-gradient(45deg,rgba(0,0,0,0) 50%,green 50%,
+            green 60%,rgba(0,0,0,0) 60%);
+            );
+            background-size: 0.5em 0.5em;
+            background-color: navy;
+        }
+        table.message_scheme tbody tr.dynamic_array:nth-child(odd){
+            border-bottom: none;
+        }
+        table.message_scheme tbody td.error {
+            background-color: red;
+        }
+        table.message_scheme tfoot {
+            color: red;
+            background-color: whitesmoke;
+        }
+        table.message_scheme tbody td[LogicalType="number"] {
+            background:skyblue;
+            color: black;
+        }
+        table.message_scheme tbody td[LogicalType="size"] {
+            background:skyblue;
+            color: black;
+        }
+        table.message_scheme tbody td.array {
+            border-right-color: greenyellow;
+        }
+        table.message_scheme tbody td.empty {
+            background-color: darkseagreen;
+        }
+        table.message_scheme tr:nth-child(even) {
+            background: #888888;
+        }
+
+        table.message_scheme thead {
+            background: black;
+            border-bottom: 3px solid black;
+            width: 100%;
+        }
+        table.message_scheme thead th {
+            font-size: 15px;
+            font-weight: bold;
+            color: #E6E6E6;
+            text-align: center;
+            width: 3.125%;
+        }
+
+        table.message_scheme thead th:first-child {
+            border-left: none;
+        }

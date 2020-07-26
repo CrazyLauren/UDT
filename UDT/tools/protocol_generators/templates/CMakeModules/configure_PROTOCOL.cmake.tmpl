@@ -4,10 +4,24 @@
 include(CheckIncludeFileCXX)
 #include(CheckIncludeFile)
 include(CheckIncludeFiles)
-#include(CheckCXXSourceCompiles)
+include(CheckCXXSourceCompiles)
 #include(CheckTypeSize)
 
 check_include_files(stdint.h HAVE_STDINT_H)
+check_cxx_source_compiles("
+          #include <cstddef>
+            struct D{
+                char c;
+            };
+
+          int main(void)
+          {
+                using namespace std;
+                unsigned _val=offsetof(D,c);
+            return 0;
+          }"
+                               HAVE_OFFSET_OF)
+
 
 if (MSVC)
 	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." ON)

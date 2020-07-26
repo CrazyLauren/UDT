@@ -11,7 +11,9 @@
  */ 
 #ifndef CSINGLETON_H_
 #define CSINGLETON_H_
-
+#ifndef SHARE_SINGLETON_DEFINED
+#	define SHARE_SINGLETON_DEFINED
+#endif
 #if defined(_MSC_VER)
 #	pragma warning (push)
 #	pragma warning (disable:4661)

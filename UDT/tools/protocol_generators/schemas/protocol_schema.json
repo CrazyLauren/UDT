@@ -1,0 +1,556 @@
+{
+  "definitions": {
+    "header_id": {
+      "properties": {
+        "___number": {
+          "title": "Message #",
+          "type": "integer",
+          "propertyOrder": -1
+        }
+      },
+      "required": [
+        "___number"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 24,
+      "pattern": "^[a-zA-Z0-9_]+$"
+    },
+    "version": {
+      "title": "Version",
+      "type": "object",
+      "format": "grid-strict",
+      "properties": {
+        "major": {
+          "title": "Major",
+          "propertyOrder": 1,
+          "type": "integer",
+          "minimum": 0
+        },
+        "minor": {
+          "title": "Minor",
+          "propertyOrder": 2,
+          "type": "integer",
+          "minimum": 0
+        },
+        "revision": {
+          "title": "Revision",
+          "propertyOrder": 3,
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "major",
+        "minor"
+      ]
+    },
+    "message_scheme": {
+      "title": "Add message description!",
+      "type": "object",
+      "options": {
+        "disable_collapse": true
+      },
+      "properties": {
+        "___name": {
+          "$ref": "#/definitions/id",
+          "title": "Identifier",
+          "propertyOrder": 2
+        },
+        "___description": {
+          "title": "Description",
+          "propertyOrder": 1,
+          "type": "string",
+          "format": "jodit"
+        },
+        "___size": {
+          "title": "Message data size (bytes)",
+          "propertyOrder": 3,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "___fields": {
+          "title": "Fields",
+          "propertyOrder": 4,
+          "options": {
+            "collapsed": false
+          },
+          "format": "table",
+          "type": "array",
+          "minItems": 1,
+          "uniqueFields": [
+            "id"
+          ],
+          "items": {
+            "title": "field",
+            "type": "object",
+            "properties": {
+              "type": {
+                "title": "Type",
+                "propertyOrder": 1,
+                "type": "string",
+                "enum": [
+                  "char",
+                  "int8_t",
+                  "uint8_t",
+                  "int16_t",
+                  "uint16_t",
+                  "int32_t",
+                  "uint32_t",
+                  "int64_t",
+                  "uint64_t",
+                  "float",
+                  "double"
+                ]
+              },
+              "array_len": {
+                "title": "Array length (0 - if no array)",
+                "propertyOrder": 4,
+                "type": "integer",
+                "Minimum": 0
+              },
+              "bits": {
+                "title": "Amount of used bits (0 - if all)",
+                "propertyOrder": 3,
+                "type": "integer",
+                "Minimum": 0,
+                "exclusiveMaximum": 64
+              },
+              "id": {
+                "title": "Identifier",
+                "propertyOrder": 2,
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 24,
+                "pattern": "^[a-zA-Z0-9_]+$"
+              },
+              "min_value": {
+                "title": "Minimal value",
+                "propertyOrder": 5,
+                "type": "integer"
+              },
+              "max_value": {
+                "title": "Maximal value",
+                "propertyOrder": 6,
+                "type": "integer"
+              },
+              "sampling": {
+                "title": "Measurement accuracy",
+                "propertyOrder": 7,
+                "type": "integer"
+              },
+              "unit": {
+                "title": "Units of measurement ",
+                "propertyOrder": 8,
+                "type": "string",
+                "enum": [
+                  "",
+                  "°C",
+                  "°F",
+                  "$",
+                  "$/J",
+                  "$/mmBTU",
+                  "€",
+                  "€/J",
+                  "€/kcal",
+                  "€/kWh",
+                  "€/mmBTU",
+                  "€/MWh",
+                  "1/K",
+                  "1/m",
+                  "A",
+                  "A/cm2",
+                  "A/dm2",
+                  "A/ft2",
+                  "A/m2",
+                  "A/mm2",
+                  "atm",
+                  "bar",
+                  "barg",
+                  "bbl",
+                  "BTU",
+                  "BTU/(hft2F)",
+                  "BTU/ft3",
+                  "BTU/h",
+                  "BTU/h/°F",
+                  "BTU/lb",
+                  "BTU/lb/°F",
+                  "BTU/lbmol",
+                  "C",
+                  "C/kmol",
+                  "cd",
+                  "cm",
+                  "cm2",
+                  "cm3",
+                  "cP",
+                  "d",
+                  "dm",
+                  "dm2",
+                  "dm3",
+                  "F",
+                  "ft",
+                  "ft2",
+                  "ft3",
+                  "ft3/h",
+                  "g",
+                  "g/d",
+                  "g/m3",
+                  "g/Nm3",
+                  "GPU",
+                  "GW",
+                  "H",
+                  "h",
+                  "hPa",
+                  "Hz",
+                  "in",
+                  "J",
+                  "J/(kg*K)",
+                  "J/(kg*K2)",
+                  "J/(kg*K3)",
+                  "J/(kmol*K)",
+                  "J/K",
+                  "J/kg",
+                  "J/kg/K",
+                  "J/kmol",
+                  "J/kmol/K",
+                  "J/l",
+                  "J/m3",
+                  "K",
+                  "K/Pa",
+                  "K2/Pa",
+                  "kcal",
+                  "kcal/(hm2K)",
+                  "kcal/(kg*K)",
+                  "kcal/h",
+                  "kcal/kg",
+                  "kcal/kg/K",
+                  "kcal/kmol",
+                  "kcal/l",
+                  "kcal/m3",
+                  "kcal/s",
+                  "kg",
+                  "kg/(m3*K)",
+                  "kg/(m3*K2)",
+                  "kg/cm2",
+                  "kg/d",
+                  "kg/h",
+                  "kg/J",
+                  "kg/kmol",
+                  "kg/m3",
+                  "kg/m7",
+                  "kg/s",
+                  "kJ",
+                  "kJ/g",
+                  "kJ/kg",
+                  "kJ/kg/K",
+                  "kJ/kmol",
+                  "kJ/kmol/K",
+                  "kJ/m3",
+                  "km",
+                  "kmol/h",
+                  "kmol/kg",
+                  "kmol/kg/m",
+                  "kmol/m3",
+                  "kmol/s",
+                  "kPa",
+                  "kW",
+                  "kWh",
+                  "kWh/m3",
+                  "l",
+                  "l/h",
+                  "lb",
+                  "lb/ft3",
+                  "lb/h",
+                  "lb/lbmol",
+                  "lbmol/ft3",
+                  "lbmol/h",
+                  "m",
+                  "m*K/W",
+                  "m*s",
+                  "m/s",
+                  "m/s2",
+                  "m2",
+                  "m2*K/W",
+                  "m2*K2/W2",
+                  "m2/s",
+                  "m2/s2",
+                  "m3",
+                  "m3/h",
+                  "m3/kg",
+                  "m3/kmol",
+                  "m3/s",
+                  "mA/cm2",
+                  "mbar",
+                  "mg",
+                  "mg/m3",
+                  "mg/Nm3",
+                  "min",
+                  "MJ/kg",
+                  "ml",
+                  "mm",
+                  "mm2",
+                  "mm3",
+                  "mmBTU",
+                  "mmH2O",
+                  "mmHg",
+                  "mmol/dm3",
+                  "mol",
+                  "mol/dm3",
+                  "mol/h",
+                  "mol/kg",
+                  "mol/m3",
+                  "mol/s",
+                  "MPa",
+                  "mPa*s",
+                  "mV",
+                  "mW",
+                  "MW",
+                  "MWh",
+                  "N",
+                  "N*m4",
+                  "N/m",
+                  "Nm3/d",
+                  "Nm3/h",
+                  "Nm4kmol-2",
+                  "ohm",
+                  "ohm*cm",
+                  "ohm*cm2",
+                  "ohm*m",
+                  "ohm*m2",
+                  "Pa",
+                  "Pa*m6/kmol2",
+                  "Pa*m6/kmol2/K",
+                  "Pa*m6/kmol2/K2",
+                  "Pa*s",
+                  "Pa/K",
+                  "Pa/K2",
+                  "psi",
+                  "rad",
+                  "rpm",
+                  "S",
+                  "s",
+                  "T",
+                  "t",
+                  "t/d",
+                  "t/h",
+                  "t/yr",
+                  "Torr",
+                  "TW",
+                  "ul",
+                  "um",
+                  "uPa*s",
+                  "V",
+                  "W",
+                  "W/(m*K)",
+                  "W/(m2*K)",
+                  "W/K",
+                  "W/m/K",
+                  "W/m2",
+                  "W/m2/K",
+                  "Wb",
+                  "yr"
+                ]
+              },
+              "description": {
+                "title": "Description",
+                "propertyOrder": 9,
+                "type": "string",
+                "format": "html",
+                "options": {
+                  "wysiwyg": true
+                }
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "description",
+              "id"
+            ]
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "___name",
+        "___description",
+        "___fields"
+      ]
+    }
+  },
+  "title": "Protocol generator",
+  "headerTemplate": "{{self.description}}",
+  "type": "object",
+  "properties": {
+    "author": {
+      "title": "Author",
+      "propertyOrder": 3,
+      "type": "string"
+    },
+    "name": {
+      "$ref": "#/definitions/id",
+      "title": "Identifier",
+      "propertyOrder": 5
+    },
+    "description": {
+      "title": "Description",
+      "propertyOrder": 1,
+      "type": "string",
+      "format": "jodit"
+    },
+    "organization": {
+      "title": "Organization",
+      "propertyOrder": 2,
+      "type": "string"
+    },
+    "version": {
+      "propertyOrder": 4,
+      "$ref": "#/definitions/version"
+    },
+    "license": {
+      "title": "License",
+      "propertyOrder": 6,
+      "type": "string"
+    },
+    "header": {
+      "title": "Protocol header format",
+      "propertyOrder": 7,
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/message_scheme"
+        },
+        {
+          "properties": {
+            "___fields": {
+              "items": {
+                "properties": {
+                  "LogicalType": {
+                    "type": "string",
+                    "title": "Logical type",
+                    "enum": [
+                      "none",
+                      "number",
+                      "unique",
+                      "size",
+                      "version_major",
+                      "version_minor",
+                      "crc"
+                    ]
+                  }
+                }
+              },
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "LogicalType": {
+                    "const": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "messages": {
+      "type": "array",
+      "title": "Messages",
+      "format": "tabs",
+      "propertyOrder": 8,
+      "options": {
+        "collapsed": true
+      },
+      "items": {
+        "title": "Message",
+        "headerTemplate": "{{self.___number}}",
+        "allOf": [
+          {
+            "$ref": "#/definitions/message_scheme"
+          },
+          {
+            "$ref": "#/definitions/header_id"
+          },
+          {
+            "properties": {
+              "___type": {
+                "type": "string",
+                "title": "Message type",
+                "propertyOrder": 0,
+                "enum": [
+                  "static",
+                  "dynamic"
+                ]
+              },
+              "___parent": {
+                "type": "string",
+                "title": "Parent message",
+                "propertyOrder": 0,
+                "watch": {
+                  "messages": "messages"
+                },
+                "enumSource": [
+                  [
+                    ""
+                  ],
+                  {
+                    "source": "messages",
+                    "value": "{{item.___number}}"
+                  }
+                ]
+              },
+              "___fields": {
+                "items": {
+                  "properties": {
+                    "LogicalType": {
+                      "type": "string",
+                      "title": "Logical type",
+                      "enum": [
+                        "none",
+                        "dynamic array"
+                      ]
+                    },
+                    "DynamicType": {
+                      "title": "Dynamic array type",
+                      "type": "string",
+                      "enum": [
+                        "char",
+                        "int8_t",
+                        "uint8_t",
+                        "int16_t",
+                        "uint16_t",
+                        "int32_t",
+                        "uint32_t",
+                        "int64_t",
+                        "uint64_t",
+                        "float",
+                        "double"
+                      ]
+                    },
+                    "DynamicOrder": {
+                      "title": "Dynamic array order",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uniqueFields": [
+        "___number",
+        "___name"
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "name",
+    "description",
+    "header"
+  ]
+}

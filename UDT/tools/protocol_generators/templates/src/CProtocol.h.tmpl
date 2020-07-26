@@ -1,8 +1,8 @@
-{%- import "base_macros.tmpl" as common %}
-{%- import "./src/import_export_macros.h.tmpl" as export_file %}
-{%- set file_name = 'CProtocol_' + name  %}
-{{- common.add_file_secription(file_name+'.h',author,version) }}
-{%- autoescape false %}
+{% import "base_macros.tmpl" as common %}
+{% import "./src/import_export_macros.h.tmpl" as export_file %}
+{% set file_name = 'CProtocol_' + name  %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
 
 #ifndef {{ file_name | upper }}_H
 #define {{ file_name | upper }}_H
@@ -47,14 +47,17 @@ public:
             = NSHARE::uuid_t(),uint8_t aMask=NSHARE::E_SHARE_ENDIAN);
 	virtual std::pair<NUDT::required_header_t,bool> MHeader(const NSHARE::CConfig& aFrom) const;
 	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t&) const;
-
+	virtual NSHARE::CConfig MToConfig(const NUDT::required_header_t& aHeader,
+			const uint8_t* aItBegin, const uint8_t* aItEnd) const;
+    virtual NSHARE::CBuffer MFromConfig(const NSHARE::CConfig& aFrom) const;
 	virtual size_t MDataOffset(const NUDT::required_header_t& aHeader) const;
 	virtual bool MSwapEndian(const NUDT::required_header_t& aHeader,
 			uint8_t* aItBegin, uint8_t* aItEnd) const;
 	bool MSwapEndian(NUDT::required_header_t* aHeader) const;
 	inheritances_info_t MGetInheritances() const;
+    int MDataSize (const NUDT::required_header_t& aHeader) const;
 private:
 };
 
 #endif /* {{ file_name | upper }}_H */
-{%- endautoescape %}
+{% endautoescape %}

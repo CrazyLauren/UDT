@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Protocol generator</title>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="css/highlight-default.css">
+    <link rel="stylesheet" href="css/message.css">
+    <link rel="stylesheet" href="css/jodit.min.css">
+
+    <script src="js/lib/jquery-1.11.3.min.js"></script>
+    <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/lib/jsoneditor.js"></script>
+    <script src="js/lib/purify.min.js"></script>
+    <script src="js/lib/jodit.min.js"></script>
+
+    <script src="js/source/numeric_limits.js"></script>
+    <script src="js/source/message.js"></script>
+    <script src="js/source/main.js"></script>
+
+
+
+
+    <style>
+        .tab-content {
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .nav-tabs {
+            margin-bottom: 0;
+        }
+
+        .help-block {
+            color: #337ab7;
+        }
+
+        #output {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        iframe {
+            border: 0px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class='row'>
+        <div class='col-md-12'>
+            <h1>Protocol generator</h1>
+            <div class="btn-group" style="margin-left: 10px;">
+                <button id='clear' type="button" title="Clear" class="btn btn-warning"><i
+                        class="glyphicon glyphicon-remove"></i> Clear form
+                </button>
+                <button id='save' type="button" title="Save" class="btn btn-info"><i
+                        class="glyphicon glyphicon-save"></i> Save protocol
+                </button>
+                <button id='open' type="button" title="Open" class="btn btn-info"><i
+                        class="glyphicon glyphicon-open"></i> Open protocol
+                </button>
+            </div>
+            <span id='valid_indicator' class='label label-default'></span>
+            <p></p>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="saved" class="col-sm-2 control-label">Open saved protocol</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" id='saved'>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class='row'>
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs col-md-12" role="tablist">
+            <li role="presentation" class="active"><a href="#model" aria-controls="model_tab" role="tab"
+                                                      data-toggle="tab"><i class="glyphicon glyphicon-home"></i>
+                Protocol</a></li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content col-md-12" id="model_tab">
+            <div role="tabpanel" class="tab-pane active" id="model">
+                <div id='editor_holder'></div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="svg">
+                <div id="output"></div>
+            </div>
+        </div>
+    </div> <!-- row -->
+</div> <!-- container -->
+
+<footer class="page-row">
+    <div class="center"><small>UDT Copyright © 2020 https://github.com/CrazyLauren <a
+            href="https://github.com/CrazyLauren">UDT</a></small></div>
+</footer>
+
+</body>
+</html>

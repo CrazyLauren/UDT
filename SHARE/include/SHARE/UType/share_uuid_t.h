@@ -12,6 +12,10 @@
 #ifndef UUID_SHARE_H_
 #define UUID_SHARE_H_
 
+#ifndef SHARE_UUID_DEFINED
+#	define SHARE_UUID_DEFINED
+#endif
+
 #ifdef __MINGW32__
 #	ifdef uuid_t
 #		undef uuid_t

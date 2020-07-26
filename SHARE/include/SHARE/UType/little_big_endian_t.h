@@ -12,6 +12,9 @@
 #ifndef INCLUDE_UTYPE_LITTLE_BIG_ENDIAN_T_H_
 #define INCLUDE_UTYPE_LITTLE_BIG_ENDIAN_T_H_
 
+#ifndef SHARE_LITTLE_BIG_ENDIAN_DEFINED
+#	define SHARE_LITTLE_BIG_ENIDAN_DEFINED
+#endif
 namespace NSHARE
 {
 /**\brief Convenient class for working

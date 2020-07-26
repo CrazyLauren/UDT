@@ -11,7 +11,9 @@
  */   
 #ifndef CCONDVAR_H_
 #define CCONDVAR_H_
-
+#ifndef SHARE_CONDVAR_DEFINED
+#	define SHARE_CONDVAR_DEFINED
+#endif
 #include <SHARE/UType/IConditionVariable.h>
 
 namespace NSHARE

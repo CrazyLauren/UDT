@@ -11,7 +11,9 @@
  */ 
 #ifndef MUTEX_H_
 #define MUTEX_H_
-
+#ifndef SHARE_MUTEX_DEFINED
+#	define SHARE_MUTEX_DEFINED
+#endif
 #include <SHARE/UType/IMutex.h>
 
 namespace NSHARE

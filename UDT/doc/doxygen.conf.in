@@ -73,7 +73,7 @@ INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/"\
 						"@SHARE_INCLUDES@"\
 						"@CMAKE_CURRENT_SOURCE_DIR@/doc/"
 						
-FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox
+FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox *.md
 RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO

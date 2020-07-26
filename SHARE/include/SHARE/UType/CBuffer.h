@@ -11,7 +11,9 @@
  */
 #ifndef CBUFFER_H_
 #define CBUFFER_H_
-
+#ifndef SHARE_BUFFER_DEFINED
+#	define SHARE_BUFFER_DEFINED
+#endif
 #include <SHARE/UType/buffer_value.h>
 #include <SHARE/UType/eAllocatorType.h>
 namespace NSHARE

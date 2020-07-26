@@ -1,0 +1,24 @@
+{% set file_name = name | lower + '_attribute_packed' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+{% set attribute_packed = name|upper+'_ATTRIBUTE_PACKED'%}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+
+
+#if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED) || defined(__BORLANDC__) || defined(__LCC__)
+#	define ( ... ) __pragma(pack(push,1) ) __VA_ARGS__; __pragma( pack(pop) )
+#elif defined( __GNUC__ ) ||defined(__QNX__)
+#	define {{ attribute_packed }}(...)  __VA_ARGS__  __attribute__((packed))
+#else
+# 	warning "The packed attribute is not defined"
+#	define {{ attribute_packed }} ( ... ) __VA_ARGS__
+#endif
+
+
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

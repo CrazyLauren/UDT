@@ -39,6 +39,11 @@ The library that implements user's protocol can be generated (see documentation)
  or programmed manually (see examples).
  
  ![sheme](doc/scheme.png)
-# [Installation instructions](INSTALL.md)
-
-# [Quick start](QuickStart.md)
+# [Installation instruction](UDT/doc/INSTALL.md)
+# [Quick start](UDT/doc/QuickStart.md)
+# Documentation
+The documentation is written on doxygen. If you want to read it, you should
+install doxygen and build 'doc' targets of source (see Installation instruction). 
+Of course, You can download windows version of UDT and install documentation.
+Documentation start page  is  "share/UDT/doc/html/index.html". 
+    

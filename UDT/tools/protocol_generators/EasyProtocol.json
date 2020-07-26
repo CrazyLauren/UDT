@@ -1,0 +1,201 @@
+{
+  "author": "https://github.com/CrazyLauren",
+  "name": "EasyProtocol",
+  "description": "<p>Simple process model in JSON format</p>",
+  "organization": "Free Software",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "revision": 52
+  },
+  "license": "",
+  "header": {
+    "___name": "msg_head",
+    "___description": "<p>A message header</p>",
+    "___size": 4,
+    "___fields": [
+      {
+        "type": "uint16_t",
+        "array_len": 0,
+        "bits": 8,
+        "id": "msg_number",
+        "min_value": 0,
+        "max_value": 0,
+        "sampling": 0,
+        "unit": "",
+        "description": "Message number",
+        "LogicalType": "number"
+      },
+      {
+        "type": "uint16_t",
+        "array_len": 0,
+        "bits": 8,
+        "id": "msg_size",
+        "min_value": 0,
+        "max_value": 1024,
+        "sampling": 0,
+        "unit": "",
+        "description": "Message size",
+        "LogicalType": "size"
+      },
+      {
+        "type": "uint8_t",
+        "array_len": 0,
+        "bits": 0,
+        "id": "crc",
+        "min_value": 124,
+        "max_value": 0,
+        "sampling": 154,
+        "unit": "",
+        "description": "CRC",
+        "LogicalType": "crc"
+      },
+      {
+        "type": "uint8_t",
+        "array_len": 0,
+        "bits": 4,
+        "id": "version_minor",
+        "min_value": 0,
+        "max_value": 0,
+        "sampling": 0,
+        "unit": "",
+        "description": "Message minor version",
+        "LogicalType": "unique"
+      },
+      {
+        "type": "uint8_t",
+        "array_len": 0,
+        "bits": 4,
+        "id": "version_major",
+        "min_value": 0,
+        "max_value": 0,
+        "sampling": 0,
+        "unit": "",
+        "description": "Message major version",
+        "LogicalType": "version_major"
+      }
+    ]
+  },
+  "messages": [
+    {
+      "___name": "sub_sub_msg",
+      "___description": "The Grand child message",
+      "___size": 1,
+      "___fields": [
+        {
+          "type": "char",
+          "array_len": 12,
+          "bits": 0,
+          "id": "sub_msg",
+          "min_value": 0,
+          "max_value": 0,
+          "sampling": 0,
+          "unit": "",
+          "description": "message of Grand child",
+          "LogicalType": "none",
+          "DynamicType": "char",
+          "DynamicOrder": 0
+        }
+      ],
+      "___number": 1,
+      "version_minor": 0,
+      "version_major": 0,
+      "___type": "static",
+      "___parent": ""
+    },
+    {
+      "___name": "sub_msg",
+      "___description": "The child message",
+      "___size": 12,
+      "___fields": [
+        {
+          "type": "char",
+          "array_len": 8,
+          "bits": 0,
+          "id": "child_msg",
+          "min_value": 10,
+          "max_value": 127,
+          "sampling": 0,
+          "unit": "",
+          "description": "message of child child",
+          "LogicalType": "none",
+          "DynamicType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "char",
+          "array_len": 0,
+          "bits": 0,
+          "id": "array",
+          "min_value": 0,
+          "max_value": 0,
+          "sampling": 0,
+          "unit": "",
+          "description": "",
+          "LogicalType": "dynamic array",
+          "DynamicType": "int16_t",
+          "DynamicOrder": 1
+        },
+        {
+          "type": "uint8_t",
+          "array_len": 0,
+          "bits": 0,
+          "id": "arra_next",
+          "min_value": 0,
+          "max_value": 0,
+          "sampling": 0,
+          "unit": "",
+          "description": "",
+          "LogicalType": "dynamic array",
+          "DynamicType": "char",
+          "DynamicOrder": 0
+        }
+      ],
+      "___number": 0,
+      "version_minor": 0,
+      "version_major": 0,
+      "___type": "dynamic",
+      "___parent": "1"
+    },
+    {
+      "___name": "parent_msg",
+      "___description": "The parent message",
+      "___size": 12,
+      "___fields": [
+        {
+          "type": "char",
+          "array_len": 8,
+          "bits": 0,
+          "id": "parent_msg",
+          "min_value": 0,
+          "max_value": 0,
+          "sampling": 0,
+          "unit": "",
+          "description": "message of parent child",
+          "LogicalType": "none",
+          "DynamicType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "int16_t",
+          "array_len": 0,
+          "bits": 0,
+          "id": "array2",
+          "min_value": 0,
+          "max_value": 0,
+          "sampling": 0,
+          "unit": "",
+          "description": "",
+          "LogicalType": "dynamic array",
+          "DynamicType": "uint16_t",
+          "DynamicOrder": 0
+        }
+      ],
+      "___number": 2,
+      "version_minor": 0,
+      "version_major": 0,
+      "___type": "dynamic",
+      "___parent": "0"
+    }
+  ]
+}

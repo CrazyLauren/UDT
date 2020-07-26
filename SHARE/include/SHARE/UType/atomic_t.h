@@ -13,7 +13,9 @@
 #ifndef ATOMIC_T_H_
 #define ATOMIC_T_H_
 
-
+#ifndef SHARE_ATOMIC_DEFINED
+#	define SHARE_ATOMIC_DEFINED
+#endif
 #if __cplusplus >= 201103L && 0//todo for c++11, copy operation of atomic_t
 #	include <atomic>
 #elif defined(NOATOMIC)

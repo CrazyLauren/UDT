@@ -12,6 +12,10 @@
 #ifndef CADDRESS_H_
 #define CADDRESS_H_
 
+#ifndef SHARE_ADDRESS_DEFINED
+#	define SHARE_ADDRESS_DEFINED
+#endif
+
 namespace NSHARE
 {
 class  CProgramName;

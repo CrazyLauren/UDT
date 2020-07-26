@@ -13,6 +13,9 @@
 #ifndef ENDIAN_TYPE_H_
 #define ENDIAN_TYPE_H_
 
+#ifndef SHARE_ENDIAN_DEFINED
+#	define SHARE_ENDIAN_DEFINED
+#endif
 //\see http://www.boost.org/doc/libs/1_47_0/boost/detail/endian.hpp
 
 #if !defined(SHARE_LITTLEENDIAN) && !defined(SHARE_BIGENDIAN)

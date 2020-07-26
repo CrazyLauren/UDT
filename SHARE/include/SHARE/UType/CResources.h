@@ -13,7 +13,9 @@
 #ifndef SHARE_CRESOURCES_H_
 #define SHARE_CRESOURCES_H_
 
-
+#ifndef SHARE_RESOURCES_DEFINED
+#	define SHARE_RESOURCES_DEFINED
+#endif
 namespace NSHARE
 {
 /**\brief Класс для динамической загрузки фабрик из библиотек

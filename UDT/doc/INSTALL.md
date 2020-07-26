@@ -1,4 +1,4 @@
-UDT Install Guide
+Install Guide
 =====================================================
 
 The UDT build system is based on the cmake project builder. <br />

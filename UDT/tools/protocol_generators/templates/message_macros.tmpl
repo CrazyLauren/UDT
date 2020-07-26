@@ -1,0 +1,195 @@
+{% macro append_fields(aFields,aIgnore) %}
+
+    {% for field in aFields if not aIgnore or not 'LogicalType' in field
+            or not field.LogicalType in aIgnore %}
+        {% if  'bits' in field and field.bits > 0  %}
+    {{ field.type }} {{ field.id.rjust(20)  }}:{{  field.bits }}; //!< {{ field.description }}
+        {% elif 'array_len' in field and field.array_len  > 0 %}
+    {{ field.type }} {{field.id.rjust(20)  }}[{{  field.array_len }}]; //!< {{ field.description }}
+        {% else %}
+    {{ field.type}} {{field.id.rjust(20)  }}; //!< {{ field.description }}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro add_constants(aMsg,aParent) %}
+{%  set dynamic_const='IS_DYANIMIC = 1' if '___type'
+                in aMsg and aMsg.___type == 'dynamic' else 'IS_DYANIMIC = 0' %}
+
+    /*! Message specified constants*/
+    enum eConstants
+    {
+        {{ dynamic_const }},//!< 0 - message have static size in other case - 1
+{% if  '___number' in aMsg %}
+        NUMBER = eMessage::{{ aMsg.___name|upper }},//!< Message number
+        {% for params in aMsg if not '___' in params %}
+        {{ params|upper }} = {{ aMsg[params]}}, /*!< Constant value which
+                                                is used in the message header for
+                                                validation besides message number.
+                                                For detail see header value
+                                                {{ params }}.
+                                                */
+        {% endfor %}
+{% endif %}
+    {% for field in aMsg.___fields if  'LogicalType' in field
+                                    and field.LogicalType == "dynamic array" %}
+        DYNAMIC_ORDER_OF_{{field.id|upper}} = {{field.DynamicOrder}}, //!< Order of field #{{field.id}} in buf
+    {% endfor %}
+        SIZE_OWN = {{ (aMsg|full_size / 8) | int }},//!< Own message size
+        SIZE_FULL = SIZE_OWN
+    {% if aParent %}
+                    + {{ aParent.___name }}_t::SIZE_FULL //!< Full message size
+    {% endif %}
+    };
+{% endmacro %}
+
+{% macro add_functions(aFields,aParent) %}
+    {% for field in aFields if field.LogicalType|string() != "none"  %}
+
+         {% if field.LogicalType == "number" %}
+    /** Returns the message number
+    */
+    {{field.type}} getNumber() const
+    {
+        return {{field.id }};
+    }
+         {% elif field.LogicalType == "size" %}
+    /** Returns the message full size
+    */
+    {{field.type}} getSize() const
+    {
+        return {{field.id }};
+    }
+        {% elif field.LogicalType == "version_major" %}
+    /** Returns the message major version
+    */
+    {{field.type}} getVersionMajor() const
+    {
+        return {{field.id }};
+    }
+        {% elif field.LogicalType == "version_minor" %}
+    /** Returns the message minor version
+    */
+    {{field.type}} getVersionMinor() const
+    {
+        return {{field.id }};
+    }
+        {% elif field.LogicalType == "crc" %}
+    /** Returns the message crc
+    */
+    {{field.type}} getCRC() const
+    {
+        return {{field.id }};
+    }
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{%macro  align_message(aMsg,_bits,aType,aTypeInfo)%}
+
+    {% set last_type = (aMsg.___fields|last).type if not aType else aType %}
+    {% set last_type_info = last_type|type_info if not aTypeInfo else aTypeInfo %}
+    {% if _bits > last_type_info.size|int * 8  %}
+        {% set _remainder=_bits-last_type_info.size|int * 8 %}
+    {{ align_message(aMsg,_remainder,last_type,last_type_info) }}
+    {{ last_type }} :{{ _bits-_remainder }};//!< alignment
+    {% else %}
+    {{ last_type }} :{{ _bits }};//!< alignment
+    {% endif %}
+{%endmacro %}
+
+{% macro append_reserv(aMsg) %}
+    {% set msg_size=aMsg.___size| int()*8 %}
+    {% set cur_size=aMsg|field_size %}
+    {% if cur_size < msg_size %}
+        {% set req_size= (msg_size - cur_size) %}
+        {% set _bits= req_size%32 %}
+        {% if _bits>0 %}
+    {{ align_message(aMsg,_bits) }}
+        {% endif %}
+        {% for i in range((req_size//32)) %}
+    uint32_t :32;//!< alignment
+        {% endfor %}
+    {% elif cur_size%32 !=0 %}
+    {{ align_message(aMsg,cur_size%32) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro recursive_valid(aMsg, aWhat) %}
+    {% set struct_name =  aMsg.___name+'_t' %}
+    {% set field =  aWhat if not aWhat.startswith('___') else aWhat[3:] %}
+    {% if  aWhat in aMsg %}
+        {% if aWhat.startswith('___') %}
+            {% if  aWhat == '___number'%}
+            || aObject.getNumber() == {{ struct_name }}::NUMBER
+            {% endif %}
+        {% else %}
+            || aObject.{{ aWhat }} == {{ struct_name }}::{{ aWhat|upper }}
+        {% endif %}
+        {% for msg in messages if msg.___parent|string() == aMsg.___number|string()  %}
+            {{ recursive_valid(msg, aWhat) }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro validation_constants(aMsg) %}
+
+    {% if  '___number' in aMsg %}
+    _is = _is && (false
+        {{ recursive_valid(aMsg, '___number') }}
+            );
+    {% endif %}
+    {% for params in aMsg if not '___' in params %}
+    _is = _is && (false
+        {{ recursive_valid(aMsg, params) }}
+            );
+    {% endfor %}
+{% endmacro %}
+
+{% macro validation_header_message(aMsg,messages) %}
+{% for field in aMsg.___fields %}
+    {% if 'LogicalType' in field and field.LogicalType != 'none'%}
+        {% if field.LogicalType == 'number'%}
+    _is = _is && ( false //!< added to simplify the auto generator
+                {% for msg in messages %}
+        || aObject.getNumber() == eMessage::{{ msg.___name|upper }} //
+                {% endfor %}
+        );
+            {% elif field.LogicalType == 'unique' %}
+    _is = _is && ( false //!< added to simplify the auto generator
+                {% for msg in messages %}
+                        {%  set struct_sub_name =  msg.___name+'_t' %}
+        || aObject.{{ field.id }} == {{ struct_sub_name }}::{{ field.id|upper }} //
+                {% endfor %}
+        );
+        {% endif %}
+    {% endif %}
+{% endfor %}
+{% endmacro %}
+
+{% macro check_field(aField, aIsArray=False) %}
+
+                {%if 'min_value' in aField %}
+    _is = _is && (aObject.{{ aField.id }} {% if aIsArray %}[i]{% endif %} >= {{ aField.min_value }});
+                {% endif %}
+                {%if 'max_value' in aField %}
+    _is = _is && (aObject.{{ aField.id }} {% if aIsArray %}[i]{% endif %} <= {{ aField.max_value }});
+                {% endif %}
+{% endmacro %}
+
+{% macro serialze_static_fields(aMsg) %}
+    {% for field in aMsg.___fields %}
+        {% set static_cast_to = '(int)' if 'char'  == field.type or 'uint8_t' == field.type or 'int8_t' == field.type else ''%}
+         {%if 'array_len' in field and field.array_len  > 0 %}
+    for (unsigned i = 0; i < sizeof(aObject.{{ field.id }})/sizeof(aObject.{{ field.id }}[0]); ++i)
+    {
+	    _conf.MAdd("{{ field.id }}", {{ static_cast_to }}aObject.{{ field.id }}[i]);
+    }
+        {% else %}
+            {% if field.LogicalType|string() != "dynamic array"  %}
+    _conf.MSet("{{ field.id }}", {{ static_cast_to }} aObject.{{ field.id }} );
+            {% endif %}
+        {% endif %}
+
+    {% endfor %}
+{% endmacro %}

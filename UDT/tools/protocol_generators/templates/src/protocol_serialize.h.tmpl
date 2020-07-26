@@ -1,0 +1,270 @@
+{% set file_name = 'protocol_' + name | lower + '_serialize' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+
+#include <{{ name | upper }}/config/config.h>
+#include "{{ common.get_namespace(name) }}.h"
+namespace NSHARE
+{
+    class aAllocator;
+}
+namespace {{ common.get_namespace(name) }}
+{
+#ifndef SERIALIZE_TEMPLATE_IS_DEFINED
+#  define SERIALIZE_TEMPLATE_IS_DEFINED
+
+#  ifdef SHARE_CONFIG_DEFINED
+
+/*! \brief Serialize type T
+ *
+ * The Serialized data key is equal "NAME".
+ *
+ * \param aObject Object
+ * \return Serialized object
+ * \tparam Serialized object type
+ * \note  The method has to be specialized and "extern" for every external types.
+ */
+template<typename T>
+inline NSHARE::CConfig serialize(T const& aObject){
+	return aObject.MSerialize();
+}
+
+/*! \brief Deserialize type T
+ *
+ * Deserialize object.
+ *
+ * @param aConf Serialized data (Child of key "NAME")
+ * @return Deserialized object
+ * @tparam Deserialized type
+ * \note  The method has to be specialized and "extern" for every external types.
+ * @{
+ */
+template<typename T>
+inline T deserialize(NSHARE::CConfig const& aConf)
+{
+	return T(aConf);
+}
+/*! @param aAllocator Used allocator of message */
+template<typename T>
+inline T deserialize(NSHARE::CConfig const& aConf,NSHARE::IAllocater* aAllocator)
+{
+	return deserialize<T>(aConf);
+}
+/*! @}*/
+#  endif //# ifdef SHARE_CONFIG_DEFINED
+
+/*! \brief Checking if object of T is valid
+ *
+ * Usually It's using for validation deserialized object
+ *
+ * \param aObject Object
+ * \return true - It's valid
+ * \tparam Checked object type
+ * \note  The method has to be specialized and "extern" for every external types.
+ */
+template<typename T>
+inline bool is_valid(T const& aObject){
+	return aObject.MIsValid();
+}
+#endif //#ifndef SERIALIZE_TEMPLATE_IS_DEFINED
+
+//
+// Implementation
+//
+
+namespace impl{
+template<class T>
+inline bool deserialize_impl(T* aTo, NSHARE::CConfig const& aConf);
+}
+
+{% macro generate_serialize_functions(aMsg, aParent) %}
+
+{% set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{% set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+
+#ifdef SHARE_CONFIG_DEFINED
+namespace impl{
+/*! @brief Deserialize message of {{ aMsg.___name }}
+*/
+template<>
+inline bool deserialize_impl<{{ struct_name }}>({{ struct_name }}* aTo,
+    NSHARE::CConfig const& aConf)
+{
+    {% if parent_name %}
+    deserialize_impl<{{ parent_name }}>(aTo, aConf);
+    {% endif %}
+
+    {% for field in aMsg.___fields %}
+        {% set static_cast_to = 'int' if 'char'  == field.type
+                                        or 'uint8_t' == field.type
+                                        or 'int8_t' == field.type
+                                      else ''%}
+        {%if 'array_len' in field and field.array_len  > 0 %}
+    {
+	    const NSHARE::ConfigSet& _child = aConf.MChildren("{{ field.id }}");
+        {
+             NSHARE::ConfigSet::const_iterator _it = _child.begin(), _it_end =
+				    _child.end();
+             const unsigned _array_size=sizeof(aTo->{{ field.id }})/sizeof(aTo->{{ field.id }}[0]);
+
+             unsigned i=0;
+             for (; i < _array_size&&//
+                                _it != _it_end ; ++i,++_it)
+            {% if static_cast_to %}
+			        aTo->{{ field.id }}[i] = ({{ field.type }})_it->MValue({{  static_cast_to }}());
+            {% else %}
+			        aTo->{{ field.id }}[i] = _it->MValue({{  field.type }}());
+            {% endif %}
+
+            if( i < _array_size //
+                || _it != _it_end
+                )
+            {
+               LOG(DFATAL) << "The array {{ field.id }} length isn't equal " << _child.size()
+                            <<" != "<<_array_size<<". Serialized data :"<< aConf.MToJSON(true);
+
+                for (; i < _array_size; ++i)
+                    aTo->{{ field.id }}[i] = 0;
+            }
+	    }
+    }
+        {% else %}
+    {
+            {% if static_cast_to %}
+        {{  static_cast_to }} _tmp_{{ field.id }};
+            {% else %}
+        {{  field.type }} _tmp_{{ field.id }};
+            {% endif %}
+
+        if(aConf.MGetIfSet("{{ field.id }}", _tmp_{{ field.id }} ))
+        {
+            {% if field.LogicalType|string() == "dynamic array"  %}
+                {% set static_cast_dynamic_to = 'int' if 'char'  == field.DynamicType
+                                        or 'uint8_t' == field.DynamicType
+                                        or 'int8_t' == field.DynamicType
+                                      else ''%}
+            const NSHARE::ConfigSet& _child = aConf.MChildren("{{ field.id }}");
+            {
+                aTo->{{ field.id }}.resize(_tmp_{{ field.id }});
+
+                NSHARE::ConfigSet::const_iterator _it = _child.begin(),
+                                                _it_end = _child.end();
+                for (unsigned i=0; i< _tmp_{{ field.id }} &&//
+                                _it != _it_end ; ++i, ++_it)
+                {% if static_cast_dynamic_to %}
+			        aTo->{{ field.id }}[i] = ({{ field.type }})_it->MValue({{  static_cast_dynamic_to }}());
+                {% else %}
+			        aTo->{{ field.id }}[i] = _it->MValue({{  field.type }}());
+                {% endif %}
+	        }
+            {% else %}
+            aTo->{{ field.id }} = _tmp_{{ field.id }};
+            {% endif %}
+        }else
+        {
+            LOG(DFATAL) << "No value for {{ field.id }} in serialized data " << aConf.MToJSON(true);
+        }
+    }
+        {% endif %}
+    {% endfor %}
+
+    return true;
+}
+}
+template<>
+inline {{ struct_name }} deserialize<{{ struct_name }}>(NSHARE::CConfig const& aConf)
+{
+    {{ struct_name }} _tval;
+    impl::deserialize_impl<{{ struct_name }} >(&_tval, aConf);
+	return _tval;
+}
+
+/*! @brief Serialize message of {{ aMsg.___name }}
+*/
+template<>
+inline NSHARE::CConfig serialize({{ struct_name }} const& aObject)
+{
+{% if parent_name %}
+	NSHARE::CConfig _conf("{{ aMsg.___name }}", serialize<{{ parent_name }}>(aObject));
+{%  else %}
+    NSHARE::CConfig _conf("{{ aMsg.___name }}");
+{% endif %}
+    {{ fm.serialze_static_fields(aMsg) }}
+    {% for field in aMsg.___fields %}
+          {% if field.LogicalType|string() == "dynamic array"  %}
+                {% set static_cast_dynamic_to = '(int)' if 'char'  == field.DynamicType
+                                        or 'uint8_t' == field.DynamicType
+                                        or 'int8_t' == field.DynamicType
+                                      else '' %}
+    for (unsigned i = 0; i < aObject.{{ field.id }}.size(); ++i)
+    {
+	    _conf.MAdd("{{ field.id }}", {{ static_cast_dynamic_to }} aObject.{{ field.id }}[i]);
+    }
+        {% endif %}
+    {% endfor %}
+	return _conf;
+}
+#endif //#ifdef SHARE_CONFIG_DEFINED
+/*! @brief check is valid message
+*/
+template<>
+inline bool is_valid<{{ struct_name }}>({{ struct_name }} const& aObject)
+{
+    {% if parent_name %}
+    bool _is = is_valid<{{ parent_name }}>(aObject);
+    {%  else %}
+    bool _is = true;
+    {% endif %}
+
+    {{ fm.validation_constants(aMsg) }}
+
+    {% if not parent_name %}
+    {{ fm.validation_header_message(aMsg,messages) }}
+    {% endif %}
+    {% for field in aMsg.___fields %}
+        {%if 'min_value' in field or 'max_value' in field %}
+            {% if 'LogicalType' in field and field.LogicalType|string() == "dynamic array" %}
+    unsigned const {{ field.id }}_len=aObject.{{ field.id }}.size();
+    for (unsigned i = 0; i < {{ field.id }}_len; ++i)
+    {
+                {{ fm.check_field(field,True) }}
+    }
+            {% elif 'array_len' in field and field.array_len  > 0 %}
+    for (unsigned i = 0; i < sizeof(aObject.{{ field.id }})/sizeof(aObject.{{ field.id }}[0]); ++i)
+    {
+                {{ fm.check_field(field,True) }}
+    }
+            {% elif field.LogicalType|string() == "none" %}
+                {{ fm.check_field(field) }}
+            {% endif %}
+
+        {% endif %}
+    {% endfor %}
+    return _is;
+}
+{% endmacro %}
+
+{{ generate_serialize_functions(header) }}
+
+{% for msg in messages%}
+    {%  if  '___parent' in msg and msg.___parent
+            %}
+        {% for ___parent in messages if ___parent.___number|string() == msg.___parent|string() %}
+            {{ generate_serialize_functions(msg,___parent) }}
+        {% endfor %}
+    {% else %}
+        {{ generate_serialize_functions(msg,header) }}
+    {% endif %}
+{% endfor %}
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

@@ -11,7 +11,9 @@
  */ 
 #ifndef CSEMAPHORE_H_
 #define CSEMAPHORE_H_
-
+#ifndef SHARE_SEMAPHORE_DEFINED
+#	define SHARE_SEMAPHORE_DEFINED
+#endif
 #include <deftype>
 #include <SHARE/UType/ISemaphore.h>
 

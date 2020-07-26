@@ -13,6 +13,9 @@
 #ifndef CFLAGS_H_
 #define CFLAGS_H_
 #include <bitset>
+#ifndef SHARE_FLAGS_DEFINED
+#	define SHARE_FLAGS_DEFINED
+#endif
 namespace NSHARE
 {
 class CNoMutex;

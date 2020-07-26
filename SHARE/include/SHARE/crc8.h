@@ -12,16 +12,19 @@
 #ifndef _CRC8_H_
 #define _CRC8_H_
 
-#define INITIAL_CRC8  0x00
+#ifndef SHARE_CRC8_DEFINED
+#	define SHARE_CRC8_DEFINED
+#endif
+
 namespace NSHARE
 {
 extern const uint8_t CrcTable[256];
 
 uint8_t SHARE_EXPORT SHARED_DEPRECATED_F(CalcCRC8(uint8_t const *pBuffer, int nSize, uint8_t bOldCRC8 =
-		INITIAL_CRC8));
+		0x0));
 
 template<class T>
-uint8_t SHARED_DEPRECATED_F(CalcCRC8(T  pBegin, T const& pEnd, uint8_t aCRC8 = INITIAL_CRC8))
+uint8_t SHARED_DEPRECATED_F(CalcCRC8(T  pBegin, T const& pEnd, uint8_t aCRC8 = 0x0))
 {
 	for (; pBegin!= pEnd;++pBegin)
 		aCRC8 = CrcTable[aCRC8 ^ *pBegin];
@@ -31,9 +34,9 @@ uint8_t SHARED_DEPRECATED_F(CalcCRC8(T  pBegin, T const& pEnd, uint8_t aCRC8 = I
 
 ///@brief structure that helps to work with crc8
 /// @tparam FPolynom crc8 polynomial
-/// @tparam TOffset Initial value
+/// @tparam TOffset Offset value
 /// @tparam TLsb Byte order
-template<unsigned FPolynom, uint8_t TInitValue = INITIAL_CRC8, bool TLsb = false>
+template<unsigned FPolynom, uint8_t TInitValue = 0x0, bool TLsb = false>
 struct crc8_t
 {
 
@@ -45,7 +48,8 @@ struct crc8_t
 	};
 	enum
 	{
-		Initial = TInitValue
+		Offset = TInitValue,
+		Initial=Offset
 	};
 	enum
 	{
@@ -71,21 +75,25 @@ struct crc8_t
 	///@tparam  T type of buffer pointer
 	///@param  pBegin Buffer begin
 	///@param  pEnd Buffer end
-	///@param  aOffset Initial value
+	///@param  aOffset Offset value
+	///@param  aOldCrc Ignored field in buffer
 	template<class T>
-	inline static type_t sMCalcCRCofBuf(T const* __restrict  pBegin, T const* __restrict   pEnd,
-			 type_t aOffset = Initial)
+	inline static type_t sMCalcCRCofBuf(T const* __restrict  pBegin,
+			T const* __restrict   pEnd,
+			 type_t aOffset = Offset,
+			 unsigned const aOldCrc=std::numeric_limits<unsigned>::max())
 	{
 		static const table_t _table;
 		size_t const _size=pEnd-pBegin;
 		for (size_t i=0; i<_size; ++i)
+			if(i!=aOldCrc)
 			aOffset = _table.FCrc[aOffset ^ pBegin[i]]; /*sMCalcNextCRC(aOffset, *pBegin)*/
 
 		return aOffset;
 	}
 	template<class U>
 	inline static type_t sMCalcCRCofBuf2(U pBegin, U const& pEnd,
-			type_t aOffset = Initial)
+			type_t aOffset = Offset)
 	{
 		for (; pBegin != pEnd; ++pBegin)
 			aOffset = sMCalcNextCRC(aOffset, *pBegin);
@@ -107,7 +115,7 @@ struct crc8_t
 	///@return  new CRC
 	inline static type_t sMCheckingConstant()
 	{
-		return sMCalcNextCRC(Initial,Initial);
+		return sMCalcNextCRC(Offset,Offset);
 	}
 
 private:
