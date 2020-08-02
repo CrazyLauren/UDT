@@ -50,7 +50,17 @@ install(TARGETS ${_TARGET_NAME}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} COMPONENT applications
 		RUNTIME DESTINATION ${UDT_DEFAULT_PLUGIN_PATH} COMPONENT applications
 		)
-{% set file_protocol_name = name | lower + '_protocol.h' %}
-install(FILES    {{ file_protocol_name }}
-				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/{{ name | upper }}" COMPONENT headers
+{% set file_protocol_name = 'protocol_'+name | lower  %}
+install(FILES   {{ file_protocol_name }}.h
+                {{ file_protocol_name }}_attribute_packed.h
+                {{ file_protocol_name }}_msg_headers.h
+                {{ file_protocol_name }}_serialize_binary.h
+                {{ file_protocol_name }}_parser.h
+                {{ file_protocol_name }}_ostream.h
+
+                {{ file_protocol_name }}_serialize.h
+                {{ file_protocol_name }}_swap_endian.h
+
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/{{ name | upper }}"
+                COMPONENT headers
 		)

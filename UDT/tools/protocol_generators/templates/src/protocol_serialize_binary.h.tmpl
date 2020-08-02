@@ -8,16 +8,15 @@
 #define {{ file_name | upper }}_H
 
 #include <{{ name | upper }}/config/config.h>
-#include <deftype>
+
 #include "{{ common.get_namespace(name) }}.h"
 
 {% set attribute_packed = name|upper+'_ATTRIBUTE_PACKED'%}
-namespace NSHARE
-{
-    class CBuffer;
-}
+{%  set struct_header_name =  header.___name+'_t' -%}
+
 namespace {{ common.get_namespace(name) }}
 {
+
 #ifndef SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
 #  define SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
 
@@ -30,12 +29,14 @@ namespace {{ common.get_namespace(name) }}
  * \param aAllocator Allocator type
  * \return Serialized object
  * \tparam T Serialized object type
+ * \tparam TContainer container type (for example std::vector)
  *  @{
  */
-template<typename T>
-inline NSHARE::CBuffer& serialize_binary(T const& aObject, NSHARE::CBuffer& aTo);
-template<typename T>
-inline NSHARE::CBuffer serialize_binary(T const& aObject, NSHARE::IAllocater* aAllocator=NULL);
+template <typename TContainer, typename T>
+inline TContainer& serialize_binary(TContainer& aTo,T const& aObject);
+template <typename T>
+inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject);
+
 /// @}
 
 /*! \brief Deserialize type T
@@ -46,46 +47,26 @@ inline NSHARE::CBuffer serialize_binary(T const& aObject, NSHARE::IAllocater* aA
  * @param aTo deserialize to
  * @return Deserialized object
  * @tparam T Deserialized type
+ * @tparam TContainer container type (for example std::vector)
  * \note  The method has to be specialized and "extern" for every external types.
  * @{
  */
-template<typename T>
-inline T deserialize_binary(NSHARE::CBuffer const& aBuf);
-template<typename T>
-inline T& deserialize_binary(T& aTo, NSHARE::CBuffer const& aBuf);
+template<typename T,typename TContainer>
+inline T deserialize_binary(TContainer const& aBuf);
+template<typename T,typename TContainer>
+inline T& deserialize_binary(T& aTo, TContainer const& aBuf);
 template<typename T>
 inline T& deserialize_binary(T& aTo, char const* aBegin,
     char const* aEnd);
 /*! @}*/
 
-//
+//----------------------------------------
 // Implementation
-//
+//----------------------------------------
+
 #endif //#ifndef SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
 namespace impl
 {
-/*! \brief Gets full size of message
- *
- *
- * @param aVal Object
- * @return Deserialized object
- * @tparam T Object type
- * \note  The method has to be specialized and "extern" for every external types.
- * @{
- */
-template<class T>
-unsigned get_full_size_dynamic(T const & aVal )
-{
-    return 0;
-}
-template<class T>
-unsigned get_full_size(T const & aVal )
-{
-    return T::SIZE_FULL + get_full_size_dynamic<T>(aVal);
-}
-///@}
-
-#ifdef SHARE_BUFFER_DEFINED
 /*! \brief Puts dynamic data to buffer
  *
  * @param aObject Object
@@ -98,64 +79,73 @@ unsigned get_full_size(T const & aVal )
  * @{
  */
 template<class Tdyanmic ,class T>
-NSHARE::CBuffer::pointer serialize_fields(NSHARE::CBuffer::pointer aTo,
+char* serialize_fields(char *aTo, unsigned aMaxSize,
         Tdyanmic* aHeader,T const & aObject );
 template<class Tdyanmic ,class T>
 char const* deserialize_fields(T& aTo,
         Tdyanmic const& aObject, char const* aPtr );
 ///@}
-#endif
 }//namespace impl
 
-#ifdef SHARE_BUFFER_DEFINED
 template<typename T>
 inline T& deserialize_binary(T& aTo, char const* aBegin,
     char const* aEnd)
 {
     unsigned const _buf_size = aEnd-aBegin;
-    unsigned const _size = impl::get_full_size<T>(aTo);
+    unsigned const _size = get_full_size<T>(aTo);
     DCHECK_GE(_size,_buf_size);
     if( _size >= _buf_size )
     {
-        T const& _val = *reinterpret_cast<T const*>(aEnd);
+        T const& _val = *reinterpret_cast<T const*>(aBegin);
         aTo = _val;
     }
     return aTo;
 }
-template<typename T>
-inline T& deserialize_binary(T& aTo, NSHARE::CBuffer const& aBuf)
+template<typename T,typename TContainer>
+inline T& deserialize_binary(T& aTo, TContainer const& aBuf)
 {
-    unsigned const _buf_size = aBuf.size();
-    return deserialize_binary<T>(aTo,(char const*)aBuf.ptr_const(),
-                (char const*)(aBuf.ptr_const() + _buf_size));
+    unsigned const _buf_size = aBuf.size()*sizeof(typename TContainer::value_type);
+    return deserialize_binary<T>(aTo,(char const*)&aBuf.front(),
+                (char const*)&aBuf.front() + _buf_size);
 }
-template<typename T>
-inline T deserialize_binary(NSHARE::CBuffer const& aBuf)
+template<typename T,typename TContainer>
+inline T deserialize_binary(TContainer const& aBuf)
 {
     T _rval;
-    deserialize_binary<T>(_rval, aBuf);
+    deserialize_binary<T,TContainer>(_rval, aBuf);
     return _rval;
 }
 template<typename T>
-inline NSHARE::CBuffer& serialize_binary(NSHARE::CBuffer& aTo, T const& aObject)
+inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject)
 {
-    unsigned const _first = aTo.size();
-    unsigned const _size = impl::get_full_size<T>(aObject);
-    aTo.resize(aTo.size() + _size);
+    if(aMaxSize >= sizeof(T))
+    {
+       T* _p = new( aTo) T(aObject);
+        fill_header<T>( _p );
+        DCHECK(is_valid<T>(*_p));
+        return  aTo + sizeof(T);
+    }
+    return NULL;
+}
+template<typename TContainer, typename T>
+inline TContainer& serialize_binary(TContainer& aTo, T const& aObject)
+{
+    unsigned const _own_size = aTo.size();
+    unsigned const _first = _own_size * sizeof(typename TContainer::value_type);
+    unsigned const _size = get_full_size<T>(aObject);
+    aTo.resize( _own_size//
+                    + _size / sizeof(typename TContainer::value_type) // if container value size more 1 byte
+                    + _size % sizeof(typename TContainer::value_type) == 0 ? 0:1 // if not multiple ratio
+                    );
 
-    NSHARE::CBuffer::pointer const _begin = aTo.ptr() + _first;
-
-    new( _begin) T(aObject);
+    char* const _begin = (char *)&(aTo.front()) + _first;
+    char* const _p=serialize_binary<T>(_begin,_size,aObject);
+    if(_p == NULL )
+        aTo.resize(_own_size);
+    else
+        DCHECK_EQ(_size, (_p-_begin));
     return aTo;
 }
-template<typename T>
-inline NSHARE::CBuffer serialize_binary(T const& aObject,
-                        NSHARE::IAllocater* aTo)
-{
-    NSHARE::CBuffer _rval(aTo);
-    return serialize_binary<T>(_rval, aObject);
-}
-#endif //ifdef SHARE_BUFFER_DEFINED
 {% macro generate_serialize_message(aMsg, aParent) %}
 
 {% set struct_name =  aMsg.___name+'_t' %}
@@ -167,6 +157,7 @@ inline NSHARE::CBuffer serialize_binary(T const& aObject,
 
 {% if dynamic_msg %}
 {%  set struct_name_dyanamic =  aMsg.___name+'_dynamic_t' %}
+{%  set inherent_t = paret_dynamic_name if paret_dynamic_name else parent_name %}
 /*!\brief Struct for convenient struct to serialize dynamic message
  *
  *   {{ aMsg.___description }}
@@ -179,6 +170,7 @@ struct {{ struct_name_dyanamic}}
     : {{ parent_name}}
     {% endif %}
 {
+    {{ fm.add_constants(aMsg,aParent) }}
     {{ fm.append_fields(aMsg.___fields) }}
     {{ fm.append_reserv(aMsg) }}
 
@@ -240,58 +232,75 @@ struct {{ struct_name_dyanamic}}
 #elif defined(COMPILE_ASSERT)
     COMPILE_ASSERT(sizeof({{ struct_name_dyanamic }}) == {{ struct_name }}::SIZE_FULL,
         InvalidSizeOfMessage_dynamic_{{ aMsg.___name }});
-    )
 #endif
-namespace impl
-{
+namespace impl{
+/*! \brief Gets size of serialized {{ aMsg.___name }} dynamic data
+ *
+ * @param aVal Object
+ * @return Size of dynamic data
+ * @tparam T Object type
+ */
 template<>
-unsigned get_full_size_dynamic<{{ struct_name}}>({{ struct_name}} const & aVal )
+unsigned get_full_size_dynamic<{{ struct_name_dyanamic}}>({{ struct_name_dyanamic}} const & aVal )
 {
     unsigned _size = 0;
 
     {% if paret_dynamic_name %}
-    _size += get_full_size_dynamic<{{ parent_name}}>(
-            static_cast<{{ parent_name}} const&>(aVal)
+    _size += get_full_size_dynamic<{{ paret_dynamic_name}}>(
+            static_cast<{{ paret_dynamic_name}} const&>(aVal)
             );
     {% endif %}
 
     {% for field in aMsg | logical_type(["dynamic array"],True) %}
-    _size += sizeof(typename {{ struct_name}}::{{field.id}}_dynamic_t::value_type)
-            * aVal.{{field.id}}.size();
+    _size += sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type)
+            * aVal.{{field.id}};
     {% endfor %}
     return _size;
 }
-
-#ifdef SHARE_BUFFER_DEFINED
 template<>
-NSHARE::CBuffer::pointer serialize_fields<{{ struct_name_dyanamic}}, {{ struct_name}}>
-    (NSHARE::CBuffer::pointer aTo, {{ struct_name_dyanamic}}* aHeader,
+char* serialize_fields<{{ struct_name_dyanamic}}, {{ struct_name}}>
+    (char* aTo, unsigned aMaxSize, {{ struct_name_dyanamic}}* aHeader,
     {{ struct_name}} const & aObject )
 {
+    {% if paret_dynamic_name %}
+    char* const _begin_parent = aTo;
+    aTo = impl::serialize_fields<{{ paret_dynamic_name}},
+            {{ parent_name }}>(aTo, aMaxSize, aHeader, aObject);
+    if( aTo == NULL )
+        return NULL;
+    aMaxSize -= aTo - _begin_parent;
+    {% endif %}
 #ifndef NDEBUG
     int _order_prev = std::numeric_limits<int>::min();
 #endif
        {% for field in dynamic_fields|sort(attribute='DynamicOrder') %}
     {
+        typedef {{ struct_name}}::{{field.id}}_dynamic_t::value_type _value_{{field.id}}_t;
+        typedef _value_{{field.id}}_t* _ptr_{{field.id}}_t;
+
 #ifndef NDEBUG
         DCHECK_LE(_order_prev, {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }});
         _order_prev = {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }};
 #endif
         unsigned const _{{ field.id }}_len = aObject.{{ field.id }}.size();
         aHeader->{{ field.id }} = _{{ field.id }}_len;
+        unsigned const _{{ field.id }}_len_byte = _{{ field.id }}_len *
+           sizeof(_value_{{field.id}}_t);
 
-        {{ struct_name}}::{{field.id}}_dynamic_t::value_type * const _begin =
-                        ({{ struct_name}}::{{field.id}}_dynamic_t::value_type*) aTo;
-        {{ struct_name}}::{{field.id}}_dynamic_t::value_type * _to = _begin;
+        if(_{{ field.id }}_len_byte > aMaxSize)
+           return NULL;
+
+        _ptr_{{field.id}}_t const _begin = (_ptr_{{field.id}}_t) aTo;
+        _ptr_{{field.id}}_t  _to = _begin;
 
         for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
         {
                 *(_to++) = aObject.{{ field.id }}[i];
         }
         DCHECK_EQ(_{{ field.id }}_len,_to-_begin);
-        aTo += _{{ field.id }}_len
-                * sizeof(typename {{ struct_name}}::{{field.id}}_dynamic_t::value_type);
-        DCHECK_EQ(aTo,(NSHARE::CBuffer::pointer)_to);
+
+        aTo += _{{ field.id }}_len_byte;
+        DCHECK_EQ(aTo,(char*)_to);
     }
         {% endfor %}
     return aTo;
@@ -328,33 +337,34 @@ char const* deserialize_fields<{{ struct_name_dyanamic}}, {{ struct_name}}>
         }
         DCHECK_EQ(_{{ field.id }}_len, _from-_begin);
         aPtr += _{{ field.id }}_len
-           * sizeof(typename {{ struct_name}}::{{field.id}}_dynamic_t::value_type);
+           * sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type);
         DCHECK_EQ(aPtr,(char const*)_from);
     }
     {% endfor %}
     return aPtr;
 }
-#endif // #ifdef SHARE_BUFFER_DEFINED
+
 }
-#ifdef SHARE_BUFFER_DEFINED
 template<>
-inline NSHARE::CBuffer& serialize_binary<{{ struct_name }}>(NSHARE::CBuffer& aTo,
-    {{ struct_name }} const& aObject
-    )
+inline char* serialize_binary<{{ struct_name }}>(char* aTo,unsigned aMaxSize,
+    {{ struct_name }} const& aObject)
 {
-    unsigned const _first = aTo.size();
-    unsigned const _size = impl::get_full_size<{{ struct_name }}>(aObject);
-    aTo.resize(aTo.size() + _size);
+    char* const _begin = aTo;
+    if( sizeof({{ struct_name_dyanamic}}) > aMaxSize )
+    {
+        return  NULL;
+    }
+    {{ struct_name_dyanamic}}* const _head_ptr = new( aTo )
+            {{ struct_name_dyanamic}}(aObject);
+    aTo += sizeof({{ struct_name_dyanamic}});
 
-    NSHARE::CBuffer::pointer const _begin = aTo.ptr()+_first;
-	NSHARE::CBuffer::pointer _p = _begin;
-
-    {{ struct_name_dyanamic}}* const _head_ptr = new( _p) {{ struct_name_dyanamic}}(aObject);
-    _p += sizeof({{ struct_name_dyanamic}});
-
-    _p = impl::serialize_fields<{{ struct_name_dyanamic}},{{ struct_name }}>(_p, _head_ptr, aObject);
-
-    DCHECK_EQ(_size, (_p-_begin));
+    aTo = impl::serialize_fields<{{ struct_name_dyanamic}},{{ struct_name }}>(aTo,
+        aMaxSize - sizeof({{ struct_name_dyanamic}}), _head_ptr, aObject);
+#ifndef NDEBUG
+    if(aTo != NULL)
+        DCHECK_EQ(get_full_size<{{ struct_name }}>(aObject), (aTo-_begin));
+#endif
+    fill_header<{{ struct_name_dyanamic}}>( _head_ptr );
     return aTo;
 }
 template<>
@@ -374,11 +384,10 @@ inline {{ struct_name }}& deserialize_binary<{{ struct_name }}>({{ struct_name }
         _p = impl::deserialize_fields<{{ struct_name_dyanamic}},{{ struct_name }}>(aTo, _val, _p);
 
         DCHECK_EQ(_buf_size, (_p-aBegin));
-        DCHECK_EQ(_buf_size, impl::get_full_size<{{ struct_name }}>(aTo));
+        DCHECK_EQ(_buf_size,get_full_size<{{ struct_name }}>(aTo));
     }
     return aTo;
 }
-#endif // #ifdef SHARE_BUFFER_DEFINED
 {% endif %}
 {% endmacro %}
 
@@ -392,21 +401,22 @@ inline {{ struct_name }}& deserialize_binary<{{ struct_name }}>({{ struct_name }
     {% endif %}
 {% endfor %}
 
-#ifdef SHARE_BUFFER_DEFINED
 {% for msg in messages %}
     {% set struct_name =  msg.___name+'_t' %}
-inline NSHARE::CBuffer& operator<<(NSHARE::CBuffer& aBuf,
+template<typename TContainer>
+inline TContainer& operator<<(TContainer& aBuf,
 		{{ struct_name }} const& aVal)
 {
-    return serialize_binary<{{ struct_name }}>(aBuf, aVal);
+    return serialize_binary<TContainer, {{ struct_name }}>(aBuf, aVal);
 }
-inline {{ struct_name }}& operator>>({{ struct_name }}& aVal,
-		NSHARE::CBuffer const& aBuf)
+template<typename TContainer>
+inline TContainer& operator>>({{ struct_name }}& aVal,
+		TContainer const& aBuf)
 {
-    return deserialize_binary<{{ struct_name }}>(aVal, aBuf);
+    return deserialize_binary<{{ struct_name }},TContainer>(aVal, aBuf);
 }
 {% endfor %}
-#endif //#ifdef SHARE_BUFFER_DEFINED
+
 }
 #endif /* {{ file_name | upper }}_H */
 {% endautoescape %}

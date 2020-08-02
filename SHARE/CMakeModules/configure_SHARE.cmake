@@ -55,7 +55,53 @@ check_function_exists(symlink HAVE_SYMLINK)
 check_cxx_source_compiles("int main() { int _b=({ int x=2;5>x;})?0: 1; return 0;}"
                         HAVE_STATEMENTS_WITH_INITIALIZER )
 
+check_cxx_source_compiles("
+#include <string>
+typedef char is_method_t;
+typedef int nobody_t;
+template<typename T>
+struct deserialize_check
+{
+	template<typename U>
+	static U test2(U const& = U(std::string()));
 
+	template<std::size_t>
+	struct dummy
+	{
+	};
+	template<typename U>
+	static is_method_t test(dummy< sizeof(test2<U>()) > *);
+
+	template<typename U> static nobody_t test(...);
+	enum
+	{
+		result = sizeof(test<T>(0))
+	};
+};
+template<typename T>
+struct serialize_check
+{
+    template<typename U,std::string::size_type (U::*)() const> struct length_{};
+
+    template <typename U> 
+    static is_method_t test(length_<U, &U::length>*);
+
+    template <typename U> static nobody_t test(...);
+    enum
+    {
+        result = sizeof(test<T>(0))
+    };
+};
+int main() { 
+char _int[  deserialize_check<int>::result - sizeof(nobody_t) + 1];
+char _str[  sizeof(nobody_t) - deserialize_check<std::string>::result  -1];
+
+char _int2[  serialize_check<int>::result - sizeof(nobody_t)  + 1];
+char _str2[  sizeof(nobody_t) - serialize_check<std::string>::result  -1];
+ return 0;}
+"
+                        CAN_USE_SFINAE_METHODS_DETECTOR )
+                        
 check_function_exists(inet_ntop HAVE_INET_NTOP)
 
 check_include_files("windows.h;winerror.h" HAVE_WINERROR_H)
@@ -77,7 +123,7 @@ include(CMakeModules/FindSharedPtr.cmake)
 find_shared_ptr()
 
 if(NOT SHARED_PTR_FOUND)
-	message(FATAL_ERROR " shared_ptr has not founded, specialize boost library search path Boost_INCLUDE_DIR ")
+	message(WARNING " shared_ptr has not founded, specialize boost library search path Boost_INCLUDE_DIR ")
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

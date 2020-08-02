@@ -97,12 +97,27 @@ def generate_source(aExitPath, aModel):
         else:
             return _rval[0]
 
+    def get_parent( aMsgs, aMsg, aIsAll=False):
+        _rval=[]
+        if '___parent' in aMsg and len(aMsg['___parent']) != 0:
+            for msg in aMsgs:
+                if int(aMsg['___parent']) == int(msg['___number']):
+                    _rval.append(msg)
+
+                    if aIsAll and len(msg['___parent']) != 0:
+                        _rval.extend(get_parent(aMsgs,msg,aIsAll))
+                    break
+        if aIsAll:
+            return _rval
+        else:
+            return _rval[0]
 
     template_env.filters['bit_field'] = bit_field
     template_env.filters['field_size'] = get_message_fields_size
     template_env.filters['full_size'] = get_message_size
     template_env.filters['logical_type'] = get_header_field_info
     template_env.filters['type_info'] = get_type_info
+    template_env.filters['parent'] = get_parent
 
 
     def gen_file(aName, aTo='', aOutName=''):
@@ -139,6 +154,9 @@ def generate_source(aExitPath, aModel):
              "src/protocol_{0}_msg_headers.h".format(str.lower(lib_name)))
     gen_file("src/protocol_serialize_binary.h", lib_path,
              "src/protocol_{0}_serialize_binary.h".format(str.lower(lib_name)))
+
+    gen_file("src/protocol_parser.h", lib_path,
+             "src/protocol_{0}_parser.h".format(str.lower(lib_name)))
 
     gen_file("src/protocol_serialize.h", lib_path,
              "src/protocol_{0}_serialize.h".format(str.lower(lib_name)))

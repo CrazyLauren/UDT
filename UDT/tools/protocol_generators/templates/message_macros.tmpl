@@ -21,7 +21,7 @@
     {
         {{ dynamic_const }},//!< 0 - message have static size in other case - 1
 {% if  '___number' in aMsg %}
-        NUMBER = eMessage::{{ aMsg.___name|upper }},//!< Message number
+        NUMBER = {{ aMsg.___name|upper }},//!< Message number
         {% for params in aMsg if not '___' in params %}
         {{ params|upper }} = {{ aMsg[params]}}, /*!< Constant value which
                                                 is used in the message header for
@@ -152,7 +152,7 @@
         {% if field.LogicalType == 'number'%}
     _is = _is && ( false //!< added to simplify the auto generator
                 {% for msg in messages %}
-        || aObject.getNumber() == eMessage::{{ msg.___name|upper }} //
+        || aObject.getNumber() == {{ msg.___name|upper }} //
                 {% endfor %}
         );
             {% elif field.LogicalType == 'unique' %}

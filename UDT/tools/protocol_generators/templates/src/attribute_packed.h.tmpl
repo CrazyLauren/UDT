@@ -10,12 +10,12 @@
 
 
 #if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED) || defined(__BORLANDC__) || defined(__LCC__)
-#	define ( ... ) __pragma(pack(push,1) ) __VA_ARGS__; __pragma( pack(pop) )
+#	define {{ attribute_packed }}( ... ) __pragma(pack(push,1) ) __VA_ARGS__; __pragma( pack(pop) )
 #elif defined( __GNUC__ ) ||defined(__QNX__)
 #	define {{ attribute_packed }}(...)  __VA_ARGS__  __attribute__((packed))
 #else
 # 	warning "The packed attribute is not defined"
-#	define {{ attribute_packed }} ( ... ) __VA_ARGS__
+#	define {{ attribute_packed }}( ... ) __VA_ARGS__
 #endif
 
 

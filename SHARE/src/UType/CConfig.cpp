@@ -1065,6 +1065,22 @@ CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
 }
 bool CConfig::sMUnitTest()
 {
+	COMPILE_ASSERT(impl::cconfig::
+			   deserialize_check<CProgramName>::result
+			   == sizeof(impl::cconfig::is_method_t),NotValidDeductName);
+	COMPILE_ASSERT(impl::cconfig::
+			   deserialize_check<int>::result
+			   == sizeof(impl::cconfig::nobody_t),
+			   NotValidDeduct);
+	{
+		CConfig _conf(impl::cconfig::ser_t<int>::serialize(5));
+
+		int const _val = impl::cconfig::
+				der_t<int>::deserialize(_conf);
+		CHECK_EQ(_val, 5);
+
+
+	}
 	{
 		CConfig _conf("test");
 		CConfig _copy(_conf);

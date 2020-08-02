@@ -57,6 +57,7 @@ public:
 	inheritances_info_t MGetInheritances() const;
     int MDataSize (const NUDT::required_header_t& aHeader) const;
 private:
+    struct parser_impl;
 };
 
 #endif /* {{ file_name | upper }}_H */

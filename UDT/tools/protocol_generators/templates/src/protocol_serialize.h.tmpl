@@ -151,13 +151,15 @@ inline bool deserialize_impl<{{ struct_name }}>({{ struct_name }}* aTo,
                                         or 'uint8_t' == field.DynamicType
                                         or 'int8_t' == field.DynamicType
                                       else ''%}
-            const NSHARE::ConfigSet& _child = aConf.MChildren("{{ field.id }}");
+            if(_tmp_{{ field.id }} > 0)
             {
+                const NSHARE::ConfigSet& _child = aConf.MChildren("{{ field.id }}");
+
                 aTo->{{ field.id }}.resize(_tmp_{{ field.id }});
 
                 NSHARE::ConfigSet::const_iterator _it = _child.begin(),
                                                 _it_end = _child.end();
-                for (unsigned i=0; i< _tmp_{{ field.id }} &&//
+                for (unsigned i=0; i< (unsigned)_tmp_{{ field.id }} &&//
                                 _it != _it_end ; ++i, ++_it)
                 {% if static_cast_dynamic_to %}
 			        aTo->{{ field.id }}[i] = ({{ field.type }})_it->MValue({{  static_cast_dynamic_to }}());
@@ -183,6 +185,9 @@ template<>
 inline {{ struct_name }} deserialize<{{ struct_name }}>(NSHARE::CConfig const& aConf)
 {
     {{ struct_name }} _tval;
+    {% if not  dynamic_msg %}
+    _tval.makeZero();
+    {% endif %}
     impl::deserialize_impl<{{ struct_name }} >(&_tval, aConf);
 	return _tval;
 }

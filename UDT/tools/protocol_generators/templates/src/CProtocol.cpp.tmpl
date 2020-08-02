@@ -4,6 +4,14 @@
 {% set file_name = 'CProtocol_' + name  %}
 {{ common.add_file_secription(file_name+'.cpp') }}
 {% autoescape false %}
+#define PROCESS_METHOD_NAME MProcess /*!< Define method which is used in
+                                        * in "{{ common.get_namespace(name) }}_parser.h"
+                                        * when returns result of buffer parsing
+                                        *
+                                        */
+#define DOESNT_USE_OPERATOR
+#define DOESNT_DESERIALIZE
+#define FORCE_CALL_METHODS
 
 #include <deftype>
 #include <udt/CParserFactory.h>
@@ -15,6 +23,7 @@
 #include "{{ common.get_namespace(name) }}_ostream.h"
 #include "{{ common.get_namespace(name) }}_serialize.h"
 #include "{{ common.get_namespace(name) }}_serialize_binary.h"
+#include "{{ common.get_namespace(name) }}_parser.h"
 
 {% set struct_header_name =  header.___name+'_t' %}
 {% set field_size = header | logical_type('size') %}
@@ -47,102 +56,41 @@ size_t {{file_name}}::MDataOffset(const NUDT::required_header_t& aHeader) const
 	/*! In the protocol the data is begun after header.*/
 	return sizeof({{ struct_header_name }});
 }
+struct {{file_name}}::parser_impl
+{
+    result_t result;
+    void PROCESS_METHOD_NAME({{ struct_header_name }} const* aHeader, bool,
+            const char* aBegin, const char* aEnd)
+    {
+        DLOG(INFO) << "Receive message #"<<aHeader->getNumber();
+		obtained_dg_t _founded_dg;
+		_founded_dg.FBegin = (const uint8_t*) aBegin;
+        _founded_dg.FEnd = (const uint8_t*) aEnd;
+
+        msg_head_t const *_phead =
+                        (msg_head_t const*) aBegin;
+
+{% if field_version_major %}
+       _founded_dg.FType.FVersion.FMajor = _phead->{{ field_version_major.id }};
+{% endif %}
+{% if field_version_minor %}
+       _founded_dg.FType.FVersion.FMinor = _phead->{{ field_version_minor.id }};
+{% endif %}
+        copy_header(({{ struct_header_name }}*)_founded_dg.FType.FMessageHeader,
+                            _phead);
+        result.push_back(_founded_dg);
+    }
+};
 {{file_name}}::result_t {{file_name}}::MParserData(
 		const uint8_t* aItBegin, const uint8_t* aItEnd,
     NSHARE::uuid_t aFrom,uint8_t aMask)
 {
-	using namespace std;
-	/*! Algorithm of Parsing buffer from aItBegin to aItEnd:*/
-	result_t _result;
-    for (; aItBegin != aItEnd;)
-	{
-		bool  _buffer_is_small=false;
-		const size_t _remain=aItEnd-aItBegin;
-		obtained_dg_t _founded_dg;
-		_founded_dg.FBegin = aItBegin;
+	parser_impl _parser;
 
-		/*! If remain of buffer is less than the message header size
-		 * wait for a new data.*/
-		if (_remain < sizeof({{ struct_header_name }}))
-			_buffer_is_small=true;
-		else
-		{
-			/*! Compare the message type and size with predefined value of #eMessage.
-			 *  If are equals then the message is founded.
-			 *  In the other case the error #E_INVALID_MSG_TYPE or #E_INVALID_MSG_SIZE
-			 *  is occured.
-			 * */
+    aItBegin = (uint8_t const*){{ common.get_namespace(name) }}::parser((char const*)aItBegin,
+            (char const*)aItEnd,&_parser);
 
-			{{ struct_header_name }} const *_phead =
-                        ({{ struct_header_name }} const*) aItBegin;
-{% if field_version_major %}
-            _founded_dg.FType.FVersion.FMajor = _phead->{{ field_version_major.id }};
-{% endif %}
-{% if field_version_minor %}
-            _founded_dg.FType.FVersion.FMinor = _phead->{{ field_version_minor.id }};
-{% endif %}
-			switch (_phead->getNumber())
-			{
-            {% for msg in messages%}
-
-                {%  set struct_name =  msg.___name+'_t' %}
-                {%  set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
-
-                case {{ struct_name }}::NUMBER:
-
-                {% if field_size %}
-                    {% if dynamic_msg %}
-                    if (_phead->getSize() < sizeof({{ struct_name }}))
-                    {% else %}
-                    if (_phead->getSize() != sizeof({{ struct_name }}))
-                    {% endif %}
-				    {
-					    aItBegin += sizeof({{ struct_header_name }});
-					    _founded_dg.FErrorCode = E_INVALID_MSG_SIZE;
-				    }
-				    else  if (_remain < _phead->getSize())
-					    _buffer_is_small = true;
-                {% else %}
-                    if (_remain < sizeof({{ struct_name }}))
-					    _buffer_is_small = true;
-                {% endif %}
-                {% if field_crc %}
-                    else if(!is_crc_valid<{{ struct_name }}>(aItBegin))
-                    {
-   					    aItBegin += sizeof({{ struct_header_name }});
-					    _founded_dg.FErrorCode = E_INVALID_MSG_CRC;
-                    }
-                {% endif %}
-				    else
-				    {
-                {% if field_size %}
-					    aItBegin += _phead->getSize();
-                {% else %}
-					    aItBegin += sizeof({{ struct_name }});
-                {% endif %}
-                        copy_header(({{ struct_header_name }}*)_founded_dg.FType.FMessageHeader,
-                            _phead);
-				    }
-                break;
-            {% endfor %}
-
-			default:
-				aItBegin = aItEnd;
-				_founded_dg.FErrorCode = E_INVALID_MSG_TYPE;
-				break;
-			}
-		}
-
-		if (_buffer_is_small)
-			break;
-		else
-		{
-			_founded_dg.FEnd = aItBegin;
-			_result.push_back(_founded_dg);
-		}
-	}
-
-	return _result;
+	return _parser.result;
 }
 std::pair<NUDT::required_header_t,bool> {{file_name}}::MHeader(
 		const NSHARE::CConfig& aFrom) const
@@ -172,6 +120,7 @@ NSHARE::CConfig {{file_name}}::MToConfig(
     using namespace std;
 
     {{ struct_header_name }} _h;
+    _h.makeZero();
 
     const unsigned _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
     memcpy(&_h,aHeader.FMessageHeader, _min_size);
@@ -311,6 +260,8 @@ int {{file_name}}::MDataSize (const required_header_t& aHeader) const
 {
     using namespace std;
     {{ struct_header_name }} _h;
+    _h.makeZero();
+
     const unsigned _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
     memcpy(&_h,aHeader.FMessageHeader, _min_size);
 

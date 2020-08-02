@@ -17,8 +17,31 @@
 #endif
 namespace NSHARE
 {
-
 class SHARE_EXPORT CConfig;
+
+/*! \brief Serialize type T
+ *
+ * The Serialized data key is equal "NAME".
+ *
+ * \param aObject Object
+ * \return Serialized object
+ * \tparam Serialized object type
+ */
+template<typename T>
+inline NSHARE::CConfig serialize(T const& aObject);
+
+/*! \brief Deserialize type T
+ *
+ * Deserialize object.
+ *
+ * @param aConf Serialized data (Child of key "NAME")
+ * @return Deserialized object
+ * @tparam Deserialized type
+ */
+template<typename T>
+inline T deserialize(NSHARE::CConfig const& aConf);
+
+
 class CBuffer;
 typedef std::vector<CConfig> ConfigSet;
 
@@ -56,17 +79,7 @@ public:
 	//with T=CConfig. As the value is to be serialized by CConfig(const CText& key, const T& value)
 
 	template<class T>
-	CConfig(const CText& key, const T& value) :
-		FData(key)
-	{
-#ifdef		NUM_TO_STRING_EXIST
-		FData.MWrite().FValue=to_string<T>(value);
-#else
-		std::stringstream out;
-		out << value;
-		FData.MWrite().FValue=out.str();
-#endif
-	}
+	CConfig(const CText& key, const T& value);
 
 	CConfig(const CConfig& rhs);
 
@@ -121,21 +134,8 @@ public:
 	void MValue(CBuffer & aTo) const;
 
 	template<typename T>
-	T MValue(T _val=T()) const
-	{
-#ifdef FROM_STRING_EXIST
-		bool _is = from_string(MValue(), _val);
-		LOG_IF(ERROR, !_is) << "Cannot convert " << MValue() << " to "
-		<< CTypeInfo(CTypeInfo::_info<T>());
-		(void)_is;
-#else
-		std::istringstream _stream(MValue().MToStdString());
-		if (!_stream.eof())
-			_stream >> _val;
-		LOG_IF(ERROR, _stream.fail()) << "Cannot convert " << MValue();
-#endif
-		return _val;
-	}
+	T MValue(T _val=T()) const;
+
 	// populates a primitive value.
 	template<typename T>
 	T MValue(const CText& key, T const& fallback) const
@@ -209,17 +209,7 @@ public:
 	}
 #endif
 	template<typename T>
-	CConfig& MAdd(const CText& key, const T& value)
-	{
-#ifdef		NUM_TO_STRING_EXIST
-		FData.MWrite().FChildren.push_back(CConfig(key, to_string<T>(value)));
-#else
-		std::stringstream out;
-		out << value;
-		FData.MWrite().FChildren.push_back(CConfig(key, out.str()));
-#endif
-		return *this;
-	}
+	CConfig& MAdd(const CText& key, const T& value);
 
 	CConfig&  MAdd(const CText& key,void const* aTo,size_t aMaxLen);
 	CConfig&  MAddTo(const CText& key,CBuffer const & aTo);
@@ -248,18 +238,7 @@ public:
 			MAdd(*_it);
 	}
 	template<typename T>
-	CConfig& MUpdate(const CText& key, const T& value)
-	{
-#ifdef		NUM_TO_STRING_EXIST
-		return MUpdate(CConfig(key, to_string<T>(value)));
-#else
-		std::stringstream out;
-		out << value;
-		return MUpdate(CConfig(key, out.str()));
-#endif
-
-	}
-
+	CConfig& MUpdate(const CText& key, const T& value);
 
 	CConfig& MUpdate(const CConfig& conf)
 	{
@@ -306,11 +285,11 @@ public:
 		CConfig const& _child = MChild(key);
 		if (_child.MValue().empty())
 			return false;
-		else		
+		else
 		{
 			output = _child.MValue<T>(output);
 			return true;
-		}		
+		}
 	}
 
 	/*!\brief Update the Value if key is exist
@@ -356,6 +335,7 @@ public:
 private:
 	struct SHARE_EXPORT data_t
 	{
+
 		data_t(){
 			;
 		}
@@ -374,6 +354,178 @@ private:
 
 	CCOWPtr<data_t> FData;
 };
+namespace impl
+{
+namespace cconfig
+{
+template<class T>
+inline NSHARE::CConfig serialize_standard_types(T const& aObject)
+{
+	NSHARE::CConfig _conf;
+	#ifdef		NUM_TO_STRING_EXIST
+	_conf.MValue()=to_string<T>(aObject);
+#else
+	std::stringstream out;
+	out << aObject;
+	_conf.MValue() = out.str();
+#endif
+	return _conf;
+}
+template<class T>
+inline T deserialize_standard_types(NSHARE::CConfig const& aConf)
+{
+	T _val;
+#ifdef FROM_STRING_EXIST
+	bool _is = from_string(aConf.MValue(), _val);
+	LOG_IF(ERROR, !_is) << "Cannot convert " << aConf.MValue() << " to "
+	<< CTypeInfo(CTypeInfo::_info<T>());
+	(void)_is;
+#else
+	std::istringstream _stream(aConf.MValue().MToStdString());
+	if (!_stream.eof())
+		_stream >> _val;
+	LOG_IF(ERROR, _stream.fail()) << "Cannot convert " << aConf.MValue();
+#endif
+	return _val;
+}
+typedef char is_method_t;
+typedef int nobody_t;
+
+template<typename T>
+struct serialize_check
+{
+#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
+    template<typename U,NSHARE::CConfig (U::*)() const> struct serialize_1{};
+    template<typename U,NSHARE::CConfig const& (U::*)() const> struct serialize_2{};
+
+    template <typename U> static is_method_t test(serialize_1<U, &U::MSerialize>*);
+    template <typename U> static is_method_t test(serialize_2<U, &U::MSerialize>*);
+#endif
+    template <typename U> static nobody_t test(...);
+    enum
+    {
+        result = sizeof(test<T>(0))
+    };
+};
+template <typename T, unsigned = serialize_check<T>::result >
+struct ser_t
+{
+	template <typename U>
+	static
+	inline NSHARE::CConfig serialize(U const& aObject)
+	{
+		return aObject.MSerialize();
+	}
+};
+template <typename T >
+struct ser_t<T, sizeof(nobody_t)>
+{
+	template <typename U>
+	static
+	inline NSHARE::CConfig serialize(U const& aObject)
+	{
+		return serialize_standard_types<U>(aObject);
+	}
+};
+template<typename T>
+struct deserialize_check
+{
+#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
+	template<typename U>
+	static U test2(U const& = U(NSHARE::CConfig()));
+
+	template<std::size_t>
+	struct dummy
+	{
+	};
+	template<typename U>
+	static is_method_t test(dummy< sizeof(test2<U>()) > *);
+#endif
+	template<typename U> static nobody_t test(...);
+	enum
+	{
+		result = sizeof(test<T>(0))
+	};
+};
+template <typename T, unsigned = deserialize_check<T>::result >
+struct der_t
+{
+	//template <typename U>
+	static
+	inline T deserialize(NSHARE::CConfig const& aConf)
+	{
+		return T(aConf);
+	}
+};
+template <typename T >
+struct der_t<T, sizeof(nobody_t)>
+{
+	//template <typename U>
+	static
+	inline T deserialize(NSHARE::CConfig const& aConf)
+	{
+		return deserialize_standard_types<T>(aConf);
+	}
+};
+}
+};
+template<typename T>
+inline NSHARE::CConfig serialize(T const& aObject)
+{
+	return impl::cconfig::ser_t<T>::serialize(aObject);
+}
+template<typename T>
+inline T deserialize(NSHARE::CConfig const& aConf)
+{
+	typedef impl::cconfig::der_t<T> _t;
+	return _t::deserialize(aConf);
+	//return T(aConf);
+}
+
+/*
+#define SPECIALIZE_SERIALIZE_FOR(aDATA_TYPE)\
+template<>\
+inline NSHARE::CConfig serialize<aDATA_TYPE>(aDATA_TYPE const& aObject)\
+{\
+	return serialize_standard_types<aDATA_TYPE>(aObject);\
+}\
+template<>\
+inline aDATA_TYPE deserialize(NSHARE::CConfig const& aConf)\
+{\
+	return deserialize_standard_types<aDATA_TYPE>(aConf);\
+}
+*/
+
+/*SPECIALIZE_SERIALIZE_FOR(bool)
+SPECIALIZE_SERIALIZE_FOR(unsigned char)
+SPECIALIZE_SERIALIZE_FOR(signed char)
+SPECIALIZE_SERIALIZE_FOR(unsigned short int)
+SPECIALIZE_SERIALIZE_FOR(short int)
+SPECIALIZE_SERIALIZE_FOR(unsigned int)
+SPECIALIZE_SERIALIZE_FOR(int)
+SPECIALIZE_SERIALIZE_FOR(long int)
+SPECIALIZE_SERIALIZE_FOR(unsigned long int)
+#if __cplusplus >= 201103L
+SPECIALIZE_SERIALIZE_FOR(unsigned long long)
+SPECIALIZE_SERIALIZE_FOR(long long int)
+#endif
+SPECIALIZE_SERIALIZE_FOR(double)
+SPECIALIZE_SERIALIZE_FOR(float)
+SPECIALIZE_SERIALIZE_FOR(long double)*/
+
+template<class T>
+inline CConfig::CConfig(const CText& key, const T& value) :
+	FData(serialize<T>(value).FData)
+{
+	MKey() = key;
+//#ifdef NUM_TO_STRING_EXIST
+//	FData.MWrite().FValue=to_string<T>(value);
+//#else
+//	std::stringstream out;
+//	out << value;
+//	FData.MWrite().FValue=out.str();
+//#endif
+}
 
 #ifdef SMART_FIELD_EXIST
 // specialization for Config
@@ -427,11 +579,41 @@ bool CConfig::MGetIfSet<CConfig>(const CText& key,
 	else
 		return false;
 }
+template<typename T> inline
+CConfig& CConfig::MAdd(const CText& key, const T& value)
+{
+	FData.MWrite().FChildren.push_back(CConfig(key, serialize<T>(value)));
+//#ifdef		NUM_TO_STRING_EXIST
+//	FData.MWrite().FChildren.push_back(CConfig(key, to_string<T>(value)));
+//#else
+//	std::stringstream out;
+//	out << value;
+//	FData.MWrite().FChildren.push_back(CConfig(key, out.str()));
+//#endif
+	return *this;
+}
 template<> inline
 CConfig& CConfig::MAdd<CText>(const CText& key, const CText& value)
 {
 	FData.MWrite().FChildren.push_back(CConfig(key, value));
 	return *this;
+}
+template<typename T>
+inline T CConfig::MValue(T _val) const
+{
+	return MIsOnlyKey()? _val: deserialize<T>(*this);
+//#ifdef FROM_STRING_EXIST
+//	bool _is = from_string(MValue(), _val);
+//	LOG_IF(ERROR, !_is) << "Cannot convert " << MValue() << " to "
+//	<< CTypeInfo(CTypeInfo::_info<T>());
+//	(void)_is;
+//#else
+//	std::istringstream _stream(MValue().MToStdString());
+//	if (!_stream.eof())
+//		_stream >> _val;
+//	LOG_IF(ERROR, _stream.fail()) << "Cannot convert " << MValue();
+//#endif
+//	return _val;
 }
 template<> inline
 CText CConfig::MValue<CText>(CText _val) const
@@ -446,6 +628,20 @@ CConfig& CConfig::MAdd<CBuffer>(const CText& key,CBuffer const & aTo)
 {
 	return MAddTo(key,aTo);
 }
+template<typename T> inline
+CConfig& CConfig::MUpdate(const CText& key, const T& value)
+{
+	return MUpdate(CConfig(key, serialize<T>(value)));
+//#ifdef		NUM_TO_STRING_EXIST
+//	return MUpdate(CConfig(key, to_string<T>(value)));
+//#else
+//	std::stringstream out;
+//	out << value;
+//	return MUpdate(CConfig(key, out.str()));
+//#endif
+
+}
+
 template<> inline
 CConfig& CConfig::MUpdate<CText>(const CText& key, const CText& value)
 {
