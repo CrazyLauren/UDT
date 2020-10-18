@@ -497,8 +497,9 @@ namespace NSHARE
 				scheduling((eSched)0),
 				cpu_number(CThread::sMNumberOfProcessor())
 	{
-		aConf.MGetIfSet(PRIORITY, priority);
 		unsigned _val=0;
+		if(aConf.MGetIfSet(PRIORITY, _val))
+			priority = static_cast<eThreadPriority>(_val);
 		if(aConf.MGetIfSet<unsigned>(SCHEDULING, _val))
 			scheduling=(eSched)_val;
 		aConf.MGetIfSet(CPU_NUMBER, cpu_number);

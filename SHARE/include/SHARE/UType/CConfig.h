@@ -18,7 +18,8 @@
 namespace NSHARE
 {
 class SHARE_EXPORT CConfig;
-
+#ifndef SERIALIZE_TEMPLATE_IS_DEFINED
+#  define SERIALIZE_TEMPLATE_IS_DEFINED
 /*! \brief Serialize type T
  *
  * The Serialized data key is equal "NAME".
@@ -41,6 +42,12 @@ inline NSHARE::CConfig serialize(T const& aObject);
 template<typename T>
 inline T deserialize(NSHARE::CConfig const& aConf);
 
+template<typename T>
+inline T deserialize(NSHARE::CConfig const& aConf,NSHARE::IAllocater* aAllocator)
+{
+	return deserialize<T>(aConf);
+}
+#endif //#ifndef SERIALIZE_TEMPLATE_IS_DEFINED
 
 class CBuffer;
 typedef std::vector<CConfig> ConfigSet;
@@ -345,6 +352,7 @@ private:
 		CText FKey;
 		CText FValue;
 		ConfigSet FChildren;
+		bool operator==(const data_t& __lhs) const;
 	};
 	template<class T>
 	inline void MReadFrom(T const&, bool aFirst = true); //ptree - boost
@@ -353,6 +361,8 @@ private:
 	inline void MWriteTo(T&, bool aFirst = true) const; //ptree - boost
 
 	CCOWPtr<data_t> FData;
+
+	friend bool operator==(const CConfig& __lhs, const CConfig& __rhs);
 };
 namespace impl
 {
@@ -404,7 +414,11 @@ struct serialize_check
     template <typename U> static nobody_t test(...);
     enum
     {
+#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
         result = sizeof(test<T>(0))
+#else
+		result = sizeof(nobody_t)
+#endif	//	#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
     };
 };
 template <typename T, unsigned = serialize_check<T>::result >
@@ -432,6 +446,19 @@ struct deserialize_check
 {
 #ifdef CAN_USE_SFINAE_METHODS_DETECTOR
 	template<typename U>
+	static is_method_t test(U const& );
+#endif
+	template<typename U> static nobody_t test(...);
+	enum
+	{
+#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
+        result = sizeof(test<T>(NSHARE::CConfig()))
+#else
+		result = sizeof(is_method_t)
+#endif	//	#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
+	};
+	/*#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
+	template<typename U>
 	static U test2(U const& = U(NSHARE::CConfig()));
 
 	template<std::size_t>
@@ -442,11 +469,128 @@ struct deserialize_check
 	static is_method_t test(dummy< sizeof(test2<U>()) > *);
 #endif
 	template<typename U> static nobody_t test(...);
-	enum
+	enum eConstant
 	{
 		result = sizeof(test<T>(0))
+	};*/
+};
+template<>
+struct deserialize_check<bool>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
 	};
 };
+template<>
+struct deserialize_check<unsigned char>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<signed char>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<unsigned short int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<short int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<unsigned int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<unsigned long int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<long int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+#ifdef SIZE_OF_LONG_LONG_INT
+template<>
+struct deserialize_check<long long int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+template<>
+struct deserialize_check<unsigned long long int>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+#endif
+template<>
+struct deserialize_check<double>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+#ifdef SIZE_OF_LONG_DOUBLE
+template<>
+struct deserialize_check<long double>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+#endif
+template<>
+struct deserialize_check<float>
+{
+	enum
+	{
+		result = sizeof(nobody_t)
+	};
+};
+
 template <typename T, unsigned = deserialize_check<T>::result >
 struct der_t
 {
@@ -481,7 +625,16 @@ inline T deserialize(NSHARE::CConfig const& aConf)
 	return _t::deserialize(aConf);
 	//return T(aConf);
 }
-
+/** Serailize specialization for CBuffer
+ *
+ * @note defined in CConfig, realized in CBuffer
+ */
+SHARE_EXPORT NSHARE::CConfig serialize_cbuffer(NSHARE::CBuffer const& aObject);
+template<>
+inline NSHARE::CConfig serialize<NSHARE::CBuffer>(NSHARE::CBuffer const& aObject)
+{
+	return serialize_cbuffer(aObject);
+}
 /*
 #define SPECIALIZE_SERIALIZE_FOR(aDATA_TYPE)\
 template<>\
@@ -620,9 +773,16 @@ CText CConfig::MValue<CText>(CText _val) const
 {
 	return MValue();
 }
-template<>
-CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const;
-
+//template<>
+//CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const;
+#ifdef SHARE_BUFFER_DEFINED
+template<> inline
+CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
+{
+	MValue(_val);
+	return _val;
+}
+#endif
 template<> inline
 CConfig& CConfig::MAdd<CBuffer>(const CText& key,CBuffer const & aTo)
 {
@@ -657,6 +817,15 @@ CConfig& CConfig::MUpdate<CConfig>(const CText& key, const CConfig& conf)
 	temp.MKey() = key;
 	return MAdd(temp);
 }
+inline bool operator==(const CConfig& __lhs, const CConfig& __rhs)
+{
+	return __lhs.FData == __rhs.FData;
+}
+inline bool operator!=(const CConfig& __lhs, const CConfig& __rhs)
+{
+	return !operator==(__lhs, __rhs);
+}
+
 } /* namespace NSHARE */
 namespace std
 {

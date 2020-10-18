@@ -1,0 +1,28 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+{% import "base_macros.tmpl" as common %}
+{% set file_name = 'main'%}
+{{ common.add_file_secription(file_name+'.cpp') }}
+{% autoescape false %}
+#include <deftype>
+
+#include "{{ common.get_namespace(name) }}_test_generator.h"
+#include "serialize_test_{{ name | lower }}.h"
+#include "subscriber_test_{{ name | lower }}.h"
+#include "parser_test_{{ name | lower }}.h"
+
+using namespace NUDT;
+
+using namespace {{ common.get_namespace(name) }};
+using namespace {{ common.get_namespace(name) }}::test;
+
+int main(int argc, char const*argv[])
+{
+    init_trace(argc, argv);
+    bool _is = serialize_test();
+    _is = _is && parser_test();
+    _is = _is && subscriber_test(argc, argv);
+
+	return _is ? EXIT_SUCCESS: EXIT_FAILURE;
+}
+{% endautoescape %}

@@ -19,4 +19,4 @@ function udt_info(aPanel)
         _table.appendTo(aPanel);
     });
 }
-;
+

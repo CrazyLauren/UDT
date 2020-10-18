@@ -201,20 +201,20 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 #ifdef 	LOGTOSTDERR
 	IS_OPT(LOGTOSTDERR)
 	{
-		FLAGS_logtostderr= !FLAGS_logtostderr;
+		sMSetLogToStdErr(!FLAGS_logtostderr);
 	}
 #endif
 //
 #ifdef 	ALSOLOGTOSTDERR
 	IS_OPT(ALSOLOGTOSTDERR)
 	{
-		FLAGS_alsologtostderr= !FLAGS_alsologtostderr;
+		sMSetLogAlsoToStdErr(!FLAGS_alsologtostderr);
 	}
 #endif
 #ifdef 	COLORLOGTOSTDERR
 	IS_OPT(COLORLOGTOSTDERR)
 	{
-		FLAGS_colorlogtostderr= !FLAGS_colorlogtostderr;
+		sMSetColorLogToStdErr(!FLAGS_colorlogtostderr);
 	}
 #endif
 
@@ -225,14 +225,14 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
 
-		FLAGS_stderrthreshold= atoi(value.c_str());
+		sMSetStdErrThreshold( atoi(value.c_str()));
 	}
 #endif
 
 #ifdef 	LOG_PREFIX
 	IS_OPT(LOG_PREFIX)
 	{
-		FLAGS_log_prefix= !FLAGS_log_prefix;
+		sMSetLogPrefix(!FLAGS_log_prefix);
 	}
 #endif
 
@@ -242,7 +242,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_logbuflevel= atoi(value.c_str());
+		sMSetLogBufLevel( atoi(value.c_str()));
 	}
 #endif
 
@@ -252,7 +252,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_logbufsecs= atoi(value.c_str());
+		sMSetLogBufSecs( atoi(value.c_str()));
 	}
 #endif
 
@@ -263,15 +263,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
 		std::string _str(value);
-		if (_str == "info")
-			FLAGS_minloglevel= INFO;
-			else if (_str == "warning")
-			FLAGS_minloglevel = WARNING;
-			else if (_str == "error")
-			FLAGS_minloglevel = ERROR;
-			else if (_str == "fatal")
-			FLAGS_minloglevel = FATAL;
-			else
+		if (!sMSetMinLogLevel(_str))
 			throw TCLAP::ArgParseException(
 					std::string("Option: ")
 					+ aOption
@@ -286,7 +278,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_log_dir= value.c_str();
+		sMSetLogDir(value);
 	}
 #endif
 
@@ -296,7 +288,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_log_link= value.c_str();
+		sMSetLogLink( value);
 	}
 #endif
 
@@ -307,7 +299,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_v= atoi(value.c_str());
+		sMSetVLevel(atoi(value.c_str()));
 	}
 #endif
 
@@ -317,14 +309,14 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_max_log_size= atoi(value.c_str());
+		sMSetMaxLogSize( atoi(value.c_str()));
 	}
 #endif
 
 #ifdef 	TOSYSLOG
 	IS_OPT(TOSYSLOG)
 	{
-		FLAGS_tosyslog= !FLAGS_tosyslog;
+		sMSetLogToSysLog( !FLAGS_tosyslog);
 	}
 #endif
 
@@ -335,17 +327,11 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption
 							+ "- must have value. Format =10.0.0.1:5002");
-		std::string _str(value.c_str());
-		size_t _pos = _str.find_first_of(':');
-		if (_pos == _str.npos)
+
+		if (!sMSetLogToServer(value, !FLAGS_toserver))
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption
 							+ "- must have value. Format =10.0.0.1:5002");
-		unsigned _begin = _str[0] == '"' ? 1 : 0;
-		FLAGS_server_ip= _str.substr(_begin, _pos);
-		FLAGS_server_port= atoi(
-				_str.substr(_pos + 1, _str.length()-_pos-1-_begin).c_str());
-		FLAGS_toserver= !FLAGS_toserver;
 	}
 #endif
 
@@ -355,26 +341,7 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-#	ifdef GLOG
-		google::SetLogDestination(INFO,
-				std::string(
-						FLAGS_log_dir + "/" + value
-						+ ".INFO").c_str());
-		google::SetLogDestination(WARNING,
-				std::string(
-						FLAGS_log_dir + "/" + value
-						+ ".WARNING").c_str());
-		google::SetLogDestination(ERROR,
-				std::string(
-						FLAGS_log_dir + "/" + value
-						+ ".ERROR").c_str());
-		google::SetLogDestination(FATAL,
-				std::string(
-						FLAGS_log_dir + "/" + value
-						+ ".FATAL").c_str());
-#	else
-		FLAGS_file_name= aOption;
-#	endif
+		sMSetFileName(value);
 	}
 #endif
 
@@ -384,20 +351,14 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		NSHARE::CText _str(value);
-		_str.MReplaceAll("\"", ""); //erase all "
-		//_str.fin
-#	ifdef GLOG
-		_str.MReplaceAll(";",",");
-#	endif
-		FLAGS_vmodule= _str.MToStdString();
+		sMSetModule(value);
 	}
 #endif
 
 #ifdef 	OUTPUT_FUNC
 	IS_OPT(OUTPUT_FUNC)
 	{
-		FLAGS_output_func_name=!FLAGS_output_func_name;
+		sMSetLogOutputFunc(!FLAGS_output_func_name);
 	}
 #endif
 #ifdef TO_SOCKET
@@ -406,15 +367,14 @@ void CShareLogArgsParser::MHandleValue(const std::string& aOption,
 		if (value.empty())
 			throw TCLAP::ArgParseException(
 					std::string("Option: ") + aOption + "- must have value.");
-		FLAGS_tosocket=true;
-		FLAGS_socket_setting=value;
+		sMSetToSocket(value);
 	}
 #endif
 
 #ifdef SHORT_FILE_NAME
 	IS_OPT(SHORT_FILE_NAME)
 	{
-		FLAGS_short_name=!FLAGS_short_name;
+		sMSetLogShortFileName(!FLAGS_short_name);
 	}
 #endif
 	if (!_is)
@@ -585,6 +545,201 @@ std::string CShareLogArgsParser::shortID(const std::string& val) const
 std::string CShareLogArgsParser::longID(const std::string& val) const
 {
 	return Arg::longID("option[,option]...");
+}
+bool CShareLogArgsParser::sMSetLogToStdErr(bool const& value)
+{
+#ifdef LOGTOSTDERR
+	FLAGS_logtostderr= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogAlsoToStdErr(bool const& value)
+{
+#ifdef ALSOLOGTOSTDERR
+	FLAGS_alsologtostderr = value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetColorLogToStdErr(bool const& value)
+{
+#ifdef COLORLOGTOSTDERR
+	FLAGS_colorlogtostderr = value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetStdErrThreshold(int const& value)
+{
+#ifdef STDERRTHRESHOLD
+	FLAGS_stderrthreshold = value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogPrefix(bool const& value)
+{
+#ifdef LOG_PREFIX
+	FLAGS_log_prefix= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogBufLevel(int const& value)
+{
+#ifdef LOGBUFLEVEL
+	FLAGS_logbuflevel = value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogBufSecs(int const& value)
+{
+#ifdef LOGBUFSECS
+	FLAGS_logbufsecs = value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetMinLogLevel(std::string const& value)
+{
+#ifdef MINLOGLEVEL
+	std::string _str(value);
+	if (_str == "info")
+		FLAGS_minloglevel= INFO;
+		else if (_str == "warning")
+		FLAGS_minloglevel = WARNING;
+		else if (_str == "error")
+		FLAGS_minloglevel = ERROR;
+		else if (_str == "fatal")
+		FLAGS_minloglevel = FATAL;
+		else
+		return false;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogDir(std::string const& value)
+{
+#ifdef LOG_DIR
+	FLAGS_log_dir= value.c_str();
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogLink(std::string const& value)
+{
+#ifdef LOG_LINK
+	FLAGS_log_link= value.c_str();
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetVLevel(int const& value)
+{
+#ifdef V_LEVEL
+	FLAGS_v= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetMaxLogSize(int const& value)
+{
+#ifdef MAX_LOG_SIZE
+	FLAGS_max_log_size= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogToSysLog(bool const& value)
+{
+#ifdef TOSYSLOG
+	FLAGS_tosyslog= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogToServer(std::string const& _str, bool aVal)
+{
+#ifdef TOSERVER
+	size_t _pos = _str.find_first_of(':');
+	if (_pos == _str.npos)
+		return false;
+	unsigned _begin = _str[0] == '"' ? 1 : 0;
+	FLAGS_server_ip= _str.substr(_begin, _pos);
+	FLAGS_server_port= atoi(
+			_str.substr(_pos + 1, _str.length()-_pos-1-_begin).c_str());
+	FLAGS_toserver= aVal;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetFileName(std::string const& value)
+{
+#ifdef FILE_NAME
+#	ifdef GLOG
+		google::SetLogDestination(INFO,
+				std::string(
+						FLAGS_log_dir + "/" + value
+						+ ".INFO").c_str());
+		google::SetLogDestination(WARNING,
+				std::string(
+						FLAGS_log_dir + "/" + value
+						+ ".WARNING").c_str());
+		google::SetLogDestination(ERROR,
+				std::string(
+						FLAGS_log_dir + "/" + value
+						+ ".ERROR").c_str());
+		google::SetLogDestination(FATAL,
+				std::string(
+						FLAGS_log_dir + "/" + value
+						+ ".FATAL").c_str());
+#	else
+		FLAGS_file_name= value;
+#	endif
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetModule(std::string const& value)
+{
+#ifdef VMODULE_ARG
+	NSHARE::CText _str(value);
+	_str.MReplaceAll("\"", ""); //erase all "
+	//_str.fin
+#	ifdef GLOG
+	_str.MReplaceAll(";",",");
+#	endif
+	FLAGS_vmodule= _str.MToStdString();
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogOutputFunc(bool const& value)
+{
+#ifdef OUTPUT_FUNC
+	FLAGS_output_func_name= value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetToSocket(std::string const& value)
+{
+#ifdef TO_SOCKET
+	FLAGS_tosocket=true;
+	FLAGS_socket_setting=value;
+	return true;
+#endif
+	return false;
+}
+bool CShareLogArgsParser::sMSetLogShortFileName(bool const& value)
+{
+#ifdef SHORT_FILE_NAME
+	FLAGS_short_name= value;
+	return true;
+#endif
+	return false;
 }
 } /* namespace NSHARE */
 

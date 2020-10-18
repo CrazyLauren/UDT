@@ -570,6 +570,18 @@ CBuffer::CBuffer(IAllocater& aAlloc, offset_pointer_t Offset, bool aCheckCrc,
 {
 	;
 }
+const CText CBuffer::NAME = "buffer";
+CBuffer::CBuffer(const CConfig& aConf):
+				BEGIN_SIZE(DEF_BUF_RESERVE), //
+				FBuffer(sMDefAllaocter(), ALLOCATE_FROM_COMMON), //
+				FIsDetached(false)
+{
+	aConf.MValue(*this);
+}
+NSHARE::CConfig serialize_cbuffer(NSHARE::CBuffer const& aObject)
+{
+	return NSHARE::CConfig(CBuffer::NAME, aObject);
+}
 CBuffer::~CBuffer()
 {
 }

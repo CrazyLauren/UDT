@@ -12,9 +12,10 @@
 #ifndef UDT_TYPES_H_
 #define UDT_TYPES_H_
 
-#include "udt/udt_share_macros.h"
+#include "UDT/udt_share_macros.h"
 namespace NUDT
 {
+#define UDT_MAX_MESSAGE_HEADER_SIZE 8
 /*!\brief A header of the requirement message
  *
  * The size of the message header is 8 byte.
@@ -42,7 +43,7 @@ struct UDT_SHARE_EXPORT required_header_t
 		{
 			uint32_t FNumber;///<Useful fields for assignment message type
 		};
-		uint8_t FMessageHeader[8];///< A message header
+		uint8_t FMessageHeader[UDT_MAX_MESSAGE_HEADER_SIZE];///< A message header
 	};
 
 	/*!\brief The default constructor creates
@@ -158,7 +159,7 @@ inline required_header_t::required_header_t(T const& aHeader,
 		NSHARE::version_t const& aVer)://
 			FVersion(aVer)//
 {
-#ifdef COMPILE_ASSERT
+#if defined( COMPILE_ASSERT) && !defined(NDEBUG)
 	COMPILE_ASSERT(sizeof(T)<=sizeof(FMessageHeader),InvalideSizeOfHeader);
 #endif
 	const unsigned _size =

@@ -14,7 +14,8 @@
 #include <SHARE/crc8.h>
 #include <SHARE/crc16.h>
 #include <time.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
+#include <UDT/udt_types.h>
 #ifndef SHARED_PACKED
 #include <macro_attributes.h>
 #endif
@@ -417,7 +418,8 @@ SHARED_PACKED(struct user_data_header_t
 	uint32_t FDataSize;
 	//40
 });
-COMPILE_ASSERT(sizeof(user_data_header_t) == (8*5), InvalidSizeOfUserData);
+COMPILE_ASSERT(sizeof(user_data_header_t) == (8*4 + UDT_MAX_MESSAGE_HEADER_SIZE), InvalidSizeOfUserData);
+
 inline user_data_header_t::user_data_header_t()
 {
 	memset(this,0,sizeof (*this));

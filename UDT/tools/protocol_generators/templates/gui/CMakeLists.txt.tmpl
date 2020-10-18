@@ -1,0 +1,8 @@
+{% set gui_file_name = name|lower + '.js'  %}
+if(NOT UDT_INSTALL_GUI_PATH)
+    set(UDT_INSTALL_GUI_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/gui")
+endif()
+install(FILES   {{ gui_file_name }}
+				DESTINATION "${UDT_INSTALL_GUI_PATH}/js/parser"
+                COMPONENT headers
+		)

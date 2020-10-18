@@ -59,6 +59,25 @@ public:
 
 	bool argMatches(const std::string& argFlag) const;
 	static std::string sMGetDescription();
+	static bool sMSetLogToStdErr(bool const& aVal);
+	static bool sMSetLogAlsoToStdErr(bool const& aVal);
+	static bool sMSetColorLogToStdErr(bool const& aVal);
+	static bool sMSetStdErrThreshold(int const& aVal);
+	static bool sMSetLogPrefix(bool const& aVal);
+	static bool sMSetLogBufLevel(int const& aVal);
+	static bool sMSetLogBufSecs(int const& aVal);
+	static bool sMSetMinLogLevel(std::string const& aVal);
+	static bool sMSetLogDir(std::string const& aVal);
+	static bool sMSetLogLink(std::string const& aVal);
+	static bool sMSetVLevel(int const& aVal);
+	static bool sMSetMaxLogSize(int const& aVal);
+	static bool sMSetLogToSysLog(bool const& aVal);
+	static bool sMSetLogToServer(std::string const& aVal, bool aVal2);
+	static bool sMSetFileName(std::string const& aVal);
+	static bool sMSetModule(std::string const& aVal);
+	static bool sMSetLogOutputFunc(bool const& aVal);
+	static bool sMSetToSocket(std::string const& aVal);
+	static bool sMSetLogShortFileName(bool const& aVal);
 private:
 	void MHandleValue(const std::string& aOption,const std::string& aValue) const;
 	void MParseValue(const std::string& aValue) const;

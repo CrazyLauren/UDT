@@ -50,6 +50,9 @@ protected:
 
 	bool MThreadSafetyLock() const;
 	bool MThreadSafetyUnLock() const;
+
+	int MRefImpl() const;
+	int MUnrefImpl() const;
 private:
 	typedef SHARED_PTR<NSHARE::CMutex> smart_mutex_t;
 	struct _w_counter_t;
@@ -72,8 +75,7 @@ private:
 	template<class T>
 	static int sMUnref(T*);
 
-	int MRefImpl() const;
-	int MUnrefImpl() const;
+
 	void MDelete() const;
 
 	mutable atomic_t FCount;

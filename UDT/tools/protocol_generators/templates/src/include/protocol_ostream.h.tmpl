@@ -1,0 +1,156 @@
+{% set file_name = 'protocol_' + name | lower + '_ostream' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <ostream>
+#include <sstream>
+#include <{{ name | upper }}/config/config.h>
+#include "{{ common.get_namespace(name) }}.h"
+
+namespace std
+{
+{% macro generate_ostream(aMsg, aParentArray) %}
+{% set aParent =  aParentArray[0] if aParentArray else None %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+
+inline std::ostream& operator<<(std::ostream & aStream,
+    {{ common.get_namespace(name) }}::{{ struct_name }} const& aVal)
+{
+    using namespace {{ common.get_namespace(name) }};
+
+    {% if parent_name %}
+    aStream << static_cast< {{ parent_name }} const & >(aVal) << std::endl;
+    {% endif %}
+
+    {% for field in aMsg.___fields|fields(True) %}
+        {% if field.id %}
+            {% set _cast = field|castto %}
+            {% set need_cast_to = '('+_cast+')' if _cast else ''%}
+                {% if 'array_len' in field and field.array_len  > 0 %}
+    aStream << "{{  field.id }} : ";
+    for (unsigned i = 0; i < sizeof(aVal.{{ field.id }})/sizeof(aVal.{{ field.id }}[0]); ++i)
+    {
+        if(i!=0)
+            aStream <<", ";
+        aStream << {{ need_cast_to }} aVal.{{ field.id }}[i];
+    }
+    aStream << std::endl;
+                {% elif field.LogicalType|string() == "dynamic array"  %}
+                    {% set _cast_d = field|castto(True) %}
+                    {% set need_cast_dynamic_to = '('+_cast_d+')' if _cast_d
+                                         else ''%}
+    {
+        unsigned const {{ field.id }}_len=aVal.{{ field.id }}.size();
+
+        if ( {{ field.id }}_len >0)
+            aStream << "{{  field.id }} : ";
+        else
+            aStream << "{{  field.id }} :  empty ";
+
+        for (unsigned i = 0; i < {{ field.id }}_len; ++i)
+        {
+            if(i!=0)
+                aStream << ", ";
+            aStream << {{ need_cast_dynamic_to }} aVal.{{ field.id }}[i];
+        }
+        aStream << std::endl;
+    }       {%else%}
+    aStream << "{{  field.id }} = " << {{ need_cast_to }} aVal.{{ field.id }} << std::endl;
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+	return aStream;
+}
+
+{% endmacro %}
+{% macro generate_ostream_enum(aEnum) %}
+    {% set enum_name =  'e' + aEnum.___name %}
+    {% set _stream_type = 'int' if 'char'  == aEnum.type
+                                or 'uint8_t' == aEnum.type
+                                or 'int8_t' == aEnum.type
+                             else aEnum.type%}
+    {% set has_not_duplicate = aEnum.enum|length == aEnum.enumSource|length %}
+inline std::ostream& operator<<(std::ostream & aStream,
+    {{ common.get_namespace(name) }}::{{ enum_name }} const& aVal)
+{
+    using namespace {{ common.get_namespace(name) }};
+
+    switch(aVal)
+    {
+
+    {% if has_not_duplicate %}
+        {% for _enum in aEnum.enumSource %}
+            {% if _enum.id %}
+        case /*{{ enum_name }}::*/{{ _enum.id | upper }}:
+            aStream << "{{ _enum.id }}";
+            break;
+        {% endif %}
+        {% endfor %}
+    {% else %}
+#ifndef NO_DUPLICATE_ENUMERATE_WARNING
+#  warning 'The enumerate has duplicate values'
+#endif
+    {% endif %}
+        default:
+            aStream << static_cast<{{ _stream_type }}>( aVal );
+        break;
+    }
+	return aStream;
+}
+template<class _Elem, class _Traits>
+inline std::basic_istream<_Elem, _Traits>& operator>>(
+		std::basic_istream<_Elem, _Traits>& aStream, {{ common.get_namespace(name) }}::{{ enum_name }}& aTo)
+{
+    using namespace {{ common.get_namespace(name) }};
+{% if has_not_duplicate %}
+    std::string _str;
+    aStream >> _str;
+
+    {% for _enum in aEnum.enumSource %}
+        {% if _enum.id %}
+     if(_str == "{{ _enum.id }}")
+            aTo = /*{{ enum_name }}::*/{{ _enum.id | upper }};
+     else
+        {% endif %}
+    {% endfor %}
+    {/// todo optimize (check if next char is number then convert to sting or number)
+        std::istringstream ss(_str);
+        {{ _stream_type}} _val;
+	    ss >> _val;
+        if(!ss.fail())
+            aTo = static_cast<{{ enum_name }}>( _val );
+        else
+            aStream.setstate(std::istream::failbit);
+    }
+{% else %}
+    {{ _stream_type}} _val;
+    aStream >> _val;
+    if(!aStream.fail())
+        aTo = static_cast<{{ enum_name }}>( _val );
+{% endif %}
+	return aStream;
+}
+{% endmacro %}
+
+{% for val in types if not types[val].standard %}
+    {% if '___fields' in  types[val] %}
+    {{ generate_ostream(types[val]) }}
+    {% elif 'enumSource' in  types[val]%}
+    {{ generate_ostream_enum(types[val]) }}
+    {% endif %}
+{% endfor %}
+
+{{ generate_ostream(header) }}
+
+{% for msg in messages-%}
+    {{ generate_ostream(msg,msg.___parent) }}
+{% endfor %}
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

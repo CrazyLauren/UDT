@@ -1,0 +1,151 @@
+{% set file_name = 'protocol_' + name | lower %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#ifndef {{ common.get_namespace(name) | upper }}_ONLY_HEADER
+#  include <{{ name | upper }}/config/config.h>
+#  ifdef HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+{% if 'has_dynamic' in info and info.has_dynamic %}
+#    include <vector>
+{% endif %}
+#endif
+
+{% set attribute_name_packed = name|upper+'_ATTRIBUTE_PACKED'%}
+
+#ifndef {{ common.get_namespace(name)|upper }}_NOPACKED
+#  include "{{ common.get_namespace(name) }}_attribute_packed.h"
+#endif
+
+
+{% if info and 'has_float' in info and info.has_float %}
+#ifndef ___STDC_IEC_559___
+//#  warning In the protocol the float types of IEEE 754 Standard is used but ___STDC_IEC_559___ preprocessor doesn't set. May be your float type isn't of IEEE 754 Standard
+#endif
+{% endif %}
+namespace {{ common.get_namespace(name) }}
+{
+/*! Returns unique protocol name
+*
+* Recommended using a short name.
+*/
+inline char const* protocol()
+{
+    return "{{ name }}";
+}
+
+/*!\brief A message numbers of {{ name }}
+ *
+ */
+enum  eMessage
+{
+{% for msg in messages|sort(attribute='___number') %}  {{ msg.___name.rjust(20)|upper }} = {{ msg.___number }}, /*!< {{ msg.___description }} */
+{% endfor %}
+};
+
+{% macro generate_message(aMsg, aParentArray = None) %}
+{%  set aParent =  aParentArray[0] if aParentArray else None %}
+{%  set struct_name =  aMsg.___name+'_t' %}
+{%  set parent_name =  aParent.___name+'_t' if aParent else '' %}
+{%  set paret_inherent =  ':'+parent_name if parent_name else '' %}
+{%  set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{%  set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{%  set attribute_packed=attribute_name_packed if not dynamic_msg else ''%}
+/*!\brief {{ aMsg.___description }}
+ *
+{% if dynamic_msg %}
+ * @note serialized version is #{{ aMsg.___name }}_dynamic_t
+{% endif %}
+ */
+{% if attribute_packed %}
+{#{{ attribute_packed }}(#}
+{% endif %}
+struct {{ struct_name }}{{ paret_inherent }}
+{
+    {% if  parent_name %}
+    typedef {{ parent_name }} parent_t;//!< parent type
+    {% endif %}
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+#ifndef SHARE_BUFFER_DEFINED_1
+    typedef std::vector<{{field.TypeOfLogicalType}}> {{field.id}}_dynamic_t;//!< array of {{field.id}}
+#else
+    typedef NSHARE::CPODBuffer<{{field.TypeOfLogicalType}}> {{field.id}}_dynamic_t;//!< optimized for UDT array of {{field.id}}
+#endif
+    {% endfor %}
+    {% if '___constants' in aMsg %}
+    {{- fm.add_constants(aMsg,aParent) }}
+    {% endif %}
+{% if dynamic_msg %}
+    {{- fm.append_fields(aMsg, name, ["dynamic array"],True) }}
+{% else %}
+    {{- fm.append_fields(aMsg, name) }}
+{% endif %}
+
+    {{- fm.add_functions(aMsg.___fields|fields(True) ,aParent, None) -}}
+
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+    {{field.id}}_dynamic_t {{field.id}}; /*!< {{ field.description }} */
+    {% endfor %}
+{#{% if not dynamic_msg %}#}
+	/*! @brief Zeroes object
+	 *
+     * The method is added as the POD object cannot have constructor.
+	 */
+    void makeZero();
+{#{% endif %}#}
+}
+{% if attribute_packed %}
+;{#);#}
+{% else %}
+;
+{% endif%}
+{% endmacro %}
+
+{% for type in types if type.standard == False -%}
+    {%  set struct_name =  type.___name+'_t' %}
+/*!\brief {{ type.___description }}
+ *
+ */
+struct {{ struct_name }}
+{
+    {{- fm.append_fields(type, name) }}
+};
+{% endfor %}
+
+{% for val in types if not types[val].standard and 'enumSource' in  types[val] %}
+
+/** {{ types[val].description }}
+*/
+enum e{{types[val].___name}}
+{
+    {% for _enum in types[val].enumSource %}
+        {{ _enum.id | upper }} = {{ _enum.number | int }}, /*!< {{ _enum.description }} */
+    {% endfor %}
+};
+typedef {{types[val].type}} {{val}};//!< Type of #e{{types[val].___name}}
+{% endfor %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+
+{{ generate_message(types[val]) }}
+
+{% endfor %}
+
+
+{{ generate_message(header) }}
+
+{% for msg in messages-%}
+    {{ generate_message(msg,msg.___parent) }}
+{% endfor %}
+
+}
+#ifndef {{ common.get_namespace(name) | upper }}_ONLY_HEADER
+#  include "{{ common.get_namespace(name) }}_impl.h"
+#endif
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

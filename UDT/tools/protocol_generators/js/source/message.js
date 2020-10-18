@@ -1,14 +1,51 @@
 const g_reserverd_values = ["___number",
     "___size",
     "___parent",
-    "___type"];
+    "___type",
+    "___title",
+    "crc"
+];
 
 const g_has_to_specified_in_msg = ["unique",
     "version_major",
     "version_minor"
 ];
+const dynamic_array_class = 'dynamic_array';
+// let is_big_endian = false;
+// $(function () {
+//     $('#endian').change(function () {
+//         if($(this).prop('checked'))
+//         {
+//             $('table.message_scheme').css('direction','rtl');
+//             is_big_endian = false;
+//         }
+//         else
+//         {
+//             $('table.message_scheme').css('direction','ltr');
+//             is_big_endian = true;
+//         }
+//     });
+// })
+function update_msg_tabel (jseditor, aMsgFieldEditor) {
+    function lcm(x, y) {
+        if (typeof x !== 'number')
+                x = parseInt (x);
+        if (typeof y !== 'number')
+                y = parseInt (y);
 
-var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
+        function gcd(x, y) {
+            x = Math.abs(x);
+            y = Math.abs(y);
+            while (y)
+            {
+                let t = y;
+                y = x % y;
+                x = t;
+            }
+            return x;
+        }
+        return (!x || !y)? 0:Math.abs((x * y)/gcd(x ,y));
+    }
     function get_id(path) {
         return path.replaceAll('.', '_');
     }
@@ -19,27 +56,39 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
     const messagePath = msgEditor.path;
     const NUM_OF_BIT_FIELDS = 32;
     const messageID = get_id(messagePath);
-    const dynamic_array_class = 'dynamic_array';
 
 
-    function appendElements(_i_num_bits, aNumBits, uniqueId, tr, _tb) {
+    function appendElements(_i_num_bits, aNumBits, tr, _tb, uniqueId, aClasses) {
+        function set_attr(aFor, aLen) {
+            aFor.attr('colspan',
+                aLen
+            );
+            if (uniqueId)
+                aFor.attr('fieldID', uniqueId);
+            if (aClasses) {
+                if (Array.isArray(aClasses))
+                    aClasses.forEach(function (element, index, array) {
+                        aFor.addClass(element);
+                    });
+                else
+                    aFor.addClass(aClasses);
+            }
+            return aFor;
+        }
+
         let _bits = aNumBits;
         for (; _bits > 0;) {
             if ((_i_num_bits + _bits) > NUM_OF_BIT_FIELDS) {
-                if(_i_num_bits !== NUM_OF_BIT_FIELDS)
-                    $("<td>").attr('colspan',
-                        NUM_OF_BIT_FIELDS - _i_num_bits
-                    ).attr('fieldID', uniqueId).appendTo(tr);
-
+                if (_i_num_bits !== NUM_OF_BIT_FIELDS) {
+                    set_attr($("<td>"), NUM_OF_BIT_FIELDS - _i_num_bits).appendTo(tr);
+                }
                 _bits -= NUM_OF_BIT_FIELDS - _i_num_bits;
                 tr = $("<tr>").appendTo(_tb);
                 _i_num_bits = 0;
             } else {
                 _i_num_bits += _bits;
 
-                $("<td>").attr('colspan',
-                    _bits
-                ).attr('fieldID', uniqueId).appendTo(tr);
+                set_attr($("<td>"), _bits).appendTo(tr);
 
                 _bits = 0;
             }
@@ -47,20 +96,20 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
         return [_i_num_bits, tr];
     }
 
-    function appendDynamicFields(valueElement, _msg_num_bits, _tb_dynamic, fieldPath) {
-        const typeElement = valueElement['DynamicType'];
+    function appendDynamicFields(valueElement,/* _msg_num_bits,*/ _tb_dynamic, fieldPath) {
+        const typeElement = valueElement['TypeOfLogicalType'];
         const valueId = valueElement['id'];
         const fieldID = get_id(fieldPath);
-        const uniqueId=fieldID + '_dynamic';
+        const uniqueId = fieldID + '_dynamic';
 
         function appendRow() {
-            _msg_num_bits += NUM_OF_BIT_FIELDS;
+            /*_msg_num_bits += NUM_OF_BIT_FIELDS;*/
             let tr = $("<tr>").attr('fieldID', uniqueId).addClass(dynamic_array_class).appendTo(_tb_dynamic)
             if ('DynamicOrder' in valueElement)
                 tr.attr('DynamicOrder', valueElement['DynamicOrder'])
             tr.on('click', function () {
 
-                let _scroll_to = $('[fieldID=\"'+ fieldID+'\"]');
+                let _scroll_to = $('[fieldID=\"' + fieldID + '\"]');
                 if (_scroll_to.length > 0) {
 
                     _scroll_to.get(0).scrollIntoView();
@@ -70,7 +119,7 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
             return tr;
         }
 
-        $("<td>").text(valueId+": dynamic array of type " + typeElement).attr('colspan',
+        $("<td>").text(valueId + ": dynamic array of type " + typeElement).attr('colspan',
             NUM_OF_BIT_FIELDS
         ).addClass(dynamic_array_class).appendTo(appendRow());
 
@@ -78,17 +127,70 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
         //     NUM_OF_BIT_FIELDS
         // ).addClass(dynamic_array_class).appendTo(appendRow());
 
-        return _msg_num_bits;
+        /*return _msg_num_bits;*/
+    }
+
+    // function append_empty_fields(_i_raw_bits, _msg_num_bits, tr) {
+    //     $("<td>").attr('colspan',
+    //         NUM_OF_BIT_FIELDS - _i_raw_bits
+    //     ).addClass('empty').appendTo(tr);
+    //     _msg_num_bits += NUM_OF_BIT_FIELDS - _i_raw_bits;
+    //     _i_raw_bits = 0;
+    //     return [_i_raw_bits, _msg_num_bits];
+    // }
+
+    function alignment_fields(_i_raw_bits, _msg_num_bits, tr, _tb, aOldType, aNewType) {
+        const uniqueId = 'align_'+_msg_num_bits;
+        function align_impl(aWhat) {
+            if (typeof aWhat !== 'number')
+                aWhat = parseInt (aWhat);
+            console.assert(typeof aWhat === 'number','Wtf');
+            const _new_bit_len = aWhat * 8;
+            let _align = _msg_num_bits % _new_bit_len;
+            if (_align !== 0) {
+                console.assert( _new_bit_len > _align, 'Wtf!');
+                _align = _new_bit_len - _align;
+                _msg_num_bits += _align;
+                [_i_raw_bits, tr] = appendElements(_i_raw_bits,
+                    _align,
+                    tr, _tb, uniqueId, 'align');
+            }
+        }
+
+        if( aOldType !== null ) {
+            if ( aNewType !== null ) {
+                if ( aOldType!== aNewType ) {
+                    align_impl(aOldType);
+                    align_impl(aNewType);
+                }
+            }else
+            {
+                align_impl(aOldType);
+            }
+        }
+        return [_i_raw_bits, _msg_num_bits, tr];
     }
 
     function append_fields(aFieldEditor, _table, _errors) {
         const msgPath = aFieldEditor.parent.path;
         let msgEditor = jseditor.getEditor(msgPath);
 
+        function on_click(_scroll_to) {
+            if (_scroll_to.length > 0) {
+
+                let _tab = $('a[href="#' + msgPath + '"]');
+                if (_tab.length > 0)
+                    _tab[0].click();
+
+                _scroll_to.get(0).scrollIntoView();
+                _scroll_to.show().fadeOut(250).fadeIn(250).fadeOut(250).fadeIn(250).fadeOut(250).fadeIn(250);
+            }
+        }
+
         const fieldPath = aFieldEditor.path;
         const fieldID = get_id(fieldPath);
 
-        let mf = aFieldEditor.value;
+        let mf = aFieldEditor.getValue();//value;
         let _tb = $("<tbody>").appendTo(_table);
         _tb.attr("id", fieldID);
         let _i_raw_bits = 0;
@@ -96,6 +198,69 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
         let tr = $("<tr>").appendTo(_tb);
         let uniqueID_set = new Set();
 
+        let _last_type_align = null;
+        let _message_alignment = NUM_OF_BIT_FIELDS / 8;
+
+        function get_field_size_and_align_msg(typeElement,  _i) {
+            let _type_size = null
+            let _new_type = null
+
+            if (typeElement in _numeric_limits) {
+                _new_type = _numeric_limits[typeElement];
+            } else {
+                let _types = jseditor.getValue().user_types.find(obj => {
+                    return obj.___name === typeElement
+                });
+                if (_types) {
+                    _new_type = {
+                        'size': _types.___size,
+                        'align' : 4 //@todo calculate align
+                    }
+
+                } else {
+                    let _enum_type = jseditor.getValue().user_enums.find(obj => {
+                        return obj.___name === typeElement
+                    });
+                    if (_enum_type) {
+                        _new_type = _numeric_limits[_enum_type.type];
+                    }
+                }
+
+            }
+            if (_new_type !== null) {
+                // const _new_type = _numeric_limits[typeElement];
+
+                const _new_type_align = typeof (_new_type['align']) === 'number' ? _new_type['align'] :
+                    parseInt(_new_type['align']);
+
+                _type_size = typeof (_new_type['size']) === 'number' ? _new_type['size'] :
+                    parseInt(_new_type['size']);
+
+                const _old_msg_num_bits = _msg_num_bits;
+
+                [_i_raw_bits, _msg_num_bits, tr] = alignment_fields(_i_raw_bits,
+                    _msg_num_bits, tr, _tb,
+                    _last_type_align, _new_type_align);
+
+                _last_type_align = _new_type_align;
+                _message_alignment = lcm(_message_alignment, _last_type_align);
+
+                if (_old_msg_num_bits !== _msg_num_bits) {
+                    let fieldElement = _tb.find('[fieldID=\"align_' + _old_msg_num_bits + '\"]');
+
+                    fieldElement.on('click', function () {
+                        on_click($('[data-schemapath=\"' + fieldPath + '.' + _i + '.type\"]'));
+                        if (parseInt(_i) > 0)
+                            on_click($('[data-schemapath=\"' + fieldPath + '.' + (parseInt(_i) - 1).toString() + '.type\"]'));
+                    });
+                }
+            } else
+                _type_size = null;
+
+            return _type_size;
+        }
+
+        if(_numeric_limits !== null)
         for (let _i in mf) {
 
             if (!mf.hasOwnProperty(_i))
@@ -114,60 +279,52 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
 
             const typeElement = valueElement['type'];
 
-            let _type_info = null;
-            if (typeElement in _numeric_limits) {
-                _type_info = _numeric_limits[typeElement];
-            }
+            const _type_size = get_field_size_and_align_msg(typeElement,  _i);
+
             let _max_type_bits = -1;
-            if (_type_info != null) {
-                _max_type_bits = _type_info['size'] * 8;
+
+            if (_type_size != null) {
+                _max_type_bits = _type_size * 8;
             } else {
                 _errors.push(`No type info for ${typeElement} of field ${valueId}; `);
                 continue;
             }
             let _num_bits = _max_type_bits;
-            const _user_bits = valueElement['bits'];
+            const _user_bits = typeof (valueElement['bits'])  === 'number'? valueElement['bits']:
+                    parseInt(valueElement['bits']) ;
+            const _array_len = typeof (valueElement['array_len'] )  === 'number'? valueElement['array_len'] :
+                    parseInt(valueElement['array_len']) ;
 
             if (_user_bits > 0) {
                 _num_bits = Math.min(_user_bits, _num_bits);
             }
             _msg_num_bits += _num_bits;
-            [_i_raw_bits, tr] = appendElements(_i_raw_bits, _num_bits, uniqueId, tr, _tb);
+            [_i_raw_bits, tr] = appendElements(_i_raw_bits, _num_bits, tr, _tb, uniqueId, null);
 
-            if (valueElement['array_len'] > 1) {
-                let _array_len = valueElement['array_len'];
+            if (_array_len> 1) {
                 for (let j = 1; j < _array_len; ++j) {
                     _msg_num_bits += _num_bits;
-                    [_i_raw_bits, tr] = appendElements(_i_raw_bits, _num_bits, uniqueId, tr, _tb);
+                    [_i_raw_bits, tr] = appendElements(_i_raw_bits, _num_bits, tr, _tb, uniqueId, null);
                 }
             }
 
-            let fieldElement = _tb.find('[fieldID=\"'+ uniqueId+'\"]');
+            let fieldElement = _tb.find('[fieldID=\"' + uniqueId + '\"]');
 
             fieldElement.text(valueId).on('click', function () {
-                let _scroll_to = $('[data-schemapath=\"' + fieldPath + '.' + _i + '\"]');
-                if (_scroll_to.length > 0) {
-
-                    let _tab = $('a[href="#' + msgPath + '"]');
-                    if (_tab.length > 0)
-                        _tab[0].click();
-
-                    _scroll_to.get(0).scrollIntoView();
-                    _scroll_to.show().fadeOut(250).fadeIn(250).fadeOut(250).fadeIn(250).fadeOut(250).fadeIn(250);
-                }
+                on_click($('[data-schemapath=\"' + fieldPath + '.' + _i + '\"]'));
             });
             if (LogicalType) {
                 fieldElement.attr("LogicalType", LogicalType);
             }
 
-            if (valueElement['bits'] > (_type_info['size'] * 8)) {
+            if (_user_bits > (_type_size * 8)) {
                 fieldElement.addClass('error');
                 _errors.push(`Amount of bits (${_user_bits}) is greater then ${_max_type_bits}. See field ${valueId}; `);
             }
-            if (valueElement['array_len'] > 0) {
+            if (_array_len > 0) {
                 fieldElement.addClass('array');
             }
-            if (valueElement['bits'] > 0 && valueElement['array_len'] > 0) {
+            if (_user_bits > 0 && _array_len> 0) {
                 fieldElement.addClass('error');
                 _errors.push(`Using bit fields with array no allowed. See field ${valueId}; `);
             }
@@ -178,44 +335,50 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
                 uniqueID_set.add(valueId);
 
         }
-        if (_i_raw_bits !== NUM_OF_BIT_FIELDS) {
 
-            $("<td>").attr('colspan',
-                NUM_OF_BIT_FIELDS - _i_raw_bits
-            ).addClass('empty').appendTo(tr);
-            _msg_num_bits += NUM_OF_BIT_FIELDS - _i_raw_bits;
-            _i_raw_bits = 0;
-        }
-        if ('___size' in msgEditor.value) {
+        if ('___size' in msgEditor.getValue()) {
 
             const sizeEditor = jseditor.getEditor(msgPath + '.' + '___size');
+            const _user_size = 8 * (typeof (sizeEditor.getValue())  === 'number'? sizeEditor.getValue() :
+                    parseInt(sizeEditor.getValue()))
+            if (_user_size> 0 && _msg_num_bits < _user_size ) {
 
-            if (sizeEditor.value > 0 && _msg_num_bits < sizeEditor.value * 8) {
+                const _new_type_align = 1;
 
-                let _num_row = Math.floor((sizeEditor.value * 8 - _msg_num_bits) / NUM_OF_BIT_FIELDS);
+                [_i_raw_bits, _msg_num_bits, tr] = alignment_fields(_i_raw_bits,
+                        _msg_num_bits, tr, _tb,
+                    _last_type_align , _new_type_align);
 
-                for (let j = 0; j < _num_row; ++j) {
-                    _msg_num_bits += NUM_OF_BIT_FIELDS;
-                    tr = $("<tr>").appendTo(_tb);
-                    $("<td>").attr('colspan',
-                        NUM_OF_BIT_FIELDS
-                    ).attr('fieldID', "reserved").addClass('empty').appendTo(tr);
-                }
-                let _mod_row = (sizeEditor.value * 8 - _msg_num_bits) % NUM_OF_BIT_FIELDS;
-                if (_mod_row > 0) {
-                    _msg_num_bits += NUM_OF_BIT_FIELDS;
+                _last_type_align = _new_type_align;
 
-                    tr = $("<tr>").appendTo(_tb);
-                    $("<td>").attr('colspan',
-                        NUM_OF_BIT_FIELDS
-                    ).attr('fieldID', "reserved").addClass('empty').appendTo(tr);
+                const _append_bites = Math.floor((_user_size - _msg_num_bits));
+
+                if(_append_bites > 0 ) {
+
+                    const uniqueId = "reserved";
+
+                    _msg_num_bits += _append_bites;
+
+                    [_i_raw_bits, tr] = appendElements(_i_raw_bits,
+                        _append_bites,
+                        tr, _tb, uniqueId, 'reserved');
+
+                    let fieldElement = _tb.find('[fieldID=\"' + uniqueId + '\"]');
+
+                    fieldElement.on('click', function () {
+                        on_click($('[data-schemapath=\"' + msgPath + '.___size' + '\"]'));
+                    });
                 }
             }
         }
-        if ('___type' in msgEditor.value) {
+        [_i_raw_bits, _msg_num_bits, tr] = alignment_fields(_i_raw_bits,
+                        _msg_num_bits, tr, _tb, _last_type_align,
+                        _message_alignment);
+
+        if ('___type' in msgEditor.getValue()) {
             const typeEditor = jseditor.getEditor(msgPath + '.' + '___type');
 
-            if (typeEditor.value === "dynamic") {
+            if (typeEditor.getValue() === "dynamic") {
 
                 let _tb_dynamic = $("tbody." + dynamic_array_class, _table);
                 if (_tb_dynamic.length === 0) {
@@ -226,11 +389,11 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
                         continue;
                     let valueElement = mf[_i];
                     if ('LogicalType' in valueElement
-                        && 'DynamicType' in valueElement
+                        && 'TypeOfLogicalType' in valueElement
                         && valueElement['LogicalType'] === 'dynamic array'
                     ) {
                         const valPath = fieldPath + '.' + _i;
-                        _msg_num_bits = appendDynamicFields(valueElement, _msg_num_bits, _tb_dynamic, valPath);
+                        /*_msg_num_bits =*/ appendDynamicFields(valueElement, /*_msg_num_bits,*/ _tb_dynamic, valPath);
                     }
                 }
                 $("tr." + dynamic_array_class, _tb_dynamic).sort(function (left, right) {
@@ -252,18 +415,18 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
         let msgEditor = jseditor.getEditor(msgPath);
         let parentEditor = null;
         let numberEditor = null;
-        if ('___parent' in msgEditor.value)
+        if ('___parent' in msgEditor.getValue())
             parentEditor = jseditor.getEditor(msgPath + '.' + '___parent');
 
-        if ('___number' in msgEditor.value)
+        if ('___number' in msgEditor.getValue())
             numberEditor = jseditor.getEditor(msgPath + '.' + '___number');
 
         if (parentEditor
-            && parentEditor.value
+            && parentEditor.getValue()
             && numberEditor
-            && parentEditor.value.toString() !== numberEditor.value.toString()
+            && parentEditor.getValue().toString() !== numberEditor.getValue().toString()
         ) {
-            const _parent = parentEditor.value;
+            const _parent = parentEditor.getValue();
 
             for (let key in jseditor.editors) {
                 let matchKey = key.match("\\.___fields$");
@@ -271,10 +434,10 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
                     && jseditor.editors.hasOwnProperty(key)
                 ) {
                     const messageEditor = jseditor.getEditor(key);
-                    if ('___number' in messageEditor.parent.value) {
+                    if ('___number' in messageEditor.parent.getValue()) {
                         let numberEditor2 = jseditor.getEditor(messageEditor.parent.path + '.' + '___number');
 
-                        if (numberEditor2.value.toString() === _parent.toString()) {
+                        if (numberEditor2.getValue().toString() === _parent.toString()) {
                             create_fields_of_msg(_table, messageEditor, _errors);
                             break;
                         }
@@ -303,8 +466,8 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
         }
         let _field_in_other_msgs = $('table.' + _tb_class + ':not(' + '#' + messageID + ') > tbody#' + fieldID);
         if (_field_in_other_msgs.length > 0) {
-            let fieldTable = $('[fieldID=\"'+ fieldID+'\"]', _table);
-            if(fieldTable.length>0) {
+            let fieldTable = $('[fieldID=\"' + fieldID + '\"]', _table);
+            if (fieldTable.length > 0) {
                 console.assert(fieldTable.length === 1, "Several path of " + fieldPath);
                 _field_in_other_msgs.replaceWith(fieldTable.clone(true, true));
             }
@@ -314,6 +477,11 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
     function createTableOfMsg() {
         let _table = $("<table>");
         _table.addClass(_tb_class);
+        const is_big_endian=jseditor.getEditor('root.settings.endian') !== null &&
+            jseditor.getEditor('root.settings.endian').getValue().toLowerCase() === 'big';
+        if(is_big_endian)
+            _table.css('direction','ltr');
+
         _table.attr('id', messageID);
 
         let _errors = [];
@@ -326,7 +494,7 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
             }
         }
         {
-            if ('___number' in msgEditor.value) {
+            if ('___number' in msgEditor.getValue()) {
                 let headerFieldsEditor = jseditor.getEditor(headerFieldsPath);
                 append_fields(headerFieldsEditor, _table, _errors)
                 const headerId = get_id(headerFieldsPath);
@@ -336,19 +504,31 @@ var update_msg_tabel = function (jseditor, aMsgFieldEditor) {
 
                 if (headerTable.length > 0) {
                     $('td', headerTable).each(function (index, td) {
-                        if (td.innerText in msgEditor.value) {
+                        if (td.innerText in msgEditor.getValue()) {
                             let valEditor = jseditor.getEditor(msgEditor.path + '.' + td.innerText);
                             if (valEditor)
-                                td.innerText = valEditor.value.toString();
+                                td.innerText = valEditor.getValue().toString();
                         }
                     });
                     $('td[isunique=\"number\"]', headerTable).each(function (index, td) {
                         let valEditor = jseditor.getEditor(msgEditor.path + '.___number');
-                        td.innerText = valEditor.value.toString();
+                        td.innerText = valEditor.getValue().toString();
                     });
                 }
             }
-            create_fields_of_msg(_table, aMsgFieldEditor, _errors);
+            const _own_size = create_fields_of_msg(_table, aMsgFieldEditor, _errors);
+            {
+                const msgPath = aMsgFieldEditor.parent.path;
+                let msgEditor = jseditor.getEditor(msgPath);
+
+                if ('___size' in msgEditor.getValue()) {
+
+                    const sizeEditor = jseditor.getEditor(msgPath + '.' + '___size');
+                    if (sizeEditor.getValue() !== _own_size / 8)
+                        console.assert(_own_size / 8 > sizeEditor.getValue())
+                        sizeEditor.setValue(_own_size / 8)
+                }
+            }
             //Move to end dynamic fields
             let _tb_dynamic = $("tbody." + dynamic_array_class, _table);
             if (_tb_dynamic.length !== 0) {
@@ -381,7 +561,7 @@ var addNewRow = function (editor, jseditor) {
     const _messages_id = 'root.messages';
 
     let field_path = editor.path + '.___fields';
-    for (const _val in editor.value) {
+    for (const _val in editor.getValue()) {
         if (_val === '___description')
             continue;
         const valuePath = editor.path + '.' + _val;
@@ -390,42 +570,45 @@ var addNewRow = function (editor, jseditor) {
             let msg_editor = jseditor.getEditor(_messages_id);
             if (_val === '___number') {
                 const numberEditor = jseditor.getEditor(valuePath);
-                const new_number_value = numberEditor.value;
-                const old_number_value = numberEditor.parent.value.___number;
+                const new_number_value = numberEditor.getValue();
+                const old_number_value = numberEditor.parent.getValue()['___number'];
 
-                if (old_number_value && old_number_value !== new_number_value) {
+                if (old_number_value !== null && old_number_value !== new_number_value) {
 
 
-                    for (let _i_msg in msg_editor.value) {
-                        if (msg_editor.value.hasOwnProperty(_i_msg)) {
+                    for (let _i_msg in msg_editor.getValue()) {
+                        if (msg_editor.getValue().hasOwnProperty(_i_msg)) {
                             let cut_msg_editor = jseditor.getEditor(_messages_id + "." + _i_msg);
 
-                            if ('___parent' in cut_msg_editor.value
-                                && cut_msg_editor.value.___parent.toString() === old_number_value.toString()
+                            if (cut_msg_editor !==null && '___parent' in cut_msg_editor.getValue()
+                                && cut_msg_editor.getValue()['___parent'].toString() === old_number_value.toString()
                             ) {
                                 let parentEditor = jseditor.getEditor(cut_msg_editor.path + '.' + '___parent');
-                                parentEditor.value = new_number_value;
+
+                                if (parentEditor.enum_values.includes(old_number_value.toString()))
+                                    parentEditor.enum_values[parentEditor.enum_values.indexOf(old_number_value.toString())] = new_number_value.toString();
+
+                                parentEditor.setValue(new_number_value);
 
                             }
                         }
                     }
                 }
             }
-            if(_val === '___type')
-            {
+            if (_val === '___type') {
                 const typeEditor = jseditor.getEditor(valuePath);
-                const new_type_value = typeEditor .value;
-                if(new_type_value === 'dynamic') {
-                    const number_value = jseditor.getEditor(valuePath).parent.value.___number;
-                    for (let _i_msg in msg_editor.value) {
-                        if (msg_editor.value.hasOwnProperty(_i_msg)) {
+                const new_type_value = typeEditor.getValue();
+                if (new_type_value === 'dynamic') {
+                    const number_value = jseditor.getEditor(valuePath).parent.getValue()['___number'];
+                    for (let _i_msg in msg_editor.getValue()) {
+                        if (msg_editor.getValue().hasOwnProperty(_i_msg)) {
                             let cut_msg_editor = jseditor.getEditor(_messages_id + "." + _i_msg);
 
-                            if ('___parent' in cut_msg_editor.value
-                                && cut_msg_editor.value.___parent.toString() === number_value.toString()
+                            if ('___parent' in cut_msg_editor.getValue()
+                                && cut_msg_editor.getValue()['___parent'].toString() === number_value.toString()
                             ) {
                                 let typeEditor = jseditor.getEditor(cut_msg_editor.path + '.' + '___type');
-                                typeEditor.value = new_type_value;
+                                typeEditor.setValue(new_type_value);
                             }
                         }
                     }
@@ -448,7 +631,7 @@ var updateMessageScheme = function (jseditor) {
     let needUpdateEditors = [];
 
     function updateMessageField(_val_id, _header_id) {
-        for (let _i_msg in msg_editor.value) {
+        for (let _i_msg in msg_editor.getValue()) {
             let cut_msg_editor = jseditor.getEditor(_messages_id + "." + _i_msg);
 
             if (_val_id in _header_id.properties)
@@ -486,10 +669,11 @@ var updateMessageScheme = function (jseditor) {
             }
         }
 
-        let values = ed.value;
+        let values = ed.getValue();
 
         let _list_of_field = ["___number"];
         let _list_of_description = new Map();
+        let _list_of_type = new Map();
 
         for (const i in values) {
 
@@ -502,6 +686,48 @@ var updateMessageScheme = function (jseditor) {
                 const _val_id = val['id'];
                 if (g_has_to_specified_in_msg.indexOf(val['LogicalType']) !== -1) {
 
+                    const typeElement = val["type"]
+                    if (typeElement in _numeric_limits)
+                    {
+                        if(val['LogicalType'] === "unique")
+                            continue;//Cannot add not enumerated value
+
+                        if(_numeric_limits[typeElement]["is_integer"].toLowerCase === 'true')
+                            _list_of_type.set(_val_id,
+                                {
+                                    "type":'integer',
+                                    'minimum':parseInt(_numeric_limits[typeElement]['min']),
+                                    'maximum':parseInt(_numeric_limits[typeElement]['max'])
+                                }
+                                );
+                        else
+                            _list_of_type.set(_val_id, {"type":'number'});
+                    }else
+                    {
+                        let _enum_type = jseditor.getValue().user_enums.find(obj => {
+                            return obj.___name === typeElement
+                        });
+                        if (_enum_type) {
+
+                            let _enum_values = []
+                            for (let _num in _enum_type["___numbers"])
+                            {
+                                const _v=  _enum_type["___numbers"][_num];
+                                _enum_values.push(_v["id"].toString())
+                            }
+                            if (_enum_values.length > 1)
+                                _enum_values.push(_enum_values.join(', '))
+
+                            let _val = {
+                                "type": 'string',
+                                "pattern": '(?:(?:|, )(' + _enum_values.join('|') + '))+$'
+                            }
+                            _list_of_type.set(_val_id,_val);
+                        }else
+                        {
+                            console.assert(false,'Object is not implemented');//@todo implement
+                        }
+                    }
                     _list_of_field.push(_val_id);
                     _list_of_description.set(_val_id, val['description']);
                 }
@@ -515,11 +741,12 @@ var updateMessageScheme = function (jseditor) {
             if (!(_val_id in _header_id.properties)) {
                 is_changed = true;
 
-                _header_id.properties[_val_id] = {
-                    "type": "integer",
+                //todo limitation
+                _header_id.properties[_val_id] = Object.assign({
                     "propertyOrder": -1,
                     "title": _list_of_description.get(_val_id)
-                };
+                },_list_of_type.get(_val_id) );
+
                 _header_id.required.push(_val_id);
             }
             if (is_changed)

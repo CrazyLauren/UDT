@@ -10,7 +10,7 @@ set(${PROJECT_NAME}_SUPPORT_ADDRESS "https://github.com/CrazyLauren" CACHE
 												STRING "Address to support")
 
 set(${PROJECT_NAME}_LICENCE ${PROJECT_SOURCE_DIR}/LICENCE.txt CACHE PATH "Path to license")
-
+set(${PROJECT_NAME}_VERSION "0.9" CACHE STRING "Version" FORCE)
 
 include(CMakeModules/functions/helper_cmake_function.cmake)
 configure_project(${PROJECT_NAME})

@@ -1,0 +1,40 @@
+{% set file_name = 'protocol_' + name | lower + '_test_generator' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <{{ common.get_namespace(name) }}.h>
+#include <{{ common.get_namespace(name) }}_serialize_binary.h>
+#include <{{ common.get_namespace(name) }}_msg_headers.h>
+#include <{{ common.get_namespace(name) }}_test_message.h>
+#include <SHARE/random_value.h>
+
+#define INDITIFICATION_NAME "{{ name|lower }}_test"
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+inline char const * get_test_id()
+{
+    return "{{ name|lower }}_test";
+}
+inline NSHARE::CText const& get_test_unique_group()
+{
+    static const NSHARE::CText _rval(NSHARE::CText()
+        <<NSHARE::get_random_value_by_RNG());
+    return _rval;
+}
+inline NSHARE::CText const& get_id()
+{
+    static const NSHARE::CText _rval = NSHARE::CText(get_test_id())
+        + '@'+ get_test_unique_group();
+    return _rval;
+}
+}
+}
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

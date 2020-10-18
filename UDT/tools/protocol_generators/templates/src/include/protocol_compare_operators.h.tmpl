@@ -1,0 +1,305 @@
+{% set file_name = 'protocol_' + name | lower + '_compare_operators' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <ostream>
+#include <{{ name | upper }}/config/config.h>
+#include "{{ common.get_namespace(name) }}.h"
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace impl
+{
+template <class T>
+inline bool approximatelyEqual(T const& a, T const& b, T epsilon=
+#ifdef {{ name | upper }}_FLOAT_COMPARE_PRECISION
+                                                    (T){{ name | upper }}_FLOAT_COMPARE_PRECISION
+#else
+                                                    std::numeric_limits<T>::epsilon()
+#endif
+                                )
+{
+	const T _a=fabs(a);
+	const T _b=fabs(b);
+	const T _diff=fabs(a-b);
+    return _diff <= ( ( _b>_a ? _b : _a) * epsilon);
+}
+template <class U, class T>
+struct equal_to
+{
+    equal_to(U const& =U())
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return a == b;
+    }
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+};
+template <class U>
+struct equal_to<U, float>
+{
+    typedef float T;
+    equal_to(U const& =U())
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return approximatelyEqual(a , b);
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+};
+template <class U>
+struct equal_to<U, double>
+{
+    typedef double T;
+
+    equal_to(U const& =U())
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return approximatelyEqual(a , b);
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+};
+template <class U, class T>
+struct not_equal_to
+{
+    not_equal_to(U const& aTo=U()):Fc(aTo)
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return !Fc(a, b);
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+
+    equal_to<U, T> Fc;
+};
+
+template <class U, class T>
+struct greater
+{
+    greater(U const& =U())
+    {}
+
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return a > b;
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+};
+template <class U, class T>
+struct greater_equal
+{
+    greater_equal(U const& aTo=U()):Fe(aTo),Fg(aTo)
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return Fe(a, b) || Fg(a, b);
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+
+    equal_to<U, T> Fe;
+    greater<U, T> Fg;
+};
+template <class U, class T>
+struct less
+{
+    less(U const& =U())
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return a < b;
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+
+};
+template <class U, class T>
+struct less_equal
+{
+    less_equal(U const& aTo=U()):Fe(aTo),Fl(aTo)
+    {}
+    inline bool operator()(T const& a, T const& b) const
+    {
+        return Fe(a, b) || Fl(a, b);
+    }
+
+    /** Array handler
+    */
+    template<typename K>
+    inline bool operator()(T const& a, T const& b, unsigned i, K const& aArray) const
+    {
+        return operator()(a, b);
+    }
+
+    equal_to<U, T> Fe;
+    less<U, T> Fl;
+};
+
+}
+template< template <class U1, class T> class TFunc, typename U,typename K>
+struct for_each
+{
+};
+{% macro generate_operators(aMsg, aParentArray) %}
+    {{ generate_function(aMsg, aParentArray) }}
+    {{ generate_operator(aMsg, '==', 'equal_to' ) }}
+    {{ generate_operator(aMsg, '!=', 'not_equal_to' ) }}
+    {{ generate_operator(aMsg, '<' ,'less' ) }}
+    {{ generate_operator(aMsg, '<=' ,'less_equal' ) }}
+    {{ generate_operator(aMsg, '>' ,'greater' ) }}
+    {{ generate_operator(aMsg, '>=' ,'greater_equal' ) }}
+{% endmacro %}
+
+{% macro generate_function(aMsg, aParentArray) %}
+
+{% set aParent =  aParentArray[0] if aParentArray else None %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+
+{% set _title = aMsg.___title + '#('+ struct_name +')' if '___title' in aMsg else '#'+ struct_name %}
+/** Traverse each field of {{ _title }} and call () function
+*
+* @param  aLft Left argument
+* @param  aRht Right argument
+* @tparam  TFunc Template functor to compare struct values, where T is
+*            type of compared fields (for array value of array).
+*            Functor cannot be passed as argument as
+*            the struct has fields with differences types.
+*            If you need create own compare function, You can
+*            specialize template function or with template.
+* @tparam U Type of value passed to constructor of TFunc class
+*/
+template<template <class U1, class T> class TFunc, typename U>
+struct for_each<TFunc, U, {{ struct_name }}>
+{
+/** Traverse each field
+* @param  aLft Left argument
+* @param  aRht Right argument
+*/
+inline bool operator()({{ struct_name }} const & aLft,
+    {{ struct_name }} const& aRht, U const& aWhat = U()) const
+{
+    bool _is = true;
+    {% if parent_name %}
+    _is = for_each<TFunc, U, {{ parent_name }}>() (static_cast< {{ parent_name }} const & >(aLft),
+                        static_cast< {{ parent_name }} const & >(aRht), aWhat);
+    {% endif %}
+
+    {% for field in aMsg.___fields|fields(True) %}
+        {% if field.id %}
+
+                {% if 'array_len' in field and field.array_len  > 0 %}
+    if(_is)
+        for (unsigned i = 0; _is && i < sizeof(aLft.{{ field.id }})/sizeof(aLft.{{ field.id }}[0]); ++i)
+           _is = _is && TFunc<U, {{ field.type }}>(aWhat)(aLft.{{ field.id }}[i],
+                                                aRht.{{ field.id }}[i],
+                                                i,
+                                                aLft.{{ field.id }}
+                                                );
+                {% else %}
+                    {% if field.LogicalType|string() == "dynamic array"  %}
+
+    if(_is)
+    {
+        _is = _is && aLft.{{ field.id }}.size() == aRht.{{ field.id }}.size() ;
+        if(_is && aLft.{{ field.id }}.size() > 0)
+        {
+            unsigned const {{ field.id }}_len = aLft.{{ field.id }}.size();
+
+            for (unsigned i = 0; _is && i < {{ field.id }}_len; ++i)
+                _is = _is && TFunc<U, {{ field.TypeOfLogicalType }}>(aWhat)(aLft.{{ field.id }}[i],
+                            aRht.{{ field.id }}[i],
+                            i,
+                            aLft.{{ field.id }}
+                            );
+        }
+    }
+                    {%elif field.LogicalType|string() == "crc" %}
+    _is = _is && ( aLft.{{ field.id }} == 0 //If CRC is zero then isn't set
+                        || aRht.{{ field.id }} == 0
+                        || TFunc<U, {{ field.type }}>(aWhat)(aLft.{{ field.id }}, aRht.{{ field.id }})
+                 );
+                    {%else%}
+    _is = _is && TFunc<U, {{ field.type }}>(aWhat)(aLft.{{ field.id }}, aRht.{{ field.id }});
+                    {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+	return _is;
+}
+};
+{% endmacro %}
+{% macro generate_operator(aMsg, aOperator ,aFunc) %}
+
+{% set struct_name =  aMsg.___name+'_t' %}
+inline bool operator{{aOperator}} ({{ struct_name }} const & aLft,
+    {{ struct_name }} const& aRht)
+{
+    return for_each<impl::{{ aFunc }},void*, {{ struct_name }}>()(aLft, aRht);
+}
+{% endmacro %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+{{ generate_operators(types[val]) }}
+{% endfor %}
+
+{{ generate_operators(header) }}
+
+{% for msg in messages-%}
+    {{ generate_operators(msg,msg.___parent) }}
+{% endfor %}
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

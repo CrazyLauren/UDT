@@ -16,7 +16,7 @@
 #include <SHARE/revision.h>
 #include <SHARE/random_value.h>
 #include <CRTCFactory.h>
-#include <udt/IRtc.h>
+#include <UDT/IRtc.h>
 #include <CDataObject.h>
 
 #include "CRTCForModelingModule.h"

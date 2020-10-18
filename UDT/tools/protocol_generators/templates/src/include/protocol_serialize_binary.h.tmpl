@@ -1,0 +1,623 @@
+{% set file_name = 'protocol_' + name | lower + '_serialize_binary' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <{{ name | upper }}/config/config.h>
+
+#include "{{ common.get_namespace(name) }}.h"
+#include "{{ common.get_namespace(name) }}_msg_headers.h"
+#include "{{ common.get_namespace(name) }}_serialize.h"
+
+{% set attribute_packed = name|upper+'_ATTRIBUTE_PACKED'%}
+{%  set struct_header_name =  header.___name+'_t' -%}
+
+namespace {{ common.get_namespace(name) }}
+{
+
+#ifndef SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
+#  define SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
+
+/*! \brief Serialize type T
+ *
+ * The Serialized data to byte.
+ *
+ * \param aObject Object
+ * \param aTo To buffer
+ * \param aAllocator Allocator type
+ * \return Serialized object
+ * \tparam T Serialized object type
+ * \tparam TContainer container type (for example std::vector)
+ *  @{
+ */
+template <typename TContainer, typename T>
+inline TContainer& serialize_binary(TContainer& aTo,T const& aObject);
+template <typename T>
+inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject);
+
+/// @}
+
+/*! \brief Deserialize type T
+ *
+ * Deserialize object
+ *
+ * @param aBuf Serialized data
+ * @param aTo deserialize to
+ * @return Deserialized object
+ * @tparam T Deserialized type
+ * @tparam TContainer container type (for example std::vector)
+ * \note  The method has to be specialized and "extern" for every external types.
+ * @{
+ */
+template<typename T,typename TContainer>
+inline T deserialize_binary(TContainer const& aBuf);
+template<typename T,typename TContainer>
+inline T& deserialize_binary(T& aTo, TContainer const& aBuf);
+template<typename T>
+inline T& deserialize_binary(T& aTo, char const* aBegin,
+    char const* aEnd);
+/*! @}*/
+
+//----------------------------------------
+// Implementation
+//----------------------------------------
+
+#endif //#ifndef SERIALIZE_DYNAMIC_MESSAGE_TEMPLATE_IS_DEFINED
+namespace impl
+{
+/*! \brief Puts dynamic data to buffer
+ *
+ * @param aObject Object
+ * @param aHeader Pointer to message
+ * @param aTo Pointer to buffer
+ * @return Pointer to next empty byte
+ * @tparam T Object type
+ * @tparam Tdynamic Serialized type
+ * \note  The size of buffer has to be requirement to put data
+ * @{
+ */
+template<class Tdynamic ,class T>
+inline char* serialize_fields(char *aTo, unsigned aMaxSize,
+        Tdynamic* aHeader,T const & aObject );
+template<class Tdynamic ,class T>
+inline char const* deserialize_fields(T& aTo,
+        Tdynamic const& aObject, char const* aPtr );
+///@}
+/*! \brief offset of dynamic data
+*
+* @tparam Tdynamic Serialized type
+* \return begin of dynamic data of message
+*/
+template<class Tdynamic >
+inline unsigned dynamic_data_offset(Tdynamic const& aObject)
+{
+    return Tdynamic::SIZE_FULL;
+}
+}//namespace impl
+
+template<typename T>
+inline T& deserialize_binary(T& aTo, char const* aBegin,
+    char const* aEnd)
+{
+    unsigned const _buf_size = aEnd-aBegin;
+    unsigned const _size = get_full_size<T>(aTo);
+    DCHECK_GE(_size,_buf_size);
+    if( _size >= _buf_size )
+    {
+        T const& _val = *reinterpret_cast<T const*>(aBegin);
+        aTo = _val;
+    }
+    return aTo;
+}
+template<typename T,typename TContainer>
+inline T& deserialize_binary(T& aTo, TContainer const& aBuf)
+{
+    unsigned const _buf_size = aBuf.size()*sizeof(typename TContainer::value_type);
+    return deserialize_binary<T>(aTo,(char const*)&aBuf.front(),
+                (char const*)&aBuf.front() + _buf_size);
+}
+template<typename T,typename TContainer>
+inline T deserialize_binary(TContainer const& aBuf)
+{
+    T _rval;
+    deserialize_binary<T,TContainer>(_rval, aBuf);
+    return _rval;
+}
+template<typename T>
+inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject)
+{
+    if(aMaxSize >= sizeof(T))
+    {
+       T* _p = new( aTo) T(aObject);
+        fill_header<T>( _p );
+        DCHECK(is_valid<T>(*_p));
+        return  aTo + sizeof(T);
+    }
+    return NULL;
+}
+template<typename TContainer, typename T>
+inline TContainer& serialize_binary(TContainer& aTo, T const& aObject)
+{
+    unsigned const _own_size = aTo.size();
+    unsigned const _first = _own_size * sizeof(typename TContainer::value_type);
+    unsigned const _size = get_full_size<T>(aObject);
+    unsigned const _new_size = _own_size//
+                    + _size / sizeof(typename TContainer::value_type) // if container value size more 1 byte
+                    + (_size % sizeof(typename TContainer::value_type) == 0 ? 0:1) // if not multiple ratio
+                    ;
+    aTo.resize(_new_size);
+
+    char* const _begin = (char *)&(aTo.front()) + _first;
+    char* const _p=serialize_binary<T>(_begin,_size,aObject);
+    if(_p == NULL )
+        aTo.resize(_own_size);
+    else
+        DCHECK_EQ(_size, (_p-_begin));
+    return aTo;
+}
+{% macro get_valid_len_of_array(field)%}
+    {% if 'TypeInfo' in field and field.TypeInfo.is_signed %}
+unsigned const _{{ field.id }}_len = aObject.{{ field.id }} >= 0?
+                                        static_cast<unsigned>(aObject.{{ field.id }})
+                                        :
+                                        (
+                                            unsigned (
+                                            1
+                                            + (int)std::numeric_limits<{{ field.type }}>::max()
+                                            + (int)aObject.{{ field.id }}
+                                            )
+                                         +   unsigned(
+                                                -((int)std::numeric_limits<{{ field.type }}>::min())
+                                            )
+                                          );
+    {% else %}
+unsigned const _{{ field.id }}_len = aObject.{{ field.id }};
+    {% endif %}
+DCHECK_LT(_{{ field.id }}_len, std::numeric_limits<int32_t>::max());
+{% endmacro %}
+{% macro generate_serialize_message(aMsg, aParentArray, messages) %}
+
+{% set aParent =  aParentArray[0] if aParentArray else None %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else '' %}
+{% set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{% set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{% set paret_dynamic_name =  aParent.___name+'_dynamic_t' if dynamic_parent_msg else '' %}
+{% set dynamic_fields = aMsg | logical_type("dynamic array",True) %}
+
+{% if dynamic_msg %}
+{%  set struct_name_dynamic =  aMsg.___name+'_dynamic_t' %}
+{%  set inherent_t = paret_dynamic_name if paret_dynamic_name else parent_name %}
+/*!\brief Struct for convenient struct to serialize dynamic message
+ *
+ *   {{ aMsg.___description }}
+ */
+{{ attribute_packed }}(
+struct {{ struct_name_dynamic}}
+    {% if paret_dynamic_name %}
+    : {{ paret_dynamic_name}}
+    {% elif parent_name %}
+    : {{ parent_name}}
+    {% endif %}
+{
+    {{ fm.add_constants(aMsg,aParent, True) }}
+    {{ fm.append_fields(aMsg, name) }}
+
+    /** Constructs object and copy
+    *   only non dynamic data.
+    *
+    *   @param aData - The message
+    */
+    {{ struct_name_dynamic }}({{ struct_name }} const& aData)
+        {% if paret_dynamic_name %}
+        : {{ paret_dynamic_name}}(aData)
+        {% elif parent_name %}
+        : {{ parent_name}}(aData)
+        {% endif %}
+    {
+        {% for field in aMsg.___fields|fields(True) %}
+            {% if  'LogicalType' in field
+                                    and field.LogicalType == "dynamic array" %}
+        {{field.id}} = 0;
+            {% elif 'array_len' in field and field.array_len  > 0 %}
+        for (unsigned i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
+        {
+	        {{field.id}}[i] = aData.{{field.id}}[i];
+        }
+            {% elif field.id %}
+        {{field.id}} = aData.{{field.id}};
+            {% endif %}
+        {% endfor %}
+    }
+
+    /** Copies all fields to message included dynamic
+    *
+    * @param aData Copy to
+    */
+    void MTo({{ struct_name }}& aData) const
+    {
+        {% if paret_dynamic_name %}
+        {{ paret_dynamic_name}}::MTo(aData);
+        {% elif parent_name %}
+        aData.{{ parent_name }}::operator=(*static_cast<{{ parent_name}} const*>(this));
+        {% endif %}
+
+        {% for field in aMsg.___fields|fields(True) if  'LogicalType' in field
+                                    and field.LogicalType != "dynamic array" %}
+            {% if 'array_len' in field and field.array_len  > 0 %}
+        for (unsigned i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
+        {
+	        aData.{{field.id}}[i] = {{field.id}}[i];
+        }
+            {% elif field.id %}
+        aData.{{field.id}} = {{field.id}};
+            {% endif %}
+        {% endfor %}
+    }
+});
+#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800)
+    static_assert(sizeof({{ struct_name_dynamic }}) == {{ struct_name }}::SIZE_FULL,
+                    "invalid size of message {{ aMsg.___name }}");
+#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+    static_assert(__alignof({{ struct_name_dynamic }}) == {{ struct_name_dynamic }}::ALIGN,
+                            "invalid align of message {{ aMsg.___name }}");
+#   endif //#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+#elif defined(COMPILE_ASSERT)
+    COMPILE_ASSERT(sizeof({{ struct_name_dynamic }}) == {{ struct_name }}::SIZE_FULL,
+        InvalidSizeOfMessage_dynamic_{{ aMsg.___name }});
+#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+    COMPILE_ASSERT(__alignof({{ struct_name_dynamic }}) == {{ struct_name_dynamic }}::ALIGN,
+        InvalidAlignOfMessage_dynamic_{{ aMsg.___name }});
+#   endif //#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+#endif
+
+namespace impl{
+/*! \brief Gets size of serialized {{ aMsg.___name }} dynamic data
+ *
+ * @param aVal Object
+ * @return Size of dynamic data
+ * @tparam T Object type
+ */
+template<>
+inline unsigned get_full_size_dynamic<{{ struct_name_dynamic}}>({{ struct_name_dynamic}} const & aVal )
+{
+    unsigned _size = 0;
+
+    {% if paret_dynamic_name %}
+    _size += get_full_size_dynamic<{{ paret_dynamic_name}}>(
+            static_cast<{{ paret_dynamic_name}} const&>(aVal)
+            );
+    {% endif %}
+
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+        {% if 'TypeInfo' in field and field.TypeInfo.is_signed %}
+    unsigned const _{{ field.id }}_len = aVal.{{ field.id }} >= 0?
+                                                static_cast<unsigned>(aVal.{{ field.id }})
+                                                :
+                                                (
+                                                    unsigned (
+                                                    1
+                                                    + (int)std::numeric_limits<{{ field.type }}>::max()
+                                                    + (int)aVal.{{ field.id }}
+                                                    )
+                                                 +   unsigned(
+                                                        -((int)std::numeric_limits<{{ field.type }}>::min())
+                                                    )
+                                                  );
+        {% else %}
+    unsigned const _{{ field.id }}_len = aVal.{{ field.id }};
+        {% endif %}
+    _size += sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type)
+            * _{{ field.id }}_len;
+    {% endfor %}
+    return _size;
+}
+template<>
+inline char* serialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}>
+    (char* aTo, unsigned aMaxSize, {{ struct_name_dynamic}}* aHeader,
+    {{ struct_name}} const & aObject )
+{
+    {% if paret_dynamic_name %}
+    char* const _begin_parent = aTo;
+    aTo = impl::serialize_fields<{{ paret_dynamic_name}},
+            {{ parent_name }}>(aTo, aMaxSize, aHeader, aObject);
+    if( aTo == NULL )
+        return NULL;
+    aMaxSize -= aTo - _begin_parent;
+    {% endif %}
+#ifndef NDEBUG
+    int _order_prev = std::numeric_limits<int>::min();
+#endif
+       {% for field in dynamic_fields|sort(attribute='DynamicOrder') %}
+    {
+        typedef {{ struct_name}}::{{field.id}}_dynamic_t::value_type _value_{{field.id}}_t;
+        typedef _value_{{field.id}}_t* _ptr_{{field.id}}_t;
+
+#ifndef NDEBUG
+        DCHECK_LE(_order_prev, {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }});
+        _order_prev = {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }};
+#endif
+        unsigned const _{{ field.id }}_len = aObject.{{ field.id }}.size();
+        DCHECK_LE(_{{ field.id }}_len, std::numeric_limits<{{ field.type }}>::max());
+        aHeader->{{ field.id }} = _{{ field.id }}_len;
+        unsigned const _{{ field.id }}_len_byte = _{{ field.id }}_len *
+           sizeof(_value_{{field.id}}_t);
+
+        if(_{{ field.id }}_len_byte > aMaxSize)
+           return NULL;
+
+        _ptr_{{field.id}}_t const _begin = (_ptr_{{field.id}}_t) aTo;
+        _ptr_{{field.id}}_t  _to = _begin;
+
+        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        {
+                *(_to++) = aObject.{{ field.id }}[i];
+        }
+        DCHECK_EQ(_{{ field.id }}_len,_to-_begin);
+
+        aTo += _{{ field.id }}_len_byte;
+        DCHECK_EQ(aTo,(char*)_to);
+    }
+        {% endfor %}
+    return aTo;
+}
+template<>
+inline char const* deserialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}>
+    ({{ struct_name}}& aTo, {{ struct_name_dynamic}} const& aObject,
+    char const* aPtr )
+{
+    {% if paret_dynamic_name %}
+    aPtr = impl::deserialize_fields<{{ paret_dynamic_name}}, {{ parent_name }}>(aTo, aObject, aPtr);
+    {% endif %}
+
+#ifndef NDEBUG
+    int _order_prev = std::numeric_limits<int>::min();
+#endif
+       {% for field in dynamic_fields|sort(attribute='DynamicOrder') %}
+    {
+#ifndef NDEBUG
+        DCHECK_LE(_order_prev, {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }});
+        _order_prev = {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }};
+#endif
+
+        {{ get_valid_len_of_array(field) }}
+
+        {{ struct_name}}::{{field.id}}_dynamic_t::value_type const* const _begin =
+                        ({{ struct_name}}::{{field.id}}_dynamic_t::value_type*) aPtr;
+        {{ struct_name}}::{{field.id}}_dynamic_t::value_type const* _from = _begin;
+
+        aTo.{{field.id}}.resize(_{{ field.id }}_len);
+
+        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        {
+            aTo.{{ field.id }}[i]=*(_from++);
+        }
+        DCHECK_EQ(_{{ field.id }}_len, _from-_begin);
+        aPtr += _{{ field.id }}_len
+           * sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type);
+        DCHECK_EQ(aPtr,(char const*)_from);
+    }
+    {% endfor %}
+    return aPtr;
+}
+
+template<>
+inline unsigned dynamic_data_offset<{{ struct_name_dynamic }}>({{ struct_name_dynamic }} const& aObject)
+{
+    switch (aObject.getNumber())
+    {
+        {% for msg2 in messages  if '___type' in msg
+                                and '___parent' in msg
+                                and msg2.___type == 'dynamic'
+                                %}
+            {% for _parent in  msg2.___parent if '___number' in _parent
+                                             and _parent.___number == aMsg.___number
+                    %}
+            {% set child_name =  msg2.___name + '_t' %}
+            case {{ child_name }}::NUMBER:
+                return {{ child_name }}::SIZE_FULL;
+            {% endfor %}
+        {% endfor %}
+        default:
+            break;
+    }
+    return {{ struct_name_dynamic }}::SIZE_FULL;
+}
+}
+template<>
+inline char* serialize_binary<{{ struct_name }}>(char* aTo,unsigned aMaxSize,
+    {{ struct_name }} const& aObject)
+{
+    char* const _begin = aTo;
+    if( sizeof({{ struct_name_dynamic}}) > aMaxSize )
+    {
+        return  NULL;
+    }
+    {{ struct_name_dynamic}}* const _head_ptr = new( aTo )
+            {{ struct_name_dynamic}}(aObject);
+    aTo += sizeof({{ struct_name_dynamic}});
+
+    aTo = impl::serialize_fields<{{ struct_name_dynamic}},{{ struct_name }}>(aTo,
+        aMaxSize - sizeof({{ struct_name_dynamic}}), _head_ptr, aObject);
+#ifndef NDEBUG
+    if(aTo != NULL)
+        DCHECK_EQ(get_full_size<{{ struct_name }}>(aObject), (aTo-_begin));
+#endif
+    fill_header<{{ struct_name_dynamic}}>( _head_ptr );
+    return aTo;
+}
+template<>
+inline {{ struct_name }}& deserialize_binary<{{ struct_name }}>({{ struct_name }}& aTo,
+    char const* aBegin, char const* aEnd)
+{
+    unsigned const _buf_size = aEnd-aBegin;
+
+    DCHECK_LE(sizeof({{ struct_name_dynamic}}), _buf_size);
+    if(sizeof({{ struct_name_dynamic}}) <= _buf_size)
+    {
+
+        {{ struct_name_dynamic}} const& _val =
+                *reinterpret_cast<{{ struct_name_dynamic}} const*>(aBegin);
+
+        _val.MTo(aTo);
+
+        char const* _p = aBegin + impl::dynamic_data_offset<{{ struct_name_dynamic}}>(_val);
+        _p = impl::deserialize_fields<{{ struct_name_dynamic}},{{ struct_name }}>(aTo, _val, _p);
+
+        DCHECK_GE(_buf_size, (_p-aBegin));
+        DCHECK_EQ((_p-aBegin),get_full_size<{{ struct_name }}>(aTo));
+        DCHECK_EQ((_p-aBegin),get_full_size<{{ struct_name_dynamic}}>(_val));
+    }
+    return aTo;
+}
+}//namespace  {{ common.get_namespace(name) }}
+namespace NSHARE
+{
+/*! @brief Serialize message of {{ aMsg.___name }} (Dynamic)
+*/
+template<>
+inline NSHARE::CConfig serialize({{ common.get_namespace(name) }}::{{ struct_name_dynamic }} const& aObject)
+{
+    using namespace {{ common.get_namespace(name) }};
+    {% if paret_dynamic_name %}
+    NSHARE::CConfig _conf("{{ aMsg.___name }}", serialize<{{ paret_dynamic_name }}>(aObject));
+    {% elif parent_name %}
+    NSHARE::CConfig _conf("{{ aMsg.___name }}", serialize<{{ parent_name }}>(aObject));
+    {%  else %}
+    NSHARE::CConfig _conf("{{ aMsg.___name }}");
+    {% endif %}
+
+    {{ fm.serialze_static_fields(aMsg) }}
+    {% for field in dynamic_fields|sort(attribute='DynamicOrder') %}
+        {% if field.id %}
+    {
+        typedef {{ struct_name}}::{{field.id}}_dynamic_t::value_type _value_{{field.id}}_t;
+            {% set _dcast = field|castto(True) %}
+            {% set need_cast_dynamic_to = '('+_dcast+')' if _dcast
+                                  else '' %}
+
+        {{ get_valid_len_of_array(field) }}
+
+        _value_{{field.id}}_t const * const _begin =
+            (_value_{{field.id}}_t const *)
+            ((char const* )&aObject + {{ common.get_namespace(name) }}::
+                            impl::dynamic_data_offset<{{ struct_name_dynamic}}>(aObject));
+
+        _value_{{field.id}}_t const * _from = _begin;
+        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        {
+            _conf.MAdd("{{ field.id }}", {{ need_cast_dynamic_to }} *(_from++));
+        }
+        DCHECK_EQ(_{{ field.id }}_len, _from-_begin);
+    }
+        {% endif %}
+    {% endfor %}
+	return _conf;
+}
+}
+namespace  {{ common.get_namespace(name) }}
+{
+{% endif %}
+{% endmacro %}
+
+{% for msg in messages  if '___type' in msg and msg.___type == 'dynamic' %}
+
+    {{ generate_serialize_message(msg, msg.___parent, messages) }}
+{% endfor %}
+
+{% for msg in messages %}
+    {% set struct_name =  msg.___name+'_t' %}
+#   ifdef SHARE_BUFFER_DEFINED
+inline NSHARE::CBuffer& operator<<(NSHARE::CBuffer& aBuf,
+		{{ struct_name }} const& aVal)
+{
+    return serialize_binary<NSHARE::CBuffer, {{ struct_name }}>(aBuf, aVal);
+}
+inline {{ struct_name }} const& operator>>({{ struct_name }} const& aVal,
+		NSHARE::CBuffer& aBuf)
+{
+    serialize_binary<NSHARE::CBuffer, {{ struct_name }}>(aBuf, aVal);
+    return aVal;
+}
+inline NSHARE::CBuffer const& operator>>(NSHARE::CBuffer const& aBuf,
+		{{ struct_name }}& aVal)
+{
+    deserialize_binary<{{ struct_name }},NSHARE::CBuffer>(aVal, aBuf);
+    return aBuf;
+}
+inline {{ struct_name }}& operator<<({{ struct_name }}& aVal,
+		NSHARE::CBuffer const& aBuf)
+{
+    return deserialize_binary<{{ struct_name }},NSHARE::CBuffer>(aVal, aBuf);
+
+}
+#   endif //#   ifdef SHARE_BUFFER_DEFINED
+#if __cplusplus >= 201103L
+template<typename TContainer
+        ,
+		typename value_type = typename TContainer::value_type,
+		typename TContainer::size_type (TContainer::*TSize)() const
+		= TContainer::size,
+
+		void (TContainer::*TResize)(typename TContainer::size_type)
+			= TContainer::resize
+        >
+inline TContainer& operator<<(TContainer& aBuf,
+		{{ struct_name }} const& aVal)
+{
+    return serialize_binary<TContainer, {{ struct_name }}>(aBuf, aVal);
+}
+template<typename TContainer,
+		typename value_type = typename TContainer::value_type,
+		typename TContainer::size_type (TContainer::*TSize)() const
+		= TContainer::size,
+
+		void (TContainer::*TResize)(typename TContainer::size_type)
+			= TContainer::resize
+    >
+inline {{ struct_name }} const& operator>>({{ struct_name }} const& aVal,
+		TContainer& aBuf)
+{
+    serialize_binary<TContainer, {{ struct_name }}>(aBuf, aVal);
+    return aVal;
+}
+
+template<typename TContainer,
+		typename value_type = typename TContainer::value_type,
+		typename TContainer::size_type (TContainer::*TSize)() const
+		= TContainer::size,
+		void (TContainer::*TResize)(typename TContainer::size_type)
+			= TContainer::resize
+    >
+inline TContainer const& operator>>(TContainer const& aBuf,
+		{{ struct_name }}& aVal)
+{
+    deserialize_binary<{{ struct_name }},TContainer>(aVal, aBuf);
+    return aBuf;
+}
+
+template<typename TContainer,
+		typename value_type = typename TContainer::value_type,
+		typename TContainer::size_type (TContainer::*TSize)() const
+		= TContainer::size,
+
+		void (TContainer::*TResize)(typename TContainer::size_type)
+			= TContainer::resize
+>
+inline {{ struct_name }}& operator<<({{ struct_name }}& aVal,
+		TContainer const& aBuf)
+{
+    return deserialize_binary<{{ struct_name }},TContainer>(aVal, aBuf);
+
+}
+#endif //#if __cplusplus >= 201103L
+
+{% endfor %}
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

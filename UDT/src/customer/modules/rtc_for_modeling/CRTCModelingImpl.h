@@ -13,9 +13,9 @@
 #define CRTCMODELINGIMPL_H_
 
 #include <SHARE/UType/CSharedMemory.h>
-#include <udt/IRtc.h>
+#include <UDT/IRtc.h>
 #include <CRTCForModeling.h>
-#include <udt/CCustomer.h>
+#include <UDT/CCustomer.h>
 
 namespace NUDT
 {

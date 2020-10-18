@@ -1,0 +1,107 @@
+{% set file_name = 'subscriber_test_' + name | lower %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+{% set field_version_major = header.___LogicalType.version_major[0]
+        if 'version_major'in  header.___LogicalType else None  %}
+{% set field_version_minor = header.___LogicalType.version_minor[0]
+        if 'version_minor'in  header.___LogicalType else None  %}
+
+#include <customer.h>
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <{{ common.get_namespace(name) }}.h>
+#include <{{ common.get_namespace(name) }}_udt.h>
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+    extern bool subscriber_test(int argc, char const*argv[]);
+    extern int initialize_library(int argc, char const*argv[]);
+
+    extern bool doing_tests();
+    extern bool doing_tests_of_send_receive();
+
+    /*! \brief Handling connection to the kernel event
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT NULL
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *\return 0
+     */
+    extern int event_connect_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+    /*! \brief Handling disconnection to the kernel event
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT NULL
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *\return 0
+     */
+    extern int event_disconnect_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+    /*! \brief The function is called when some program
+     * wants to receive some message from me
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT A pointer to the structure #NUDT::subcribe_receiver_args_t
+     *			  which is contained information about subscription.
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *\return 0
+     */
+    extern int event_new_receiver(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+    /*! \brief The function is called when some program doesn't more
+     * want to receive some message from me
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT A pointer to the structure #NUDT::subcribe_receiver_args_t
+     *			  which is contained information about subscription.
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *\return 0
+     */
+    extern int event_remove_receiver(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+    /*!\brief Handling the messages which isn't delivered to the
+     * receivers
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT A pointer to the structure #NUDT::fail_sent_args_t
+     *			  which is consisted information about error and message
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *
+     *\return 0
+     */
+    extern int event_fail_sent_handler(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+
+    {% for msg in messages-%}
+        {% set struct_name =  msg.___name+'_t' %}
+        {% set function_name =  'process_of_'+msg.___name %}
+    /*!\brief The function is called  for handling received message
+     * of number #{{ struct_name }}::NUMBER
+     *
+     *
+     *\param WHO A pointer to the structure Customer which is invoked function
+     *\param WHAT A pointer to the structure #NUDT::received_message_args_t
+     *			  in which is contained the message.
+     *\param YOU_DATA A pointer to data that you has been wanted to pass
+     *				  as the third parameter (NULL In this case).
+     *
+     *\return 0
+     */
+    extern int {{ function_name }}(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA);
+    {% endfor %}
+}
+}
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

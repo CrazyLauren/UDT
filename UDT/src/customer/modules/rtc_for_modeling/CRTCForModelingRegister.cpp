@@ -52,20 +52,15 @@ bool CRTCForModelingRegister::MIsAlreadyRegistered() const
 }
 
 #if !defined(RTC_FOR_MODELING_STATIC)
-static NSHARE::factory_registry_t g_factory;
 extern "C" RTC_FOR_MODELING_EXPORT NSHARE::factory_registry_t* get_factory_registry()
+#else
+extern "C" RTC_FOR_MODELING_EXPORT NSHARE::factory_registry_t* get_factory_registry_rtc_for_modeling()
+#endif
 {
+	static NSHARE::factory_registry_t g_factory;
 	if (g_factory.empty())
 	{
 		g_factory.push_back(new NUDT::CRTCForModelingRegister());
 	}
 	return &g_factory;
 }
-#else
-#	include <load_static_module.h>
-namespace
-{
-	static NUDT::CStaticRegister<NUDT::CRTCForModelingRegister> _reg;
-}
-#endif
-

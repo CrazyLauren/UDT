@@ -8,5 +8,13 @@ set(@PROJECT_NAME@_INSTALL_PLUGIN_PATH
 	  "@_CONFIG_PLUGIN_PATH@"
 	CACHE PATH  "UDT plugins path")
 
+set(@PROJECT_NAME@_INSTALL_GUI_PATH
+	  "@_CONFIG_INSTALL_GUI_PATH@"
+	CACHE PATH  "The absolute path to install GUI")
+
+set(@PROJECT_NAME@_GUI_PATH
+	  "@_CONFIG_GUI_PATH@"
+	CACHE PATH  "The absolute path to GUI")
+		
 include("${CMAKE_CURRENT_LIST_DIR}/@CONF_TARGET_NAME@Targets.cmake")
 check_required_components("@CONF_TARGET_NAME@")

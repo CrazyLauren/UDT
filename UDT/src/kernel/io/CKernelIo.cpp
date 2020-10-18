@@ -161,6 +161,7 @@ void CKernelIo::MReceivedData(demand_dgs_t const& aWhat,
 		const descriptor_t& aFrom, const routing_t& aRoute,
 		error_info_t const& aError)
 {
+	VLOG(2)<<"Receive demand from "<<aFrom<<"\n "<<aWhat;
 	//MRecvImpl(aRoute, aFrom, aWhat);
 	CDataObject::sMGetInstance().MPush(make_data_from(aFrom, aWhat));
 }

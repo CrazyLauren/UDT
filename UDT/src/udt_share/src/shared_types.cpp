@@ -14,7 +14,7 @@
 
 #include <deftype>
 #include <shared_types.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 //#include <udt_share.h>
 #include <string.h>
 #include <udt_rtc_types.h>
@@ -149,7 +149,12 @@ const NSHARE::CText user_data_info_t::KEY_REGISTRATORS = "reg";
 const NSHARE::CText user_data_info_t::KEY_PACKET_PROTOCOL = "pl";
 const NSHARE::CText user_data_info_t::KEY_DATA_OFFSET = "nr";
 const NSHARE::CText user_data_info_t::KEY_DATA_ENDIAN = "endian";
-
+COMPILE_ASSERT(sizeof(user_data_info_t::event_handler_t) ==
+		(sizeof(demand_dg_t::event_handler_value_t)
+				+ sizeof(demand_dg_t::flags_t)
+		)
+		, InvalidSizeEventHandler
+		);
 user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 		//FFrom(aConf.MChild(KEY_PACKET_FROM)),//
 		FDataOffset(0), //
@@ -172,9 +177,9 @@ user_data_info_t::user_data_info_t(NSHARE::CConfig const& aConf) :
 	for (; _it != _set.end(); ++_it)
 	{
 		VLOG(5) << "Push handler " << *_it;
-		FEventsList.push_back(
+		FHandlerEventsList.push_back(
 				_it->MValue(
-						demand_dg_t::event_handler_t(demand_dg_t::NO_HANDLER)));
+						event_handler_t(demand_dg_t::NO_HANDLER)));
 	}
 
 	std::pair<required_header_t, bool> const _val2 = parse_head(aConf,
@@ -202,10 +207,10 @@ NSHARE::CConfig user_data_info_t::MSerialize() const
 	{
 		_conf.MAdd(KEY_REGISTRATORS, FRegistrators.MSerialize());
 	}
-	if (!FEventsList.empty())
+	if (!FHandlerEventsList.empty())
 	{
-		std::vector<NUDT::demand_dg_t::event_handler_t>::const_iterator _it =
-				FEventsList.begin(), _it_end = FEventsList.end();
+		handler_id_array_t::const_iterator _it =
+				FHandlerEventsList.begin(), _it_end = FHandlerEventsList.end();
 		for (; _it != _it_end; ++_it)
 		{
 			_conf.MAdd(demand_dg_t::HANDLER, *_it);
@@ -324,8 +329,11 @@ const NSHARE::CText demand_dg_t::HANDLER = "hand";
 const NSHARE::CText demand_dg_t::KEY_HANDLER_PRIORITY = "hand_priority";
 const NSHARE::CText demand_dg_t::KEY_FLAGS = "dflag";
 
-const demand_dg_t::event_handler_t demand_dg_t::NO_HANDLER = static_cast<event_handler_t>(-1);
+const demand_dg_t::event_handler_value_t demand_dg_t::NO_HANDLER = std::numeric_limits<demand_dg_t::event_handler_value_t>::max();
+const demand_dg_t::event_handler_value_t demand_dg_t::MAX_HANDLER = std::numeric_limits<demand_dg_t::event_handler_value_t>::max() - 1;
+
 const demand_dg_t::handler_priority_t demand_dg_t::HANDLER_DEFAULT_PRIORITY=std::numeric_limits<handler_priority_t>::max()/2;
+
 extern std::pair<required_header_t, bool> UDT_SHARE_EXPORT parse_head(
 		NSHARE::CConfig const& aConf, NSHARE::CText const& _proto)
 {
@@ -385,7 +393,7 @@ extern NSHARE::CConfig UDT_SHARE_EXPORT serialize_head(
 demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		FHandlerPriority(HANDLER_DEFAULT_PRIORITY),//
 		FNameFrom(aConf.MChild(user_data_info_t::KEY_PACKET_FROM)), //
-		FHandler(NO_HANDLER), //
+		FEventHandler(NO_HANDLER), //
 		FFlags(aConf.MValue < flags_t > (KEY_FLAGS, E_DEMAND_DEFAULT_FLAGS))
 {
 	VLOG(2) << "Create demand_dg_t from " << aConf;
@@ -401,7 +409,7 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 	else
 	{
 		FWhat = _val.first;
-		aConf.MGetIfSet(HANDLER, FHandler);
+		aConf.MGetIfSet(HANDLER, FEventHandler);
 		aConf.MGetIfSet(KEY_HANDLER_PRIORITY, FHandlerPriority);
 
 		NSHARE::CConfig const & _set = aConf.MChild(NSHARE::uuid_t::NAME);
@@ -411,7 +419,10 @@ demand_dg_t::demand_dg_t(NSHARE::CConfig const& aConf) :
 		}
 	}
 }
-
+demand_dg_t::event_handler_value_t demand_dg_t::MGetHandler() const
+{
+	return user_data_info_t::sMGeHandlerOf(FEventHandler);//for safety
+}
 NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 {
 	CConfig _conf(NAME);
@@ -421,7 +432,7 @@ NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 
 	_conf.MAdd(user_data_info_t::KEY_PACKET_FROM, FNameFrom.MSerialize());
 	_conf.MAdd(user_data_info_t::KEY_PACKET_PROTOCOL, FProtocol);
-	_conf.MAdd(HANDLER, FHandler);
+	_conf.MAdd(HANDLER, FEventHandler);
 	_conf.MAdd(KEY_HANDLER_PRIORITY, FHandlerPriority);
 	_conf.MAdd(KEY_FLAGS, FFlags.MGetMask());
 
@@ -435,7 +446,7 @@ NSHARE::CConfig demand_dg_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 bool demand_dg_t::MIsValid() const
 {
 	return !FProtocol.empty() && (FNameFrom.MIsValid() || FUUIDFrom.MIs())
-			&& FHandler != NO_HANDLER;
+			&& user_data_info_t::sMGeHandlerOf(FEventHandler) != NO_HANDLER;
 }
 void demand_dg_t::MSwitchEndianFlag()
 {
@@ -465,9 +476,17 @@ bool demand_dg_t::operator==(demand_dg_t const& aRht) const
 }
 //---------------------------
 const NSHARE::CText demand_dgs_t::NAME = "dems";
-demand_dgs_t::demand_dgs_t(NSHARE::CConfig const& aConf)
+const NSHARE::CText demand_dgs_t::PRIORITY = "p";
+const int demand_dgs_t::MAX_DEM_PRIORITY = std::numeric_limits<int32_t>::max();
+const int demand_dgs_t::NO_DEM_PRIORITY = -1;
+
+demand_dgs_t::demand_dgs_t(NSHARE::CConfig const& aConf):
+				FPriority(NO_DEM_PRIORITY)
 {
 	VLOG(2) << "Create demand_dgs_t from " << aConf;
+
+	aConf.MGetIfSet(PRIORITY, FPriority);
+
 	ConfigSet _set = aConf.MChildren(demand_dg_t::NAME);
 	ConfigSet::const_iterator _it = _set.begin();
 	for (; _it != _set.end(); ++_it)
@@ -476,9 +495,24 @@ demand_dgs_t::demand_dgs_t(NSHARE::CConfig const& aConf)
 		push_back(demand_dg_t(*_it));
 	}
 }
+bool demand_dgs_t::sMIsPriorityGreateOf(int aLft, int aRht)
+{
+	return (aRht != MAX_DEM_PRIORITY //
+				&& aRht !=NO_DEM_PRIORITY && aLft !=NO_DEM_PRIORITY //
+				&&  aLft > aRht )//
+		|| (aRht == MAX_DEM_PRIORITY //
+				&&  aLft != MAX_DEM_PRIORITY )//
+		|| aRht == NO_DEM_PRIORITY//
+				;
+}
+bool demand_dgs_t::MIsPriorityGreateOf(int aOldPrior) const
+{
+	return sMIsPriorityGreateOf(FPriority, aOldPrior);
+}
 NSHARE::CConfig demand_dgs_t::MSerialize(bool aIsSerializeHeadAsRaw) const
 {
 	CConfig _conf(NAME);
+	_conf.MSet (PRIORITY, FPriority);
 	const_iterator _it(begin()), _end(end());
 	for (; _it != _end; ++_it)
 	{
@@ -495,7 +529,7 @@ bool demand_dgs_t::MIsValid() const
 		if (!_it->MIsValid())
 			return false;
 	}
-	return true;
+	return FPriority <= MAX_DEM_PRIORITY;
 }
 //---------------------------
 const NSHARE::CText kernel_infos_array_t::NAME = "kinfs";
@@ -786,14 +820,54 @@ void fail_send_t::MSetError(error_type aError)
 }
 const NSHARE::CText user_data_t::NAME = "udata";
 const NSHARE::CText user_data_t::DATA = "data";
-const NSHARE::CText user_data_t::HEADER = "head";
+const NSHARE::CText user_data_t::HEADER = "header";
 const NSHARE::CText user_data_t::PARSER = "by_parser";
+const NSHARE::CText user_data_t::PARSER_BASE64 = "base64";
 
 NSHARE::CConfig user_data_t::MSerialize(NSHARE::CText const & aName) const
 {
 	return MSerialize(
 			aName.empty() ?
 					NULL : CParserFactory::sMGetInstance().MGetFactory(aName));
+}
+user_data_t::user_data_t(NSHARE::CConfig const& aConf):
+		FDataId(aConf.MChild(user_data_info_t::NAME))
+{
+	VLOG(5) << "Create user_data_t from " << aConf;
+	NSHARE::CText _parser;
+	if(aConf.MGetIfSet(PARSER, _parser))
+	{
+		if(_parser == PARSER_BASE64)
+		{
+			if(!aConf.MGetIfSet(DATA, FData))
+				LOG(DFATAL)<<"Cannot parse base64 data from "<<aConf.MToJSON(true);
+		}else
+		{
+
+			IExtParser* const _p =
+					CParserFactory::sMGetInstance().MGetFactory(
+							_parser);
+			DCHECK_NOTNULL(_p)<<"No parser "<<_parser<<"\n"<<aConf.MToJSON(true);
+			if (_p)
+			{
+				NSHARE::CConfig const& _data = aConf.MChild(DATA);
+				if (!_data.MIsSimple())
+				{
+					DCHECK_EQ(_data.MChildren().size(), 1)<< aConf.MToJSON(true);
+					FData = _p->MFromConfig(_data.MChildren().front());
+				}
+				else
+				{
+					LOG(DFATAL) << "No data key in " << aConf.MToJSON(true);
+				}
+			}
+		}
+
+	}else
+	{
+		LOG(DFATAL)<<"No parser info in "<<aConf.MToJSON(true);
+	}
+
 }
 NSHARE::CConfig user_data_t::MSerialize(/*required_header_t const& aHead,*/
 IExtParser* aP) const
@@ -833,17 +907,20 @@ IExtParser* aP) const
 		if (!_is_base64)
 			try
 			{
-				NSHARE::CConfig _data(
-						aP->MToConfig(FDataId.FWhat, _begin + _data_offset,
-								_begin + _size - _data_offset));
-				_data.MKey() = DATA;
-				if (_data.MIsOnlyKey())
+				NSHARE::CConfig _udata(
+						aP->MToConfig(FDataId.FWhat, _begin /*+ _data_offset*/, //deprecated early used only for raw protocol
+								_begin + _size /*- _data_offset*/));
+//				_data.MKey() = DATA;
+				if (_udata.MIsOnlyKey())
 				{
 					LOG(ERROR) << "Cannot serialize by " << aP->MGetType();
 					_is_base64 = true;
 				}
 				else
 				{
+					NSHARE::CConfig _data(DATA);
+					_data.MAdd(_udata);
+
 					_conf.MAdd(_data);
 					_conf.MAdd(PARSER, aP->MGetType());
 				}
@@ -861,7 +938,7 @@ IExtParser* aP) const
 	if (_is_base64)
 	{
 		NSHARE::CConfig const _data(DATA, FData);
-		_conf.MAdd(PARSER, "base64");
+		_conf.MAdd(PARSER, PARSER_BASE64);
 		_conf.MAdd(_data);
 	}
 	return _conf;
@@ -875,6 +952,27 @@ void user_data_t::MMoveTo(user_data_t & aTo)
 	aTo.FDataId=FDataId;
 	FData.MMoveTo(aTo.FData);
 }
+void user_data_info_t::sMAddFlagsTo(event_handler_t& aValue, demand_dg_t::flags_t const& aFlags)
+{
+	event_handler_t const _flags=aFlags;
+	aValue = aValue | (_flags << (sizeof(demand_dg_t::flags_t)*8));
+}
+void user_data_info_t::sMAddHandlerTo(event_handler_t& aValue, demand_dg_t::event_handler_value_t const& aHandler)
+{
+	event_handler_t const _flags=aHandler;
+	aValue = aValue | _flags;
+}
+demand_dg_t::event_handler_value_t user_data_info_t::sMGeHandlerOf(event_handler_t const& aValue)
+{
+	event_handler_t const _flag_mask= (~static_cast<event_handler_t>(0)) << (sizeof(demand_dg_t::flags_t)*8);
+	event_handler_t const _rval = aValue & ~_flag_mask;
+	return static_cast<demand_dg_t::event_handler_value_t>(_rval);
+}
+demand_dg_t::flags_t user_data_info_t::sMGeFlagsOf(event_handler_t const& aValue)
+{
+	return static_cast<demand_dg_t::flags_t>(aValue>>((sizeof(event_handler_t) - sizeof(demand_dg_t::flags_t))*8));
+}
+
 const NSHARE::CText main_ch_param_t::NAME = "main";
 const NSHARE::CText main_ch_param_t::CHANNEL = "channel";
 main_ch_param_t::main_ch_param_t(NSHARE::CConfig const& aConf)

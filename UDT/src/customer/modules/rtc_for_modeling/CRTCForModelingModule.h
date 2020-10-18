@@ -16,7 +16,7 @@
 
 #include <SHARE/UType/CSingleton.h>
 #include <SHARE/UType/CSharedMemory.h>
-#include <udt/IRtcControl.h>
+#include <UDT/IRtcControl.h>
 #include <rtc_for_modeling_export.h>
 #include <CDataObject.h>
 #include "CRTCModelingImpl.h"

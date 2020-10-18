@@ -65,14 +65,17 @@ public:
 	NSHARE::CConfig MToConfig(const required_header_t& aHead, const uint8_t* aItBegin,
 			const uint8_t* aItEnd) const
 	{
-		NSHARE::CConfig  _conf("data");
-		_conf.MAdd("DataView",aItBegin,aItEnd-aItBegin);
+		NSHARE::CConfig  _conf("DataView",aItBegin,aItEnd-aItBegin);
 		return _conf;
 	}
 	NSHARE::CBuffer MFromConfig(const NSHARE::CConfig& aFrom) const
 	{
 		NSHARE::CBuffer _rval;
-		if(aFrom.MIsChild("DataView"))
+		if(aFrom.MKey() == "DataView")
+		{
+			aFrom.MValue(_rval);
+		}
+		else if(aFrom.MIsChild("DataView"))
 		{
 			aFrom.MChild("DataView").MValue(_rval);
 		}

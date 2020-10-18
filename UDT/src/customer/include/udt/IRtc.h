@@ -12,7 +12,7 @@
 #ifndef ICRTC_H_
 #define ICRTC_H_
 
-#include <udt/udt_rtc.h>
+#include <UDT/udt_rtc.h>
 namespace NUDT
 {
 struct callback_rtc_t;
@@ -63,16 +63,14 @@ public:
 	virtual bool MLeaveFromRTC() =0;
 
 	/** @brief Gets the current time in second
-	 *
-	 * @param aGroup A time of group (by default common time)
+	 *	 
 	 * @return current time in seconds
 	 * 		   (precision - milliseconds)
 	 */
 	virtual time_in_second_t MGetCurrentTime() const=0;
 
 	/** @brief Gets the current time in millisecond
-	 *
-	 * @param aGroup A time of group (by default common time)
+	 *	 
 	 * @return current time in millisecond
 	 * 		   (precision - milliseconds)
 	 */
@@ -87,8 +85,7 @@ public:
 	 * In modeling purpose it's equal to send
 	 * to modeling controller the time
 	 * of "next call".
-	 * @param aTime A time (absolute)
-	 * @param aGroup A time of group (by default common time)
+	 * @param aTime A time (absolute)	 
 	 * @return current time in seconds
 	 */
 	virtual time_in_second_t MSleepUntil(time_in_second_t aTime) const =0;
@@ -102,8 +99,7 @@ public:
 	 * In modeling purpose it's equal to send
 	 * to modeling controller the time
 	 * of "next call".
-	 * @param aTime A time (absolute)
-	 * @param aGroup A time of group (by default common time)
+	 * @param aTime A time (absolute)	 
 	 * @return current time in seconds
 	 */
 	virtual millisecond_t MSleepUntil(millisecond_t aTime) const =0;
@@ -115,8 +111,7 @@ public:
 	 *
 	 * What for it's necessary see  #MGetCurrentTime
 	 * method.
-	 *
-	 * @param aGroup A time of group (by default common time)
+	 *	 
 	 * @param aFirstCall A first expiry time (absolute)
 	 * @param aIntervalCall A repetition interval or -1
 	 * @param aHandler A pointer to the function for handling timer
@@ -131,8 +126,7 @@ public:
 	 *
 	 * What for it's necessary see  #MGetCurrentTime
 	 * method.
-	 *
-	 * @param aGroup A time of group (by default common time)
+	 *	 
 	 * @param aFirstCall A first expiry time (absolute)
 	 * @param aIntervalCall A repetition interval or 0
 	 * @param aHandler A pointer to the function for handling timer
@@ -143,8 +137,7 @@ public:
 	/** Returns info about used RTC
 	 *
 	 * What for it's necessary see  #MGetCurrentTime
-	 * method.
-	 * @param aGroup A time of group (by default common time)
+	 * method.	 
 	 * @return Info about RTC
 	 */
 	virtual rtc_info_t MGetRTCInfo() const=0;
@@ -201,7 +194,7 @@ public:
  *
  *\see callback_rtc_t#operator()()
  */
-typedef int (*signal_rtc_t)(IRtc* WHO, void* WHAT, void* YOU_DATA);
+typedef int (*signal_rtc_t)(void* WHO, void* WHAT, void* YOU_DATA);
 
 /*!\brief Regular callback structure used in "IRtc" structure
  *

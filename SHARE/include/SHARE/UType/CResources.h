@@ -66,7 +66,7 @@ public:
 	};
 
 	explicit CResources(param_t const & aParam =param_t());
-	explicit CResources(NSHARE::CConfig const& aConfig);
+	CResources(NSHARE::CConfig const& aConfig);
 	~CResources();
 
 	bool MSetParam(param_t const & aParam);

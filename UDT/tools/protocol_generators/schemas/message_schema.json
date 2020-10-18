@@ -86,12 +86,18 @@
           "min_value": {
             "title": "Minimal value",
             "propertyOrder": 5,
-            "type": "integer"
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 24,
+            "pattern": "^[0-9]+$|^$"
           },
           "max_value": {
             "title": "Maximal value",
             "propertyOrder": 6,
-            "type": "integer"
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 24,
+            "pattern": "^[0-9]+$|^$"
           },
           "sampling": {
             "title": "Measurement accuracy",

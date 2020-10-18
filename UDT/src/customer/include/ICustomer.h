@@ -12,7 +12,7 @@
 #ifndef ICUSTOMER_H_
 #define ICUSTOMER_H_
 
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <SHARE/Socket/ISocket.h>
 namespace NUDT
 {

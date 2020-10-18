@@ -1,0 +1,132 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+{% import "base_macros.tmpl" as common %}
+{% set file_name = 'parser_test_' + name | lower %}
+{{ common.add_file_secription(file_name+'.cpp') }}
+{% autoescape false %}
+#include <deftype>
+#define {{ name | upper }}_FLOAT_COMPARE_PRECISION 1e-7
+
+#include "{{ common.get_namespace(name) }}_test_generator.h"
+#include "{{ file_name }}.h"
+#include <{{ common.get_namespace(name) }}_compare_operators.h>
+#include <{{ common.get_namespace(name) }}_serialize_binary.h>
+#include "{{ common.get_namespace(name) }}_ostream.h"
+
+#define DOESNT_USE_OPERATOR
+#define FORCE_CALL_METHODS
+#define PROCESS_METHOD_NAME MProcess /*!< Define method which is used in
+                                        * in "{{ common.get_namespace(name) }}_parser.h"
+                                        * when returns result of buffer parsing
+                                        *
+                                        */
+
+#include <{{ common.get_namespace(name) }}_parser.h>
+
+using namespace NSHARE;
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+/** Parser of messages
+*/
+struct parser_impl
+{
+    typedef std::map<unsigned, unsigned> amount_of_msg_t; ///!< typeof of received messages
+    amount_of_msg_t FAmountOfMsg;
+
+    void PROCESS_METHOD_NAME({{ header.___name }}_t const* aWhat, bool aIsInherent,
+            const char* aBegin, const char* aEnd, unsigned aNum)
+    {}
+{% for msg in messages-%}
+    {% set struct_name =  msg.___name+'_t' %}
+    void PROCESS_METHOD_NAME({{ struct_name }} const* aWhat, bool aIsInherent,
+            const char* aBegin, const char* aEnd, unsigned aNum)
+    {
+        LOG(INFO)<<"Receive {{ msg.___name }}"
+        {% if '___number' in msg %}
+                <<"(#"<<{{ struct_name }}::NUMBER<<")"
+        {% endif %}
+        <<"size = "<<(aEnd- aBegin)
+        <<" as is inherent "<<aIsInherent
+        <<" Remain handlers "<<aNum
+        ;
+        VLOG(2)<<*aWhat;
+        if(!aIsInherent)
+            MHandle(*aWhat);
+    }
+{% endfor %}
+
+    template <class TMsg>
+    void MHandle(TMsg const& aWhat)
+    {
+        VLOG(2)<<"Message #"<<TMsg::NUMBER<<"\n"<<aWhat;
+        TMsg const& _test_value(generate<TMsg>());
+        bool const _is = aWhat == _test_value;
+
+        if(_is)
+            FAmountOfMsg[TMsg::NUMBER]++;
+        else
+        {
+            LOG(ERROR)<< "***Test error**: Data isn't equal for "
+                    <<TMsg::NUMBER;
+        }
+    }
+
+    bool MIs() const
+    {
+        amount_of_msg_t::const_iterator _it=FAmountOfMsg.begin(), _it_end(FAmountOfMsg.end());
+
+        for(;_it != _it_end;++_it)
+            if(_it->second != 1)
+            {
+                return false;
+            }
+        return FAmountOfMsg.size() == {{ messages|length }};
+    }
+};
+
+bool parser_test()
+{
+    LOG(INFO)<< "Parser test";
+    bool _is=true;
+
+	parser_impl _parser;
+//    std::vector<char> _buf;
+    NSHARE::CBuffer _buf;
+
+    _buf
+{% for msg in messages-%}
+    {% set struct_name =  msg.___name+'_t' %}
+    << generate<{{ struct_name }}>()
+{% endfor %}
+    ;
+    LOG(INFO)<<"Parsed buffer, size = "<<_buf.size();
+    LOG(INFO)<<'\n';
+    VLOG(1)<<_buf;
+
+    const char * const _buffer_begin = (const char *)_buf.ptr_const();
+    const char * const _buffer_end = _buffer_begin + _buf.size();
+    const char * _end = parser(_buffer_begin, _buffer_end, &_parser);
+
+    _is = _is && _parser.MIs();
+    if(!_is)
+        LOG(ERROR) << "***Test error**: Not all messages was founded in buffer";
+    else
+    {
+        _is = _is && (_end == _buffer_end);
+        if(!_is)
+            LOG(ERROR) << "***Test error**: Some data isn't parsed";
+    }
+    if(_is)
+    {
+        LOG(INFO)<< "Parser test finished successfully ";
+        std::cout << "Parser test finished successfully " << std::endl;
+    }
+    return _is;
+}
+/// @todo test parser errors
+}
+}
+{% endautoescape %}

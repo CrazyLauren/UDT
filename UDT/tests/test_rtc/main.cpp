@@ -21,7 +21,7 @@ std::vector<std::pair<ptrdiff_t, std::string> > g_child_pid =
 { 0, g_publisher_name+std::string(".2") },
 { 0, g_publisher_name+std::string(".3") },
 { 0, g_publisher_name+std::string(".4") } };
-const char * g_rtc_name="rtc";
+const char * g_rtc_name="some";
 
 static std::string const g_sem_name = g_subscriber_name;
 static NSHARE::CSharedMemory g_memory;

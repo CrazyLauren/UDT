@@ -108,7 +108,7 @@ struct sent_state_t
 	 * used the MIsValid().
 	 * @param aConf Serialized object
 	 */
-	explicit sent_state_t(NSHARE::CConfig const& aConf);
+	sent_state_t(NSHARE::CConfig const& aConf);
 
 	/*! @brief Serialize object
 	 *
@@ -183,7 +183,7 @@ struct SHARE_EXPORT diagnostic_io_t
 	 * used the MIsValid().
 	 * @param aConf Serialized object
 	 */
-	explicit diagnostic_io_t(NSHARE::CConfig const& aConf);
+	diagnostic_io_t(NSHARE::CConfig const& aConf);
 
 
 	/*! @brief Serialize object

@@ -1,0 +1,41 @@
+from setuptools import find_packages, setup
+from setuptools.dist import Distribution
+
+class BinaryDistribution(Distribution):
+  def is_pure(self):
+    return False
+  def has_ext_modules(self):
+    return True
+
+from setuptools.command.install import install
+class InstallPlatlib(install):
+    def finalize_options(self):
+        install.finalize_options(self)
+        self.install_lib=self.install_platlib
+
+setup(
+  name='@PYTHON_SETUP_PROJECT_NAME@',
+  version='@PYTHON_SETUP_PROJECT_VERSION@',
+  author='@PYTHON_SETUP_PROJECT_AUTHORS@',
+  author_email='@PYTHON_SETUP_PROJECT_SUPPORT_ADDRESS@',
+  url='@PYTHON_SETUP_PROJECT_URL@',
+  distclass=BinaryDistribution,
+  cmdclass={'install': InstallPlatlib},
+  packages=find_packages(),
+  @PYTHON_SETUP_INSTALL_REQUIREMENTS@
+  package_data={
+    '@PYTHON_SETUP_PROJECT_NAME@':['@CMAKE_INSTALL_LIBDIR@/*'@PYTHON_SETUP_PACKAGE_DATA@],    
+  },
+  include_package_data=True,
+  classifiers=[
+  'Development Status :: 5 - Production/Stable',
+  'Intended Audience :: Developers',
+  'Operating System :: POSIX :: Linux',
+  'Operating System :: MacOS :: MacOS X',
+  'Operating System :: Microsoft :: Windows',
+  'Programming Language :: Python',
+  'Programming Language :: C++',
+  'Topic :: Scientific/Engineering',
+  'Topic :: Software Development :: Libraries :: Python Modules'
+  ],
+)

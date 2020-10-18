@@ -84,10 +84,10 @@ diagnostic_io_t::diagnostic_io_t()
 CConfig diagnostic_io_t::MSerialize() const
 {
 	CConfig _conf(NAME);
-	_conf.MAdd(KEY_RECVDATA,FRecvData);
-	_conf.MAdd(KEY_SENTDATA,FSentData);
-	_conf.MAdd(KEY_RECVCOUNT,FRecvCount);
-	_conf.MAdd(KEY_SENTCOUNT,FSentCount);
+	_conf.MAdd<unsigned>(KEY_RECVDATA,FRecvData);
+	_conf.MAdd<unsigned>(KEY_SENTDATA,FSentData);
+	_conf.MAdd<unsigned>(KEY_RECVCOUNT,FRecvCount);
+	_conf.MAdd<unsigned>(KEY_SENTCOUNT,FSentCount);
 
 	const unsigned _last_bits = sent_state_t::E_MAX_BITWISE_CODE;
 
@@ -107,10 +107,18 @@ diagnostic_io_t::diagnostic_io_t(NSHARE::CConfig const& aConf)
 	FSentData=0;
 	FSentCount=0;
 
-	aConf.MGetIfSet(KEY_RECVDATA,FRecvData);
-	aConf.MGetIfSet(KEY_SENTDATA,FSentData);
-	aConf.MGetIfSet(KEY_RECVCOUNT,FRecvCount);
-	aConf.MGetIfSet(KEY_SENTCOUNT,FSentCount);
+	unsigned _tmp=0;
+	if(aConf.MGetIfSet(KEY_RECVDATA,_tmp))
+		FRecvData=_tmp;
+
+	if(aConf.MGetIfSet(KEY_SENTDATA,_tmp))
+		FSentData=_tmp;
+
+	if(aConf.MGetIfSet(KEY_RECVCOUNT,_tmp))
+		FRecvCount=_tmp;
+
+	if(aConf.MGetIfSet(KEY_SENTCOUNT,_tmp))
+		FSentCount=_tmp;
 
 	ConfigSet const _set=aConf.MChildren(sent_state_t::NAME);
 

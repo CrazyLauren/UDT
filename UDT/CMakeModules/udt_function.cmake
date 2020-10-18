@@ -17,7 +17,7 @@ function (add_loadable_module aTARGET_NAME)
 			)
 
 	set(CUSTOMER_AVAILABLE_MODULES
-			${${CUSTOMER_AVAILABLE_MODULES}_AVAILABLE_MODULES}
+			${CUSTOMER_AVAILABLE_MODULES}
 			${aTARGET_NAME}
 			CACHE STRING "list of available modules"
 			FORCE
@@ -46,6 +46,8 @@ function (add_loadable_module aTARGET_NAME)
 			)
 	set (_PRIVATE_INCLUDE_DIR
 			${Boost_INCLUDE_DIRS}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+            ${CMAKE_BINARY_DIR}/include/UDT/
 			)
 
 	set (_PRIVATE_DEFINITIONS
@@ -68,13 +70,13 @@ function (add_loadable_module aTARGET_NAME)
 
 	if(_IS_OBJECT)
 		set(${_TARGET_UP}_NO_DYNAMIC
-				true
+				TRUE
 				CACHE BOOL ""
 				FORCE
 				)
 
 		set(${_TARGET_UP}_BUILD_STATIC_TOO
-				true
+				TRUE
 				CACHE BOOL "Build ${aTARGET_NAME} as static library too"
 				FORCE
 				)
@@ -96,9 +98,20 @@ function (add_loadable_module aTARGET_NAME)
 				_HEADER_FILES
 				_PUBLIC_INCLUDE_DIR
 				_PRIVATE_INCLUDE_DIR
-				_PRIVATE_DEFINITIONS
 				_PUBLIC_DEFINITIONS
+				_PRIVATE_DEFINITIONS				
 				FALSE)
+		set (_PUBLIC_LIBRARIS
+		     udt_share
+		     )
+
+		set (_PRIVATE_LIBRARIS
+		     #
+		     )
+		helper_target_link_libraries(${aTARGET_NAME}_Static
+		                             _PUBLIC_LIBRARIS
+		                             _PRIVATE_LIBRARIS
+		                             )
 	else()
 		set(${_TARGET_UP}_NO_DYNAMIC
 				false
@@ -120,25 +133,23 @@ function (add_loadable_module aTARGET_NAME)
 				_PUBLIC_DEFINITIONS
 				FALSE)
 
-		install(TARGETS ${aTARGET_NAME}
-				LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH} COMPONENT libraries
-				ARCHIVE DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
-				RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH} COMPONENT libraries
-				)
-
-
 		set (_PUBLIC_LIBRARIS
-				${CUSTOMER_LIBRARIES}
-				)
+		     ${CUSTOMER_LIBRARIES}
+		     )
 
 		set (_PRIVATE_LIBRARIS
-				#
-				)
+		     #
+		     )
 
 		helper_target_link_libraries(${aTARGET_NAME}
-				_PUBLIC_LIBRARIS
-				_PRIVATE_LIBRARIS
-				)
+		                             _PUBLIC_LIBRARIS
+		                             _PRIVATE_LIBRARIS
+		                             )
+		install(TARGETS ${aTARGET_NAME}
+			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH} COMPONENT libraries
+			ARCHIVE DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
+			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH} COMPONENT libraries
+			)
 	endif()
 
 

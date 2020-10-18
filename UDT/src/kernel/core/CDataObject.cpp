@@ -34,9 +34,9 @@ CDataObject::~CDataObject()
 
 bool CDataObject::MStart()
 {
-	NSHARE::CThread::eThreadPriority _priority;
+	unsigned _priority;
 	if (CConfigure::sMGetInstance().MGet().MGetIfSet("priority", _priority))
-		return MCreate(_priority, -1);
+		return MCreate(static_cast<NSHARE::CThread::eThreadPriority>(_priority), -1);
 	else
 		return MCreate(-1);
 }

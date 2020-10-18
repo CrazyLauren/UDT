@@ -1,0 +1,71 @@
+add_custom_target(python_package_@PROJECT_NAME@ ALL
+                  COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+                  @_CREATE_DIRECTORIES@
+                  @_COPY_LIBRARY_COMMAND@
+                  # Don't need to copy static lib on Windows
+                  @_COPY_LIBRARY_DEPS_COMMAND@
+                  COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
+                  DEPENDS @_DEPENDS_PROJECT@
+                  BYPRODUCTS
+                  python/@PROJECT_NAME@
+                  python/build
+                  python/dist
+                  python/@PROJECT_NAME@.egg-info
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/package
+                  )
+
+file(GLOB WHL_FILE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/package/dist/*.whl")
+if(WHL_FILE)
+    message(STATUS "Site lib:" ${Python3_SITELIB})
+#    if("${${PROJECT_NAME}_INSTALL_PREFIX}" STREQUAL "" OR "${Python3_SITELIB}" STREQUAL "")
+#    if("${${PROJECT_NAME}_INSTALL_PREFIX}" STREQUAL "")
+		set(_PACKET_PATH
+		"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/package" 
+		)
+		get_filename_component(_WHL_FILE_NAME ${WHL_FILE} NAME)
+        install(FILES ${WHL_FILE}
+            DESTINATION ${_PACKET_PATH}
+            COMPONENT python_package)
+		if(UNIX)
+			set(_TMP_PATH "/tmp/")
+		    install(FILES ${WHL_FILE}
+            	DESTINATION ${_TMP_PATH}
+            	COMPONENT python_package)		            
+			configure_file(
+			${PROJECT_SOURCE_DIR}/CMakeModules/functions/python/postinst.sh.in
+			${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/tmp/postinst
+			@ONLY ESCAPE_QUOTES)		
+	
+			configure_file(
+			${PROJECT_SOURCE_DIR}/CMakeModules/functions/python/prerm.sh.in
+			${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/tmp/prerm
+			@ONLY ESCAPE_QUOTES)
+			
+			file(COPY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/tmp/postinst
+				DESTINATION 
+				${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python
+				FILE_PERMISSIONS
+				OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+				GROUP_READ GROUP_WRITE GROUP_EXECUTE
+				WORLD_READ WORLD_WRITE WORLD_EXECUTE
+			)
+			file(COPY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/tmp/prerm
+				DESTINATION 
+				${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python
+				FILE_PERMISSIONS
+				OWNER_READ OWNER_WRITE OWNER_EXECUTE 
+				GROUP_READ GROUP_WRITE GROUP_EXECUTE
+				WORLD_READ WORLD_WRITE WORLD_EXECUTE
+			)
+			set(CPACK_DEBIAN_PYTHON_PACKAGE_CONTROL_EXTRA
+				 "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/postinst;${CMAKE_BINARY_DIR}/${PROJECT_NAME}/python/prerm")
+		endif() 	            
+#    else()
+#        install(FILES ${WHL_FILE}
+#               DESTINATION "${Python3_SITELIB})"
+#               COMPONENT libraries)
+#    endif()
+	if(CPACK_PACKAGE_NAME)
+		
+	endif()
+endif()

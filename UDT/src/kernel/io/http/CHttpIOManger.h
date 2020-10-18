@@ -92,6 +92,7 @@ private:
 	void MPutAsJson(const NSHARE::CConfig& _data, CHttpResponse& _response);
 	void MPutSniffedDataFrom(const size_t _number,  NSHARE::CConfig& aTo) const;
 	void MPutToFifo(data_fifo_t::value_type & _new_data);
+	void MNoteNewDemands();
 
 	CKernelIo * FIo;
 
@@ -105,6 +106,7 @@ private:
 	uint32_t FUniqueNumber;
 
 	demand_dgs_t FDemands;
+	NSHARE::atomic_t FDemPriority;
 	serializators_t FSerializators;
 	NSHARE::CMutex FParserMutex;
 

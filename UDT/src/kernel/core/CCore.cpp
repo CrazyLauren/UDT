@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include <udt_share.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 #include "CCore.h"
 #include "kernel_type.h"
 

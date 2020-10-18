@@ -11,11 +11,11 @@
  */
 #ifndef SHARED_TYPES_OF_SHARE_H_
 #define SHARED_TYPES_OF_SHARE_H_
-#include <udt/udt_share_macros.h>
-#include <udt/programm_id.h>
-#include <udt/udt_types.h>
+#include <UDT/udt_share_macros.h>
+#include <UDT/programm_id.h>
+#include <UDT/udt_types.h>
 #include <SHARE/Socket/net_address_t.h>
-#include <udt/udt_rtc.h>
+#include <UDT/udt_rtc.h>
 namespace NUDT
 {
 typedef uint32_t error_type;
@@ -112,16 +112,16 @@ struct UDT_SHARE_EXPORT split_packet_t
 struct UDT_SHARE_EXPORT demand_dg_t
 {
 	typedef uint32_t handler_priority_t;
-	typedef uint32_t event_handler_t;
-	typedef uint32_t flags_t;
+	typedef uint16_t flags_t;
+	typedef uint16_t event_handler_value_t;
 
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText HANDLER;
 	static const NSHARE::CText KEY_FLAGS;
 	static const NSHARE::CText KEY_HANDLER_PRIORITY;
-	static const event_handler_t NO_HANDLER;
+	static const event_handler_value_t NO_HANDLER;
+	static const event_handler_value_t MAX_HANDLER;
 	static const handler_priority_t HANDLER_DEFAULT_PRIORITY;
-
 	enum eFlags
 	{
 		E_REGISTRATOR=0x1<<0,///< it's set if demands is from registrar
@@ -151,12 +151,12 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	NSHARE::CProgramName FNameFrom;
 	NSHARE::smart_field_t<NSHARE::uuid_t> FUUIDFrom;
 	NSHARE::CText FProtocol;
-	event_handler_t FHandler;
+	event_handler_value_t FEventHandler;
 	NSHARE::CFlags<eFlags,flags_t> FFlags;
 
 	demand_dg_t():
 		FHandlerPriority(HANDLER_DEFAULT_PRIORITY),//
-		FHandler(NO_HANDLER),//
+		FEventHandler(NO_HANDLER),//
 		FFlags(E_DEMAND_DEFAULT_FLAGS)//
 	{
 		;
@@ -168,8 +168,7 @@ struct UDT_SHARE_EXPORT demand_dg_t
 	bool operator==(demand_dg_t const& aRht) const;
 	bool MIsValidEndian() const;
 	void MSwitchEndianFlag();
-
-
+	event_handler_value_t MGetHandler() const;
 };
 //
 //-------------------------
@@ -199,7 +198,9 @@ struct UDT_SHARE_EXPORT routing_t: uuids_t
 //
 struct UDT_SHARE_EXPORT user_data_info_t
 {
-	typedef std::vector<demand_dg_t::event_handler_t> handler_id_array_t;///< List of handlers
+	typedef uint32_t event_handler_t;//!< demand_dg_t::event_handler_value_t + demand_dg_t::flags_t
+	typedef std::vector<event_handler_t> handler_id_array_t;///< List of handlers
+
 	static const NSHARE::CText NAME;
 	static const NSHARE::CText KEY_PACKET_NUMBER;
 	static const NSHARE::CText KEY_PACKET_FROM;
@@ -221,14 +222,23 @@ struct UDT_SHARE_EXPORT user_data_info_t
 	bool MIsRaw() const;
 	bool MIsMsgExist() const;
 
+	static void sMAddFlagsTo(event_handler_t& aValue, demand_dg_t::flags_t const& aFlags);
+	static void sMAddHandlerTo(event_handler_t& aValue, demand_dg_t::event_handler_value_t const& aHandler);
+	static demand_dg_t::event_handler_value_t sMGeHandlerOf(event_handler_t const& aValue);
+	static demand_dg_t::flags_t sMGeFlagsOf(event_handler_t const& aValue);
+
 	//id_t FFrom;//from.FName - Depreciated
 	uint32_t FPacketNumber;
 
 	NSHARE::CText FProtocol;
 	unsigned FDataOffset;
 
-	handler_id_array_t FEventsList;/*!< A list of the unique id of
-									the callback function which has to process the message*/
+	handler_id_array_t FHandlerEventsList;/*!< A list of the unique id of
+									the callback function which has to
+									 process the message
+									 The first byte is a flags, then event handler
+									 see demand_dg_t
+									 */
 	uuids_t FDestination;///< List of all uuids of customers
 						//which are to be received message. (must be sorted)
 	uuids_t FRegistrators;///< List of all uuids of message's
@@ -249,10 +259,15 @@ struct UDT_SHARE_EXPORT user_data_t
 	static const NSHARE::CText DATA;
 	static const NSHARE::CText HEADER;
 	static const NSHARE::CText PARSER;
+	static const NSHARE::CText PARSER_BASE64;
 
 	user_data_info_t FDataId;
 	NSHARE::CBuffer FData;
+	user_data_t()
+	{
 
+	}
+	user_data_t(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize(/*required_header_t const& =required_header_t(),*/IExtParser* =NULL) const;
 	NSHARE::CConfig MSerialize(NSHARE::CText const & aName) const;
 	bool MIsValid()const;
@@ -262,13 +277,20 @@ struct UDT_SHARE_EXPORT user_data_t
 struct UDT_SHARE_EXPORT demand_dgs_t:std::vector<demand_dg_t>
 {
 	static const NSHARE::CText NAME;
-	demand_dgs_t()
+	static const NSHARE::CText PRIORITY;//!< Piority of demands
+	static int const MAX_DEM_PRIORITY;
+	static int const NO_DEM_PRIORITY;
+	demand_dgs_t():
+		FPriority(NO_DEM_PRIORITY)
 	{
 	}
 
 	demand_dgs_t(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize(bool aIsSerializeHeadAsRaw=true) const;
 	bool MIsValid()const;
+	bool MIsPriorityGreateOf(int aPrior) const;
+	static bool sMIsPriorityGreateOf(int aLft, int aRht);
+	int FPriority;
 };
 struct UDT_SHARE_EXPORT demand_dgs_for_t:std::map<id_t,demand_dgs_t>
 {
@@ -690,10 +712,10 @@ inline std::ostream& operator<<(std::ostream & aStream,
 		aStream << " ==> " << aVal.FRouting << " <> " << ";";
 	}
 
-	if (!aVal.FEventsList.empty())
+	if (!aVal.FHandlerEventsList.empty())
 	{
-		std::vector<NUDT::demand_dg_t::event_handler_t>::const_iterator _it =
-				aVal.FEventsList.begin(), _it_end(aVal.FEventsList.end());
+		NUDT::user_data_info_t::handler_id_array_t::const_iterator _it =
+				aVal.FHandlerEventsList.begin(), _it_end(aVal.FHandlerEventsList.end());
 		aStream << " | ";
 		for(;_it!=_it_end;++_it)
 		{
@@ -734,7 +756,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 
 	aStream << "From:" << aVal.FNameFrom << std::endl;
 	aStream << "Protocol :" << aVal.FProtocol << std::endl;
-	aStream << "Handler :" << aVal.FHandler << std::endl;
+	aStream << "Handler :" << aVal.MGetHandler() << std::endl;
 	aStream << "Flags :" << aVal.FFlags << std::endl;
 	aStream << aVal.FWhat;
 	return aStream;
@@ -742,6 +764,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::demand_dgs_t const& aVal)
 {
+	aStream <<"priority:"<<aVal.FPriority;
 	for (NUDT::demand_dgs_t::const_iterator _it = aVal.begin();
 			_it != aVal.end();)
 	{

@@ -14,22 +14,12 @@
 #include <deftype>
 #include "CResources.h"
 #include <config/customer/customer_config.h>
+#include <UDT/static_modules.h>
 using namespace NSHARE;
 template<>
 NUDT::CResources::singleton_pnt_t NUDT::CResources::singleton_t::sFSingleton = NULL;
 namespace NUDT
 {
-extern "C" NSHARE::factory_registry_t* static_factory_registry(NSHARE::CFactoryRegisterer* aVal)
-{
-	static NSHARE::CMutex _mutex;
-	NSHARE::CRAII<NSHARE::CMutex> _lock(_mutex);//may be don't need
-	static NSHARE::factory_registry_t _registry;
-	if (aVal)
-	{
-		_registry.push_back(aVal);
-	}
-	return &_registry;
-}
 const NSHARE::CText CResources::NAME = "modules";
 const NSHARE::CText CResources::MODULES_PATH = "modules_path";
 const NSHARE::CText CResources::LIST_OF_LOADED_LIBRARY = "libraries";
@@ -39,6 +29,7 @@ const NSHARE::CText CResources::ENV_MODULE_PATH = "UDT_CUSTOMER_MODULE_PATH";
 CResources::CResources(NSHARE::CConfig const& aConf)
 {
 #ifdef CUSTOMER_WITH_STATIC_MODULES
+	MAddStaticFactory();
     NSHARE::CText const _static_modules(CUSTOMER_WITH_STATIC_MODULES);
 #else
 	NSHARE::CText const _static_modules;
@@ -50,7 +41,7 @@ CResources::CResources(NSHARE::CConfig const& aConf)
         ConfigSet::const_iterator _it = _set.begin();
         for (; _it != _set.end(); ++_it)
         {
-            if(_static_modules.find((_it)->MKey())==NSHARE::CText::npos)
+            if(_static_modules.find((_it)->MKey()) == NSHARE::CText::npos)
             {
                 module_t _mod;
                 _mod.FName = _it->MKey();
@@ -59,6 +50,7 @@ CResources::CResources(NSHARE::CConfig const& aConf)
             }
         }
     }
+    //static_factory_registry((_it)->MKey())
     NSHARE::CText _path;
     if(aConf.MGetIfSet(MODULES_PATH,_path))
         FExtLibraryPath.push_back(_path);
@@ -98,10 +90,7 @@ void CResources::MLoadLibrariess()
 			++_it)
 	{
 		VLOG(2) << "Load '" << _it->FName << "' dynamic module";
-		LOG_IF(WARNING,_it->FRegister)
-				<< "The Dynamic module '" << _it->FName
-						<< "' has been loaded already";
-		if (!_it->FRegister)
+		if (_it->FRegister == NULL)
 		{
 			// load dynamic module
 			if (!_it->FDynamic.get())
@@ -142,40 +131,25 @@ void CResources::MLoadLibrariess()
                 }
 			}
 		}
-		VLOG(2) << "adding all	available factories.";
-		factory_registry_t::iterator _jt = _it->FRegister->begin();
-		for (; _jt != _it->FRegister->end(); ++_jt)
+		if (_it->FRegister != NULL)
 		{
-			if (!(*_jt))
+			VLOG(2) << "adding all	available factories.";
+			factory_registry_t::iterator _jt = _it->FRegister->begin();
+			for (; _jt != _it->FRegister->end(); ++_jt)
 			{
-				LOG(ERROR)<<"Null pointer of Factory register. Ignoring ...";
-				continue;
+				if (!(*_jt))
+				{
+					LOG(ERROR)<<"Null pointer of Factory register. Ignoring ...";
+					continue;
+				}
+				if((*_jt)->FType.empty())
+				{
+					LOG(ERROR)<<"Invalid name of factory in "<<_it->FName<<". Ignoring ...";
+					continue;
+				}
+				VLOG(2) << "Registry " << (*_jt)->FType<<" Version:"<<(*_jt)->FVersion;
+				(*_jt)->MRegisterFactory();
 			}
-			if((*_jt)->FType.empty())
-			{
-				LOG(ERROR)<<"Invalid name of factory in "<<_it->FName<<". Ignoring ...";
-				continue;
-			}
-			VLOG(2) << "Registry " << (*_jt)->FType<<" Version:"<<(*_jt)->FVersion;
-			(*_jt)->MRegisterFactory();
-		}
-	}
-	{
-		factory_registry_t::iterator _jt(static_factory_registry(NULL)->begin()), _jt_end(static_factory_registry(NULL)->end());
-		for (; _jt != _jt_end; ++_jt)
-		{
-			if (!(*_jt))
-			{
-				LOG(ERROR) << "Null pointer of Factory register. Ignoring ...";
-				continue;
-			}
-			if ((*_jt)->FType.empty())
-			{
-				LOG(ERROR) << "Invalid name of factory in static module list. Ignoring ...";
-				continue;
-			}
-			VLOG(2) << "Registry " << (*_jt)->FType << " Version:" << (*_jt)->FVersion;
-			(*_jt)->MRegisterFactory();
 		}
 	}
 }

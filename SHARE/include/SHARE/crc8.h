@@ -78,18 +78,15 @@ struct crc8_t
 	///@param  aOffset Offset value
 	///@param  aOldCrc Ignored field in buffer
 	template<class T>
-	inline static type_t sMCalcCRCofBuf(T const* __restrict  pBegin,
-			T const* __restrict   pEnd,
+	inline static type_t sMCalcCRCofBuf(T const*   pBegin,
+			T const*    pEnd,
 			 type_t aOffset = Offset,
 			 unsigned const aOldCrc=std::numeric_limits<unsigned>::max())
 	{
-		static const table_t _table;
-		size_t const _size=pEnd-pBegin;
-		for (size_t i=0; i<_size; ++i)
-			if(i!=aOldCrc)
-			aOffset = _table.FCrc[aOffset ^ pBegin[i]]; /*sMCalcNextCRC(aOffset, *pBegin)*/
-
-		return aOffset;
+		if(aOldCrc == std::numeric_limits<unsigned>::max() )
+			return sMCalcCRCofBuf2<T const*>(pBegin, pEnd, aOffset);
+		else
+			return sMCalcCRCofBuf2<T const*>(pBegin, pEnd, aOffset, pBegin + aOldCrc);
 	}
 	template<class U>
 	inline static type_t sMCalcCRCofBuf2(U pBegin, U const& pEnd,
@@ -97,6 +94,16 @@ struct crc8_t
 	{
 		for (; pBegin != pEnd; ++pBegin)
 			aOffset = sMCalcNextCRC(aOffset, *pBegin);
+
+		return aOffset;
+	}
+	template<class U>
+	inline static type_t sMCalcCRCofBuf2(U pBegin, U const& pEnd,
+			type_t aOffset, U const& pNon)
+	{
+		for (; pBegin != pEnd; ++pBegin)
+			if(pBegin!=pNon)
+				aOffset = sMCalcNextCRC(aOffset, *pBegin);
 
 		return aOffset;
 	}

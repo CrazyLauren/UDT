@@ -1,0 +1,414 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+{% import "base_macros.tmpl" as common %}
+{% set file_name = 'subscriber_test_do_' + name | lower %}
+{{ common.add_file_secription(file_name+'.cpp') }}
+{% autoescape false %}
+#include <deftype>
+
+#  define {{ name | upper }}_FLOAT_COMPARE_PRECISION 1e-7
+#include "{{ common.get_namespace(name) }}_test_generator.h"
+#include "subscriber_test_{{ name | lower }}.h"
+#include <{{ common.get_namespace(name) }}_compare_operators.h>
+#include <{{ common.get_namespace(name) }}_serialize_binary.h>
+#include "{{ common.get_namespace(name) }}_ostream.h"
+
+using namespace NSHARE;
+using namespace NUDT;
+
+{% macro generate_subcriber(aTo,i, aMsg, aFrom = 'get_id()') %}
+    {% set struct_name =  aMsg.___name+'_t' %}
+    {% set function_name =  'process_of_'+aMsg.___name %}
+    /*! .{{ i + 1 }} Say to the kernel that I want to receive the message
+	 * number #{{ struct_name }}::NUMBER
+	 * from {{ aFrom }} and it will be  handled  by function
+- #{{ function_name }}
+    {% for parnet in aMsg.___parent %}
+        {% if not loop.last %}
+- #process_of_{{ parnet.___name }} (as Parent)
+        {% endif %}
+    {% endfor %}
+	 */
+    {{ aTo }}.push_back(
+	CCustomer::sMGetInstance().MIWantReceivingMSG(//
+                requirement_msg_info_t(protocol(),//
+					get_header<{{ struct_name }}>(),//
+					{{ aFrom }}), //
+                    {{ function_name }}));
+    LOG(INFO)<<"Subscribe to {{ struct_name }} from "<<{{ aFrom }}
+            << " id = " << {{ aTo }}.back();
+{% endmacro %}
+{% macro generate_unsubcriber(aFrom) %}
+    /*! Unsubscribe
+	 */
+    for(unsigned i=0;i < {{ aFrom }}.size();++i)
+	{
+        LOG(INFO)<<"Unsubscribe from " << {{ aFrom }}[i];
+        CCustomer::sMGetInstance().MDoNotReceiveMSG( {{ aFrom }}[i]);
+    }
+{% endmacro %}
+{% macro generate_process_function(aMsg) %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set function_name =  'process_of_'+aMsg.___name %}
+extern int {{ function_name }}(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
+{
+
+    /*! Algorithm:*/
+    /*! 1) Convention void pointer to pointer to #NUDT::received_message_args_t structure */
+    received_message_args_t const * _recv_arg=(received_message_args_t*)aWHAT;
+    VLOG(1)<<"Receive \n"<<*_recv_arg;
+
+    amount_of_msg<by_packet_number_t>()[_recv_arg->FPacketNumber]++;
+
+
+    std::cout << "{{ aMsg.__title}} #" << _recv_arg->FPacketNumber << " ver "
+            << _recv_arg->FHeader.FVersion << " size " << _recv_arg->FMessage.FBuffer.size()
+            << " bytes received from " << _recv_arg->FFrom << " by "
+            << _recv_arg->FProtocolName<<std::endl;
+
+    /*! 2) Handle the received data */
+    {% if '___child' in aMsg  and aMsg.___child | length > 0%}
+    if( !(_recv_arg->FFlags & requirement_msg_info_t::E_AS_INHERITANCE) )//!< As we have child, ignore child messages
+    {% endif %}
+    {
+        bool _is = process_test_msg<{{ struct_name }}>(_recv_arg->FMessage);
+
+        LOG_IF(DFATAL, !_is ) << "---! Fail test !--- {{ aMsg.__title}} #" << _recv_arg->FPacketNumber << " ver "
+                    << _recv_arg->FHeader.FVersion << " size " << _recv_arg->FMessage.FBuffer.size()
+                    << " bytes received from " << _recv_arg->FFrom << " by "
+                    << _recv_arg->FProtocolName;
+    }
+	return 0;
+}
+{% endmacro %}
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+typedef std::map<unsigned, unsigned> amount_of_msg_t; ///!< typeof of received messages
+static NSHARE::CMutex g_stream_mutex;///< A mutex for lock console output
+
+/** Returns info about amount of received messages by number
+*
+* @param aReset true if need reset counter
+^ @tparam T Formal param to create group
+*/
+template<typename T>
+static amount_of_msg_t& amount_of_msg(bool aReset =false)
+{
+    static amount_of_msg_t amount_of_msg;
+
+    if(aReset)
+    {
+        amount_of_msg.clear();
+    }
+    return amount_of_msg;
+}
+struct by_msg_number_t
+{
+};
+struct by_packet_number_t
+{
+};
+struct by_packet_number_requirement_t
+{
+};
+struct by_number_subscribers_t
+{
+};
+/*!\brief Check messages
+ *
+ *\param aMsg Number of message
+ */
+template<class TMsg>
+static bool process_test_msg(received_data_t const& aMsg)
+{
+	/*! Algorithm:*/
+	/*! 1) Deserialize msg */
+    TMsg _msg;
+    aMsg.FBuffer >> _msg;
+
+    LOG(INFO)<<"MSG #"<<TMsg::NUMBER<<" is \n";
+    VLOG(1)<<_msg;
+
+    /*! 2) Compare with test value */
+    TMsg const& _test_value(generate<TMsg>());
+    bool const _is = _msg == _test_value;
+    if(_is)
+        amount_of_msg<by_msg_number_t>()[TMsg::NUMBER]++;
+    else
+    {
+        VLOG(1)<<"test value is \n"<<_test_value;
+        LOG(ERROR)<< "Received data isn't equal of test data for #"
+            <<TMsg::NUMBER;
+
+    }
+    return _is;
+}
+/** Send test message
+*
+* @return true if no error
+*/
+template<class TMsg>
+bool send_message()
+{
+    TMsg const& _test_value(generate<TMsg>());
+
+	NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+			sizeof(TMsg));
+    _buf.resize(0);
+
+    serialize_binary(_buf, _test_value);
+    VLOG(1)<<"Test message "<<TMsg::NUMBER<<" is \n"<<_test_value;
+
+    int const _rval = CCustomer::sMGetInstance().MSend(get_header<TMsg>(),
+            protocol(), _buf);
+    if( _rval >= 0 )
+        amount_of_msg<by_packet_number_requirement_t>()[_rval] = 1 + TMsg::PARENTS;
+    else
+    {
+        LOG(ERROR)<<"Cannot send message "<<TMsg::NUMBER<<" as "<<_rval;
+    }
+	return _rval > 0;
+}
+{% for msg in messages-%}
+    {{ generate_process_function(msg) }}
+{% endfor %}
+
+extern int event_new_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	/*! Algorithm:*/
+	/*! 1) Convention void pointer to pointer to #NUDT::subcribe_receiver_args_t structure */
+	subcribe_receiver_args_t const* _recv_arg=(subcribe_receiver_args_t const*)aWHAT;
+
+    LOG(INFO)<<"Subscribe to "<<*_recv_arg;
+
+	/*! 2) Print information about new receivers and what messages they wanted to receive.*/
+    std::vector<subcribe_receiver_args_t::what_t>::const_iterator _it(
+			_recv_arg->FReceivers.begin()), _it_end(
+			_recv_arg->FReceivers.end());
+	for(;_it!=_it_end;++_it)
+	{
+		std::cout <<"*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*"<< std::endl;
+		std::cout << "Now " << _it->FWho << " receive " << _it->FWhat.FRequired
+				<< " from me by " << _it->FWhat.FProtocolName << " As its Request "
+				<< _it->FWhat.FFrom << std::endl;
+
+        {% for msg in messages-%}
+            {% set struct_name =  msg.___name+'_t' %}
+		if (_it->FWhat.FRequired
+				== get_header<{{ struct_name }}>())
+		{
+            amount_of_msg<by_number_subscribers_t>()[{{ struct_name }}::NUMBER]++;
+
+			//DCHECK((_it->FWhat.FFlags&requirement_msg_info_t::E_AS_INHERITANCE)==0);
+		}
+        {% endfor %}
+		std::cout <<"-------------------------------------"<< std::endl;
+	}
+	return 0;
+}
+extern int event_remove_receiver(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	/*! Algorithm:*/
+	/*! 1) Convention void pointer to pointer to #NUDT::subcribe_receiver_args_t structure */
+	subcribe_receiver_args_t const* _recv_arg=(subcribe_receiver_args_t const*)aWHAT;
+
+    LOG(INFO)<<"Unsubscribe from "<<*_recv_arg;
+
+	/*! 2) Print information about removed receivers and what messages they doesn't
+	 * wanted to receive.*/
+
+	std::vector<subcribe_receiver_args_t::what_t>::const_iterator _it(
+			_recv_arg->FReceivers.begin()), _it_end(
+			_recv_arg->FReceivers.end());
+	for(;_it!=_it_end;++_it)
+	{
+		std::cout <<"*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"<< std::endl;
+		std::cout << "Now " << _it->FWho << " doesn't receive " << _it->FWhat.FRequired
+				<< " by " << _it->FWhat.FProtocolName << " As its Request "
+				<< _it->FWhat.FFrom << std::endl;
+
+        {% for msg in messages-%}
+            {% set struct_name =  msg.___name+'_t' %}
+		if (_it->FWhat.FRequired
+				== get_header<{{ struct_name }}>())
+		{
+            amount_of_msg<by_number_subscribers_t>()[{{ struct_name }}::NUMBER]--;
+		}
+        {% endfor %}
+		std::cout <<"-------------------------------------"<< std::endl;
+
+	}
+
+	return 0;
+}
+extern int event_connect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
+{
+    LOG(INFO)<<"The udt library has been connected.." ;
+	NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	std::cout << "The udt library has been connected.." << std::endl;
+	return 0;
+}
+extern int event_disconnect_handler(CCustomer* WHO, void *aWHAT, void* YOU_DATA)
+{
+    LOG(INFO)<<"The udt library has been disconnected..";
+	NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	std::cout << "The udt library has been disconnected.."<< std::endl;
+	return 0;
+}
+extern int event_fail_sent_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+	/*! Algorithm:*/
+	/*! 1) Convention void pointer to pointer to #NUDT::fail_sent_args_t structure */
+	fail_sent_args_t const* _recv_arg = (fail_sent_args_t const*) aWHAT;
+
+    LOG(ERROR)<<"Fail send "<<*_recv_arg;
+
+	/*! 2) Print information about for whom messages aren't delivered .*/
+	std::cout << "The packet " << _recv_arg->FPacketNumber
+			<< " has not been delivered to ";
+
+    fail_sent_args_t::uuids_t::const_iterator _it(_recv_arg->FFails.begin()),
+                _it_end(_recv_arg->FFails.end());
+	for ( ;_it != _it_end; ++_it)
+	{
+		std::cout << (*_it) << ", ";
+	}
+
+	/*! 3) Print information about why the messages aren't delivered .*/
+	CCustomer::sMPrintError(std::cout, _recv_arg->FErrorCode);
+
+	if (_recv_arg->FErrorCode & CCustomer::E_USER_ERROR_EXIST)
+		std::cout << " user's code=" << (unsigned) _recv_arg->FUserCode;
+	std::cout << std::endl;
+
+	return 0;
+}
+bool doing_tests_swap_endian();
+bool doing_tests()
+{
+    bool _is=doing_tests_of_send_receive();
+    _is = _is && doing_tests_swap_endian();
+    if(_is)
+        std::cout << "Subscriber test finished successfully " << std::endl;
+    return _is;
+}
+
+bool doing_tests_of_send_receive()
+{
+    LOG(INFO)<<"Start send test";
+    bool _is=true;
+    std::vector<int> _subscribers;
+    /*! 1. Say to the kernel that I want to receive the message
+	 */
+    {% for msg in messages -%}
+        {{ generate_subcriber('_subscribers',loop.index, msg) }}
+    {% endfor %}
+    NSHARE::sleep(1);///Wait for kernel handling subscribers
+
+    /*! 2. Send messages
+	 */
+    {% for msg in messages-%}
+        {% set struct_name =  msg.___name+'_t' %}
+    _is = _is && send_message<{{ struct_name }}>();
+    {% endfor %}
+
+    NSHARE::sleep(1);
+
+    /*! 3. Check number of messages
+	 */
+    amount_of_msg_t const& _am=amount_of_msg<by_msg_number_t>();
+    amount_of_msg_t::const_iterator _it=_am.begin(), _it_end(_am.end());
+
+    if(_is)
+    {
+        _is = _is && _am.size() == {{ messages|length }};//!< Number of messages in protocol
+        LOG_IF(ERROR, !_is)<<"Some messages doesn't received "<<_am.size();
+    }
+    if(_is)
+    {
+        _is = _is && _am == amount_of_msg<by_number_subscribers_t>();
+        LOG_IF(ERROR, !_is)<<"Number of received messages isn't equal";
+    }
+{#    for(;_is && _it != _it_end;++_it)#}
+{#        if(_it->second != 1)#}
+{#        {#}
+{#            _is = false;#}
+{#            NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);#}
+{#            std::cout << "Invalid  hierarchy test number 1 for msg #"<<_it->first#}
+{#                << " num msg = "<<_it->second << std::endl;#}
+{#        }#}
+    if(_is)
+    {
+        _is =  amount_of_msg<by_packet_number_t>()
+                == amount_of_msg<by_packet_number_requirement_t>();
+
+        LOG_IF(ERROR, !_is)<<"Number of send packets is not equal of received messages ";
+    }
+    /*! 4. Clean up
+    */
+    amount_of_msg<by_msg_number_t>(true);
+    amount_of_msg<by_packet_number_t>(true);
+    amount_of_msg<by_packet_number_requirement_t>(true);
+
+    {{ generate_unsubcriber('_subscribers') }}
+    return _is;
+}
+bool doing_tests_swap_endian()
+{
+    LOG(INFO)<<"Swap endian test";
+    bool _is=true;
+    std::vector<int> _subscribers;
+    /*! 1. Say to the kernel that I want to receive the message
+	 */
+    {% for msg in messages -%}
+        {{ generate_subcriber('_subscribers',loop.index, msg, 'get_test_id()') }}
+    {% endfor %}
+
+    NSHARE::sleep(1);///Wait for kernel handling subscribers
+    {
+        NSHARE::CRAII<NSHARE::CMutex> _block(g_stream_mutex);
+        std::cout<<"Wait for next test connected"<<std::endl;
+    }
+    NSHARE::sleep(1);
+    LOG(INFO)<<"Wait for next test connected";
+    getchar();
+
+    if(!amount_of_msg<by_number_subscribers_t>().empty() //
+            && amount_of_msg<by_number_subscribers_t>().begin()->second >=2
+    )
+    {
+        /*! 2. Send messages
+         */
+        {% for msg in messages-%}
+            {% set struct_name =  msg.___name+'_t' %}
+        _is = _is && send_message<{{ struct_name }}>();
+        {% endfor %}
+
+        LOG(INFO)<<"Wait for received";
+        NSHARE::sleep(10);
+
+        /*! 3. Check number of messages
+         */
+        amount_of_msg_t const& _am=amount_of_msg<by_msg_number_t>();
+        amount_of_msg_t::const_iterator _it=_am.begin(), _it_end(_am.end());
+
+        _is = _is && _am.size() == {{ messages|length }}; //!< Number of messages in protocol
+        _is = _is && _am == amount_of_msg<by_number_subscribers_t>();
+    }
+    /*! 4. Clean up
+    */
+    amount_of_msg<by_msg_number_t>(true);
+    amount_of_msg<by_packet_number_t>(true);
+    amount_of_msg<by_packet_number_requirement_t>(true);
+
+    {{ generate_unsubcriber('_subscribers') }}
+    return _is;
+}
+}
+}
+{% endautoescape %}

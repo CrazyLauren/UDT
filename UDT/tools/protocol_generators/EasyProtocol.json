@@ -1,50 +1,182 @@
 {
-  "author": "https://github.com/CrazyLauren",
-  "name": "EasyProtocol",
-  "description": "<p>Simple process model in JSON format</p>",
-  "organization": "Free Software",
-  "version": {
-    "major": 1,
-    "minor": 0,
-    "revision": 52
+  "settings": {
+    "language": "ru",
+    "endian": "Big"
   },
+  "organization": [
+    {
+      "name": "Free Software"
+    },
+    {
+      "name": "Mozilla"
+    },
+    {
+      "name": "BSD"
+    }
+  ],
+  "author": [
+    {
+      "name": "CrazyLauren",
+      "post": "Boss",
+      "executor": "asserting that",
+      "organization": "Free Software"
+    },
+    {
+      "name": "Cat",
+      "post": "Observing",
+      "executor": "matching",
+      "organization": "Mozilla"
+    },
+    {
+      "name": "Hand",
+      "post": "On the keyboard",
+      "executor": "executor",
+      "organization": "Free Software"
+    },
+    {
+      "name": "Github",
+      "post": "Server",
+      "executor": "executor",
+      "organization": "Mozilla"
+    },
+    {
+      "name": "I",
+      "post": "I",
+      "executor": "matching",
+      "organization": "BSD"
+    }
+  ],
+  "name": "EasyProtocol",
+  "title": "Easy protocol",
+  "description": "<p>Simple process model in JSON format.</p>",
+  "versions": [
+    {
+      "major": 0,
+      "minor": 1,
+      "revision": 52,
+      "date": "2020-09-21",
+      "changes": "First release"
+    }
+  ],
   "license": "",
+  "user_types": [
+    {
+      "___name": "fsd",
+      "___description": "",
+      "___size": 4,
+      "___fields": [
+        {
+          "type": "int8_t",
+          "array_len": 0,
+          "bits": 0,
+          "id": "fds_value",
+          "limitation": ">0",
+          "sampling": 0,
+          "unit": "",
+          "description": ""
+        }
+      ],
+      "___title": "das"
+    },
+    {
+      "___name": "type2",
+      "___description": "",
+      "___size": 20,
+      "___fields": [
+        {
+          "type": "fsd",
+          "array_len": 5,
+          "bits": 0,
+          "id": "dfs",
+          "limitation": "",
+          "sampling": 0,
+          "unit": "",
+          "description": ""
+        }
+      ],
+      "___title": "No"
+    }
+  ],
+  "user_enums": [
+    {
+      "type": "char",
+      "___name": "eDas",
+      "___title": "fdsdfs",
+      "description": "",
+      "___numbers": [
+        {
+          "number": 0,
+          "id": "First",
+          "description": ""
+        },
+        {
+          "number": 1,
+          "id": "Second",
+          "description": ""
+        },
+        {
+          "number": 2,
+          "id": "Third",
+          "description": ""
+        }
+      ]
+    }
+  ],
   "header": {
     "___name": "msg_head",
-    "___description": "<p>A message header</p>",
-    "___size": 4,
+    "___description": "<p>A message header.</p>",
+    "___size": 8,
     "___fields": [
       {
-        "type": "uint16_t",
+        "type": "uint32_t",
         "array_len": 0,
         "bits": 8,
         "id": "msg_number",
-        "min_value": 0,
-        "max_value": 0,
+        "limitation": "",
         "sampling": 0,
         "unit": "",
         "description": "Message number",
         "LogicalType": "number"
       },
       {
-        "type": "uint16_t",
+        "type": "uint32_t",
         "array_len": 0,
-        "bits": 8,
+        "bits": 16,
         "id": "msg_size",
-        "min_value": 0,
-        "max_value": 1024,
+        "limitation": "<= 64000, > 0",
         "sampling": 0,
         "unit": "",
         "description": "Message size",
         "LogicalType": "size"
       },
       {
+        "type": "uint32_t",
+        "array_len": 0,
+        "bits": 8,
+        "id": "msg_magic_number",
+        "limitation": "",
+        "sampling": 0,
+        "unit": "",
+        "description": "",
+        "LogicalType": "unique"
+      },
+      {
+        "type": "uint8_t",
+        "array_len": 0,
+        "bits": 4,
+        "id": "msg_version_major",
+        "limitation": "",
+        "sampling": 0,
+        "unit": "",
+        "description": "Message major version",
+        "LogicalType": "version_major"
+      },
+      {
         "type": "uint8_t",
         "array_len": 0,
         "bits": 0,
-        "id": "crc",
-        "min_value": 124,
-        "max_value": 0,
+        "id": "msg_crc",
+        "limitation": "= 124",
         "sampling": 154,
         "unit": "",
         "description": "CRC",
@@ -54,58 +186,30 @@
         "type": "uint8_t",
         "array_len": 0,
         "bits": 4,
-        "id": "version_minor",
-        "min_value": 0,
-        "max_value": 0,
+        "id": "msg_version_minor",
+        "limitation": "",
         "sampling": 0,
         "unit": "",
         "description": "Message minor version",
-        "LogicalType": "unique"
+        "LogicalType": "version_minor"
       },
       {
-        "type": "uint8_t",
+        "type": "eDas",
         "array_len": 0,
-        "bits": 4,
-        "id": "version_major",
-        "min_value": 0,
-        "max_value": 0,
+        "bits": 0,
+        "id": "msg_enum_constant",
+        "limitation": "",
         "sampling": 0,
         "unit": "",
-        "description": "Message major version",
-        "LogicalType": "version_major"
+        "description": "Some unique value",
+        "LogicalType": "unique"
       }
     ]
   },
   "messages": [
     {
-      "___name": "sub_sub_msg",
-      "___description": "The Grand child message",
-      "___size": 1,
-      "___fields": [
-        {
-          "type": "char",
-          "array_len": 12,
-          "bits": 0,
-          "id": "sub_msg",
-          "min_value": 0,
-          "max_value": 0,
-          "sampling": 0,
-          "unit": "",
-          "description": "message of Grand child",
-          "LogicalType": "none",
-          "DynamicType": "char",
-          "DynamicOrder": 0
-        }
-      ],
-      "___number": 1,
-      "version_minor": 0,
-      "version_major": 0,
-      "___type": "static",
-      "___parent": ""
-    },
-    {
       "___name": "sub_msg",
-      "___description": "The child message",
+      "___description": "The child message.",
       "___size": 12,
       "___fields": [
         {
@@ -113,13 +217,12 @@
           "array_len": 8,
           "bits": 0,
           "id": "child_msg",
-          "min_value": 10,
-          "max_value": 127,
+          "limitation": "",
           "sampling": 0,
           "unit": "",
           "description": "message of child child",
           "LogicalType": "none",
-          "DynamicType": "char",
+          "TypeOfLogicalType": "char",
           "DynamicOrder": 0
         },
         {
@@ -127,13 +230,12 @@
           "array_len": 0,
           "bits": 0,
           "id": "array",
-          "min_value": 0,
-          "max_value": 0,
+          "limitation": "> 0",
           "sampling": 0,
           "unit": "",
           "description": "",
           "LogicalType": "dynamic array",
-          "DynamicType": "int16_t",
+          "TypeOfLogicalType": "int16_t",
           "DynamicOrder": 1
         },
         {
@@ -141,39 +243,66 @@
           "array_len": 0,
           "bits": 0,
           "id": "arra_next",
-          "min_value": 0,
-          "max_value": 0,
+          "limitation": "",
           "sampling": 0,
           "unit": "",
           "description": "",
           "LogicalType": "dynamic array",
-          "DynamicType": "char",
+          "TypeOfLogicalType": "eDas",
           "DynamicOrder": 0
         }
       ],
-      "___number": 0,
-      "version_minor": 0,
-      "version_major": 0,
+      "___number": 1,
+      "msg_version_major": 0,
+      "msg_version_minor": 0,
+      "msg_enum_constant": "First, Second, Third",
+      "___title": "The child message",
+      "___type": "dynamic",
+      "___parent": ""
+    },
+    {
+      "___name": "sub_sub_msg",
+      "___description": "<p>The Grand child message</p>",
+      "___size": 4,
+      "___fields": [
+        {
+          "type": "char",
+          "array_len": 0,
+          "bits": 0,
+          "id": "sub_msg",
+          "limitation": "!={'dfs.fds_value':5}",
+          "sampling": 0,
+          "unit": "",
+          "description": "message of Grand child",
+          "LogicalType": "dynamic array",
+          "TypeOfLogicalType": "type2",
+          "DynamicOrder": 0
+        }
+      ],
+      "___number": 2,
+      "msg_version_major": 0,
+      "msg_version_minor": 0,
+      "msg_enum_constant": "Second, Third",
+      "___title": "The Grand child message",
       "___type": "dynamic",
       "___parent": "1"
     },
     {
       "___name": "parent_msg",
-      "___description": "The parent message",
-      "___size": 12,
+      "___description": "<p>The parent message.</p>",
+      "___size": 368,
       "___fields": [
         {
           "type": "char",
           "array_len": 8,
           "bits": 0,
           "id": "parent_msg",
-          "min_value": 0,
-          "max_value": 0,
+          "limitation": "",
           "sampling": 0,
           "unit": "",
           "description": "message of parent child",
           "LogicalType": "none",
-          "DynamicType": "char",
+          "TypeOfLogicalType": "char",
           "DynamicOrder": 0
         },
         {
@@ -181,21 +310,74 @@
           "array_len": 0,
           "bits": 0,
           "id": "array2",
-          "min_value": 0,
-          "max_value": 0,
+          "limitation": "",
           "sampling": 0,
           "unit": "",
           "description": "",
-          "LogicalType": "dynamic array",
-          "DynamicType": "uint16_t",
+          "LogicalType": "none",
+          "TypeOfLogicalType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "uint64_t",
+          "array_len": 8,
+          "bits": 0,
+          "id": "msg_size_5",
+          "limitation": "<1024",
+          "sampling": 0,
+          "unit": "",
+          "description": "Message size",
+          "LogicalType": "none",
+          "TypeOfLogicalType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "double",
+          "array_len": 8,
+          "bits": 0,
+          "id": "msg_size_6",
+          "limitation": "",
+          "sampling": 0,
+          "unit": "",
+          "description": "Message size",
+          "LogicalType": "none",
+          "TypeOfLogicalType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "char",
+          "array_len": 8,
+          "bits": 0,
+          "id": "msg_size_7",
+          "limitation": ">5",
+          "sampling": 0,
+          "unit": "",
+          "description": "Message size",
+          "LogicalType": "none",
+          "TypeOfLogicalType": "char",
+          "DynamicOrder": 0
+        },
+        {
+          "type": "uint64_t",
+          "array_len": 8,
+          "bits": 0,
+          "id": "msg_size_8",
+          "limitation": "= 154654567894545",
+          "sampling": 0,
+          "unit": "",
+          "description": "Message size",
+          "LogicalType": "none",
+          "TypeOfLogicalType": "char",
           "DynamicOrder": 0
         }
       ],
-      "___number": 2,
-      "version_minor": 0,
-      "version_major": 0,
-      "___type": "dynamic",
-      "___parent": "0"
+      "___number": 3,
+      "msg_version_major": 0,
+      "msg_version_minor": 0,
+      "msg_enum_constant": "Third",
+      "___title": "The parent message",
+      "___type": "static",
+      "___parent": "2"
     }
   ]
 }

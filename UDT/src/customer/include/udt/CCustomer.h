@@ -15,12 +15,11 @@
 
 #include <UDT/config/config.h>
 #include "customer_export.h"
-#include <udt/udt_types.h>
-#include <udt/programm_id.h>
+#include <UDT/udt_types.h>
+#include <UDT/programm_id.h>
 
 #ifdef uuid_t
-#	error "Fucking programmer"
-
+#	error "Opa!!!"
 #endif
 namespace NUDT
 {
@@ -32,9 +31,10 @@ class IRtc;
  *\note
  * Non-POD type.
  *
+ *\see requirement_msg_info_c_t
  *\see NUDT::CCustomer
  */
-struct requirement_msg_info_t
+struct CUSTOMER_EXPORT requirement_msg_info_t
 {
 	/*!\brief Collection of bitwise flags for change
 	 * subscription behavior
@@ -85,6 +85,11 @@ struct requirement_msg_info_t
 	 *\return true if the objects are equal
 	 */
 	bool operator==(requirement_msg_info_t const& aRht) const;
+
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_PROTOCOL_NAME;//!<Serialize key of #FProtocolName
+	static const NSHARE::CText KEY_FLAGS;//!<Serialize key of #FFlags
+	static const NSHARE::CText KEY_FROM;//!<Serialize key of #FFrom
 };
 
 /*!\brief Storage of received data
@@ -109,7 +114,7 @@ struct requirement_msg_info_t
  *  operator @a">=" instead of @a"==" for
  *  compatibility.
  */
-struct received_data_t
+struct CUSTOMER_EXPORT received_data_t
 {
 	NSHARE::CBuffer FBuffer;///< Contained received data
 
@@ -122,10 +127,12 @@ struct received_data_t
 	 *  respective default constructors (For it's NULL).
 	 */
 	received_data_t();
+
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_HEADER_BEGIN;//!<Serialize key of #FHeaderBegin
 };
 
-/*!\brief information contained in aWHAT argument
- * of function which is handle received data ( see Receive API)
+/*!\brief information about received data
  *
  * You can send error to sender by
  * changing field FOccurUserError.
@@ -133,7 +140,7 @@ struct received_data_t
  *\note
  *  Non-POD type.
  */
-struct received_message_args_t
+struct CUSTOMER_EXPORT received_message_info_t
 {
 	typedef std::vector<NSHARE::uuid_t> uuids_t;///< Information about programs uuid
 
@@ -150,7 +157,38 @@ struct received_message_args_t
 										the error with code  FOccurUserError
 										is sent to message sender (FFrom)*/
 	unsigned 			FEndian;///< Message byte order (see eEndian in endian_type.h)
+	unsigned 			FRemainCallbacks;///!<Amount of CB which of called after It CB
+	unsigned 			FCbs;///!<Amount of CB which is called
+	unsigned 			FFlags;///< subscription flags #requirement_msg_info_t::eFlags
+
+
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_FROM;//!<Serialize key of #FFrom
+	static const NSHARE::CText KEY_PROTOCOL_NAME;//!<Serialize key of #FProtocolName
+	static const NSHARE::CText KEY_PACKET_NUMBER;//!<Serialize key of #FPacketNumber
+	static const NSHARE::CText KEY_TO;//!<Serialize key of #FTo
+	static const NSHARE::CText KEY_OCCUR_USER_ERROR;//!<Serialize key of #FOccurUserError
+	static const NSHARE::CText KEY_ENDIAN;//!<Serialize key of #FEndian
+	static const NSHARE::CText KEY_REMAIN_CALLBACKS;//!<Serialize key of #FRemainCallbacks
+	static const NSHARE::CText KEY_CBS;//!<Serialize key of #FCbs
+	static const NSHARE::CText KEY_FLAGS;//!<Serialize key of #FFlags
+};
+
+/*!\brief information contained in aWHAT argument
+ * of function which is handle received data ( see Receive API)
+ *
+ * You can send error to sender by
+ * changing field FOccurUserError.
+ *
+ *\note
+ *  Non-POD type.
+ */
+struct CUSTOMER_EXPORT received_message_args_t:received_message_info_t
+{
 	received_data_t 	FMessage;///< Received message
+
+
+	static const NSHARE::CText NAME;//!<Serialize key
 };
 
 /*!\brief Information about connected
@@ -161,10 +199,14 @@ struct received_message_args_t
  *\note
  *  Non-POD type.
  */
-struct customers_updated_args_t
+struct CUSTOMER_EXPORT customers_updated_args_t
 {
 	std::set<program_id_t> FDisconnected;///< list of connected program
 	std::set<program_id_t> FConnected;///< list of disconnected program
+
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_DISCONNECTED;//!<Serialize key of #FDisconnected
+	static const NSHARE::CText KEY_CONNECTED;//!<Serialize key of #FConnected
 };
 
 /*!\brief Information about requirement message for
@@ -175,7 +217,7 @@ struct customers_updated_args_t
  *\note
  *  Non-POD type.
  */
-struct subcribe_receiver_args_t
+struct CUSTOMER_EXPORT subcribe_receiver_args_t
 {
 	/*!\brief what requirement
 	 *
@@ -184,16 +226,21 @@ struct subcribe_receiver_args_t
 	{
 		requirement_msg_info_t 	FWhat;///< The request
 		NSHARE::uuid_t 	FWho;///< Who want to receive message
+
+		static const NSHARE::CText KEY_WHO;//!<Serialize key of #FWho
+		static const NSHARE::CText NAME;//!<Serialize key
 	};
 	typedef std::vector<what_t> receivers_t;///<list of requirement messages
 
 	receivers_t FReceivers;///< list of requirement messages
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_RECEIVERS;//!<Serialize key of #FReceivers
 };
 
 /*!\brief Information about not delivered message
  *
  */
-struct fail_sent_args_t
+struct CUSTOMER_EXPORT fail_sent_args_t
 {
 	typedef uint32_t error_t;///< A bitwise error type
 	typedef std::vector<NSHARE::uuid_t> uuids_t;///< Information about programs uuid
@@ -210,6 +257,16 @@ struct fail_sent_args_t
 
 	uuids_t 			FSentTo;///< Where the data was sent
 	uuids_t 			FFails;///< Where the data was not delivered
+
+
+	static const NSHARE::CText NAME;//!<Serialize key
+	static const NSHARE::CText KEY_FROM;//!<Serialize key of #FFrom
+	static const NSHARE::CText KEY_PROTOCOL_NAME;//!<Serialize key of #FProtocolName
+	static const NSHARE::CText KEY_PACKET_NUMBER;//!<Serialize key of #FPacketNumber
+	static const NSHARE::CText KEY_ERROR_CODE;//!<Serialize key of #FErrorCode
+	static const NSHARE::CText KEY_USER_ERROR;//!<Serialize key of #FUserError
+	static const NSHARE::CText KEY_SENT_TO;//!<Serialize key of #FSentTo
+	static const NSHARE::CText KEY_FAILS;//!<Serialize key of #FFails
 };
 
 /*!\brief type of callback function which used in CCustomer
@@ -336,7 +393,7 @@ struct event_handler_info_t
  * it callback function
  *
  */
-struct request_info_t
+struct CUSTOMER_EXPORT request_info_t
 {
 	requirement_msg_info_t 	FWhat;///<A requested message
 	callback_t 		FHandler;///<A callback function
@@ -457,6 +514,7 @@ public:
 	typedef std::vector<NSHARE::CText> modules_t;///< An information about modules
 	typedef std::set<program_id_t> customers_t;///< An information about program
 
+	typedef std::vector<IRtc*> rtc_list_t;
 	/*!\brief Collection of bitwise flags for change
 	 * sending behavior
 	 *
@@ -695,7 +753,7 @@ public:
 	 *		  0 if loopback mode (the data is sent to youself)\n
 	 *		  <0 if error is occured (see bitwise error codes E_*)
 	 */
-	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize, eSendToFlags aFlags= E_NO_SEND_FLAGS);
+	int MSend(NSHARE::CText aProtocolName, void const* aBuffer, size_t aSize, eSendToFlags aFlags= E_NO_SEND_FLAGS);
 
 	/*!\overload
 	 *
@@ -730,7 +788,7 @@ public:
 	 *		  0 if loopback mode (the data is sent to youself) \n
 	 *		  <0 if error is occured (see bitwise error codes E_*)
 	 */
-	int MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
+	int MSend(NSHARE::CText aProtocolName, void const* aBuffer, size_t aSize,
 			const NSHARE::uuid_t& aTo, eSendToFlags aFlags= E_NO_SEND_FLAGS);
 
 	/*!\overload
@@ -871,22 +929,25 @@ public:
 	/*!\overload
 	 *
 	 *\param aHandlerId Handler ID which was returned by #MIWantReceivingMSG function
+	 *\param aTo If not null, then store request to aTo
 	 *
 	 *\return <0 if the error is occured \n
 	 *			else handler ID
+	 *			if aTo is not NULL then also return request info
 	 *\see MIWantReceivingMSG
 	 */
-	int MDoNotReceiveMSG(unsigned aHandlerId);
+	int MDoNotReceiveMSG(unsigned aHandlerId, request_info_t* aTo =NULL);
 
 	/*!\overload
 	 *
 	 *\param aMSGHeader what is requirement to receive and from
-	 *
+	 *\param aTo If not null, then store request to aTo
 	 *\return <0 if the error is occured \n
 	 *			else handler ID
+	 *			if aTo is not NULL then also return request info
 	 *\see MIWantReceivingMSG
 	 */
-	int MDoNotReceiveMSG(const requirement_msg_info_t& aMSGHeader);
+	int MDoNotReceiveMSG(const requirement_msg_info_t& aMSGHeader,callback_t * aTo =NULL);
 
 	/*!\brief Return information about all requested messages
 	 *
@@ -995,7 +1056,7 @@ public:
 	 *
 	 * @return list of RTC
 	 */
-	std::vector<IRtc*> MGetListOfRTC() const;
+	rtc_list_t MGetListOfRTC() const;
 
 
 	struct _pimpl;//!< Realization
@@ -1099,6 +1160,48 @@ inline event_handler_info_t::event_handler_info_t(NSHARE::CText const& aKey,
 	;
 }
 } //
+
+#define ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(aType)\
+		namespace NUDT{CUSTOMER_EXPORT NUDT:: aType deserialize_##aType(NSHARE::CConfig const& aConf);\
+		CUSTOMER_EXPORT NSHARE::CConfig serialize_##aType(NUDT:: aType const& aObject);}\
+		namespace NSHARE\
+		{ template<> inline NUDT:: aType deserialize<NUDT:: aType>(NSHARE::CConfig const& aConf)\
+			{return NUDT::deserialize_##aType(aConf);}\
+			template<> inline NSHARE::CConfig serialize<NUDT:: aType>(NUDT:: aType const& aObject)\
+			{ return NUDT::serialize_##aType(aObject);}\
+		}\
+	/*END*/
+
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(requirement_msg_info_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(received_data_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(received_message_info_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(received_message_args_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(customers_updated_args_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(subcribe_receiver_args_t)
+namespace NUDT
+{
+CUSTOMER_EXPORT NUDT::subcribe_receiver_args_t::what_t deserialize_subcribe_receiver_args_t_what_t(
+		NSHARE::CConfig const& aConf);
+CUSTOMER_EXPORT NSHARE::CConfig serialize_deserialize_subcribe_receiver_args_t_what_t(
+		subcribe_receiver_args_t::what_t const& aObject);
+}
+namespace NSHARE
+{
+template<> inline NUDT::subcribe_receiver_args_t::what_t deserialize<
+		NUDT::subcribe_receiver_args_t::what_t>(NSHARE::CConfig const& aConf)
+{
+	return NUDT::deserialize_subcribe_receiver_args_t_what_t(aConf);
+}
+template<> inline NSHARE::CConfig serialize<
+		NUDT::subcribe_receiver_args_t::what_t>(
+		NUDT::subcribe_receiver_args_t::what_t const& aObject)
+{
+	return NUDT::serialize_deserialize_subcribe_receiver_args_t_what_t(aObject);
+}
+}
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(fail_sent_args_t)
+ADD_CUSTOMER_SERIALIZE_DESERIALIZE_FOR(event_handler_info_t)
+
 namespace std
 {
 CUSTOMER_EXPORT std::ostream& operator<<(std::ostream & aStream,
@@ -1137,7 +1240,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	return aStream;
 }
 inline std::ostream& operator<<(std::ostream & aStream,
-		NUDT::received_message_args_t const& aMSG)
+		NUDT::received_message_info_t const& aMSG)
 {
 	using namespace NUDT;
 
@@ -1147,7 +1250,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
 
 	if (!aMSG.FTo.empty())
 	{
-		received_message_args_t::uuids_t::const_iterator _it = aMSG.FTo.begin(),
+		received_message_info_t::uuids_t::const_iterator _it = aMSG.FTo.begin(),
 				_it_end(aMSG.FTo.end());
 		aStream << "Sent to:  ";
 		for (; _it != _it_end; ++_it)
@@ -1160,13 +1263,26 @@ inline std::ostream& operator<<(std::ostream & aStream,
 	else
 		aStream << "The byte order is valid" << std::endl;
 
+	aStream << "Remain CB "<< aMSG.FRemainCallbacks<< std::endl;
+	aStream << "Amount Of CB "<< aMSG.FCbs<< std::endl;
+
 	aStream << "The message header:" << std::endl;
 
 	aStream << aMSG.FHeader << std::endl;
 
 	aStream << "The message data:" << std::endl;
 
+	return aStream;
+}
+inline std::ostream& operator<<(std::ostream & aStream,
+		NUDT::received_message_args_t const& aMSG)
+{
+	using namespace NUDT;
+
+	aStream << static_cast<received_message_info_t const> (aMSG);
 	aStream << aMSG.FMessage << std::endl;
+
+
 
 	return aStream;
 }

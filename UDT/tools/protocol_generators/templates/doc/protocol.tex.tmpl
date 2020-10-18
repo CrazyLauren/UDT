@@ -1,0 +1,1890 @@
+{% import "base_macros.tmpl" as common %}
+{% import "latex_macros.tmpl" as lm%}
+{% autoescape False %}
+{% set _language = 'ru' if 'language' in settings and settings.language == 'ru' else 'en'  %}
+{% set _biglitle = 'big' if 'endian' in settings and settings.endian|lower == 'big' else 'little'  %}
+{% set _num_symbol = "\#" if _language != 'ru' else "\\textnumero" %}
+\documentclass[a4paper]{report}
+\usepackage[a4paper, left=2.5cm, right=1.5cm, top=2.5cm, bottom=2.5 cm]{geometry} % Page geometry
+\usepackage[T2A,T1]{fontenc}
+\usepackage[utf8]{inputenc}
+{% if _language == 'ru' %}
+\usepackage[english, russian]{babel} % Manages language rules
+{% else %}
+\usepackage[english]{babel} % Manages language rules
+{% endif %}
+\usepackage{bytefield}
+\usepackage{color}
+\usepackage{multirow}% Multi-row tables
+\definecolor{lightgray}{gray}{0.8}
+\usepackage{calc}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{graphicx}
+\usepackage{makecell}
+\usepackage[unicode]{hyperref}
+\usepackage{caption}
+\usepackage{threeparttable}
+\usepackage[section]{placeins}
+\usepackage{chngcntr}
+\usepackage{titlesec}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{titletoc}
+\usepackage{adjustbox}
+\usepackage{listings}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+\fancyhf{}
+\cfoot{\thepage} }
+
+
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+
+\hypersetup{unicode=true}
+
+\newcounter{rownumbercounter}
+\newcommand\rownumber{\stepcounter{rownumbercounter}\arabic{rownumbercounter} }
+
+\captionsetup[table]{labelsep=space,justification=raggedright,singlelinecheck=off}
+
+
+\titleformat{\chapter}[block]
+    {\filcenter}
+    {\thechapter}
+    {1em}
+    {\MakeUppercase}{}
+\titlespacing*{\chapter}{\parindent}{*4}{*4}
+
+\titleformat{\section}
+    {}
+    {\thesection}
+    {1ex}{}
+\titlespacing*{\section}{\parindent}{*4}{*4}
+\titleformat{\subsection}
+    {}
+    {\thesubsection}
+    {1ex}{}
+\titlespacing*{\subsection}{\parindent}{*4}{*4}
+
+\linespread{1.25}
+\setlength\parindent{5 ex}
+\setcounter{LTchunksize}{250}
+\date{}
+\begin{document}
+
+\begin{titlepage}
+ \thispagestyle{empty}
+{% set centering_longtable = '>{\\centering\\arraybackslash\\hspace{0pt}}' %}
+{% set quote_l = '<<' if _language == 'ru' else '\"' %}
+{% set quote_r = '>>' if _language == 'ru' else '\"' %}
+
+\begin{tabularx}{\textwidth}{XX>{\centering\arraybackslash}X}
+{% set _assering_that = 'ASSERTING THAT' if _language != 'ru' else 'УТВЕРЖДАЮ' %}
+{% set _matching = 'MATCHING' if _language != 'ru' else 'СОГЛАСОВАНО' %}
+
+{% for _author in author %}
+    {% if _author.executor == 'asserting that' %}
+    & &  {{ _assering_that }}  \\
+    & & \makecell{ {{ _author.post }} } \\
+    & & \makecell{ {{ _author.organization }} } \\
+    & &  \\
+    & &  \multicolumn{1}{r}{ \hrulefill \hskip 12pt {{ _author.name }} } \\
+    & &  \\
+    & &  \\
+    {% endif %}
+{% endfor %}
+    & &
+\end{tabularx}
+\hspace{0pt}
+\vfill
+
+\begin{longtable}[c]{ {{ centering_longtable }}p{0.1\linewidth}
+                        {{ centering_longtable }}p{0.6\linewidth}
+                        {{ centering_longtable }}p{0.1\linewidth}
+                    }% Title
+    & & \\
+    & {\LARGE {{ title }} } & \\
+    & {% if _language == 'ru'  %} Версия {% else %} Version {% endif %} {{ version.major }}.{{ version.minor }}.{{ version.revision }}& \\
+\end{longtable}
+\vfill
+\hspace{0pt}
+\begin{tabularx}{\textwidth}{XX>{\centering\arraybackslash}X} % Subcribe
+{% for _author in author %}
+    {% if _author.executor == 'matching' %}
+    & &  {{ _matching }}  \\
+    & & \makecell{ {{ _author.post }} } \\
+    & & \makecell{ {{ _author.organization }} } \\
+    & & \\
+    & &  \multicolumn{1}{r}{ \hrulefill \hskip 12pt {{ _author.name }} } \\
+    & & \\
+    & & \\
+    {% endif %}
+{% endfor %}
+    & &
+\end{tabularx}
+\centering\today
+\end{titlepage}
+{% set _chapter = "Introduction" if _language != 'ru' else "Аннотация" %}
+\chapter{ {{ _chapter }} }
+{% if _language == 'ru' %}
+    В документе приводится описание структуры протокола, исходного кода реализующего алгоритмы работы с протоколом.
+    Документ и исходный код ({{ files|length }} файла)
+    сгенерирован автоматически из файла <<{{ file_name|latex_escape }}>>(КС {{md5[:md5|length//2] }}{{md5[md5|length//2:]}}).
+    Исходный код разработан на языках программирования {{ quote_l }}С++{{ quote_r }}, {{ quote_l }}Python{{ quote_r }},
+    а также в ПО {{ quote_l }}Matlab{{ quote_r }}. Размер слова принятынй
+    в протколе равен {{ NUM_OF_BIT_FIELDS//8 }} байта.
+{% else %}
+    This document has been generated from the file {{ file_name|latex_escape }} ( {{ md5 }} ).  Also
+it has been generated {{ files|length }} source code files. The algorithm of handling received
+data presents in source code only. In the document describes about protocol structure.
+    The word size is {{ NUM_OF_BIT_FIELDS//8 }} byte.
+{% endif %}
+
+\tableofcontents
+
+{% macro gen_header_fields(aWhat,aLogicalTypes, aFilter, aSubType = None, aMultiPly = None) %}
+    {% set quote_l = '<<' if _language == 'ru' else '' %}
+    {% set quote_r = '>>' if _language == 'ru' else '' %}
+    {% for logic_type in aLogicalTypes if logic_type in aFilter %}
+        {% if logic_type is iterable %}
+            {% set _is_last = loop.last %}
+            {% for lp in aLogicalTypes[logic_type] %}
+            {% set _val = (lp[aWhat][aSubType] if aSubType else lp[aWhat]) | latex_escape %}
+ {{quote_l}}{{(_val|int * aMultiPly)|string if aMultiPly else _val -}}{{quote_r}}{% if not loop.last or not _is_last %},{% endif %}
+            {% endfor %}
+        {% else %}
+            {% set _val = (lp[aWhat][aSubType] if aSubType else lp[aWhat]) | latex_escape %}
+ {{quote_l}}{{(_val|int * aMultiPly)|string if aMultiPly else _val -}}{{quote_r}}{% if not loop.last %},{% endif %}
+        {% endif%}
+    {% endfor %}
+{% endmacro %}
+
+{% macro generate_message(aMsg, aParent = None) %}
+    {% set  msg_header = aParent|last if aParent else None%}
+    {% set _title = aMsg.___title + ' ('+_num_symbol + aMsg.___number|string + ')' if '___number' in aMsg else aMsg.___title %}
+
+\section{ {{ _title}} }
+    \label{msg:{{ aMsg.___name }} }
+\indent {{ aMsg.___description }}
+    \par
+    {{ create_message_description(aMsg, aParent) }}
+    {{ lm.create_strcuture(NUM_OF_BIT_FIELDS, aMsg, _language, _biglitle, aParent) }}
+
+{% endmacro %}
+{% macro create_message_description(aMsg, aParent) %}
+    {% set  msg_header = aParent|last if aParent else None%}
+
+    {% if '___LogicalType' in aMsg %}
+        {% if _language == 'ru' %}
+    Уникальный идентификатор сообщения передается в полях: {{ gen_header_fields('id', aMsg.___LogicalType,["number", "unique"])-}},
+    при этом значение в поле {{ gen_header_fields('id', aMsg.___LogicalType,["number"]) }} является уникальным в пределах
+    всего протокола номером сообщения.
+        {% else %}
+    The message is identify by {{ gen_header_fields('id', aMsg.___LogicalType,["number", "unique"]) }}
+    fields. The field  {{ gen_header_fields('id', aMsg.___LogicalType,["number"]) }} has to be unique
+    as it's a message number.
+        {% endif %}
+    {% if 'size' in aMsg.___LogicalType %}
+        {% if _language == 'ru' %}
+    Размер сообщения передаётся в поле {{ gen_header_fields('id', aMsg.___LogicalType,["size"]) -}}. Размер сообщения
+    не используется для иденитификации сообщения.
+        {% else %}
+    The message size is into {{ gen_header_fields('id', aMsg.___LogicalType,["size"]) -}}, it isn't
+    used for message identification.
+        {% endif %}
+    {% endif %}
+    {% if 'version_major' in aMsg.___LogicalType and 'version_minor' in aMsg.___LogicalType %}
+        {% if _language == 'ru' %}
+        В полях {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }} и
+        {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }} заголовка сообщения
+        передаётся версия структуры сообщения. При этом сообщение считается совместимым
+        с другим сообщением,
+        если значение указанное в поле
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }}
+        идентично значению аналогичного поля другого сообщения, а значения поля
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        больше или равно значению указанному в поле
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        другого сообщения.
+        {% else %}
+        Into the field {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }} and
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        is transmitted information about version. The message version is
+            correct if the value of field
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }}
+        is equal of analogues field value  and
+            the value of field
+            {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        is greater or equal of  analogues field value.
+        {% endif %}
+    {% elif 'version_major' in aMsg.___LogicalType %}
+        {% if _language == 'ru' %}
+        В поле {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }} заголовка сообщения
+        передаётся версия структуры сообщения. При этом два сообщения считаются совместимоми, если значения
+        указанные в поле {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }} идентичны.
+        {% else %}
+        Into the field {{ gen_header_fields('id', aMsg.___LogicalType,["version_major"]) }}
+        is transmitted information about version. The message version is
+        correct if the value of field is equal of required version.
+        {% endif %}
+    {% elif 'version_minor' in aMsg.___LogicalType %}
+        {% if _language == 'ru' %}
+        В поле {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }} заголовка сообщения
+        передаётся версия структуры сообщения. При этом сообщение считается совместимым
+        с другим сообщением,
+        если значение указанное в поле {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        больше или равно значению указанное в поле {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        другого сообщения.
+        {% else %}
+        Into the field {{ gen_header_fields('id', aMsg.___LogicalType,["version_minor"]) }}
+        is transmitted information about minor version (modification). The message version is
+        correct if the value of field is greater or equal of  required version.
+        {% endif %}
+    {% endif %}
+    {% if 'crc' in aMsg.___LogicalType  %}
+        {% if _language == 'ru' %}
+        Для проверки корректности принятых данных, в протоколе предусмотренно использование циклического избыточного кода
+        (контрольнной суммы) с
+        полниномом {{ gen_header_fields('TypeOfLogicalType', aMsg.___LogicalType,["crc"], 'polynom' ) }} степени
+        {{ gen_header_fields('TypeOfLogicalType', aMsg.___LogicalType,["crc"], 'size', 8 ) }} и смещением
+        {{ gen_header_fields('TypeOfLogicalType', aMsg.___LogicalType,["crc"], 'crc_offset' ) -}}.
+        Контрольная сумма передается в поле {{ gen_header_fields('id', aMsg.___LogicalType,["crc"]) }} заголовка
+        сообщения.
+        {% else %}
+        Also the message has checksum to validation message. It's transmitted in the
+        field {{ gen_header_fields('id', aMsg.___LogicalType,["crc"]) -}}.
+        The CRC polynomial is {{ gen_header_fields('TypeOfLogicalType', aMsg.___LogicalType,["crc"], 'polynom' ) -}}.
+        The Offset is {{ gen_header_fields('TypeOfLogicalType', aMsg.___LogicalType,["crc"], 'crc_offset' ) -}}.
+        {% endif %}
+    {% endif %}
+{% else %}
+    {% if _language == 'ru' %}
+    Номер сообщения - {{  aMsg.___constants.number }}.
+    {% else %}
+    The message number is {{  aMsg.___constants.number }}.
+    {% endif %}
+    {% set byprotocol  = aMsg.___constants.byprotocol if 'byprotocol' in aMsg.___constants else None %}
+    {% if byprotocol%}
+        {% set ver = namespace(minor=None, major =None) %}
+        {% set unique = namespace(id = [], val = []) %}
+        {% for key in byprotocol %}
+            {% set _val = byprotocol[key] %}
+            {% if 'version_major' == _val.LogicalType %}
+                {% set ver.major = _val.value %}
+            {% elif 'version_minor' == _val.LogicalType %}
+                {% set ver.minor = _val.value %}
+            {% elif 'unique' == _val.LogicalType %}
+                {% set _id_lang = '<<' + key + '>>' if _language == 'ru' else key %}
+                {{ unique.id.append(_id_lang) or "" -}}
+                {% set _uval = _val.value if _val.value is not iterable else _val.value|join(', ') %}
+                {{ unique.val.append(_uval) or "" -}}
+            {% endif %}
+        {% endfor %}
+        {% if ver.minor != None or ver.major != None %}
+            {% if ver.minor != None and ver.major != None %}
+                {% if _language == 'ru' %}
+                Текущая версия сообшения {{ ver.major }}.{{ ver.minor }}. Сообщения с версией {{ ver.major }}.Y,
+                где Y $\geq$ {{ ver.minor }}, должны быть совместимы с текущей версией сообщения.
+                {% else %}
+                It version is {{ ver.major }}.{{ ver.minor }}.
+                The message of {{ ver.major }}.Y version, where Y $\geq$ {{ ver.minor }}, has to be
+                capability with it.
+                {% endif %}
+            {% elif ver.minor != None %}
+                {% if _language == 'ru' %}
+                Текущая версия сообшения {{ ver.minor }}. Сообщения с версией большей чем {{ ver.minor }},
+                должны быть совместимы с текущей версией сообщения.
+                {% else %}
+                It version is {{ ver.minor }}.
+                The messages of $\geq$ {{ ver.minor }} version has to be
+                capability with it.
+                {% endif %}
+            {% elif ver.major != None %}
+                {% if _language == 'ru' %}
+                Текущая версия сообшения {{ ver.major }}. Сообщения с версией отличной от {{ ver.major }},
+                являются не совместимыми с текущей версией сообщения.
+                {% else %}
+                It version is {{ ver.major }}.
+                Only the messages of {{ ver.major }} version are capability with it.
+                {% endif %}
+            {% endif %}
+        {% endif %}
+        {% if unique.val | length > 0 %}
+            {% if _language == 'ru' %}
+                Дополнительно для идентификации сообщения могут использоваться следующие значения:
+                {{ unique.val|join('; ') }} ({{ unique.id|join('; ')|latex_escape }}).
+            {% else %}
+            The value {{ unique.val|join('; ') }} ({{ unique.id|join('; ')|latex_escape }} field)
+            is constant which is used to identify the message (besides the number).
+            {% endif %}
+        {% endif %}
+    {% endif %}
+{% endif %}
+
+    {% if aParent and aParent |length > 1 %} {# besides header#}
+        {% set _first = aParent|first %}
+        {% if _language == 'ru' %}
+        Сообщение наследует(расширяет) сообщение
+        {% else %}
+        It's inherited from the message
+        {% endif %}
+        \ref{msg:{{ _first.___name }} } ( {{ _first.___title }} ).
+    {% endif %}
+    {% if msg_header and '___direct_child' in aMsg and aMsg['___direct_child'] | length > 0 %}
+        {% set _direct_len = aMsg['___direct_child'] | length %}
+        {% set _child_len = aMsg['___child'] | length %}
+        {% set _is_grandchild = _direct_len != _child_len %}
+        {% if _language == 'ru' %}
+        Это сообщение также имеет нексолько расширеных версий ({{  _child_len }} шт.). Соответственно
+            получение и обработка этого сообщения также предпологает получение и обработку
+            следующих совместимых сообщений:
+        {% else %}
+        It has {{  _child_len }} children:
+        {% endif %}
+\begin{itemize}
+        {% for _index in aMsg['___direct_child'] %}
+            {% set _child = messages[_index] %}
+            \item {{ _child.___title }} (\ref{msg:{{ _child.___name }} } ){% if loop.last and
+                                                            not _is_grandchild %}.{% else %},{% endif %}
+        {% endfor %}
+        {% if _is_grandchild %}
+            \item
+            {% if _language == 'ru' %}
+            В том числе непрямые наследники сообщения:
+            {% else %}
+            Also children of children:
+            {% endif %}
+                \begin{itemize}
+            {% for _index in aMsg['___child'] if _index not in aMsg['___direct_child'] %}
+                {% set _child = messages[_index] %}
+                    \item {{ _child.___title }} (\ref{msg:{{ _child.___name }} }){% if loop.last %}.{% else %},{% endif %}
+            {% endfor %}
+                \end{itemize}
+        {% endif %}
+\end {itemize}
+    {% endif %}
+    {% if _language == 'ru' %}
+    Выравнивание соотвествующей структуры данных в ОЗУ - {{ aMsg.___constants.align}} байта(ов).
+    {% else %}
+    The message alignment is {{ aMsg.___constants.align}} bytes.
+    {% endif %}
+    {% if aMsg.___type == 'dynamic' %}
+        {% if _language == 'ru' %}
+        Размер передаваемого сообщения произвольный, но не менее чем {{ aMsg.___constants.size_full  }} байта(ов).
+        {% else %}
+        The message size is dynamic but it cannot be less than {{ aMsg.___constants.size_full  }} bytes.
+        {% endif %}
+    {% elif msg_header %}
+        {% if _language == 'ru' %}
+        Размер сообщения равен {{ aMsg.___constants.size_full }} байтов.
+        {% else %}
+        The message size is {{ aMsg.___constants.size_full }} bytes.
+        {% endif %}
+    {% else %}
+        {% if _language == 'ru' %}
+        Размер заголовка сообщения равен {{ aMsg.___constants.size_full }} байтов.
+        {% else %}
+            The message header size is {{ aMsg.___constants.size_full }} bytes.
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% set _chapter = "License" if _language != 'ru' else "Лицензионное соглашение" %}
+{% if license %}
+\chapter{ {{ _chapter }} }
+{{ license }}
+{% endif %}
+{% set _chapter = "General info" if _language != 'ru' else "Общая информация" %}
+\chapter{ {{ _chapter }} }
+{% set _section = "Description" if _language != 'ru' else "Описание протокола" %}
+\section{ {{ _section }} }
+{{ description }}
+
+{% set _section = "Used types" if _language != 'ru' else "Используемые типы данных" %}
+\section{ {{ _section }} }
+
+{% set _label = "Standard_types" %}
+{% set _caption = "Standard types" if _language != 'ru' else "Стандартные типы данных" %}
+\subsection{ {{ _caption}} }
+{#\begin{table}[!htb]#}
+{#\begin{threeparttable}#}
+\begin{longtable}[l]{|{{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.28\linewidth}|
+                    {{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.15\linewidth}|
+                    {{ centering_longtable }}p{0.1\linewidth}| }
+    \caption{ \label{tableref:{{ _label }} } {{ _caption }} } \\
+    \hline
+    {% if _language != 'ru' %} Unique id {% else %} УИД {% endif %}
+    & {% if _language != 'ru' %} Limitation {% else %} Ограничения {% endif %}
+    & {% if _language != 'ru' %} Size (Bytes) {% else %} Размер (байт) {% endif %}
+    & {% if _language != 'ru' %} Align (Bytes) {% else %} Выравни\-вание (байт) {% endif %}
+    & {% if _language != 'ru' %} Type {% else %} Тип {% endif %}
+    & {% if _language != 'ru' %} Description {% else %} Описание {% endif %} \\
+    \hline
+    {% for _id in types if types[_id].standard %}
+        {% set _type = types[_id] %}
+        {{ _id | latex_escape}}
+        & \makecell[l]{$\geq$ {{ _type.min }} \\ $\le$ {{ _type.max }} }
+        & {{ _type.size }}
+        & {{ _type.align }}
+        &
+        {% if _id == 'char' %}
+            {% if _language != 'ru' %} ASCII {% else %} ИСО 646 (ASCII) {% endif %}
+        {% elif _type.is_integer | bool %}
+            {% if _type.is_signed | bool %}
+                {% if _language != 'ru' %} Integer {% else %} Целочисленный, знаковый (дополнительный код) {% endif %}
+            {% else %}
+                {% if _language != 'ru' %} Unsigned integer {% else %} Целочисленный, беззнаковый {% endif %}
+            {% endif%}
+        {% else %}
+            {% if _language != 'ru' %} Float (IEEE 754) {% else %} С плаваующей запятой (ИИЭР 754) {% endif %}
+        {% endif %}
+        {% if description in _type  %}
+            & {{ _type.description }}
+        {% else %}
+            & -
+        {% endif %}
+        \\
+        \hline
+    {% endfor %}
+\end{longtable}
+{#\end{threeparttable}#}
+{#\end{table}#}
+
+{% set nst = namespace(enums = [], data = []) %}
+{% for val in types if not types[val].standard %}
+    {% if 'enumSource' in  types[val] %}
+        {{ nst.enums.append(val) or '' }}
+    {% elif '___fields' in  types[val] %}
+        {{ nst.data.append(val) or '' }}
+    {% endif %}
+{% endfor %}
+
+{% if nst.enums | length > 0 %}
+{% set _label = "enumerate_types" %}
+{% set _caption = "Enumerate types"  if _language != 'ru' else "Перечисляемые типы" %}
+\subsection{ {{ _caption}} }
+\begin{longtable}[l]{|{{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.125\linewidth}|
+                    {{ centering_longtable }}p{0.125\linewidth}|
+                    {{ centering_longtable }}p{0.2\linewidth}|
+                    {{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.2\linewidth}| }
+    \caption{ \label{tableref:{{ _label }} } {{ _caption }} } \\
+    \hline
+    {% if _language != 'ru' %}  Enum ID (Type ID) {% else %}УИД (УИД типа данных){% endif %}
+    & {% if _language != 'ru' %} Size (Bytes) {% else %} Размер (байт) {% endif %}
+    & {% if _language != 'ru' %} Align (Bytes) {% else %} Выравнивание (байт) {% endif %}
+    & {% if _language != 'ru' %} Value Id {% else %} УИД значения {% endif %}
+    & {% if _language != 'ru' %} Value {% else %} Значение {% endif %}
+    & {% if _language != 'ru' %} Description {% else %} Описание {% endif %} \\
+    {% for _enum in nst.enums %}
+        \hline
+        {% set _enum_info = types[_enum] %}
+        {{ _enum_info.___name | latex_escape}} ({{ _enum| latex_escape }})
+        & {{ _enum_info.size }} ({{ _enum_info.type }})
+        & {{ _enum_info.align }}
+        &
+        &
+        {% if '___title' in _enum_info and _enum_info.___title|length > 0 %}
+            & {{ _enum_info.___title}}
+        {% else %}
+            & -
+        {% endif %}
+        \\
+        \hline
+        {% for _val in _enum_info.enumSource %}
+            \multicolumn{3}{|r|}{ }
+            & {{ _val.id | latex_escape }}
+            & {{ _val.number }}
+            & {{ _val.description }}
+            \\ {% if not loop.last %} \cline{4-5}{% endif %}
+        {% endfor %}
+    {% endfor %}
+    \hline
+\end{longtable}
+{% endif %}
+
+{% if nst.data | length > 0 %}
+{% set _label = "user_types" %}
+{% set _caption = "User's type" if _language != 'ru' else "Составные типы данных" %}
+\subsection{ {{ _caption}} }
+    {% for _id in nst.data %}
+        {% set _struct = types[_id] %}
+        {% set _title = _struct.___title %}
+        \subsubsection{ {{ _title}} }
+        \label{msg:{{ _struct.___name }} }
+        \indent {{ _struct.___description }}
+        {{ lm.create_strcuture(NUM_OF_BIT_FIELDS, _struct, _language, _biglitle, None) }}
+    {% endfor %}
+{% endif %}
+
+{{ generate_message(header) }}
+
+{% set _chapter = "Messages" if _language != 'ru' else "Сообщения" %}
+\chapter{ {{ _chapter }} }
+{% for msg in messages %}
+    {{ generate_message(msg,msg.___parent) }}
+{% endfor %}
+
+{% set _chapter = "Source code info" if _language != 'ru' else "Исходный код" %}
+\chapter{ {{ _chapter }} }
+{% set _section = "Info about files" if _language != 'ru' else "Перечень файлов исходного кода" %}
+\section{ {{ _section }} }
+{% set _caption = "Info about source code" if _language != 'ru' else "Перечень сгенерированных файлов исходного кода" %}
+\begin{longtable}[l]{|{{ centering_longtable }}p{0.4\linewidth}|
+                        {{ centering_longtable }}p{0.25\linewidth}|
+                        {{ centering_longtable }}p{0.25\linewidth}|} % Files
+    \caption{ {{ _caption }} \label{ source_code_info } }\\
+    \hline
+    {% if _language != 'ru' %}
+        File name & Description & md5 \\
+    {% else %}
+        Имя файла & Описание & КС (md5) \\
+    {% endif %}
+{% for file in files %}
+    \hline
+    \makecell{ {{ file.name|split_text(30)}} }
+    &
+    {% if 'protocol_%s.h'|format(name|lower) in file.name %}
+        {% if _language != 'ru' %} C++ structure of protocol {% else %} Соответствующие протоколу
+            структуры данных на языке С++ {% endif %}
+    {% elif 'protocol_%s_swap_endian.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Function to swap endian of message {% else %}
+            В файле реализованы алгоритмы изменения порядка байт сообщений.
+        {% endif %}
+    {% elif 'protocol_%s_msg_headers.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Function to fill message header {% else %}
+            В файле реализованы алгоритмы работы с загловком сообщения.
+        {% endif %}
+    {% elif 'protocol_%s_serialize_binary.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Need to serialize/deserialize messages width dynamic size. {% else %}
+            В файле реализованы алгоритмы преобразования сообщений с переменным размером.
+        {% endif %}
+    {% elif 'protocol_%s_parser.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Realize algorithm to handle received data of the protocol. {% else %}
+            В файле реализованы алгоритм обработки принятых по каналом связи данных (поиск сообщений).
+        {% endif %}
+    {% elif 'protocol_%s_serialize.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Realize algorithm serialize / deserialize data to JSON (Need SHARE library of UDT). {% else %}
+            В файла реализованы алгоритмы преобразование сообщений в файл формата JSON(XML) и обратно.
+            (Для работы необходима библиотека SHARE из UDT)
+        {% endif %}
+    {% elif 'protocol_%s_ostream.h'|format(name|lower) in file.name  %}
+        {% if _language != 'ru' %} Implement operator of ostream (C++) {% else %}
+            В файла реализованы операторы потокового вывода сообщений (ostream C++).
+        {% endif %}
+    {% else %}
+        {% if _language != 'ru' %} - {% else %}
+            Приводится в описании программного обеспечения, сгенерировавшего документ.
+        {% endif %}
+    {% endif %}
+    & \makecell{ {{ file.md5[:file.md5|length//2] }} \\ {{ file.md5[file.md5|length//2:] }} } \\
+{% endfor %}
+    \hline
+\end{longtable}
+
+{% set _caption = "Instalation instruction"  if _language != 'ru' else "Инструкция по сборке" %}
+\section{ {{ _caption}} }
+
+{% if _language == 'ru' %}
+    Проект построен с исользованием системы сборки проектов CMake.
+    Перед прочтением раздела рекомендуется ознакомится с литературой по сборке проектов, построенных на базе CMake.
+    Далее будет приводится инструкция по сборке с исопльзованием графического интерфейса.
+    Перед запуском CMake рекомендуется {{ quote_l }}очистить{{ quote_r }} переменные окружения, в первую очередь
+    {{ quote_l }}PATH{{ quote_r }}, оставив только информацию о компиляторе и необходимых зависимостях.
+{% else %}
+The source build system is based on the cmake project builder.
+Before starting the installation, it is recommended that you read about it.
+ Further in the instruction the gui version of cmake will be used.
+ To avoid problems with cmake, you can clear the environment variables,
+ keeping on only the directories of the target compiler,
+ first of all it concerns the PATH variable.
+ (For example, if you build a project for mingw,
+ cmake can "pick up" sh.exe from another compiler).
+{% endif %}
+{% if _language == 'ru' %}
+\emph{ Если в процессе сборки или компиляции возникнут проблемы, проверьте путь к библиотеки Boost
+ ({{"Boost_INCLUDE_DIR"|latex_escape}}) в CMake. Используемая версия библиотеки должна быть совместима
+    с исользуемым компилятором.}
+{% else %}
+\emph{ If you have some problems during compilation check the path to the directory containing Boost
+headers ({{"Boost_INCLUDE_DIR"|latex_escape}}) in cmake. The used version of the boost library can be not compatible
+ with current compiler. If you don't want problems, install the latest version of Boost library for your OS!}
+{% endif %}
+{% set _subsubsection = "Requirements" if _language != 'ru' else "Необходимое ПО" %}
+\subsection{ {{ _subsubsection }} }
+\begin{itemize}
+    \item
+    {% if _language != 'ru' %} Build system (Version 3.8 and above): {% else %} Система сборки (Версия 3.8 и выше): {% endif %}
+    \href{https://cmake.org}{CMake-GUI}
+    \item
+    {% if _language != 'ru' %} For generation programmer documentation with doxygen: {% else %}
+        Для создания справочника программиста: {% endif %}
+    \href{https://www.doxygen.nl}{Doxygen}
+    \item
+        {% if _language != 'ru' %} Requirements for Windows: {% else %} Для компиляции исходного кода для {{ quote_l }}ОС Windows{{ quote_r }}{% endif %}
+            \href{http://www.mingw.org}{
+    {% if _language != 'ru' %}Microsoft Visual C++ or MinGW compiler{% else %}{{ quote_l }} Microsoft Visual C++{{ quote_r }} или {{ quote_l }}MinGW {{ quote_r }}{% endif %}
+    }
+    \item
+        {% if _language != 'ru' %} Requirements for {{"GNU/Linux"|latex_escape}}: GNU Compiler Collection (GCC) compiler
+        {% else %} Для компиляции исходного кода для ОС {{ quote_l }}{{"GNU/Linux"|latex_escape}}{{ quote_r }}: GCC {% endif %}
+    \item
+        {% if _language != 'ru' %} Requirements for QNX:
+        {% else %} Для компиляции исходного кода для ОСРВ {{ quote_l }}QNX{{ quote_r }}: {% endif %}
+        \begin{itemize}
+            \item
+        {% if _language != 'ru' %} Installed QNX Build tools for QNX Version above 6.3.0 where has been
+                    defined the following environments:
+        {% else %} Установленная {{ quote_l }} QNX Build tools {{ quote_r }} для {{ quote_l }} QNX {{ quote_r }} версии выше 6.3.0,
+            также должны быть определенные следующие переменные окружения:
+        {% endif %}
+                \begin{itemize}
+                    \item {{"QNX_CONFIGURATION"|latex_escape}}
+                    \item {{"QNX_HOST"|latex_escape}}
+                    \item {{"QNX_TARGET"|latex_escape}}
+                \end{itemize}
+            \item {{ quote_l }} QNX Momentics {{ quote_r }}
+        \end{itemize}
+    \item {% if _language != 'ru' %} To generate Python code to use library: {% else %} Для генерации
+            иходного кода для языка программирование Python {% endif %}
+        \begin{itemize}
+            \item {% if _language != 'ru' %} Python development headers, libraries and tools {% else %}
+                    Пакет разработчика для Python включающий заголовочные файлы,
+                        библиотеки, а также пакеты: setuptools, wheel.
+                    {% endif %}
+            \item \href{https://www.swig.org}{SWIG}
+            \item {% if _language != 'ru' %} For windows: Python comparability compiler {% else %}
+                    Для OS Windows: Совместимый с интерпретатором компилятор.
+                    {% endif %}
+        \end{itemize}
+    \item To generate Matlab code to use library:
+        \begin{itemize}
+            \item Matlab coder
+            \item \href{https://www.swig.org}{SWIG}
+        \end{itemize}
+\end{itemize}
+{#{% set _paragraph = "Common Requirements" if _language != 'ru' else "Инструменты разработки" %}#}
+{#\paragraph{ {{ _paragraph }} }#}
+{% set _subsubsection = "Dependencies" if _language != 'ru' else "Необходимые библиотеки" %}
+\subsection{ {{ _subsubsection }} }
+
+\begin{longtable}[l]{|{{ centering_longtable }}p{0.2\linewidth}|
+                        {{ centering_longtable }}p{0.2\linewidth}|
+                        {{ centering_longtable }}p{0.25\linewidth}|
+                        {{ centering_longtable }}p{0.25\linewidth}|}
+    \caption{ {{ _subsubsection }} \label{ source_code_dependencies } }\\
+        \hline
+    {% if _language != 'ru' %} Title {% else %} Название {% endif %}
+    & {% if _language != 'ru' %} Version {% else %} Версия {% endif %}
+    & {% if _language != 'ru' %} Required {% else %} Требования {% endif %}
+    & {% if _language != 'ru' %} Note {% else %} Примечание {% endif %}
+    \\
+    \hline
+        \href{https://www.boost.org}{Boost C++}
+        & 1.47 {% if _language != 'ru' %} and higher {% else %} или выше {% endif %}
+        & {% if _language != 'ru' %} Header only files {% else %} Только заголовочные файлы {% endif %}
+        & -
+    \\
+    \hline
+        \href{https://github.com/CrazyLauren/UDT/releases}{UDT}
+        & 0.6 {% if _language != 'ru' %} and higher {% else %} или выше {% endif %}
+        & {% if _language != 'ru' %} Libraries:{% else %} Библиотеки:{% endif %} SHARE, customer
+        & -
+    \\
+    \hline
+\end{longtable}
+{% set _subsubsection = "Build Options" if _language != 'ru' else "Параметры сборки" %}
+\subsection{ {{ _subsubsection }} }
+
+{% set _subsubsection = "Microsoft Windows (Microsoft Visual C++)" if _language != 'ru' else "ОС "+ quote_l+"Microsoft Windows"+quote_r+"("+quote_l+"Microsoft Visual C++"+quote_r+")" %}
+\subsection{ {{ _subsubsection }} }
+
+\begin{enumerate}
+\item {% if _language != 'ru' %} Install Microsoft Visual C++ {% else %} Установите {{quote_l}}Microsoft Visual C++{{quote_r}}{% endif %}
+\item {% if _language != 'ru' %} Install Windows version of cmake-gui {% else %} Установите {{ quote_l }}CMake-GUI{{ quote_r }}{% endif %}
+\item {% if _language != 'ru' %} Run {% else %} Запустите {% endif %}{{quote_l}}cmake-gui.exe{{quote_r}}
+\item {% if _language != 'ru' %} Check {% else %} Выберите {% endif %}{{quote_l}}Grouped, Advanced{{quote_r}}
+\item {% if _language != 'ru' %} Press {{quote_l}}Browse Source{{quote_r}} to set the source code directory.
+	This is the directory where the source code is located.
+    {% else %}
+    Нажмите {{quote_l}}Browse Source{{quote_r}} и укажите путь к директории с исхдоным кодом.
+    {% endif %}
+\item {% if _language != 'ru' %} Press {{quote_l}}Browse Build{{quote_r}} to set the build directory. That
+	is where Microsoft Visual C++ will build the source and
+	will create many many files.
+	This should be an empty or non-existent folder that will be created automatic.
+    {% else %}
+    Нажмите {{quote_l}}Browse Build{{quote_r}} и укажите путь к временному каталогу, где
+    будут храниться файлы проекта для {{quote_l}}Microsoft Visual C++{{quote_r}}. Если указанная
+    директория не существует, то она будет создана автоматически.
+    {% endif %}
+\item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}}
+        {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} {% endif %}
+    \begin{enumerate}
+	    \item {% if _language != 'ru' %} In the window that appears, select requirement Visual Studio version {% else %}
+    Выберите установленную в ОС версию {{quote_l}}Microsoft Visual C++{{quote_r}}
+    {% endif %}
+	    \item {% if _language != 'ru' %} Press button {{quote_l}}finish{{quote_r}} {% else %} Нажмите кнопку {{quote_l}}finish{{quote_r}} {% endif %}
+    \end{enumerate}
+\item {% if _language != 'ru' %} A check will then be performed to ensure all source dependencies are exists.
+	Wait until it's finished, of course, without errors. If you see error then some
+    dependency isn't found. Add corresponding cmake value to find dependency.
+    {% else %}
+    Начнётся процесс проверки ОС, а также поиск требуемого ПО, библиотек. Если возникнет ошибка, то, скорее всего,
+    требуемые библиотеки небыли найдены. Укажите пути к требуемым библиотекам. Также обычно требуется изменить в
+    {{quote_l}}CMake-GUI{{quote_r}} следующие значения:
+    {% endif %}
+    \begin{enumerate}
+	    \item {% if _language != 'ru' %} The compiled applications, libraries and configured headers are installed
+        onto the directory which indicated in the {{"CMAKE_INSTALL_PREFIX"|latex_escape}} CMake's variable.
+		Thus, change the option for {{"CMAKE_INSTALL_PREFIX"|latex_escape}}. If You won't do it,
+		the administrator (root) access can be required for the installation operation.
+        {% else %}
+        После компиляции приложения, библиотеки и заголовочные файлы копируются в директорию указанную
+        в {{quote_l}}{{"CMAKE_INSTALL_PREFIX"|latex_escape}}{{quote_r}} переменной CMake. Поэтому убедитесь, что указанная
+        директория пуста и к ней есть права доступа для текущего пользователя.
+        \textit{Будьте внимательны! При сборке установочного пакета, эта переменная должна быть
+        пустой.}
+        {% endif %}
+        \item {% if _language != 'ru' %} The installation packet are coped
+        onto the directory which indicated in the {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}} CMake's variable.
+        {% else %}
+        Установочный пакет копируются в директорию указанную
+        в {{quote_l}}{{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}{{quote_r}} переменной CMake.
+        {% endif %}
+	    \item {% if _language != 'ru' %} OPTIONAL: You can change the used boost version by changing the {{"Boost_INCLUDE_DIR"|latex_escape}} variable.
+        {% else %}
+            Дополнительно вы можете изменить версию используемой библиотеки boost путем изменения
+            {{"Boost_INCLUDE_DIR"|latex_escape}} переменной CMake.
+        {% endif %}
+	    \item {% if _language != 'ru' %} OPTIONAL: You can enable multi-thread compilation by changing the \\
+            {{"BUILD_BY_MP"|latex_escape}} variable
+            {% else %}
+                Дополнительно вы можете включить многопоточную сборку проекта путем изменения \\
+            {{"BUILD_BY_MP"|latex_escape}} переменной CMake.
+            {% endif %}
+    \end{enumerate}
+\item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}} again.
+            {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} снова.
+            {% endif %}
+\item {% if _language != 'ru' %} Press button {{quote_l}}generate{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+            {% endif %}
+
+\item {% if _language != 'ru' %} Press button {{quote_l}}Open Project{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}Open Project{{quote_r}}.
+            {% endif %}
+\item {% if _language != 'ru' %} Select the requirement build type is customized
+        by the Solution configuration (see MSVC documentation)
+        {% else %}
+        Выберите требуемуемый тип сборки в {{quote_l}}Конфигурация решения{{quote_r}}
+                ({{quote_l}}Solution configuration{{quote_r}})
+        {% endif %}
+\item {% if _language != 'ru' %} Click right mouse button on the project with the name {{quote_l}}INSTALL{{quote_r}}
+    in {{quote_l}}Solution Explorer{{quote_r}} and select {{quote_l}}Build{{quote_r}}.
+        {% else %}
+            Нажмите правой кнопкой на проекте с названием {{quote_l}}INSTALL{{quote_r}}
+            в {{quote_l}}Обозреватель решений{{quote_r}}({{quote_l}}Solution Explorer{{quote_r}}) и
+            выберите {{quote_l}}Построить{{quote_r}}({{quote_l}}Build{{quote_r}}).
+        {% endif %}
+\item {% if _language != 'ru' %}
+    Wait until the end of the build and installation operation
+{% else %}
+    Дождитесь окончания сборки и установки.
+{% endif %}
+\item
+{% if _language != 'ru' %}
+You can see the builded applications and libraries and the headers files
+    in the directory that is specified in the variable {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+{% else %}
+    Собранные файлы находяться в директории указанной в {{"CMAKE_INSTALL_PREFIX"|latex_escape}} переменной
+    CMake.
+{% endif %}
+\item {% if _language != 'ru' %}
+    To build documentation, click right mouse button on the project
+    with the name \\{{quote_l}}doc\_{{ name|upper|latex_escape }}{{quote_r}} in {{quote_l}}Solution Explorer{{quote_r}}  and select {{quote_l}}Build{{quote_r}}.
+    {% else %}
+    Чтобы создать справочник программиста, нажмите правой кнопкой на проекте с названием \\{{quote_l}}doc\_{{ name|upper |latex_escape}}{{quote_r}}
+    в {{quote_l}}Обозреватель решений{{quote_r}}({{quote_l}}Solution Explorer{{quote_r}}) и
+    выберите {{quote_l}}Построить{{quote_r}}({{quote_l}}Build{{quote_r}}).
+    {% endif %}
+
+\item {% if _language != 'ru' %} To build package, click right mouse button on the project with the name {{quote_l}}package{{quote_r}} in {{quote_l}}Solution Explorer{{quote_r}}.
+    Warning! {{"CMAKE_INSTALL_PREFIX"|latex_escape}} has to be empty!
+    {% else %}
+    Чтобы создать установочный пакет:
+    \begin{enumerate}
+        \item В {{quote_l}}CMake-GUI{{quote_r}} очистите переменную {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+        \item Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+        \item В {{quote_l}}Microsoft Visual C++{{quote_r}} Нажмите правой кнопкой на проекте с названием
+        {{quote_l}}package{{quote_r}} в {{quote_l}}Обозреватель решений{{quote_r}}
+        ({{quote_l}}Solution Explorer{{quote_r}}) и
+        выберите {{quote_l}}Построить{{quote_r}}({{quote_l}}Build{{quote_r}}).
+        \item Установочный пакет будет скопирован в папку указанную {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}
+        переменной CMake.
+    \end{enumerate}
+    {% endif %}
+\end{enumerate}
+
+{% set _subsubsection = "Microsoft Windows (MINGW32)" if _language != 'ru'
+ else "ОС "+ quote_l+"Microsoft Windows"+quote_r+"("+quote_l+"Mingw32"+quote_r+")" %}
+\subsection{ {{ _subsubsection }} }
+
+\begin{enumerate}
+    \item {% if _language != 'ru' %}
+        Install Windows version of cmake-gui
+        {% else %} Установите {{ quote_l }}CMake-GUI{{ quote_r }}
+        {% endif %}
+
+    \item {% if _language != 'ru' %} Install mingw32. The default options work
+        {% else %} Установите {{quote_l}}Mingw32{{quote_r}}{% endif %}
+
+    \item {% if _language != 'ru' %} Add the mingw32 programs to the
+        system PATH enviroment variable (eg. append this string C:/mingw32/bin)
+        {% else %} Добавьте путь к {{quote_l}}mingw32{{quote_r}}
+        в переменную окружения {{quote_l}}PATH{{quote_r}} (Например: {{quote_l}}C:/mingw32/bin{{quote_r}})
+        {% endif %}
+    \item {% if _language != 'ru' %} Run {% else %} Запустите {% endif %}{{quote_l}}cmake-gui.exe{{quote_r}}
+
+    \item {% if _language != 'ru' %} Check {% else %} Выберите {% endif %}{{quote_l}}Grouped, Advanced{{quote_r}}
+    \item {% if _language != 'ru' %} Press {{quote_l}}Browse Source{{quote_r}} to set the source code directory.
+        This is the directory where the source code is located.
+        {% else %}
+        Нажмите {{quote_l}}Browse Source{{quote_r}} и укажите путь к директории с исхдоным кодом.
+        {% endif %}
+
+    \item {% if _language != 'ru' %}
+        Press {{quote_l}}Browse Build{{quote_r}} to set the build directory. That
+        is where will build the source and
+        will create many many files.
+        This should be an empty or non-existent folder that will be created automatic.
+        {% else %}
+        Нажмите {{quote_l}}Browse Build{{quote_r}} и укажите путь к временному каталогу, где
+        будут храниться файлы проекта. Если указанная
+        директория не существует, то она будет создана автоматически.
+        {% endif %}
+
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} {% endif %}
+        \begin{enumerate}
+            \item
+                {% if _language != 'ru' %}
+                    In the window that appears, select "MinGW Makefiles"
+                {% else %} Выберите {{quote_l}}MinGW Makefiles{{quote_r}}.
+                {% endif %}
+            \item {% if _language != 'ru' %} Press button {{quote_l}}finish{{quote_r}}
+                {% else %} Нажмите кнопку {{quote_l}}finish{{quote_r}} {% endif %}
+        \end{enumerate}
+
+    \item {% if _language != 'ru' %} A check will then be performed to ensure all source dependencies are exists.
+        Wait until it's finished, of course, without errors. If you see error then some
+        dependency isn't found. Add corresponding cmake value to find dependency.
+        {% else %}
+        Начнётся процесс проверки ОС, а также поиск требуемого ПО, библиотек. Если возникнет ошибка, то, скорее всего,
+        требуемые библиотеки небыли найдены. Укажите пути к требуемым библиотекам. Также обычно требуется изменить в
+        {{quote_l}}CMake-GUI{{quote_r}} следующие значения:
+        {% endif %}
+        \begin{enumerate}
+            \item {% if _language != 'ru' %} You can customize the requirement build type by changing the variable
+        {{"CMAKE_BUILD_TYPE"|latex_escape}} to {{quote_l}}Release{{quote_r}} for compilation in release mode
+        or {{quote_l}}Debug{{quote_r}}
+        {% else %}
+            Вы можете изменить тип сборки путём изменения {{"CMAKE_BUILD_TYPE"|latex_escape}} переменной CMake на
+            {{quote_l}}Release{{quote_r}}, чтобы собрать {{quote_l}}Release{{quote_r}} версию библиотек, или
+            на {{quote_l}}Debug{{quote_r}}, чтобы собрать отладочную версию библиотек.
+        {% endif %}
+            \item {% if _language != 'ru' %} The compiled applications, libraries and configured headers are installed
+            onto the directory which indicated in the {{"CMAKE_INSTALL_PREFIX"|latex_escape}} CMake's variable.
+            Thus, change the option for {{"CMAKE_INSTALL_PREFIX"|latex_escape}}. If You won't do it,
+            the administrator (root) access can be required for the installation operation.
+            {% else %}
+            После компиляции приложения, библиотеки и заголовочные файлы копируются в директорию указанную
+            в {{quote_l}}{{"CMAKE_INSTALL_PREFIX"|latex_escape}}{{quote_r}} переменной CMake. Поэтому убедитесь, что указанная
+            директория пуста и к ней есть права доступа для текущего пользователя.
+            \textit{Будьте внимательны! При сборке установочного пакета, эта переменная должна быть
+            пустой.}
+            {% endif %}
+            \item {% if _language != 'ru' %} The installation packet are coped
+            onto the directory which indicated in the {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}} CMake's variable.
+            {% else %}
+            Установочный пакет копируются в директорию указанную
+            в {{quote_l}}{{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}{{quote_r}} переменной CMake.
+            {% endif %}
+            \item {% if _language != 'ru' %} OPTIONAL: You can change the used boost version by changing the {{"Boost_INCLUDE_DIR"|latex_escape}} variable.
+            {% else %}
+                Дополнительно вы можете изменить версию используемой библиотеки boost путем изменения
+                {{"Boost_INCLUDE_DIR"|latex_escape}} переменной CMake.
+            {% endif %}
+        \end{enumerate}
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}} again.
+            {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} снова.
+            {% endif %}
+    \item {% if _language != 'ru' %} Press button {{quote_l}}generate{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+            {% endif %}
+
+    \item {% if _language != 'ru' %}
+        Open a command shell (cmd.exe) and navigate to the
+        folder specified  in {{quote_l}}the build directory{{quote_r}} of CMake-GUI
+        {% else %}
+        Откройте командную строку и перейдите в директорию указанную в {{quote_l}}the build directory{{quote_r}}.
+        {% endif %}
+    \item {% if _language != 'ru' %} Execute {{quote_l}}cmake --build . --target install{{quote_r}}
+            {% else %}
+               Введите команду {{quote_l}}cmake --build . --target install{{quote_r}}
+            {% endif %}
+    \item {% if _language != 'ru' %}
+            Wait until the end of the build and installation operation
+            {% else %}
+            Дождитесь окончания сборки и установки.
+            {% endif %}
+
+    \item
+        {% if _language != 'ru' %}
+        You can see the builded applications and libraries and the headers files
+            in the directory that is specified in the variable {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+        {% else %}
+            Собранные файлы находяться в директории указанной в {{"CMAKE_INSTALL_PREFIX"|latex_escape}} переменной
+            CMake.
+        {% endif %}
+    \item {% if _language != 'ru' %} To build documentation, execute
+        {{quote_l}}cmake --build . --target doc\_{{ name|upper|latex_escape }}{{quote_r}}
+            {% else %}
+               Чтобы создать справочник программиста, введите команду \\{{quote_l}}cmake --build . --target doc\_{{ name|upper|latex_escape }}{{quote_r}}
+            {% endif %}
+    \item {% if _language != 'ru' %} To build package, execute
+        {{quote_l}}cmake --build . --target package{{quote_r}}
+        Warning! {{"CMAKE_INSTALL_PREFIX"|latex_escape}} has to be empty!
+        {% else %}
+        Чтобы создать установочный пакет:
+        \begin{enumerate}
+            \item В {{quote_l}}CMake-GUI{{quote_r}} очистите переменную {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+            \item Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+            \item Введите в командной строке команду {{quote_l}}cmake --build . --target package{{quote_r}}
+            \item Установочный пакет будет скопирован в папку указанную {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}
+            переменной CMake.
+        \end{enumerate}
+        {% endif %}
+\end{enumerate}
+
+{% set _subsubsection = "GNU/Linux" if _language != 'ru' else "ОС GNU/Linux" %}
+\subsection{ {{ _subsubsection }} }
+\begin{enumerate}
+    \item {% if _language != 'ru' %}
+        By default, the installed in the Debian version of cmake is 3.0,
+        but the required cmake version is greater 3.8. If need install
+        the latest version of CMake.
+        {% else %}
+        По умолчанию, в {{ quote_l }}Debian{{ quote_r }} установленая
+        версия {{ quote_l }}CMake-GUI{{ quote_r }} ниже 3.8.
+        Перед началом сборки проекта установите последнию версию
+        {{ quote_l }}CMake-GUI{{ quote_r }}.
+        {% endif %}
+        \item {% if _language != 'ru' %} Run {% else %} Запустите {% endif %}{{quote_l}}cmake-gui.exe{{quote_r}}
+
+        \item {% if _language != 'ru' %} Check {% else %} Выберите {% endif %}{{quote_l}}Grouped, Advanced{{quote_r}}
+        \item {% if _language != 'ru' %}
+            Press {{quote_l}}Browse Source{{quote_r}} to set the source code directory.
+	        This is the directory where the source code is located.
+            {% else %}
+            Нажмите {{quote_l}}Browse Source{{quote_r}} и укажите путь к директории с исхдоным кодом.
+            {% endif %}
+
+        \item {% if _language != 'ru' %}
+            Press {{quote_l}}Browse Build{{quote_r}} to set the build directory. That
+            is where will build the source and
+            will create many many files.
+            This should be an empty or non-existent folder that will be created automatic.
+        {% else %}
+            Нажмите {{quote_l}}Browse Build{{quote_r}} и укажите путь к временному каталогу, где
+            будут храниться файлы проекта. Если указанная
+            директория не существует, то она будет создана автоматически.
+        {% endif %}
+
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}}
+        {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} {% endif %}
+        \begin{enumerate}
+            \item {% if _language != 'ru' %}
+                In the window that appears, select "MinGW Unix"
+                {% else %}
+                Выберите {{quote_l}}Unix Makefiles{{quote_r}}.
+                {% endif %}
+            \item {% if _language != 'ru' %} Press button {{quote_l}}finish{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}finish{{quote_r}} {% endif %}
+        \end{enumerate}
+    \item {% if _language != 'ru' %} A check will then be performed to ensure all source dependencies are exists.
+	Wait until it's finished, of course, without errors. If you see error then some
+    dependency isn't found. Add corresponding cmake value to find dependency.
+    {% else %}
+    Начнётся процесс проверки ОС, а также поиск требуемого ПО, библиотек. Если возникнет ошибка, то, скорее всего,
+    требуемые библиотеки небыли найдены. Укажите пути к требуемым библиотекам. Также обычно требуется изменить в
+    {{quote_l}}CMake-GUI{{quote_r}} следующие значения:
+    {% endif %}
+        \begin{enumerate}
+            \item {% if _language != 'ru' %} You can customize the requirement build type by changing the variable
+        {{"CMAKE_BUILD_TYPE"|latex_escape}} to {{quote_l}}Release{{quote_r}} for compilation in release mode
+        or {{quote_l}}Debug{{quote_r}}
+        {% else %}
+            Вы можете изменить тип сборки путём изменения {{"CMAKE_BUILD_TYPE"|latex_escape}} переменной CMake на
+            {{quote_l}}Release{{quote_r}}, чтобы собрать {{quote_l}}Release{{quote_r}} версию библиотек, или
+            на {{quote_l}}Debug{{quote_r}}, чтобы собрать отладочную версию библиотек.
+        {% endif %}
+            \item {% if _language != 'ru' %} The compiled applications, libraries and configured headers are installed
+            onto the directory which indicated in the {{"CMAKE_INSTALL_PREFIX"|latex_escape}} CMake's variable.
+            Thus, change the option for {{"CMAKE_INSTALL_PREFIX"|latex_escape}}. If You won't do it,
+            the administrator (root) access can be required for the installation operation.
+            {% else %}
+            После компиляции приложения, библиотеки и заголовочные файлы копируются в директорию указанную
+            в {{quote_l}}{{"CMAKE_INSTALL_PREFIX"|latex_escape}}{{quote_r}} переменной CMake. Поэтому убедитесь, что указанная
+            директория пуста и к ней есть права доступа для текущего пользователя.
+            \textit{Будьте внимательны! При сборке установочного пакета, эта переменная должна быть
+            пустой.}
+            {% endif %}
+            \item {% if _language != 'ru' %} The installation packet are coped
+            onto the directory which indicated in the {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}} CMake's variable.
+            {% else %}
+            Установочный пакет копируются в директорию указанную
+            в {{quote_l}}{{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}{{quote_r}} переменной CMake.
+            {% endif %}
+            \item {% if _language != 'ru' %} OPTIONAL: You can change the used boost version by changing the {{"Boost_INCLUDE_DIR"|latex_escape}} variable.
+            {% else %}
+                Дополнительно вы можете изменить версию используемой библиотеки boost путем изменения
+                {{"Boost_INCLUDE_DIR"|latex_escape}} переменной CMake.
+            {% endif %}
+        \end{enumerate}
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}} again.
+                {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} снова.
+                {% endif %}
+    \item {% if _language != 'ru' %} Press button {{quote_l}}generate{{quote_r}}
+                {% else %} Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+                {% endif %}
+
+    \item
+    {% if _language != 'ru' %}
+        Open a shell and navigate to the folder specified
+        in {{quote_l}}the build directory{{quote_r}} of CMake-GUI
+    {% else %}
+        Откройте командную строку и перейдите в директорию указанную в
+        {{quote_l}}the build directory{{quote_r}}.
+    {% endif %}
+    \item {% if _language != 'ru' %} Execute {{quote_l}}cmake --build . --target install{{quote_r}}
+            {% else %}
+               Введите команду {{quote_l}}cmake --build . --target install{{quote_r}}
+            {% endif %}
+
+    \item {% if _language != 'ru' %}
+            Wait until the end of the build and installation operation
+            {% else %}
+            Дождитесь окончания сборки и установки.
+            {% endif %}
+
+    \item
+        {% if _language != 'ru' %}
+        You can see the builded applications and libraries and the headers files
+            in the directory that is specified in the variable {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+        {% else %}
+            Собранные файлы находяться в директории указанной в {{"CMAKE_INSTALL_PREFIX"|latex_escape}} переменной
+            CMake.
+        {% endif %}
+    \item {% if _language != 'ru' %} To build documentation, execute
+        {{quote_l}}cmake --build . --target doc\_{{ name|upper|latex_escape }}{{quote_r}}
+            {% else %}
+               Чтобы создать справочник программиста, \\
+        введите команду {{quote_l}}cmake --build . --target doc\_{{ name|upper|latex_escape }}{{quote_r}}
+            {% endif %}
+    \item {% if _language != 'ru' %} To build package, execute
+        {{quote_l}}cmake --build . --target package{{quote_r}}
+        Warning! {{"CMAKE_INSTALL_PREFIX"|latex_escape}} has to be empty!
+        {% else %}
+        Чтобы создать установочный пакет:
+        \begin{enumerate}
+            \item В {{quote_l}}CMake-GUI{{quote_r}} очистите переменную {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+            \item Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+            \item Введите в командной строке команду {{quote_l}}cmake --build . --target package{{quote_r}}
+            \item Установочный пакет будет скопирован в папку указанную {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}
+            переменной CMake.
+        \end{enumerate}
+        {% endif %}
+\end{enumerate}
+
+{% set _subsubsection = "QNX" if _language != 'ru' else "ОСРВ QNX (КПДА Neutrino)" %}
+\subsection{ {{ _subsubsection }} }
+
+{% if _language != 'ru' %}
+For building in Windows, the sequence of actions is as follows (For Linux is similar):
+{% else %}
+    Ниже приводиться описания сборки в ОС {{quote_l}}Windows{{quote_r}}. Процесс сборки
+    в ОС {{quote_l}}GNU/Lunux{{quote_r}} аналогичен.
+{% endif %}
+\begin{enumerate}
+    \item {% if _language != 'ru' %}
+        Install Windows version of cmake-gui
+        {% else %} Установите {{ quote_l }}CMake-GUI{{ quote_r }}
+        {% endif %}
+
+    \item {% if _language != 'ru' %} Run {% else %} Запустите {% endif %}{{quote_l}}cmake-gui.exe{{quote_r}}
+
+
+    \item {% if _language != 'ru' %} Check {% else %} Выберите {% endif %}{{quote_l}}Grouped, Advanced{{quote_r}}
+    \item {% if _language != 'ru' %} Press {{quote_l}}Browse Source{{quote_r}} to set the source code directory.
+        This is the directory where the source code is located.
+        {% else %}
+        Нажмите {{quote_l}}Browse Source{{quote_r}} и укажите путь к директории с исхдоным кодом.
+        {% endif %}
+
+    \item {% if _language != 'ru' %}
+        Press {{quote_l}}Browse Build{{quote_r}} to set the build directory. That
+        is where will build the source and
+        will create many many files.
+        This should be an empty or non-existent folder that will be created automatic.
+        {% else %}
+        Нажмите {{quote_l}}Browse Build{{quote_r}} и укажите путь к временному каталогу, где
+        будут храниться файлы проекта. Если указанная
+        директория не существует, то она будет создана автоматически.
+        {% endif %}
+
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} {% endif %}
+        \begin{enumerate}
+            \item
+                {% if _language != 'ru' %}
+                    In the window that appears,
+                        select {{quote_l}}Eclipse CDT4 - Unix Makefiles{{quote_r}}
+                {% else %} Выберите {{quote_l}}Eclipse CDT4 - Unix Makefiles{{quote_r}}.
+                {% endif %}
+
+            \item {% if _language != 'ru' %}
+                Choose {{quote_l}}Specify toolchain file for cross-compiling{{quote_r}}
+                {% else %}
+                Выберите {{quote_l}}Specify toolchain file for cross-compiling{{quote_r}}
+                {% endif %}
+            \item {% if _language != 'ru' %}
+                    Press button {{quote_l}}next{{quote_r}}
+                {% else %}
+                    Нажмите кнопку {{quote_l}}next{{quote_r}}
+                {% endif %}
+            \item
+                {% if _language != 'ru' %}
+                Specify toolchain that corresponds to the QNX version and platform
+                    from the directory {{quote_l}}/CMakeModules/toolchain{{quote_r}}
+                {% else %}
+                    Выберите файл {{quote_l}}toolchain{{quote_r}} соответствующий версии ОСРВ
+                    {{quote_l}}QNX{{quote_r}} и типу процессора из директории {{quote_l}}/CMakeModules/toolchain{{quote_r}}
+                    исходного кода
+                {% endif %}
+            \item {% if _language != 'ru' %} Press button {{quote_l}}finish{{quote_r}}
+                {% else %} Нажмите кнопку {{quote_l}}finish{{quote_r}} {% endif %}
+        \end{enumerate}
+
+    \item {% if _language != 'ru' %} A check will then be performed to ensure all source dependencies are exists.
+        Wait until it's finished, of course, without errors. If you see error then some
+        dependency isn't found. Add corresponding cmake value to find dependency.
+        {% else %}
+        Начнётся процесс проверки ОС, а также поиск требуемого ПО, библиотек. Если возникнет ошибка, то, скорее всего,
+        требуемые библиотеки небыли найдены. Укажите пути к требуемым библиотекам. Также обычно требуется изменить в
+        {{quote_l}}CMake-GUI{{quote_r}} следующие значения:
+        {% endif %}
+        \begin{enumerate}
+            \item {% if _language != 'ru' %} You can customize the requirement build type by changing the variable
+        {{"CMAKE_BUILD_TYPE"|latex_escape}} to {{quote_l}}Release{{quote_r}} for compilation in release mode
+        or {{quote_l}}Debug{{quote_r}}
+        {% else %}
+            Вы можете изменить тип сборки путём изменения {{"CMAKE_BUILD_TYPE"|latex_escape}} переменной CMake на
+            {{quote_l}}Release{{quote_r}}, чтобы собрать {{quote_l}}Release{{quote_r}} версию библиотек, или
+            на {{quote_l}}Debug{{quote_r}}, чтобы собрать отладочную версию библиотек.
+        {% endif %}
+            \item
+            {% if _language != 'ru' %}
+                Choose the requirement version
+                of compiler (3.3.5 and above) by changing the {{"QNX_COMPILER_VERSION"|latex_escape}}
+            {% else %}
+                Выберите требуемую версию компилятора
+                (3.3.5 и выше) в  {{"QNX_COMPILER_VERSION"|latex_escape}} переменной CMake.
+            {% endif %}
+            \item {% if _language != 'ru' %} The compiled applications, libraries and configured headers are installed
+            onto the directory which indicated in the {{"CMAKE_INSTALL_PREFIX"|latex_escape}} CMake's variable.
+            Thus, change the option for {{"CMAKE_INSTALL_PREFIX"|latex_escape}}. If You won't do it,
+            the administrator (root) access can be required for the installation operation.
+            {% else %}
+            После компиляции приложения, библиотеки и заголовочные файлы копируются в директорию указанную
+            в {{quote_l}}{{"CMAKE_INSTALL_PREFIX"|latex_escape}}{{quote_r}} переменной CMake. Поэтому убедитесь, что указанная
+            директория пуста и к ней есть права доступа для текущего пользователя.
+            \textit{Будьте внимательны! При сборке установочного пакета, эта переменная должна быть
+            пустой.}
+            {% endif %}
+            \item {% if _language != 'ru' %} The installation packet are coped
+            onto the directory which indicated in the {{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}} CMake's variable.
+            {% else %}
+            Установочный пакет копируются в директорию указанную
+            в {{quote_l}}{{"CPACK_OUTPUT_FILE_PREFIX"|latex_escape}}{{quote_r}} переменной CMake.
+            {% endif %}
+            \item {% if _language != 'ru' %}
+                OPTIONAL: You can change the used boost version by changing the {{"Boost_INCLUDE_DIR"|latex_escape}} variable.
+            {% else %}
+                Дополнительно вы можете изменить версию используемой библиотеки boost путем изменения
+                {{"Boost_INCLUDE_DIR"|latex_escape}} переменной CMake.
+            {% endif %}
+             \item {% if _language != 'ru' %}
+                OPTIONAL: You can choose the correct version of eclipse  that corresponds to
+                    QNX Momentics by changing the variable {{"CMAKE_ECLIPSE_VERSION"|latex_escape}}.
+                    The requirement version of eclipse you can see into file .eclipseproduct in the
+                    QNX Momentics directory.
+            {% else %}
+                Дополнительно вы можете выбрать версию
+                {{quote_l}}Eclipse{{quote_r}} соответствующую версии установленного
+                {{quote_l}}QNX Momentics{{quote_r}} в {{"CMAKE_ECLIPSE_VERSION"|latex_escape}} переменной CMake.
+                Требуемую версию {{quote_l}}Eclipse{{quote_r}} вы можете найти в фале
+                {{quote_l}}.eclipseproduct{{quote_r}} в директории с {{quote_l}}QNX Momentics{{quote_r}}.
+            {% endif %}
+        \end{enumerate}
+
+    \item {% if _language != 'ru' %} Press button {{quote_l}}configure{{quote_r}} again.
+            {% else %} Нажмите кнопку {{quote_l}}configure{{quote_r}} снова.
+            {% endif %}
+    \item {% if _language != 'ru' %} Press button {{quote_l}}generate{{quote_r}}
+            {% else %} Нажмите кнопку {{quote_l}}generate{{quote_r}}.
+            {% endif %}
+
+    \item {% if _language != 'ru' %}
+        Run QNX Momentics
+        {% else %}
+            Запустите {{quote_l}}QNX Momentics{{quote_r}}
+        {% endif %}
+        \begin{enumerate}
+            \item {% if _language != 'ru' %}
+                    In the menu, choose {{quote_l}}File -> Import{{quote_r}}.
+                {% else %}
+                    Выберите в меню {{quote_l}}File -> Import{{quote_r}}
+                {% endif %}
+            \item
+                {% if _language != 'ru' %}
+                    Expand the {{quote_l}}General folder{{quote_r}} and
+                    select {{quote_l}}Existing Projects into Workspace{{quote_r}}
+                {% else %}
+                    Раскройте {{quote_l}}General folder{{quote_r}} и
+                    выберите {{quote_l}}Existing Projects into Workspace{{quote_r}}
+                {% endif %}
+            \item
+                {% if _language != 'ru' %}
+                    Press button  {{quote_l}}Next{{quote_r}}
+                {% else %}
+                    Нажмите кнопку {{quote_l}}Next{{quote_r}}
+                {% endif %}
+
+            \item
+                {% if _language != 'ru' %}
+                    Choose {{quote_l}}Select root directory{{quote_r}}
+                    and Press button  {{quote_l}}Browse{{quote_r}}
+                {% else %}
+                    Выберите {{quote_l}}Select root directory{{quote_r}}
+                    и нажмите кнопку {{quote_l}}Browse{{quote_r}}
+                {% endif %}
+
+            \item {% if _language != 'ru' %}
+                    Specify the path to the directory similar to
+                    {{quote_l}}the build directory{{quote_r}} of CMake-GUI
+                   {% else %}
+                        Укажите путь к директории аналогичный полю
+                        {{quote_l}}the build directory{{quote_r}} в CMake-GUI
+                   {% endif %}
+            \item {% if _language != 'ru' %}
+                    Choose the project and
+                    press button {{quote_l}}Finish{{quote_r}}
+                  {% else %}
+                    Выберите проект и нажмите кнопку {{quote_l}}Finish{{quote_r}}
+                  {% endif %}
+        \end{enumerate}
+    \item {% if _language != 'ru' %}
+        Click right mouse button on the project in {{quote_l}}Project Explorer{{quote_r}}.
+        Choose {{quote_l}}Build Targets -> Build{{quote_r}}.
+        {% else %}
+            Кликнете правой кнопкой мыши на проекте {{quote_l}}{{ name|upper|latex_escape }}{{quote_r}}
+            в {{quote_l}}Project Explorer{{quote_r}} и выбирете
+            {{quote_l}}Build Targets -> Build{{quote_r}}.
+        {% endif %}
+        \begin{enumerate}
+            \item
+                {% if _language != 'ru' %}
+                    Select a target with the name {{quote_l}}install{{quote_r}},
+                    for which the 'location' is empty.
+                    This is usually the latest {{quote_l}}install{{quote_r}} target.
+                {% else %}
+                    Выберите {{quote_l}}install{{quote_r}} (без указания {{quote_l}}location{{quote_r}}).
+                    Обычно {{quote_l}}install{{quote_r}} в конце списка.
+                {% endif %}
+            \item {% if _language != 'ru' %} Press button {{quote_l}}Build{{quote_r}}
+                {% else %}
+                    Нажмите кнопку {{quote_l}}Build{{quote_r}}
+                {% endif %}
+        \end{enumerate}
+    \item {% if _language != 'ru' %}
+            Wait until the end of the build and installation operation
+            {% else %}
+            Дождитесь окончания сборки и установки.
+            {% endif %}
+
+    \item
+        {% if _language != 'ru' %}
+        You can see the builded applications and libraries and the headers files
+            in the directory that is specified in the variable {{"CMAKE_INSTALL_PREFIX"|latex_escape}}.
+        {% else %}
+            Собранные файлы находяться в директории указанной в {{"CMAKE_INSTALL_PREFIX"|latex_escape}} переменной
+            CMake.
+        {% endif %}
+\end{enumerate}
+{% set _subsubsection = "Qt creator" if _language != 'ru' else "Qt creator" %}
+\subsection{ {{ _subsubsection }} }
+
+\begin{enumerate}
+\item {% if _language != 'ru' %}
+    Do {{quote_l}}Open file or project{{quote_r}}
+    and open the CMakeLists.txt file of in the project root directory.
+    {% else %}
+    Нажмите кнопку {{quote_l}}Open file or project{{quote_r}} и
+    выберить файл {{quote_l}}CMakeLists.txt{{quote_r}} из директории с исходным кодом.
+    {% endif %}
+\item {% if _language != 'ru' %}
+    Choose the Build directory properly and press {{quote_l}}Configure project{{quote_r}}.
+    Qt Creator will create a .cbp file here with the name of
+    the {{quote_l}}{{ name|latex_escape }}{{quote_r}}  project.
+    {% else %}
+        Укажите путь к временному каталогу, где
+        будут храниться файлы проекта ({{quote_l}}Build directory{{quote_r}}) и нажмите
+        кнопку {{quote_l}}Configure project{{quote_r}}.
+        Qt Creator создаст файл с расширением {{quote_l}}{{ name|upper|latex_escape }}.cbp{{quote_r}}.
+    {% endif %}
+\item {% if _language != 'ru' %}
+    Open the {{quote_l}}project view{{quote_r}}.
+    {% else %}
+    Откройте {{quote_l}}project view{{quote_r}}.
+    {% endif %}
+    \begin{enumerate}
+    \item
+    {% if _language != 'ru' %}
+        In the {{quote_l}}Build \& Run{{quote_r}}
+        tab choose {{quote_l}}Build{{quote_r}}.
+    {% else %}
+        В меню {{quote_l}}Build \& Run{{quote_r}}
+        выберите {{quote_l}}Build{{quote_r}}.
+    {% endif %}
+    \item
+    {% if _language != 'ru' %}
+        Press to {{quote_l}}Detail{{quote_r}} in {{quote_l}}Build Steps{{quote_r}} field.
+    {% else %}
+        Нажмите кнопку {{quote_l}}Detail{{quote_r}}
+        в поле {{quote_l}}Build Steps{{quote_r}}
+    {% endif %}
+    \item
+    {% if _language != 'ru' %}
+        In {{quote_l}}Tools arguments{{quote_r}}
+        input {{quote_l}}install{{quote_r}}
+    {% else %}
+        В поле {{quote_l}}Tools arguments{{quote_r}} введите
+        {{quote_l}}install{{quote_r}}
+    {% endif %}
+    \item
+        {% if _language != 'ru' %}
+            In result you has to see in the field {{quote_l}}Build{{quote_r}}:
+            {{quote_l}}cmake --build . --target all -- install{{quote_r}}
+        {% else %}
+            В результате в поле {{quote_l}}Build{{quote_r}} появиться команда:
+            {{quote_l}}cmake --build . --target all -- install{{quote_r}}
+        {% endif %}
+    \end{enumerate}
+    \item
+        {% if _language != 'ru' %}
+            Open the {{quote_l}}edit view{{quote_r}} and click the
+            {{quote_l}}{{ name|latex_escape }}{{quote_r}} button in left
+            column and you will be able to set the command options to {{quote_l}}build{{quote_r}}.
+            the {{quote_l}}{{ name|latex_escape }}{{quote_r}}button in left column and you will be able to
+            set the command options to build.
+        {% else %}
+            Откройте {{quote_l}}edit view{{quote_r}} и нажмите правую кнопку мыши
+            над полем {{quote_l}}{{ name|upper|latex_escape }}{{quote_r}}.
+            Выберите поле {{quote_l}}build{{quote_r}}.
+        {% endif %}
+    \item {% if _language != 'ru' %}
+            Open the {{quote_l}}Compile output{{quote_r}}
+            window and wait for process to ended.  The path of compiled
+            libraries you can see in the {{quote_l}}Installing{{quote_r}}.
+        {% else %}
+            Откройте окно {{quote_l}}Compile output{{quote_r}} и дождитесь окончания
+            сборки проекта. Директорию с собранными файлами
+            вы можете увидеть в поле {{quote_l}}Installing{{quote_r}}.
+        {% endif %}
+\end{enumerate}
+
+{% set _section = "Installation package" if _language != 'ru' else "Установка ПО с ипользованием установочнго пакета" %}
+\section{ {{ _section }} }
+
+{% set _subsection = "Windows " if _language != 'ru' else "ОС "+quote_l+"Windows"+quote_r%}
+\subsection{ {{ _subsection }} }
+\label{install:windows_{{ name }} }
+{% if _language != 'ru' %}
+    To install software You need file with the name
+    {{ quote_l }}{{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}*.exe{{ quote_r }},
+    where * --- information about system and compiler.
+    Double click to the file and press {{ quote_l }}next{{ quote_r }} button. Agrees with license agreement.
+    Chooses {{ quote_l }}Add {{ name|upper|latex_escape }} to the system PATH for all users {{ quote_r }}.
+    If you want to create icon on the desktop check {{ quote_l }}
+    Create {{ name|upper|latex_escape }} Desktop Icon{{ quote_r }}.
+    Press button {{ quote_l }}next{{ quote_r }}.
+    Choose the installation directory and press button {{ quote_l }}next{{ quote_r }}.
+    Press button {{ quote_l }}next{{ quote_r }} again. Choose requirement components.
+    The {{ quote_l }}Development{{ quote_r }} component need to use libraries in the other projects.
+    The {{ quote_l }}Runtime{{ quote_r }} component is consist data only for uses.
+    The {{ quote_l }}Matlab{{ quote_r }} component is consist data needed to use {{ quote_l }}Matlab{{ quote_r }}.
+    The {{ quote_l }}Python{{ quote_r }} component is consist wheel packet.
+    And press button {{ quote_l }}install{{ quote_r }}
+{% else %}
+    Установки ПО осуществляется исполняемым файлом с названием
+    {{ quote_l }}{{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}*.exe{{ quote_r }},
+    где * --- информация о ОС и компиляторе. Для установки ПО необходимо выполнить следующие шаги:
+\begin{enumerate}
+    \item Запустите файл и нажмите кнопку {{ quote_l }}next{{ quote_r }};
+    \item Прочитайте и согласитесь с лицензионным
+    соглашением;
+    \item Далее выберите {{ quote_l }}Add {{ name|upper|latex_escape }} to the system PATH for all users {{ quote_r }};
+    \item Если необходимо добавить ярлык на рабочий стол, выберите
+    {{ quote_l }}Create {{ name|upper|latex_escape }} Desktop Icon{{ quote_r }};
+    \item Нажмите кнопку {{ quote_l }}next{{ quote_r }};
+    \item Выберите директорию установки ПО и нажмите кнопку {{ quote_l }}next{{ quote_r }};
+    \item Нажмите кнопку {{ quote_l }}next{{ quote_r }} снова. Выберите требуемые компоненты:
+    \begin{itemize}
+        \item {{ quote_l }}Development{{ quote_r }} --- содержит файлы необходимые при использовании библиотек
+        компонентами других проектов;
+        \item {{ quote_l }}Runtime{{ quote_r }} --- содержит только файлы необходимые для запуска ПО;
+        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }};
+        \item {{ quote_l }}Python{{ quote_r }}  --- содержит пакет типа {{ quote_l }}wheel{{ quote_r }};
+    \end{itemize}
+    \item Нажмите кнопку {{ quote_l }}Установить{{ quote_r }}.
+\end{enumerate}
+
+{% endif %}
+{% set _subsection = "GNU/Linux (deb)" if _language != 'ru' else "ОС "+quote_l+"GNU/Linux"+quote_r + " (deb)" %}
+\subsection{ {{ _subsection }} }
+\label{install:linux_{{ name }} }
+{% if _language != 'ru' %}
+    To install software You need file with the name
+    {{ quote_l }}{{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}*.exe{{ quote_r }},
+    where * --- information about system, compiler and component.
+    The {{ quote_l }}Runtime{{ quote_r }} component is consist data only for uses. It installed by command
+    {{ quote_l }}dpkg -i {{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}-Linux-Runtime{{ quote_r }}
+    The {{ quote_l }}Development{{ quote_r }} component need to use libraries in the other projects.
+    It installed by command
+    {{ quote_l }}dpkg -i {{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}-Linux-Development{{ quote_r }}
+{% else %}
+    Установки ПО осуществляется исполняемым файлом с названием
+    {{ quote_l }}{{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}*.exe{{ quote_r }},
+    где * --- информация о ОС, компиляторе и компоненте. Доступны следующие компоненты:
+    \begin{itemize}
+        \item {{ quote_l }}Development{{ quote_r }} --- содержит файлы необходимые при использовании библиотек
+        компонентами других проектов;
+        \item {{ quote_l }}Runtime{{ quote_r }} --- содержит только файлы необходимые для запуска ПО;
+        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }};
+        \item {{ quote_l }}Python{{ quote_r }}  --- содержит пакет типа {{ quote_l }}wheel{{ quote_r }};
+    \end{itemize}
+    Установка осуществляется следующей командой:
+    {{ quote_l }}dpkg -i {{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}.{{ version.revision }}-Linux-*{{ quote_r }},
+    где * --- требуемый компонент.
+    Удаление осуществляется следующей командой:
+    {{ quote_l }}apt remove {{ name|upper|latex_escape }}-*{{ quote_r }},
+    где * --- требуемый компонент (название компонента записывается только прописными буквами).
+{% endif %}
+
+{% set _subsection = "Python3 (wheel)" if _language != 'ru' else quote_l+"Python3"+quote_r + " (wheel)" %}
+\subsection{ {{ _subsection }} }
+\label{install:wheel_{{ name }} }
+{% if _language != 'ru' %}
+For OS GNU/Linux use deb (see \ref{install:linux_{{ name }} })  packets, For Windows the wheel packet is into the install packet (component wheel).
+The packet is installed by command:\\
+    {{ quote_l }}pip3 install {{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}*.whl{{ quote_r }},
+    where * --- information about system, compiler.
+The packet is uninstalled by command:\\
+    {{ quote_l }}pip3 uninstall {{ name|upper|latex_escape }}{{ quote_r }}.
+{% else %}
+В ОС {{ quote_l }}GNU/Linux{{ quote_r }} рекомендуется использовать {{ quote_l }}deb{{ quote_r }} пакеты
+    (подраздел \ref{install:linux_{{ name }} }).
+
+В ОС {{ quote_l }}Windows{{ quote_r }} {{ quote_l }}wheel{{ quote_r }} пакет входит в состав компонента
+    {{ quote_l }}Python{{ quote_r }} установчного пакета для ОС {{ quote_l }}Windows{{ quote_r }}. Таким образом, в
+    ОС {{ quote_l }}Windows{{ quote_r }} необходимо в начале установить компонент {{ quote_l }}Python{{ quote_r }}
+    (подраздел \ref{install:windows_{{ name }} } ).
+    ({{ quote_l }}wheel{{ quote_r }} пакет будет находится в директории {{ quote_l }}share/{{ name|upper|latex_escape }}/package{{ quote_r }})
+
+Установка осуществляется следующей командой:\\
+    {{ quote_l }}pip3 install {{ name|upper|latex_escape }}-{{ version.major }}.{{ version.minor }}*.whl{{ quote_r }},
+    где * --- информация о ОС, компиляторе.
+Удаление осуществляется следующей командой:\\
+    {{ quote_l }}pip3 uninstall {{ name|upper|latex_escape }}{{ quote_r }}.
+{% endif %}
+
+{% set _section = "API description" if _language != 'ru' else "Описание программного интерфейса" %}
+\section{ {{ _section }} }
+\label{api:{{ name }} }
+
+{% set _subsection = "API (Python)"
+    if _language != 'ru' else "Описание программного интерфейса ("+quote_l+"Python"+quote_r + ")" %}
+\subsection{ {{ _subsection }} }
+\label{api:{{ name }}_python }
+{% set _python_module_name = name|latex_escape  + '\\_python' %}
+
+{% if _language != 'ru' %}
+    The module {{ quote_l }}{{ _python_module_name}}{{ quote_r }} from
+    packet {{ quote_l }}{{ name|upper|latex_escape }}{{ quote_r }}
+    provide interface to receive,
+    send, serialize (deserialize) messages. To receive and send messages,
+    it's used {{ quote_l }}customer\_python{{ quote_r }} module of {{ quote_l }}UDT{{ quote_r }}. Thus, to use
+    the module you has to install {{ quote_l }}UDT{{ quote_r }} module.
+{% else %}
+    Модуль {{ quote_l }}{{ _python_module_name}}{{ quote_r }} из пакета
+    {{ quote_l }}{{ name|upper|latex_escape }}{{ quote_r }} предоставляет интерфейс для
+    приёма, отправки, преобразование в(из) формата JSON сообщений протокола. При этом,
+    приём и отправка сообщений осуществляется при помощи модуля {{ quote_l }}customer\_python{{ quote_r }}
+    из пакета {{ quote_l }}UDT{{ quote_r }}. Поэтому, перед использованием модуля
+    {{ quote_l }}{{ _python_module_name}}{{ quote_r }} необходимо установить пакет {{ quote_l }}UDT{{ quote_r }}.
+{% endif %}
+
+{% set _subsubsection = "Import exapmle"
+    if _language != 'ru' else "Пример подключения модуля" %}
+\subsubsection{ {{ _subsubsection }} }
+\lstset{language=Python, extendedchars=\true, texcl=true}
+\begin{lstlisting}
+from UDT import customer_python as pnet
+from {{ name|upper }} import {{name}}_python as pl
+\end{lstlisting}
+{% set _subsubsection = "API description"
+    if _language != 'ru' else "Описание интерфейса" %}
+\subsubsection{ {{ _subsubsection }} }
+    {% if _language != 'ru' %}
+        List of available classes in {{ _python_module_name }} module, which is corresponding the messages:
+    {% else %}
+        В модуле {{ _python_module_name }} доступны следующие классы соответствующих сообщений:
+    {% endif %}
+    \begin{itemize}
+    {% for msg in messages-%}
+        {%  set struct_name =  msg.___name+'_t' %}
+        \item {{ struct_name|latex_escape }} ({% if _language != 'ru' %} Section{% else %} Раздел{% endif %}
+                \ref{msg:{{ msg.___name }} } )
+    {% endfor %}
+    \end{itemize}
+
+    {% set _table_api_ref = "python_method_description" %}
+    {% if _language != 'ru' %}
+        Every class is consists several function which is described in \tablename \ref{tableref:{{ _table_api_ref }} }
+    {% else %}
+        Каждый класс содержит несколько методов, описание которых приводится в \tablename \space \ref{tableref:{{ _table_api_ref }} }
+    {% endif %}
+    {% set _table_cap = "Class API description"
+    if _language != 'ru' else "Описание интерфейса класса" %}
+    \begin{longtable}[l]{|{{ centering_longtable }}p{0.3\linewidth}|
+                    {{ centering_longtable }}p{0.3\linewidth}|
+                    {{ centering_longtable }}p{0.3\linewidth}|}
+            \caption{ {{ _table_cap }} \label{tableref:{{ _table_api_ref }} } }\\
+            \hline
+        {% if _language != 'ru' %} Signature {% else %} Сигнатура {% endif %}
+        & {% if _language != 'ru' %} Arguments  {% else %} Агрументы {% endif %}
+        & {% if _language != 'ru' %} Description {% else %} Описание {% endif %}
+        \\
+        \hline
+        send(
+        {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+            {% if not loop.first %}
+                ,
+            {% endif %}
+             a{{ field.id|latex_escape }}
+        {% endfor %}
+        )
+        &
+            {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+                a{{ field.id|latex_escape }} ({{ field.type|latex_escape }}) ---
+                {{ field.description| latex_escape }}.
+            {% endfor %}
+            {% if _language != 'ru' %} Return unique packet id or code error (less zero)
+            {% else %} Возвращает уникальный номер пакета или код ошибки (меньше 0) {% endif %}
+
+        & {% if _language != 'ru' %}
+            Send (Publish) this object (message).
+            {% else %} Отправка (публикация) объекта (сообщения). {% endif %}
+        \\
+        \hline
+        receive(aFrom,
+             aFlags
+        {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+            {% if not loop.first %}
+                ,
+            {% endif %}
+            a{{ field.id|latex_escape }}
+        {% endfor %}
+            , aCb = NULL
+        )
+        &
+            {% if _language != 'ru' %}
+            aFrom (string) --- receive data from (see UDT documentation).
+            aFlags --- receiving flags (bit flags, see UDT documentation).
+            aCb --- pointer to function
+                which is called than data is received.
+            {% else %}
+            aFrom (строка) --- отправитель сообщения (см. документацию на {{ quote_l }}UDT{{ quote_r }}).
+            aFlags --- битовые флаги (см. документацию на {{ quote_l }}UDT{{ quote_r }}).
+            aCb --- указатель на функцию которая будет вызвана после получения сообщения.
+                (Первым параметром в функцию передаётся подробная информация о сообщении
+                )
+            {% endif %}
+            {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+                a{{ field.id|latex_escape }} ({{ field.type|latex_escape }}) ---
+                {{ field.description| latex_escape }}.
+            {% endfor %}
+            {% if _language != 'ru' %} Return unique id of request or code error (less zero).
+            {% else %} Возвращает уникальный номер {{ quote_l }}запроса{{ quote_r }} или код ошибки (меньше 0). {% endif %}
+
+        & {% if _language != 'ru' %}
+            Subscribing to receive data
+            {% else %} Подписка на получение сообщения {% endif %}
+        \\
+        \hline
+        wait\_data( aTime = -1 )
+        &
+            aTime (double) ---
+            {% if _language != 'ru' %}
+             Timeout {% else %} длительность [c] (если значение меньше 0
+            то ждать до бесконечности).{% endif %}
+            {% if _language != 'ru' %} Return amount of messages or error code (less 0).
+            {% else %} Возвращает количество не прочитанных сообщений или код ошибки (меньше 0).{% endif %}
+
+        &   {% if _language != 'ru' %}
+                Block until receiving message
+            {% else %}
+                Блокирует поток до получения сообщения (если есть не прочитанные сообщения
+                то поток не блокируется)
+            {% endif %}
+        \\
+        \hline
+        amount\_of()
+        & {% if _language != 'ru' %} Return amount of isn't read messages.
+            {% else %} Количество не прочитанных сообщений. {% endif %}
+        &   {% if _language != 'ru' %}
+                return amount of does'not read data
+            {% else %}
+                Возвращает количество не прочитанных сообщений
+            {% endif %}
+        \\
+        \hline
+        does\_not\_receive(aTo = None)
+        &  aTo --- {% if _language != 'ru' %} Passed not read data to.{% else %}
+                                            Куда сохранить не прочитанные сообщения.{% endif %}
+              {% if _language != 'ru' %} Return amount of messages or error code (less 0).
+            {% else %} Возвращает количество записанных в массив {{ quote_l }}aTo{{ quote_r }}
+            не прочитанных сообщений или код ошибки (меньше 0).{% endif %}
+
+        &   {% if _language != 'ru' %}
+                Unsubscribe message
+            {% else %}
+                Отписывается от получения сообщений
+            {% endif %}
+        \\
+        \hline
+        get\_next()
+        & {% if _language != 'ru' %} Return amount of isn't read messages or error code (less 0).
+            {% else %} Возвращает количество оставшихся не прочитанных сообщений или код ошибки (меньше 0).{% endif %}
+        &   {% if _language != 'ru' %}
+                Read next received message (store it to object)
+            {% else %}
+                Прочитать следующее не прочитанное сообщение (сохраняет данные в том же объекте)
+            {% endif %}
+        \\
+        \hline
+        to\_json( aPretty )
+        &
+            aPretty (int) --- {% if _language != 'ru' %} is storing with indent.{% else %}
+                                            если 1 то формируте данные в формате JSON
+                                            с отступами.{% endif %}
+             {% if _language != 'ru' %} Return serialized to JSON string message.
+            {% else %} Возвращает сериализированную в строку сообщение.{% endif %}
+
+        &   {% if _language != 'ru' %}
+                Serialize data to JSON
+            {% else %}
+                Сериализация объекта в формат JSON.
+            {% endif %}
+        \\
+        \hline
+        print\_this()
+        & -
+        &   {% if _language != 'ru' %}
+                Print to console
+            {% else %}
+                Вывод в консоль сообщения
+            {% endif %}
+        \\
+        \hline
+        generate()
+        & -
+        &   {% if _language != 'ru' %}
+                Generate test message
+            {% else %}
+                Генерирует тестовое сообщение
+            {% endif %}
+        \\
+        \hline
+        makeZero()
+        & -
+        &   {% if _language != 'ru' %}
+                Place zero-valued data
+            {% else %}
+                {{ quote_l }}Обнуляет{{ quote_r }} сообщение
+            {% endif %}
+        \\
+        \hline
+    \end{longtable}
+    {% if _language != 'ru' %}
+        Also defined function to deserialize object from JSON string:
+        from\_json\_*(aData), where * - message id, aData - JSON string.
+    {% else %}
+        Также определена функция десерилизации сообщений из строка JSON формата:
+        from\_json\_*(aData), где * --- идентификатор сообщения, aData --- JSON строка.
+    {% endif %}
+
+    {% if _language != 'ru' %}
+        Algorithm of receiving is next:
+    {% else %}
+        Алгоритм получения сообщений следующий:
+    {% endif %}
+    \begin{itemize}
+        \item {% if _language != 'ru' %} Create the object {% else %}
+                Создать объект соответствующего сообщения{% endif %}
+        \item {% if _language != 'ru' %} Call method {% else %}
+                Вызвать метод {% endif %} {{ quote_l }}receive{{ quote_r }}
+        \item {% if _language != 'ru' %} Block thread if need {% else %}
+                По необходимости, приостановить поток до получения сообщения
+                вызовом метода {% endif %} {{ quote_l }}wait\_data{{ quote_r }}
+        \item {% if _language != 'ru' %} Than data is received, read data  {% else %}
+                Когда данные приняты, прочитайте сообщение вызовом метода
+                {% endif %} {{ quote_l }}get\_next{{ quote_r }}
+        \item {% if _language != 'ru' %} Than message is in object  {% else %}
+                Сообщение сохранено в объекте
+                {% endif %}
+    \end{itemize}
+{% set _subsubsection = "Example"
+    if _language != 'ru' else "Пример работы" %}
+\subsubsection{ {{ _subsubsection }} }
+
+{% if _language != 'ru' %}
+    Before You is starting the sript below, you has to start {{ quote_l }} Kernel {{ quote_r }}
+    from {{ quote_l }} UDT {{ quote_r }} {% else %}
+    Перед запуском примера необходимо запустить программу {{ quote_l }} Kernel {{ quote_r }}
+    из состава {{ quote_l }} UDT {{ quote_r }}.
+    {% endif %}
+
+\begin{lstlisting}
+from UDT import customer_python as pnet
+from {{ name|upper }} import {{name}}_python as pl
+
+{% set _example_name = name+"_python_example"%}
+#{% if _language != 'ru' %} initialize UDT {% else %} Подключаемся к UDT{% endif %}
+
+pnet.init_udt_library_default("{{ _example_name }}",{{ version.major }},{{ version.minor }})
+pnet.udt_open()
+
+#{% if _language != 'ru' %} Wait for connected to Kernel {% else %} Ждём подключения к Kernel {% endif %}
+
+pnet.udt_wait_for_event("event_connected", -1)
+
+{% set _example_message = messages|first if messages|length > 0 else None%}
+{% if _example_message != None %}
+    {% set struct_name = _example_message.___name + '_t'  %}
+    {% set _header_msg = _example_message.___parent|last %}
+    {% set _uniques = _header_msg.___LogicalType.unique  if "unique" in _header_msg.___LogicalType else None %}
+
+message_{{ _example_message.___number }} = pl.{{ struct_name }}()
+
+#{% if _language != 'ru' %} Receive from me {% else %} Получаем сообщения от себя {% endif %}
+
+message_{{ _example_message.___number }}.receive("{{ _example_name }}", 0{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} )
+
+#{% if _language != 'ru' %} Filling object {% else %} Заполняем данные {% endif %}
+
+message_{{ _example_message.___number }}.generate()
+
+#{% if _language != 'ru' %} Send data ... {% else %} Отправляем данные {% endif %}
+
+message_{{ _example_message.___number }}.send({% for _unique in _uniques %}{% if not loop.first %}, {% endif %}{{ _unique.test }}{% endfor %})
+
+#{% if _language != 'ru' %} Wait for data and print result {% else %} Ждём получения данных и выводим в консоль сообщение {% endif %}
+
+if message_{{ _example_message.___number }}.wait_data() > 0:
+    while message_{{ _example_message.___number }}.get_next() >= 0:
+        message_{{ _example_message.___number }}.print_this()
+
+message_{{ _example_message.___number }}.does_not_receive()
+pnet.udt_close()
+{% endif %}
+\end{lstlisting}
+
+{% if versions|length > 0  %}
+    {% set _chapter = "List of change" if _language != 'ru' else "Список изменений" %}
+\chapter{ {{ _chapter }} }
+\begin{longtable}[l]{|{{ centering_longtable }}p{0.1\linewidth}|
+                    {{ centering_longtable }}p{0.12\linewidth}|
+                    {{ centering_longtable }}p{0.7\linewidth}|}
+    \caption{ {{ _chapter }} \label{ list_of_change } }\\
+        \hline
+    {% if _language != 'ru' %} Version {% else %} Версия {% endif %}
+    & {% if _language != 'ru' %} Date  {% else %} Дата {% endif %}
+    & {% if _language != 'ru' %} Changes {% else %} Изменения {% endif %}
+    \\
+    \hline
+    {% for _version in versions %}
+        {{ _version.major }}.{{ _version.minor }}.{{ _version.revision }}
+        & {{ _version.date }}
+        & {{ _version.changes }}
+    \\
+    \hline
+    {% endfor %}
+\end{longtable}
+{% endif %}
+{% if _language == 'ru' %}
+{% set _chapter = "Перечень сокращений" %}
+\chapter{ {{ _chapter }} }
+{#{% set raggedleft = '>{\\raggedleft\\arraybackslash}' %}#}
+{#{% set raggedrigth = '>{\\raggedrigth\\arraybackslash}' %}#}
+\begin{longtable}{ p{0.1\linewidth}p{0.8\linewidth} }
+    ИИЭР & Институт инженеров по электротехнике и радиоэлектронике (The Institute of Electrical and Electronics Engineers) \\
+    ИСО & Международная организация по стандартизации (International Organization for Standardization) \\
+    КС & Контрольная система \\
+    ОЗУ & Оперативное запоминающее устройство \\
+    УИД & Уникальный идентификатор \\
+    ЦМР & Цена единицы младшего разряда \\
+    ASCII & American Standard Code for Information Interchange (Американский стандартный код обмена информацией) \\
+    JSON & JavaScript Object Notation \\
+    XML & Extensible Markup Language
+\end{longtable}
+{% endif %}
+\vfill
+
+{% set _executors = author | selectattr("executor",'equalto',"executor") %}
+\begin{tabularx}{\textwidth}{XX>{\centering\arraybackslash}X} % Subcribe
+{% for _author in _executors  %}
+    & & \makecell{ {{ _author.post }} } \\
+    & & \makecell{ {{ _author.organization }} } \\
+    & &  \\
+    & &  \multicolumn{1}{r}{ \hrulefill \hskip 12pt {{ _author.name }} } \\
+    & &  \\
+    & &  \\
+{% endfor %}
+    & &
+\end{tabularx}
+\end{document}
+{% endautoescape %}

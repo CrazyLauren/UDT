@@ -11,7 +11,7 @@
  */
 
 #include <deftype>
-#include <udt/udt_rtc.h>
+#include <UDT/udt_rtc.h>
 #include <shared_types.h>
 
 namespace NUDT

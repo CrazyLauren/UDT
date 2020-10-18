@@ -3,9 +3,14 @@
     "header_id": {
       "properties": {
         "___number": {
+          "headerTemplate": "{%if settings.language == 'ru'%}Номер сообщения{%else%}Message #{%endif%}",
           "title": "Message #",
           "type": "integer",
-          "propertyOrder": -1
+          "propertyOrder": -1,
+          "minimum": 1,
+          "watch": {
+            "settings": "settings"
+          }
         }
       },
       "required": [
@@ -19,26 +24,45 @@
       "pattern": "^[a-zA-Z0-9_]+$"
     },
     "version": {
-      "title": "Version",
+      "headerTemplate": "{%if settings.language == 'ru'%}Версия {%else%}Protocol version{%endif%} {{self.major}}.{{self.minor}}",
       "type": "object",
       "format": "grid-strict",
       "properties": {
         "major": {
-          "title": "Major",
+          "headerTemplate": "{%if settings.language == 'ru'%}Основная{%else%}Major{%endif%}",
           "propertyOrder": 1,
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "watch": {
+            "settings": "settings"
+          }
         },
         "minor": {
-          "title": "Minor",
+          "headerTemplate": "{%if settings.language == 'ru'%}Дополнительная{%else%}Minor{%endif%}",
           "propertyOrder": 2,
+          "type": "integer",
+          "minimum": 0,
+          "watch": {
+            "settings": "settings"
+          }
+        },
+        "revision": {
+          "headerTemplate": "{%if settings.language == 'ru'%}Редакция{%else%}Revision{%endif%}",
+          "watch": {
+            "settings": "settings"
+          },
+          "propertyOrder": 3,
           "type": "integer",
           "minimum": 0
         },
-        "revision": {
-          "title": "Revision",
-          "propertyOrder": 3,
-          "type": "integer",
+        "date": {
+          "headerTemplate": "{%if settings.language == 'ru'%}Дата{%else%}Date{%endif%}",
+          "watch": {
+            "settings": "settings"
+          },
+          "propertyOrder": 0,
+          "type": "string",
+          "format": "date",
           "minimum": 0
         }
       },
@@ -46,7 +70,10 @@
       "required": [
         "major",
         "minor"
-      ]
+      ],
+      "watch": {
+        "settings": "settings"
+      }
     },
     "message_scheme": {
       "title": "Add message description!",
@@ -58,22 +85,38 @@
         "___name": {
           "$ref": "#/definitions/id",
           "title": "Identifier",
-          "propertyOrder": 2
+          "propertyOrder": 2,
+          "headerTemplate": "{%if settings.language == 'ru'%}Идентификатор{%else%}Identifier{%endif%}",
+          "watch": {
+            "settings": "settings"
+          }
         },
         "___description": {
           "title": "Description",
           "propertyOrder": 1,
           "type": "string",
-          "format": "jodit"
+          "format": "html",
+          "headerTemplate": "{%if settings.language == 'ru'%}Описание{%else%}Description{%endif%}",
+          "watch": {
+            "settings": "settings"
+          }
         },
         "___size": {
           "title": "Message data size (bytes)",
           "propertyOrder": 3,
           "type": "integer",
-          "exclusiveMinimum": 0
+          "exclusiveMinimum": 0,
+          "headerTemplate": "{%if settings.language == 'ru'%}Размер данных (байт){%else%}Message data size (bytes){%endif%}",
+          "watch": {
+            "settings": "settings"
+          }
         },
         "___fields": {
           "title": "Fields",
+          "headerTemplate": "{%if settings.language == 'ru'%}Данные{%else%}Fields{%endif%}",
+          "watch": {
+            "settings": "settings"
+          },
           "propertyOrder": 4,
           "options": {
             "collapsed": false
@@ -85,39 +128,63 @@
             "id"
           ],
           "items": {
-            "title": "field",
+            "title": "Field",
             "type": "object",
             "properties": {
               "type": {
                 "title": "Type",
+                "headerTemplate": "{%if settings.language == 'ru'%}Тип{%else%}Type{%endif%}",
                 "propertyOrder": 1,
                 "type": "string",
-                "enum": [
-                  "char",
-                  "int8_t",
-                  "uint8_t",
-                  "int16_t",
-                  "uint16_t",
-                  "int32_t",
-                  "uint32_t",
-                  "int64_t",
-                  "uint64_t",
-                  "float",
-                  "double"
+                "watch": {
+                  "user_types": "user_types",
+                  "user_enums": "user_enums",
+                  "settings": "settings"
+                },
+                "enumSource": [
+                  [
+                    "char",
+                    "int8_t",
+                    "uint8_t",
+                    "int16_t",
+                    "uint16_t",
+                    "int32_t",
+                    "uint32_t",
+                    "int64_t",
+                    "uint64_t",
+                    "float",
+                    "double"
+                  ],
+                  {
+                    "source": "user_types",
+                    "value": "{{item.___name}}"
+                  },
+                  {
+                    "source": "user_enums",
+                    "value": "{{item.___name}}"
+                  }
                 ]
               },
               "array_len": {
                 "title": "Array length (0 - if no array)",
                 "propertyOrder": 4,
                 "type": "integer",
-                "Minimum": 0
+                "Minimum": 0,
+                "headerTemplate": "{%if settings.language == 'ru'%}Длинна массива (0 - если не массив){%else%}Array length (0 - if no array){%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "bits": {
                 "title": "Amount of used bits (0 - if all)",
                 "propertyOrder": 3,
                 "type": "integer",
                 "Minimum": 0,
-                "exclusiveMaximum": 64
+                "exclusiveMaximum": 64,
+                "headerTemplate": "{%if settings.language == 'ru'%}Кол-во используемых бит (0 - если все){%else%}Amount of used bits (0 - if all){%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "id": {
                 "title": "Identifier",
@@ -125,234 +192,40 @@
                 "type": "string",
                 "minLength": 0,
                 "maxLength": 24,
-                "pattern": "^[a-zA-Z0-9_]+$"
+                "pattern": "^[a-zA-Z0-9_]+$",
+                "headerTemplate": "{%if settings.language == 'ru'%}Идентификатор{%else%}Identifier{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
-              "min_value": {
-                "title": "Minimal value",
+              "limitation": {
+                "title": "Limitation (>, >=, !=, <, <=, ==)",
                 "propertyOrder": 5,
-                "type": "integer"
-              },
-              "max_value": {
-                "title": "Maximal value",
-                "propertyOrder": 6,
-                "type": "integer"
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 64,
+                "headerTemplate": "{%if settings.language == 'ru'%}Допустимые значениф (>, >=, !=, <, <=, ==){%else%}Limitation (>, >=, !=, <, <=, ==){%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "sampling": {
                 "title": "Measurement accuracy",
                 "propertyOrder": 7,
-                "type": "integer"
+                "type": "integer",
+                "headerTemplate": "{%if settings.language == 'ru'%}ЦМР{%else%}Measurement accuracy{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "unit": {
-                "title": "Units of measurement ",
+                "title": "Units of measurement",
                 "propertyOrder": 8,
                 "type": "string",
-                "enum": [
-                  "",
-                  "°C",
-                  "°F",
-                  "$",
-                  "$/J",
-                  "$/mmBTU",
-                  "€",
-                  "€/J",
-                  "€/kcal",
-                  "€/kWh",
-                  "€/mmBTU",
-                  "€/MWh",
-                  "1/K",
-                  "1/m",
-                  "A",
-                  "A/cm2",
-                  "A/dm2",
-                  "A/ft2",
-                  "A/m2",
-                  "A/mm2",
-                  "atm",
-                  "bar",
-                  "barg",
-                  "bbl",
-                  "BTU",
-                  "BTU/(hft2F)",
-                  "BTU/ft3",
-                  "BTU/h",
-                  "BTU/h/°F",
-                  "BTU/lb",
-                  "BTU/lb/°F",
-                  "BTU/lbmol",
-                  "C",
-                  "C/kmol",
-                  "cd",
-                  "cm",
-                  "cm2",
-                  "cm3",
-                  "cP",
-                  "d",
-                  "dm",
-                  "dm2",
-                  "dm3",
-                  "F",
-                  "ft",
-                  "ft2",
-                  "ft3",
-                  "ft3/h",
-                  "g",
-                  "g/d",
-                  "g/m3",
-                  "g/Nm3",
-                  "GPU",
-                  "GW",
-                  "H",
-                  "h",
-                  "hPa",
-                  "Hz",
-                  "in",
-                  "J",
-                  "J/(kg*K)",
-                  "J/(kg*K2)",
-                  "J/(kg*K3)",
-                  "J/(kmol*K)",
-                  "J/K",
-                  "J/kg",
-                  "J/kg/K",
-                  "J/kmol",
-                  "J/kmol/K",
-                  "J/l",
-                  "J/m3",
-                  "K",
-                  "K/Pa",
-                  "K2/Pa",
-                  "kcal",
-                  "kcal/(hm2K)",
-                  "kcal/(kg*K)",
-                  "kcal/h",
-                  "kcal/kg",
-                  "kcal/kg/K",
-                  "kcal/kmol",
-                  "kcal/l",
-                  "kcal/m3",
-                  "kcal/s",
-                  "kg",
-                  "kg/(m3*K)",
-                  "kg/(m3*K2)",
-                  "kg/cm2",
-                  "kg/d",
-                  "kg/h",
-                  "kg/J",
-                  "kg/kmol",
-                  "kg/m3",
-                  "kg/m7",
-                  "kg/s",
-                  "kJ",
-                  "kJ/g",
-                  "kJ/kg",
-                  "kJ/kg/K",
-                  "kJ/kmol",
-                  "kJ/kmol/K",
-                  "kJ/m3",
-                  "km",
-                  "kmol/h",
-                  "kmol/kg",
-                  "kmol/kg/m",
-                  "kmol/m3",
-                  "kmol/s",
-                  "kPa",
-                  "kW",
-                  "kWh",
-                  "kWh/m3",
-                  "l",
-                  "l/h",
-                  "lb",
-                  "lb/ft3",
-                  "lb/h",
-                  "lb/lbmol",
-                  "lbmol/ft3",
-                  "lbmol/h",
-                  "m",
-                  "m*K/W",
-                  "m*s",
-                  "m/s",
-                  "m/s2",
-                  "m2",
-                  "m2*K/W",
-                  "m2*K2/W2",
-                  "m2/s",
-                  "m2/s2",
-                  "m3",
-                  "m3/h",
-                  "m3/kg",
-                  "m3/kmol",
-                  "m3/s",
-                  "mA/cm2",
-                  "mbar",
-                  "mg",
-                  "mg/m3",
-                  "mg/Nm3",
-                  "min",
-                  "MJ/kg",
-                  "ml",
-                  "mm",
-                  "mm2",
-                  "mm3",
-                  "mmBTU",
-                  "mmH2O",
-                  "mmHg",
-                  "mmol/dm3",
-                  "mol",
-                  "mol/dm3",
-                  "mol/h",
-                  "mol/kg",
-                  "mol/m3",
-                  "mol/s",
-                  "MPa",
-                  "mPa*s",
-                  "mV",
-                  "mW",
-                  "MW",
-                  "MWh",
-                  "N",
-                  "N*m4",
-                  "N/m",
-                  "Nm3/d",
-                  "Nm3/h",
-                  "Nm4kmol-2",
-                  "ohm",
-                  "ohm*cm",
-                  "ohm*cm2",
-                  "ohm*m",
-                  "ohm*m2",
-                  "Pa",
-                  "Pa*m6/kmol2",
-                  "Pa*m6/kmol2/K",
-                  "Pa*m6/kmol2/K2",
-                  "Pa*s",
-                  "Pa/K",
-                  "Pa/K2",
-                  "psi",
-                  "rad",
-                  "rpm",
-                  "S",
-                  "s",
-                  "T",
-                  "t",
-                  "t/d",
-                  "t/h",
-                  "t/yr",
-                  "Torr",
-                  "TW",
-                  "ul",
-                  "um",
-                  "uPa*s",
-                  "V",
-                  "W",
-                  "W/(m*K)",
-                  "W/(m2*K)",
-                  "W/K",
-                  "W/m/K",
-                  "W/m2",
-                  "W/m2/K",
-                  "Wb",
-                  "yr"
-                ]
+                "headerTemplate": "{%if settings.language == 'ru'%}Единицы измерения{%else%}Units of measurement{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "description": {
                 "title": "Description",
@@ -361,6 +234,10 @@
                 "format": "html",
                 "options": {
                   "wysiwyg": true
+                },
+                "headerTemplate": "{%if settings.language == 'ru'%}Описание{%else%}Description{%endif%}",
+                "watch": {
+                  "settings": "settings"
                 }
               }
             },
@@ -382,41 +259,400 @@
     }
   },
   "title": "Protocol generator",
-  "headerTemplate": "{{self.description}}",
+  "headerTemplate": "{{self.title}}",
   "type": "object",
   "properties": {
+    "settings": {
+      "headerTemplate": "{%if self.language == 'ru'%}Настройки{%else%}Settings{%endif%}",
+      "type": "object",
+      "format": "table",
+      "properties": {
+        "language": {
+          "headerTemplate": "{%if self == 'ru'%}Язык{%else%}Language{%endif%}",
+          "type": "string",
+          "enum": [
+            "ru",
+            "en"
+          ]
+        },
+        "endian": {
+          "headerTemplate": "{%if settings.language == 'ru'%}Порядок байт{%else%}Endian{%endif%}",
+          "type": "string",
+          "enum": [
+            "Big",
+            "Little"
+          ],
+          "watch": {
+            "settings": "settings"
+          }
+        }
+      }
+    },
+    "organization": {
+      "headerTemplate": "{%if settings.language == 'ru'%}Орагнизации учавствующие в разработке{%else%}Organizations{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
+      "propertyOrder": 2,
+      "options": {
+        "collapsed": true
+      },
+      "format": "table",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "title": "Organization",
+        "headerTemplate": "{%if settings.language == 'ru'%}Организация{%else%}Organization{%endif%}",
+        "watch": {
+          "settings": "settings"
+        },
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Organization",
+            "headerTemplate": "{%if settings.language == 'ru'%}Организация{%else%}Organization{%endif%}",
+            "watch": {
+              "settings": "settings"
+            },
+            "propertyOrder": 1,
+            "type": "string",
+            "format": "text",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "author": {
-      "title": "Author",
+      "headerTemplate": "{%if settings.language == 'ru'%}Авторы{%else%}Authors{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "propertyOrder": 3,
-      "type": "string"
+      "options": {
+        "collapsed": true
+      },
+      "format": "table",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "headerTemplate": "{%if settings.language == 'ru'%}Автор{%else%}Author{%endif%}",
+        "watch": {
+          "settings": "settings"
+        },
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Full Name",
+            "headerTemplate": "{%if settings.language == 'ru'%}ФИО{%else%}Full Name{%endif%}",
+            "watch": {
+              "settings": "settings"
+            },
+            "propertyOrder": 1,
+            "type": "string",
+            "minLength": 1
+          },
+          "post": {
+            "title": "Post",
+            "headerTemplate": "{%if settings.language == 'ru'%}Должность{%else%}Post{%endif%}",
+            "watch": {
+              "settings": "settings"
+            },
+            "propertyOrder": 2,
+            "type": "string"
+          },
+          "executor": {
+            "title": "Is",
+            "headerTemplate": "{%if settings.language == 'ru'%}Подписвает как{%else%}Is{%endif%}",
+            "watch": {
+              "settings": "settings"
+            },
+            "propertyOrder": 3,
+            "type": "string",
+            "enum": [
+              "executor",
+              "matching",
+              "asserting that"
+            ]
+          },
+          "organization": {
+            "title": "Organization",
+            "headerTemplate": "{%if settings.language == 'ru'%}Организация{%else%}Organization{%endif%}",
+            "propertyOrder": 4,
+            "type": "string",
+            "format": "text",
+            "watch": {
+              "organization": "organization",
+              "settings": "settings"
+            },
+            "enumSource": [
+              [
+                ""
+              ],
+              {
+                "source": "organization",
+                "value": "{{item.name}}"
+              }
+            ]
+          }
+        }
+      }
     },
     "name": {
       "$ref": "#/definitions/id",
-      "title": "Identifier",
+      "headerTemplate": "{%if settings.language == 'ru'%}Идентификатор{%else%}Identifier{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "propertyOrder": 5
     },
+    "title": {
+      "headerTemplate": "{%if settings.language == 'ru'%}Заголовок документа{%else%}Document title{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
+      "propertyOrder": 0,
+      "type": "string"
+    },
     "description": {
-      "title": "Description",
+      "headerTemplate": "{%if settings.language == 'ru'%}Описание{%else%}Description{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "propertyOrder": 1,
       "type": "string",
-      "format": "jodit"
+      "format": "html"
     },
-    "organization": {
-      "title": "Organization",
-      "propertyOrder": 2,
-      "type": "string"
-    },
-    "version": {
+    "versions": {
+      "headerTemplate": "{%if settings.language == 'ru'%}Версия{%else%}Protocol version{%endif%}",
       "propertyOrder": 4,
-      "$ref": "#/definitions/version"
+      "type": "array",
+      "format": "tabs",
+      "options": {
+        "disable_edit_json": true,
+        "collapsed": true
+      },
+      "items": {
+        "title": "Version",
+        "allOf": [
+          {
+            "$ref": "#/definitions/version"
+          },
+          {
+            "properties": {
+              "changes": {
+                "title": "Changes",
+                "headerTemplate": "{%if settings.language == 'ru'%}Изменения{%else%}Changes{%endif%}",
+                "type": "string",
+                "format": "html",
+                "propertyOrder": 4,
+                "watch": {
+                  "settings": "settings"
+                }
+              }
+            }
+          }
+          ]
+      },
+      "watch": {
+        "settings": "settings"
+      },
+      "uniqueFields": [
+        "major"
+      ]
     },
     "license": {
-      "title": "License",
+      "headerTemplate": "{%if settings.language == 'ru'%}Лицензия на сгенерированный исходный код{%else%}License{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "propertyOrder": 6,
-      "type": "string"
+      "type": "string",
+      "format": "html"
+    },
+    "user_types": {
+      "type": "array",
+      "headerTemplate": "{%if settings.language == 'ru'%}Пользовательские типы данных{%else%}User's Types{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
+      "format": "tabs",
+      "propertyOrder": 9,
+      "options": {
+        "collapsed": true
+      },
+      "items": {
+        "title": "type",
+        "headerTemplate": "{{self.___name}}",
+        "allOf": [
+          {
+            "$ref": "#/definitions/message_scheme"
+          },
+          {
+            "properties": {
+              "___title": {
+                "type": "string",
+                "title": "Type title",
+                "propertyOrder": 0,
+                "headerTemplate": "{%if settings.language == 'ru'%}Заголовок типа{%else%}Type title{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uniqueFields": [
+        "___name"
+      ]
+    },
+    "user_enums": {
+      "type": "array",
+      "headerTemplate": "{%if settings.language == 'ru'%}Перечисления (тип данных){%else%}User's enumerates{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
+      "format": "tabs",
+      "propertyOrder": 10,
+      "options": {
+        "collapsed": true
+      },
+      "items": {
+        "title": "enum",
+        "headerTemplate": "{{self.___name}}",
+        "allOf": [
+          {
+          },
+          {
+            "properties": {
+              "type": {
+                "title": "Type",
+                "headerTemplate": "{%if settings.language == 'ru'%}Тип{%else%}Type{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                },
+                "propertyOrder": 1,
+                "type": "string",
+                "enum": [
+                  "char",
+                  "int8_t",
+                  "uint8_t",
+                  "int16_t",
+                  "uint16_t",
+                  "int32_t",
+                  "uint32_t",
+                  "int64_t",
+                  "uint64_t"
+                ]
+              },
+              "___name": {
+                "$ref": "#/definitions/id",
+                "title": "Identifier",
+                "propertyOrder": 2,
+                "headerTemplate": "{%if settings.language == 'ru'%}Идентификатор{%else%}Identifier{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
+              },
+              "___title": {
+                "type": "string",
+                "title": "Type title",
+                "propertyOrder": 0,
+                "headerTemplate": "{%if settings.language == 'ru'%}Заголовок типа{%else%}Type title{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
+              },
+              "description": {
+                "title": "Description",
+                "propertyOrder": 1,
+                "type": "string",
+                "format": "html",
+                "headerTemplate": "{%if settings.language == 'ru'%}Описание{%else%}Description{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
+              },
+              "___numbers": {
+                "title": "Value",
+                "headerTemplate": "{%if settings.language == 'ru'%}Значение{%else%}Value{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                },
+                "propertyOrder": 4,
+                "options": {
+                  "collapsed": false
+                },
+                "format": "table",
+                "type": "array",
+                "minItems": 1,
+                "uniqueFields": [
+                  "number"
+                ],
+                "items": {
+                  "title": "Number",
+                  "headerTemplate": "{%if settings.language == 'ru'%}Значение{%else%}Number{%endif%}",
+                  "watch": {
+                    "settings": "settings"
+                  },
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "title": "Number",
+                      "propertyOrder": 1,
+                      "type": "integer",
+                      "headerTemplate": "{%if settings.language == 'ru'%}Значение{%else%}Number{%endif%}",
+                      "watch": {
+                        "settings": "settings"
+                      }
+                    },
+                    "id": {
+                      "title": "Identifier",
+                      "propertyOrder": 2,
+                      "type": "string",
+                      "minLength": 0,
+                      "maxLength": 24,
+                      "pattern": "^[a-zA-Z0-9_]+$",
+                      "headerTemplate": "{%if settings.language == 'ru'%}Идентификатор{%else%}Identifier{%endif%}",
+                      "watch": {
+                        "settings": "settings"
+                      }
+                    },
+                    "description": {
+                      "title": "Description",
+                      "propertyOrder": 9,
+                      "type": "string",
+                      "format": "html",
+                      "options": {
+                        "wysiwyg": true
+                      },
+                      "headerTemplate": "{%if settings.language == 'ru'%}Описание{%else%}Description{%endif%}",
+                      "watch": {
+                        "settings": "settings"
+                      }
+                    }
+                  },
+                  "additionalProperties": true,
+                  "required": [
+                    "number",
+                    "description",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "uniqueFields": [
+        "___name"
+      ]
     },
     "header": {
-      "title": "Protocol header format",
+      "headerTemplate": "{%if settings.language == 'ru'%}Заголовок сообщений{%else%}Protocol header format{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "propertyOrder": 7,
       "type": "object",
       "allOf": [
@@ -431,6 +667,10 @@
                   "LogicalType": {
                     "type": "string",
                     "title": "Logical type",
+                    "headerTemplate": "{%if settings.language == 'ru'%}Логический тип{%else%}Logical type{%endif%}",
+                    "watch": {
+                      "settings": "settings"
+                    },
                     "enum": [
                       "none",
                       "number",
@@ -458,9 +698,12 @@
     },
     "messages": {
       "type": "array",
-      "title": "Messages",
+      "headerTemplate": "{%if settings.language == 'ru'%}Сообщения{%else%}Messages{%endif%}",
+      "watch": {
+        "settings": "settings"
+      },
       "format": "tabs",
-      "propertyOrder": 8,
+      "propertyOrder": 11,
       "options": {
         "collapsed": true
       },
@@ -476,6 +719,15 @@
           },
           {
             "properties": {
+              "___title": {
+                "type": "string",
+                "title": "Message title",
+                "propertyOrder": 0,
+                "headerTemplate": "{%if settings.language == 'ru'%}Заголовок сообщения{%else%}Message title{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
+              },
               "___type": {
                 "type": "string",
                 "title": "Message type",
@@ -483,14 +735,19 @@
                 "enum": [
                   "static",
                   "dynamic"
-                ]
+                ],
+                "headerTemplate": "{%if settings.language == 'ru'%}Тип сообщения{%else%}Message type{%endif%}",
+                "watch": {
+                  "settings": "settings"
+                }
               },
               "___parent": {
                 "type": "string",
                 "title": "Parent message",
                 "propertyOrder": 0,
                 "watch": {
-                  "messages": "messages"
+                  "messages": "messages",
+                  "settings": "settings"
                 },
                 "enumSource": [
                   [
@@ -498,9 +755,11 @@
                   ],
                   {
                     "source": "messages",
-                    "value": "{{item.___number}}"
+                    "value": "{{item.___number}}",
+                    "filter": "{%if item.___number != self.___number %}1{%else%}0{%endif%}"
                   }
-                ]
+                ],
+                "headerTemplate": "{%if settings.language == 'ru'%}Базовое сообщения{%else%}Parent message{%endif%}"
               },
               "___fields": {
                 "items": {
@@ -511,27 +770,72 @@
                       "enum": [
                         "none",
                         "dynamic array"
+                      ],
+                      "headerTemplate": "{%if settings.language == 'ru'%}Логический тип{%else%}Logical type{%endif%}",
+                      "watch": {
+                        "settings": "settings"
+                      }
+                    },
+                    "TypeOfLogicalType": {
+                      "title": "Type of logical type",
+                      "type": "string",
+                      "watch": {
+                        "user_types": "user_types",
+                        "user_enums": "user_enums",
+                        "settings": "settings"
+                      },
+                      "headerTemplate": "{%if settings.language == 'ru'%}Тип логического типа{%else%}Type of logical type{%endif%}",
+                      "enumSource": [
+                        [
+                          "char",
+                          "int8_t",
+                          "uint8_t",
+                          "int16_t",
+                          "uint16_t",
+                          "int32_t",
+                          "uint32_t",
+                          "int64_t",
+                          "uint64_t",
+                          "float",
+                          "double"
+                        ],
+                        {
+                          "source": "user_types",
+                          "value": "{{item.___name}}"
+                        },
+                        {
+                          "source": "user_enums",
+                          "value": "{{item.___name}}"
+                        }
                       ]
                     },
-                    "DynamicType": {
-                      "title": "Dynamic array type",
+                    "type": {
+                      "title": "Type",
+                      "propertyOrder": 1,
                       "type": "string",
-                      "enum": [
-                        "char",
-                        "int8_t",
-                        "uint8_t",
-                        "int16_t",
-                        "uint16_t",
-                        "int32_t",
-                        "uint32_t",
-                        "int64_t",
-                        "uint64_t",
-                        "float",
-                        "double"
+                      "watch": {
+                        "user_types": "user_types",
+                        "user_enums": "user_enums",
+                        "settings": "settings"
+                      },
+                      "headerTemplate": "{%if settings.language == 'ru'%}Тип {%else%}Type{%endif%}",
+                      "enumSource": [
+                        {
+                          "source": "user_types",
+                          "value": "{{item.___name}}"
+                        },
+                        {
+                          "source": "user_enums",
+                          "value": "{{item.___name}}"
+                        }
                       ]
                     },
                     "DynamicOrder": {
                       "title": "Dynamic array order",
+                      "headerTemplate": "{%if settings.language == 'ru'%}Очерёдность дин. массивов{%else%}Dynamic array order{%endif%}",
+                      "watch": {
+                        "settings": "settings"
+                      },
                       "type": "integer"
                     }
                   }
@@ -552,5 +856,8 @@
     "name",
     "description",
     "header"
-  ]
+  ],
+  "options": {
+    "disable_collapse": true
+  }
 }

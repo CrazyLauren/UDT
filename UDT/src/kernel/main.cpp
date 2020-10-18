@@ -19,8 +19,8 @@
 
 #include <internel_protocol.h>
 #include <parser_in_protocol.h>
-#include <udt/programm_id.h>
-#include <udt/CParserFactory.h>
+#include <UDT/programm_id.h>
+#include <UDT/CParserFactory.h>
 #include <tclap/CmdLine.h>
 #include <SHARE/logging/CShareLogArgsParser.h>
 #include <UDT/config/config.h>

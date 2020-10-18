@@ -12,7 +12,7 @@
  *	https://www.mozilla.org/en-US/MPL/2.0)
  */
 #include <deftype>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 #include <udt_example_protocol.h>
 #include "import_export_macros.h"
 #include "CExampleProtocolParser.h"
@@ -142,7 +142,7 @@ bool CExampleProtocolParser::MSwapEndian(const NUDT::required_header_t& aHeader,
 	/*! You has to be defined method for swapping byte order
 	 * of message.*/
 
-	if(aHeader.FNumber==E_MSG_SWAP_BYTE_TEST)
+	if(((msg_head_t*)&aHeader.FMessageHeader)->FType==E_MSG_SWAP_BYTE_TEST)
 	{
 		swap_byte_order_msg_t* const _msg=(swap_byte_order_msg_t*)aItBegin;
 		_msg->FData.FNumber=NSHARE::swap_endain(_msg->FData.FNumber);
@@ -165,7 +165,16 @@ bool CExampleProtocolParser::MSwapEndian(NUDT::required_header_t* aHeader) const
 {
 	/*! You has to be defined method for swapping byte order
 	 * of the header message.*/
-	aHeader->FNumber=NSHARE::swap_endain(aHeader->FNumber);
+	SHARED_PACKED(struct msg_head2_t
+	{
+		uint32_t  FSize           : 24;
+		uint32_t  FType           : 8;
+	});
+
+	msg_head2_t _val(*(msg_head2_t*)aHeader->FMessageHeader);
+	((msg_head_t*)aHeader->FMessageHeader)->FSize = _val.FSize;
+	((msg_head_t*)aHeader->FMessageHeader)->FType = _val.FType;
+//	*_val=NSHARE::swap_endain(* _val);
 	return true;
 }
 

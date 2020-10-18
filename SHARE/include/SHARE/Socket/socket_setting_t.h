@@ -61,7 +61,7 @@ struct SHARE_EXPORT socket_setting_t
 	 * used the MIsValid().
 	 * @param aConf Serialized object
 	 */
-	explicit socket_setting_t(NSHARE::CConfig const& aConf);
+	socket_setting_t(NSHARE::CConfig const& aConf);
 
 	/*! @brief Serialize object
 	 *

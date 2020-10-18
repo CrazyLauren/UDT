@@ -18,6 +18,7 @@
 #include <SHARE/UType/eAllocatorType.h>
 namespace NSHARE
 {
+class CConfig;
 class IAllocater;
 
 template<class Pointer, class Refer, class diff_type>
@@ -54,6 +55,7 @@ public:
 				//into beginning of buffer without moving)
 	static const size_t DEF_BUF_RESERVE;///< default number of bytes reserved
 					    //from begining of buffer
+	static const CText NAME;//!<Serialize key
 	
 	/*!\brief create empty buffer and use specified allocator
 	 * 
@@ -156,6 +158,8 @@ public:
 	 *\param aType What type of memory has to be used when need allocate memory 
 	 */ 
 	CBuffer(IAllocater& aAlloc, offset_pointer_t Offset,bool aCheckCrc=true,eAllocatorType aType=ALLOCATE_FROM_COMMON);
+
+	CBuffer(const CConfig&);
 
 	~CBuffer();
 	
@@ -322,8 +326,18 @@ public:
 	 * In the other case if the buffer has more than one owner
 	 * it will automatically copied.
 	 */ 
-	void resize(size_type aSize, bool fromBegin = false,bool aCanDetach=true);
-	
+	void resize(size_type aSize, bool fromBegin, bool aCanDetach=true);
+#if __cplusplus >= 201103L
+	void resize(size_type aSize)
+	{
+		resize(aSize, false,true);
+	}
+#else
+	void resize(size_type aSize, value_type val = value_type())
+	{
+		resize(aSize, false,true);
+	}
+#endif
 	/*!\brief returns pointer to the buffer
 	 */ 
 	pointer ptr();
@@ -450,7 +464,7 @@ private:
 	bool FIsDetached;
 
 };
-/*!\brief iterator for CBuffer
+/*!\brief iterator for CBuffer Only for POD object !!!
  */ 
 template<class Pointer, class Refer, class diff_type>
 class  iterator_type
@@ -750,9 +764,71 @@ inline bool operator!=(const CBuffer& __lhs, const CBuffer& __rhs)
 {
 	return !operator==(__lhs, __rhs);
 }
+namespace impl
+{
+template<typename TPod, unsigned aSize>
+struct pod_buffer_impl
+{
+	typedef TPod value_type;
+
+	CBuffer& FBuffer;
+	pod_buffer_impl(CBuffer& aBuffer):
+		FBuffer(aBuffer)
+	{
+
+	}
+	inline void push_back(const value_type& __x)
+	{
+		FBuffer.insert(FBuffer.end(), __x);
+	}
+	inline void pop_back()
+	{
+		CBuffer::iterator const _begin((FBuffer.end() - 1) - sizeof(TPod));
+		FBuffer.erase(_begin,FBuffer.end());
+	}
+	inline void push_front(const value_type& __x)
+	{
+		FBuffer.push_front(__x);
+	}
+	inline void pop_front()
+	{
+		FBuffer.erase(FBuffer.begin(), FBuffer.begin() + sizeof(TPod));
+	}
+};
+
+template<typename TPod>
+struct pod_buffer_impl<TPod, 1>
+{
+	typedef TPod value_type;
+	CBuffer& FBuffer;
+	pod_buffer_impl(CBuffer& aBuffer):
+		FBuffer(aBuffer)
+	{
+
+	}
+	inline void push_back(const value_type& __x)
+	{
+		FBuffer.push_back(__x);
+	}
+	inline void pop_back()
+	{
+		FBuffer.pop_back();
+	}
+	inline void push_front(const value_type& __x)
+	{
+		FBuffer.insert(FBuffer.begin(), __x);
+	}
+	inline void pop_front()
+	{
+		FBuffer.pop_front();
+	}
+};
+}
 template<typename TPod>
 class  CPODBuffer
 {
+	typedef impl::pod_buffer_impl<TPod,sizeof(TPod)> impl_t;
+
 public:
 	typedef CBuffer::offset_pointer_t offset_pointer_t;
 	typedef /*buf_val_t<*/TPod/*>*/ value_type;
@@ -833,19 +909,19 @@ public:
 	}
 	iterator begin()
 	{
-		return (pointer)FBuffer.begin().base();
+		return iterator(reinterpret_cast<pointer>(FBuffer.begin().base()));
 	}
 	iterator end()
 	{
-		return (pointer)FBuffer.end().base();
+		return iterator(reinterpret_cast<pointer>(FBuffer.end().base()));
 	}
 	const_iterator begin() const
 	{
-		return (const_pointer)FBuffer.begin().base();
+		return const_iterator(reinterpret_cast<const_pointer>(FBuffer.begin().base()));
 	}
 	const_iterator end() const
 	{
-		return (const_pointer)FBuffer.end().base();
+		return const_iterator(reinterpret_cast<const_pointer>(FBuffer.end().base()));
 	}
 	const_iterator cbegin() const
 	{
@@ -853,25 +929,34 @@ public:
 	}
 	const_iterator cend() const
 	{
-		return cend();
+		return end();
 	}
 
 	void swap(CPODBuffer& aBuf)
 	{
-		FBuffer.swap(aBuf);
+		FBuffer.swap(aBuf.FBuffer);
 	}
-	//reference operator[](size_type __n);//for safety
+	reference operator[](size_type __n)
+	{
+		return reinterpret_cast<reference>(FBuffer.at(__n*sizeof(TPod)));
+	}
 	const_reference operator[](size_type __n) const
 	{
-		return reinterpret_cast<const_reference>(FBuffer[__n*sizeof(TPod)]);
+		return reinterpret_cast<const_reference>(FBuffer.at(__n*sizeof(TPod)));
 	}
 
-//	reference front(); //for safety
+	reference front()
+	{
+		return reinterpret_cast<reference>(FBuffer.front());
+	}
 	const_reference front() const
 	{
 		return reinterpret_cast<const_reference>(FBuffer.front());
 	}
-//	reference back();//for safety
+	reference back()
+	{
+		return reinterpret_cast<reference>(FBuffer.back());
+	}
 	const_reference back() const
 	{
 		return reinterpret_cast<const_reference>(FBuffer.back());
@@ -915,38 +1000,29 @@ public:
 	}
 	void push_back(const value_type& __x)
 	{
-		if(sizeof(TPod)==1)
-			FBuffer.push_back(__x);
-		else
-			FBuffer.insert(FBuffer.end(), __x);
+		impl_t(FBuffer).push_back(__x);
 	}
+
+
 	void pop_back()
 	{
-		if (sizeof(TPod) == 1)
-			FBuffer.pop_back();
-		else if (FBuffer.size() == 1)
+		if (FBuffer.size() == sizeof(TPod))
 			FBuffer.clear();
-		else
-		{
-			CBuffer::iterator const _begin((CBuffer::pointer) ((end() - 1)).base());
-			FBuffer.erase(_begin,FBuffer.end());
-		}
+		else if(!FBuffer.empty())
+			impl_t(FBuffer).pop_back();
 	}
+
+
 	void push_front(const value_type& __x)
 	{
-		if(sizeof(TPod)==1)
-			FBuffer.push_front(__x);
-		else
-			FBuffer.insert(FBuffer.begin(), __x);
+		impl_t(FBuffer).push_front(__x);
 	}
 	void pop_front()
 	{
-		if(sizeof(TPod)==1)
-			FBuffer.pop_front();
-		else if(FBuffer.size()==1)
+		if(FBuffer.size() == sizeof(TPod))
 			FBuffer.clear();
-		else
-			FBuffer.erase(FBuffer.begin(), FBuffer.begin() + sizeof(TPod));
+		else if(!FBuffer.empty())
+			impl_t(FBuffer).pop_front();
 	}
 	void release()
 	{
@@ -1008,8 +1084,12 @@ public:
 		return MGetBuffer();
 	}
 private:
+
+
 	CBuffer FBuffer;
 };
+
+
 } /* namespace NSHARE */
 namespace std
 {

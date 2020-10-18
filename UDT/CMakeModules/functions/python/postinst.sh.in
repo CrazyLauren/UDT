@@ -1,0 +1,3 @@
+#!/bin/sh
+cd @_TMP_PATH@
+pip3 install @_WHL_FILE_NAME@

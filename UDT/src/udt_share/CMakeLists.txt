@@ -56,19 +56,22 @@ helper_target_link_libraries(${_TARGET_NAME}
 		_PRIVATE_LIBRARIS
 		)
 
-install(FILES 	include/udt/udt_types.h
-				include/udt/udt_share_macros.h
-        		include/udt/programm_id.h
-				include/udt/IExtParser.h
-				include/udt/CParserFactory.h
-				include/udt/udt_rtc.h
-				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/udt" COMPONENT headers
+install(FILES 	include/UDT/udt_types.h
+				include/UDT/udt_share_macros.h
+        		include/UDT/programm_id.h
+				include/UDT/IExtParser.h
+				include/UDT/CParserFactory.h
+				include/UDT/udt_rtc.h
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}" COMPONENT headers
 		)
 
 string(TOUPPER ${_TARGET_NAME} _TARGET_NAME_UP)
 
 set(_CONFIG_PLUGIN_PATH ${${PROJECT_NAME}_INSTALL_PLUGIN_PATH})
 set(_CONFIG_PLUGIN_DIR ${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR})
+set(_CONFIG_INSTALL_GUI_PATH ${${PROJECT_NAME}_INSTALL_GUI_PATH})
+set(_CONFIG_GUI_PATH ${${PROJECT_NAME}_GUI_PATH})
+
 
 set(${_TARGET_NAME_UP}_CONFIG_CMAKE_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ConfigUdtShare.cmake.in)
 helper_export_library(${_TARGET_NAME})

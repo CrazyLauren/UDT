@@ -15,11 +15,11 @@
 #include <deftype>
 #include <SHARE/revision.h>
 #include <SHARE/share_socket.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
 #include <CDataObject.h>
-#include <udt/CCustomer.h>
+#include <UDT/CCustomer.h>
 #include <CLocalChannelFactory.h>
 #include "receive_from.h"
 #include <parser_in_protocol.h>
@@ -61,9 +61,10 @@ bool CSmMainChannel::MOpen(const NSHARE::CThread::param_t* )
 }
 bool CSmMainChannel::MOpen(IIOConsumer* aCustomer)
 {
+	FIsOpen = true;
 	FCustomer = aCustomer;
 	//FSm.MOpen();
-	FIsOpen = true;
+
 
 	CDataObject::sMGetInstance() += FSendDataHandler;
 
@@ -90,9 +91,10 @@ void CSmMainChannel::MJoin()
 }
 void CSmMainChannel::MClose()
 {
-	FSm.MClose();
-	FThreadReceiver.MCancel();
 	FIsOpen = false;
+	FSm.MClose();
+	FThreadReceiver.MJoin();
+
 	FCounter=sm_counter_t();
 	FCustomer=NULL;
 	CDataObject::sMGetInstance() -= FSendDataHandler;
@@ -170,7 +172,7 @@ void CSmMainChannel::MReceiver()
 	}
 	LOG(WARNING)<< "Async receive";
 	NSHARE::shared_identify_t _from;
-	for (; FSm.MIsOpen();)
+	for (; FSm.MIsOpen() && FIsOpen;)
 	{
 		VLOG(5) << "Receive data by SM";
 		shared_identify_t _from;
@@ -530,19 +532,15 @@ bool CMainSmRegister::MIsAlreadyRegistered() const
 }
 }
 #if !defined(SM_MAIN_CHANNEL_STATIC)
-static NSHARE::factory_registry_t g_factory;
 extern "C" SM_MAIN_CHANNEL_EXPORT NSHARE::factory_registry_t* get_factory_registry()
+#else
+extern "C" NSHARE::factory_registry_t* get_factory_registry_sm_main_channel()
+#endif
 {
+	static NSHARE::factory_registry_t g_factory;
 	if (g_factory.empty())
 	{
 		g_factory.push_back(new NUDT::CMainSmRegister());
 	}
 	return &g_factory;
 }
-#else
-#	include <load_static_module.h>
-namespace
-{
-	static NUDT::CStaticRegister<NUDT::CMainSmRegister> _reg;
-}
-#endif

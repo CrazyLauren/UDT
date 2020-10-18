@@ -1,0 +1,281 @@
+{% import "base_macros.tmpl" as common %}
+{% set protocol_name = name | lower %}
+{% set field_number = header.___LogicalType.number[0]
+        if 'number'in  header.___LogicalType else None  %}
+{% macro get_entry_msg(aMsg, aFilter = None, aParentPath = protocol_name) %}
+
+            entry_field: function (aPanel)
+            {
+                {{ get_entry_type(aMsg, aFilter, aParentPath) }}
+            }
+{% endmacro %}
+{% macro get_entry_type(aMsg, aFilter = None, aParentPath = protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% set parents =  aMsg.___parent if '___parent' in aMsg
+        and aMsg.___parent|length > 0 else None %}
+    {% if parents%}
+        {% for _parent in parents | reverse %}
+                {{ get_entry_fields(_parent, aFilter, msg_path) }}
+        {% endfor %}
+    {% endif %}
+
+                {{ get_entry_fields(aMsg, aFilter, aParentPath) }}
+{% endmacro %}
+{% macro get_entry_fields(aMsg, aFilter = None, aParentPath = protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% for field in aMsg.___fields|fields(True)  if aFilter == None or not (field.LogicalType in aFilter) %}
+        {% if  field.id %}
+            {% set field_path = msg_path + "_" + field.id %}
+            {% if 'array_len' in field and field.array_len  > 0 %}
+                {% for i in range(0, field.array_len ) %}
+                {{ get_entry_field(field, field_path + '_' + i|string ) }}
+                {% endfor %}
+            {% else %}
+                {% if field.LogicalType|string() != "dynamic array"  %}
+                {{ get_entry_field(field, field_path ) }}
+                {% else %}
+{#                    todo#}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+{% macro get_entry_field(aField, aPath) %}
+
+{% set _description = aField.description if aField.description|length>0 else aField.id %}
+                {
+                    let _tr = $("<tr>").appendTo(aPanel);
+    {% set _enum_values = None %}
+    {% if 'LogicalTypeInfo' in aField and ("enum" in aField.LogicalTypeInfo or 'enumSource' in aField.LogicalTypeInfo)%}
+        {% set _enum_values = aField.LogicalTypeInfo.enum if 'enumSource' not in aField.LogicalTypeInfo
+                else aField.LogicalTypeInfo.enumSource%}
+    {% elif 'TypeInfo' in aField and ("enum" in aField.TypeInfo or 'enumSource' in aField.TypeInfo)%}
+        {% set _enum_values = aField.TypeInfo.enum if 'enumSource' not in aField.TypeInfo
+                else aField.TypeInfo.enumSource %}
+    {% endif %}
+                    $("<label>").text("{{ _description }}").appendTo($("<td>").appendTo(_tr));
+    {% if _enum_values %}
+                    $("<select>").attr({
+                        id: "{{ aPath }}",
+                        required: true
+                        })
+        {% for _val in _enum_values %}
+                        .append(
+            {% if _val is not iterable %}
+                            $("<option>")
+                                .text({{ _val }})
+            {% elif 'id' in _val %}
+                            $("<option>")
+                                .attr('value',{{ _val.number }})
+                                .text({{ _val.id }})
+            {% endif %}
+                        )
+        {% endfor %}
+    {% else %}
+                    $("<input>").attr({
+                        id: "{{ aPath }}",
+                        type: "number"
+                        })
+    {% endif %}
+                        .appendTo($("<td>").appendTo(_tr));
+
+    {# todo Add limitation and check
+.change(function ()
+                    {
+                        let _reg = /[^(\d)+\.(\d)+\.(\d)]/g;
+                        if (this.value.match(_reg))
+                        {
+                            this.value = this.value.replace(_reg, '');
+                        }
+                    }
+#}
+                }
+{% endmacro %}
+{% macro serialize_msg(aMsg, aFilter = None, aParentPath = protocol_name) %}
+
+            serialize: function (aPanel)
+            {
+                let _rval = {};
+                {{ serialize_type(aMsg, aFilter, aParentPath) }}
+                return _rval;
+            }
+{% endmacro %}
+{% macro serialize_type(aMsg, aFilter = None, aParentPath = protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% set parents =  aMsg.___parent if '___parent' in aMsg
+        and aMsg.___parent|length > 0 else None %}
+
+    {% if parents%}
+        {% for _parent in parents | reverse %}
+                {{ serialize_fields(_parent, aFilter, msg_path) }}
+        {% endfor %}
+    {% endif %}
+                {{ serialize_fields(aMsg, aFilter, aParentPath) }}
+{% endmacro %}
+{% macro serialize_fields(aMsg, aFilter = None, aParentPath = protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% for field in aMsg.___fields|fields(True) if aFilter == None or  not (field.LogicalType in aFilter) %}
+        {% if  field.id %}
+            {% set field_path = msg_path + "_" + field.id %}
+            {% if 'array_len' in field and field.array_len  > 0 %}
+                _rval.{{ field.id }} = [];
+                {% for i in range(0, field.array_len ) %}
+                {{ serialize_field(field, field_path + '_' + i|string) }}
+                {% endfor %}
+            {% else %}
+                {% if field.LogicalType|string() != "dynamic array" %}
+                {{ serialize_field(field, field_path ) }}
+                {% else %}
+{#                    todo#}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+{% macro serialize_field(aField, aPath) %}
+
+{% set _is_enum = True if
+                ('LogicalTypeInfo' in aField and
+                    ("enum" in aField.LogicalTypeInfo or 'enumSource' in aField.LogicalTypeInfo)
+                )
+                or
+                ( 'TypeInfo' in aField and
+                    ("enum" in aField.TypeInfo or 'enumSource' in aField.TypeInfo)
+                )
+                else False
+        %}
+{% set _is_version = True
+                 if
+                'LogicalType' in aField and
+                    aField.LogicalType  in ['version_minor',
+                              'version_major']
+                 else False
+                 %}
+                {
+    {% if _is_enum %}
+                    const _val = $("#{{ aPath }} option:selected", aPanel);
+    {% else %}
+                    const _val = $("#{{ aPath }}", aPanel);
+    {% endif %}
+                    if (_val.length > 0)
+                    {
+                        const _data =  parseInt(_val.val(), 10);
+                        if (isNaN(_data))
+                {# todo Add limitation check   #}
+                        {
+                            _val.addClass("ui-state-error");
+                            throw "Invalid {{ aField.id }}";
+                        }else
+                        {
+{% if _is_version %}
+                            if (!('ver' in _rval))
+                            {
+                                _rval.ver = {};
+                            }
+    {% if  aField.LogicalType ==  'version_major' %}
+                            _rval.ver.mj = _data;
+    {% else %}
+                            _rval.ver.mn = _data;
+    {% endif %}
+{% endif %}
+                            if ('{{ aField.id }}' in _rval && typeof _rval.{{ aField.id }} === 'Array')
+                                _rval.{{ aField.id }}.push(_data);
+                            else
+                                _rval.{{ aField.id }} = _data;
+
+                        }
+                    }
+{% if not _is_version %}
+                    else if (!('{{ aField.id }}' in _rval))
+                    {
+                        _rval.{{ aField.id }} = 0;
+                    }
+{% endif %}
+                }
+{% endmacro %}
+{% macro to_representation_msg(aMsg, aFilter = None, aParentPath = 'show_'+protocol_name) %}
+
+            toRepresentation: function (aInfo)
+            {
+                let _rval = {};
+                {{ to_representation(aMsg, aFilter, aParentPath) }}
+                return _rval;
+            }
+{% endmacro %}
+{% macro to_representation(aMsg, aFilter = None, aParentPath = 'show_'+ protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% set parents =  aMsg.___parent if '___parent' in aMsg
+    and aMsg.___parent|length > 0 else None %}
+    {% if parents %}
+        {% for _parent in parents | reverse %}
+                {{ to_representation_fields(_parent, aFilter, msg_path) }}
+        {% endfor %}
+    {% endif %}
+                {{ to_representation_fields(aMsg, aFilter, aParentPath) }}
+{% endmacro %}
+{% macro to_representation_fields(aMsg, aFilter = None, aParentPath = 'show_'+protocol_name) %}
+    {% set msg_name = aMsg.___name | lower %}
+    {% set msg_path = aParentPath + '_' + msg_name %}
+
+    {% for field in aMsg.___fields|fields(True) if aFilter == None or  not (field.LogicalType in aFilter) %}
+        {% if  field.id %}
+            {% set _description = field.description+'('+field.id +')' if field.description|length>0 else field.id %}
+            {% set field_path = msg_path + "_" + field.id %}
+            {% if 'array_len' in field and field.array_len  > 0
+                    or field.LogicalType|string() != "dynamic array"%}
+                _rval["{{ _description }}"] = [];
+                for(let val in aInfo.{{ field.id }})
+                {
+                    _rval["{{ _description }}"].push(aInfo.{{ field.id }}[val]);
+                }
+            {% else %}
+                _rval["{{ _description }}"] = aInfo.{{ field.id }};
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+{% macro add_gui_for(aMsg)  %}
+
+    {% set _description = aMsg.___description if '___description' in aMsg
+                        and  aMsg.___description|length >0 else  aMsg.___name %}
+        {{ aMsg.___name }}: {
+            getName:function()
+            {
+                return "{{ _description }}";
+            },
+            {{ get_entry_msg(aMsg) -}},
+            {{ serialize_msg(aMsg) -}},
+            {{ to_representation_msg(aMsg) -}}
+
+        }
+{% endmacro %}
+jQuery.get_protocol_parser().{{ protocol_name }} =
+    {
+        header: {
+            getName:function()
+            {
+                return "{{ protocol_name }}";
+            },
+            {{ get_entry_msg(header,["none", "dynamic array", "crc","size"]) -}},
+            {{ serialize_msg(header) -}},
+            {{ to_representation_msg(header,["none", "dynamic array", "crc","size"]) -}}
+
+        }
+{#        {% for val in types if not types[val].standard and '___fields' in  types[val] %}#}
+{#        ,{{ add_gui_for(types[val]) }}#}
+{#        {% endfor %}#}
+        ,{{ add_gui_for(header) -}}
+        {% for msg in messages-%}
+        ,{{ add_gui_for(msg) -}}
+        {% endfor %}
+    };

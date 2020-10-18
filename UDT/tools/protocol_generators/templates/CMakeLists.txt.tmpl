@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 3.0.1)
 
-project({{ name|upper }} C CXX)
+project({{ name|upper }} LANGUAGES C CXX VERSION {{ version.major }}.{{ version.minor }})
 
 set(${PROJECT_NAME}_NAMESPACE "UDT_PROTOCOLS" CACHE STRING "Namespace ")
 
-set(${PROJECT_NAME}_ORGANIZATION "{{organization}}" CACHE STRING "Organization ")
-set(${PROJECT_NAME}_AUTHORS "{{ author }}" CACHE STRING "Authors")
+set(${PROJECT_NAME}_ORGANIZATION "{{organization | join(', ', attribute = 'name')}}" CACHE STRING "Organization ")
+{% set _authors = author | selectattr("executor",'equalto',"executor") | join(', ', attribute = 'name') %}
+{% set _authors_impl = _authors if _authors| length > 0 else "None" %}
+set(${PROJECT_NAME}_AUTHORS "{{ _authors_impl }}" CACHE STRING "Authors")
 set(${PROJECT_NAME}_SUPPORT_ADDRESS "no" CACHE 
 												STRING "Address to support")
 set(${PROJECT_NAME}_LICENCE ${PROJECT_SOURCE_DIR}/LICENCE.txt CACHE PATH "Path to license")
+set(${PROJECT_NAME}_VERSION "{{ version.major }}.{{ version.minor }}" CACHE STRING "Version ")
 
 include(CMakeModules/functions/helper_cmake_function.cmake)
 configure_project(${PROJECT_NAME})
@@ -20,3 +23,6 @@ add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(tools)
 add_subdirectory(examples)
+add_subdirectory(gui)
+
+end_of_project(${PROJECT_NAME})

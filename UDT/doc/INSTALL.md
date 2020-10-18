@@ -41,7 +41,15 @@ headers (Boost_INCLUDE_DIR) in cmake. The used version of the boost library  can
 	- QNX_HOST
 	- QNX_TARGET
 * QNX Momentics
-
+### For protocol generator utility
+* Python 3
+     - jinja2
+     - json
+     - numpy
+     - pylatex
+     - jsonschema
+* MiKTeX or TeX Live
+    - Perl
 # Dependencies:
 
 | Title | Version | Required | Note |

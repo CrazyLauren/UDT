@@ -11,8 +11,8 @@
  */
 #ifndef CDATAOBJECT_H_
 #define CDATAOBJECT_H_
-#include <udt/programm_id.h>
-#include <udt/udt_types.h>
+#include <UDT/programm_id.h>
+#include <UDT/udt_types.h>
 #include <CHardWorker.h>
 #include "ICore.h"
 #include "kernel_type.h"

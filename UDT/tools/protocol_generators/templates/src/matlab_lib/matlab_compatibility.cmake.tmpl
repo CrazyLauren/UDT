@@ -1,0 +1,19 @@
+{% set project_name = name|upper %}
+{% set target_name = name|lower + '_matlab' %}
+
+set(_TARGET_NAME {{ target_name }})
+include(${SWIG_USE_FILE})
+
+matlab_add_mex(
+    NAME ${_TARGET_NAME}
+    OUTPUT_NAME {{ name|lower }}
+    SRC {{ name|lower }}.cpp
+    LINK_TO CRAZY_LAUREN::customer)
+
+target_include_directories(${_TARGET_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+
+add_library({{ project_name }}::${_TARGET_NAME} ALIAS ${_TARGET_NAME})

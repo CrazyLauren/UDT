@@ -1,0 +1,397 @@
+{% set file_name = 'protocol_' + name | lower + '_parser' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+{% set struct_header_name =  header.___name+'_t' %}
+{% set field_size =header.___LogicalType.size[0]
+        if 'size'in  header.___LogicalType else None  %}
+{% set field_number = header.___LogicalType.number[0]
+        if 'number'in  header.___LogicalType else None  %}
+{% set field_crc = header.___LogicalType.crc[0]
+        if 'crc'in  header.___LogicalType else None  %}
+{% set field_version_major = header.___LogicalType.version_major[0]
+        if 'version_major'in  header.___LogicalType else None  %}
+{% set field_version_minor = header.___LogicalType.version_minor[0]
+        if 'version_minor'in  header.___LogicalType else None  %}
+
+#include <{{ name | upper }}/config/config.h>
+
+#include "{{ common.get_namespace(name) }}.h"
+#include "{{ common.get_namespace(name) }}_serialize_binary.h"
+#include "{{ common.get_namespace(name) }}_msg_headers.h"
+
+namespace {{ common.get_namespace(name) }}
+{
+/*!\brief A user error number which is passed
+ * to field NUDT::fail_sent_args_t::FUserCode
+ *
+ */
+enum eParserError
+{
+	E_INVALID_HEADER_SIZE   = 1,//!< The message of header is invalid
+	E_INVALID_MSG_SIZE      = 2,//!<The message size is invalid
+	E_INVALID_MSG_TYPE      = 3,//!<The message type is invalid
+	E_INVALID_MSG_CRC       = 4,//!<The message crc is invalid
+};
+namespace impl
+{
+    typedef short is_operator_t;
+    typedef char is_method_t;
+    typedef int nobody_t;
+
+template<typename T, typename Sign>
+struct process_check
+{
+    template<typename U,void (U::*)(Sign const*,bool,char const*,char const*, unsigned)> struct test_impl{};
+    template<typename U,void (U::*)(Sign const*,bool,char const*,char const*, unsigned) const> struct test_impl2{};
+
+#if defined(PROCESS_METHOD_NAME) && !defined(FORCE_CALL_METHODS)
+    template <typename U> static is_method_t test(test_impl2<U, &U::PROCESS_METHOD_NAME>*);
+    template <typename U> static is_method_t test(test_impl<U, &U::PROCESS_METHOD_NAME>*);
+#endif
+
+#ifndef DOESNT_USE_OPERATOR
+    template <typename U> static is_operator_t test(test_impl2<U, &U::operator()>*);
+    template <typename U> static is_operator_t test(test_impl<U, &U::operator()>*);
+#endif
+    template <typename U> static nobody_t test(...);
+    enum
+    {
+#if defined(PROCESS_METHOD_NAME) ||  !defined(DOESNT_USE_OPERATOR)
+
+#   if defined(FORCE_CALL_METHODS)
+        result = sizeof(is_method_t),
+#   else
+        result = sizeof(test<T>(0)),
+#   endif
+#else
+        result = sizeof(nobody_t),
+#endif//#if defined(PROCESS_METHOD_NAME) ||  !defined(DOESNT_USE_OPERATOR)
+
+        is = result != sizeof(nobody_t)
+    };
+};
+template<typename T, typename Sign,unsigned = process_check<T,Sign>::result>
+struct call_process
+{
+
+    inline static void call(T* aWho, Sign const* aWhat,
+                                    bool aIs,
+                                    char const* aBegin,char const* aEnd,
+                                    unsigned aNum)
+    {
+        ;
+    }
+};
+template<typename T, typename Sign>
+struct call_process<T,Sign,sizeof(is_method_t)>
+{
+    inline static void call(T* aWho, Sign const* aWhat,
+                                        bool aIs,char const* aBegin,char const* aEnd,
+                                        unsigned aNum
+                                        )
+    {
+#ifdef PROCESS_METHOD_NAME
+        return aWho->PROCESS_METHOD_NAME(aWhat,aIs,aBegin,aEnd, aNum);
+#endif
+    }
+};
+template<typename T, typename Sign>
+struct call_process<T,Sign,sizeof(is_operator_t)>
+{
+    inline static void call(T* aWho, Sign const* aWhat,bool aIs,
+                                        char const* aBegin,char const* aEnd,
+                                        unsigned aNum)
+    {
+        return (*aWho)(aWhat,aIs,aBegin,aEnd, aNum);
+    }
+};
+template<typename T>
+struct onerror_check
+{
+    template<typename U,char const* (U::*)(eParserError const& ,char const*,char const*) const> struct test_impl{};
+    template<typename U,char const* (U::*)(eParserError const& ,char const*,char const*)> struct test_impl2{};
+
+#if defined(ERROR_METHOD_NAME) && !defined(FORCE_CALL_METHODS)
+    template <typename U> static is_method_t test(test_impl2<U, &U::ERROR_METHOD_NAME>*);
+    template <typename U> static is_method_t test(test_impl<U, &U::ERROR_METHOD_NAME>*);
+#endif
+
+#ifndef DOESNT_USE_OPERATOR
+    template <typename U> static is_operator_t test(test_impl2<U, &U::operator()>*);
+    template <typename U> static is_operator_t test(test_impl<U, &U::operator()>*);
+#endif
+
+    template <typename U> static nobody_t test(...);
+    enum
+    {
+#if defined(ERROR_METHOD_NAME) ||  !defined(DOESNT_USE_OPERATOR)
+
+#   if defined(FORCE_CALL_METHODS)
+        result = sizeof(is_method_t),
+#   else
+        result = sizeof(test<T>(0)),
+#   endif
+#else
+        result = sizeof(nobody_t),
+#endif//#if defined(ERROR_METHOD_NAME) ||  !defined(DOESNT_USE_OPERATOR)
+
+        is = result != sizeof(nobody_t)
+    };
+};
+
+template<typename T,unsigned = onerror_check<T>::result >
+struct call_error
+{
+    inline static char const* call(T* aWho,eParserError const& aWhat,
+                                    char const* aWhere,
+                                    char const* aEnd
+                                    )
+    {
+        switch(aWhat)
+        {
+            case E_INVALID_MSG_SIZE:
+                return  aWhere += sizeof({{ struct_header_name }});
+
+            case E_INVALID_MSG_CRC:
+                return  aWhere += sizeof({{ struct_header_name }});
+
+            case E_INVALID_MSG_TYPE:
+                return  aEnd;
+
+        };
+        return aEnd;
+    }
+};
+template<typename T >
+struct call_error<T,sizeof(is_method_t)>
+{
+    inline static char const* call(T* aWho,
+                                        eParserError const& aWhat,
+                                        char const* aWhere,
+                                        char const* aEnd)
+    {
+#ifdef ERROR_METHOD_NAME
+        return aWho->ERROR_METHOD_NAME(aWhat,aWhere,aEnd);
+#else
+        return aEnd;
+#endif
+    }
+};
+template<typename T >
+struct call_error<T,sizeof(is_operator_t)>
+{
+    inline static char const* call(T* aWho,
+                                        eParserError const& aWhat,
+                                        char const* aWhere,
+                                        char const* aEnd)
+    {
+        return (*aWho)(aWhat,aWhere,aEnd);
+    }
+};
+}
+template<typename T>
+inline char const* parser(char const* aItBegin, char const* aItEnd,T* aHandler)
+{
+    using namespace std;
+    for (; aItBegin != aItEnd;)
+	{
+		bool  _buffer_is_small=false;
+		const size_t _remain=aItEnd-aItBegin;
+
+		/*! If remain of buffer is less than the message header size
+		 * wait for a new data.*/
+		if (_remain < sizeof({{ struct_header_name }}))
+			_buffer_is_small=true;
+		else
+		{
+			/*! Compare the message type and size with predefined value of #eMessage.
+			 *  If are equals then the message is founded.
+			 *  In the other case the error #E_INVALID_MSG_TYPE or #E_INVALID_MSG_SIZE
+			 *  is occured.
+			 * */
+
+			{{ struct_header_name }} const *_phead =
+                        ({{ struct_header_name }} const*) aItBegin;
+
+			switch (_phead->getNumber())
+			{
+            {% for msg in messages%}
+
+                {%  set struct_name =  msg.___name+'_t' %}
+                {%  set dynamic_msg=true if '___type' in msg and msg.___type == 'dynamic' %}
+                {%  set parents =  msg.___parent %}
+                {%  set struct_name_dyanamic =  msg.___name+'_dynamic_t' %}
+                {%  set net_struct_name = struct_name_dyanamic if dynamic_msg else struct_name %}
+
+                case {{ struct_name }}::NUMBER:
+
+                {% if field_size %}
+                    {% if dynamic_msg %}
+                    if (_phead->getSize() < sizeof({{ net_struct_name }}))
+                    {% else %}
+                    if (_phead->getSize() != sizeof({{ net_struct_name }}))
+                    {% endif %}
+
+				    {
+                        aItBegin = impl::call_error<T>::call(aHandler,
+                                            E_INVALID_MSG_SIZE,
+                                            aItBegin,
+                                            aItEnd
+                            );
+				    }
+				    else  if (_remain < _phead->getSize())
+					    _buffer_is_small = true;
+                {% else %}
+                    if (_remain < sizeof({{ net_struct_name }}))
+					    _buffer_is_small = true;
+                {% endif %}
+                {% if field_crc %}
+                    else if(!is_crc_valid<{{ net_struct_name }}>(aItBegin))
+                    {
+                        aItBegin = impl::call_error<T>::call(aHandler,
+                                            E_INVALID_MSG_CRC,
+                                            aItBegin,
+                                            aItEnd
+                            );
+                    }
+                {% endif %}
+				    else
+				    {
+                        unsigned _next = 0;
+                {% if field_size %}
+					    unsigned _full_size = _phead->getSize();
+                {% else %}
+					    unsigned _full_size = sizeof({{ net_struct_name }});
+                {% endif %}
+                        const char* _end=aItBegin + _full_size;
+                        impl::call_process<T,{{ struct_header_name }}>::call(aHandler,
+                                _phead,
+                                true,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+                        const bool _is = impl::process_check<T,{{ struct_name }}>::is == 1
+                {% for msg in parents %}
+                    {% if  not loop.last %}
+                                        || impl::process_check<T,{{ msg.___name }}_t>::is == 1
+                    {% endif %}
+                {% endfor %}
+                        ;
+                        if(_is)
+                        {
+                {%if  dynamic_msg %}
+#ifndef DOESNT_DESERIALIZE
+                            {{ struct_name }} _data;
+                            deserialize_binary<{{ struct_name }}>(_data, aItBegin,
+                                                _end);
+#else
+                            {{ net_struct_name }} const& _data(*reinterpret_cast<
+                                            {{ net_struct_name }} const*>(aItBegin));
+#endif
+                    {% for parent in parents | reverse %}
+                        {% if  not loop.first %}
+                        {% set parent_name =  parent.___name+'_t' %}
+                        {% set dynamic_parent_msg=true if '___type' in parent and parent.___type == 'dynamic' %}
+                        {% set paret_dynamic_name =  parent.___name+'_dynamic_t' if dynamic_parent_msg else '' %}
+                        {% if  dynamic_parent_msg %}
+#ifndef DOESNT_DESERIALIZE
+                            impl::call_process<T,{{ parent_name  }}>::call(aHandler,
+                                &_data,
+                                true,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+#else
+                            impl::call_process<T,{{ paret_dynamic_name  }}>::call(aHandler,
+                                &_data,
+                                true,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+#endif
+                        {% else %}
+                            impl::call_process<T,{{ parent_name }}>::call(aHandler,
+                                &_data,
+                                true,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+                        {% endif %}
+                        {% endif %}
+                    {% endfor %}
+#ifndef DOESNT_DESERIALIZE
+                            impl::call_process<T,{{ struct_name }}>::call(aHandler,
+                                &_data,
+                                false,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+#else
+                            impl::call_process<T,{{ net_struct_name }}>::call(aHandler,
+                                &_data,
+                                false,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+#endif
+
+                {% else %}
+                            {{ net_struct_name }} const& _data(*reinterpret_cast<{{ net_struct_name }} const*>(aItBegin));
+
+                    {% for parent in parents | reverse %}
+                        {% if  not loop.first %}
+                            impl::call_process<T,{{ parent.___name  }}_t>::call(aHandler,
+                                &_data,
+                                true,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+                        {% endif %}
+                    {% endfor %}
+                            impl::call_process<T,{{ net_struct_name }}>::call(aHandler,
+                                &_data,
+                                false,
+                                aItBegin,
+                                _end,
+                                _next++
+                            );
+                {% endif %}
+
+
+                        }
+                        aItBegin += _full_size;
+				    }
+                break;
+            {% endfor %}
+
+			default:
+                aItBegin = impl::call_error<T>::call(aHandler,
+                                            E_INVALID_MSG_TYPE,
+                                            aItBegin,
+                                            aItEnd
+                            );
+				break;
+			}
+		}
+
+		if (_buffer_is_small)
+			break;
+	}
+    return aItBegin;
+}
+
+}//namespace {{ common.get_namespace(name) }}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

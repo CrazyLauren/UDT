@@ -13,8 +13,8 @@
 #ifndef CRTCFACTORY_H_
 #define CRTCFACTORY_H_
 
-#include "udt/customer_export.h"
-#include "udt/IRtcControl.h"
+#include "UDT/customer_export.h"
+#include "UDT/IRtcControl.h"
 namespace NUDT
 {
 class CUSTOMER_EXPORT CRTCFactory: public NSHARE::CFactoryManager<IRtcControl>

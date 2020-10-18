@@ -67,16 +67,16 @@ inline bool num_to_str(T const& aVal, TStr &aTo, unsigned const aBase = 10)
 	}
 
 	typename TStr::reverse_iterator _it = aTo.rbegin();
-	char _digit;
+	int _digit;
 	T _sum = aVal;
 	if (_sum > 0 ||_sum==0)
 		do
 		{
-			_digit =(char) (_sum % _base);
+			_digit =(int) (_sum % _base);
 			if (_digit < 0xA)
-				*_it = '0' + _digit;
+				*_it = (char)((int)'0' + _digit);
 			else
-				*_it = 'A' + _digit - 0xA;
+				*_it = (char)((int)'A' + _digit - 0xA);
 
 			_sum /= _base;
 			++_it;
@@ -84,11 +84,11 @@ inline bool num_to_str(T const& aVal, TStr &aTo, unsigned const aBase = 10)
 	else
 		for (; _sum; ++_it)
 		{
-			_digit =(char) (_sum % _base);
+			_digit =(int) (_sum % _base);
 			if (_digit < 0xA)
-				*_it = '0' - _digit;
+				*_it = (char)((int)'0' - _digit);
 			else
-				*_it = 'A' - _digit - 0xA;
+				*_it = (char)((int)'A' - _digit - 0xA);
 
 			_sum /= _base;
 		}
@@ -191,105 +191,128 @@ inline bool float_to_str(T f, TStr &aTo, int const aPrecision = static_cast<int>
 	}
 	return true;
 }
+class CText;
 template<class T>
-inline std::string fund_to_str(T const & aNum)
+inline CText fund_to_str(T const & aNum)
 {
 	std::stringstream out;
 	//out << std::setprecision(20) << aNum;
 	out << aNum;
-	return out.str();
+	return CText(out.str());
 }
 template<>
-inline std::string fund_to_str<bool>(bool const & aVal)
+inline CText fund_to_str<bool>(bool const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::bool_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<unsigned char>(unsigned char const & aVal)
+inline CText fund_to_str<unsigned char>(unsigned char const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<signed char>(signed char const & aVal)
+inline CText fund_to_str<signed char>(signed char const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<unsigned short int>(
+inline CText fund_to_str<unsigned short int>(
 		unsigned short int const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<short int>(short int const & aVal)
+inline CText fund_to_str<short int>(short int const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<unsigned int>(unsigned int const & aVal)
+inline CText fund_to_str<unsigned int>(unsigned int const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<int>(int const & aVal)
+inline CText fund_to_str<int>(int const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<unsigned long int>(
+inline CText fund_to_str<unsigned long int>(
 		unsigned long int const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<long int>(long int const & aVal)
+inline CText fund_to_str<long int>(long int const & aVal)
 {
-	std::string _str;
+	CText _str;
+	NSHARE::num_to_str(aVal, _str);
+	return _str;
+}
+#ifdef SIZE_OF_LONG_LONG_INT
+template<>
+inline CText fund_to_str<long long int>(long long int const & aVal)
+{
+	CText _str;
 	NSHARE::num_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<double>(double const & aVal)
+inline CText fund_to_str<unsigned long long int>(unsigned long long int const & aVal)
 {
-	std::string _str;
+	CText _str;
+	NSHARE::num_to_str(aVal, _str);
+	return _str;
+}
+#endif
+template<>
+inline CText fund_to_str<double>(double const & aVal)
+{
+	CText _str;
 	NSHARE::float_to_str(aVal, _str);
 	return _str;
 }
 template<>
-inline std::string fund_to_str<float>(float const & aVal)
+inline CText fund_to_str<float>(float const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::float_to_str(aVal, _str);
 	return _str;
 }
+#ifdef SIZE_OF_LONG_DOUBLE
 template<>
-inline std::string fund_to_str<long double>(long double const & aVal)
+inline CText fund_to_str<long double>(long double const & aVal)
 {
-	std::string _str;
+	CText _str;
 	NSHARE::float_to_str(aVal, _str);
 	return _str;
 }
-class CText;
+#endif
 template<class T>
 inline CText to_string(T const & aVal)
 {
 	return CText(fund_to_str<T>(aVal));
+}
+template<>
+inline CText to_string<>(char const & aVal)
+{
+	return CText(fund_to_str<int>(aVal));
 }
 }
 

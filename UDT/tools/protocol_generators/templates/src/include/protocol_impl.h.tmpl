@@ -1,0 +1,139 @@
+{% set file_name = 'protocol_' + name | lower+'_impl' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_IMPL_H
+#define {{ file_name | upper }}_IMPL_H
+#include <string.h>
+
+namespace {{ common.get_namespace(name) }}
+{
+/*! \brief Gets full size of message
+ *
+ * @param aVal The message
+ * @return message full size
+ * @tparam T message type
+ */
+template<class T>
+inline unsigned get_full_size(T const & aVal );
+
+namespace impl //implementation definitions
+{
+/*! \brief Gets size of dynamic data
+ *
+ * @param aVal Object
+ * @return Size of dynamic data
+ * @tparam T Object type
+ */
+template<class T>
+inline unsigned get_full_size_dynamic(T const & aVal )
+{
+    return 0;
+}
+}//namespace impl
+
+{% macro generate_message_impl(aMsg, aParentArray = None) %}
+{%  set aParent =  aParentArray[0] if aParentArray else None %}
+{%  set struct_name =  aMsg.___name+'_t' %}
+{%  set parent_name =  aParent.___name+'_t' if aParent else '' %}
+{%  set paret_inherent =  ':'+parent_name if parent_name else '' %}
+{%  set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{%  set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{%  set attribute_packed=attribute_name_packed if not dynamic_msg else ''%}
+
+{{- fm.add_functions(aMsg.___fields|fields(True) ,aParent,  struct_name ) -}}
+
+/*! @brief Zeroes object
+ *
+ * The method is added as the POD object cannot have constructor.
+ */
+inline void {{ struct_name }}::makeZero()
+{
+{% if not dynamic_msg %}
+    memset(this, 0, sizeof(*this));
+{% else %}
+    {% if parent_name %}
+        {{ parent_name }}::makeZero();
+    {% endif %}
+    {% for field in aMsg.___fields|fields(True) if field.id %}
+        {% if field | is_dynamic %}
+            {{ field.id }}.clear();
+        {% elif field | is_complex %}
+            {{ field.id }}.makeZero();
+        {% elif field | is_array %}
+            memset({{ field.id }}, 0, sizeof({{ field.id }}));
+        {% else %}
+            {{ field.id }} = static_cast<{{ field.type }}>(0);
+        {% endif %}
+    {% endfor %}
+{% endif %}
+}
+
+{% if not dynamic_msg %}
+{% set _size_full = struct_name + '::SIZE_FULL' if  '___constants' in aMsg else aMsg.size %}
+{% set _aign = struct_name + '::ALIGN' if  '___constants' in aMsg else aMsg.align  %}
+#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800)
+    static_assert(sizeof({{ struct_name }}) == {{ _size_full }},
+                            "invalid size of message {{ aMsg.___name }}");
+#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+    static_assert(__alignof({{ struct_name }}) == {{ _aign }} ,
+                            "invalid align of message {{ aMsg.___name }}");
+#   endif //#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+#elif defined(COMPILE_ASSERT)
+    COMPILE_ASSERT(sizeof({{ struct_name }}) == {{ _size_full }},
+        InvalidSizeOfMessage_{{ aMsg.___name }});
+#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+    COMPILE_ASSERT(__alignof({{ struct_name }}) ==  {{ _aign }},
+        InvalidAlignOfMessage_{{ aMsg.___name }});
+#   endif //#   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
+#endif
+{% else %}
+namespace impl{
+/*! \brief Gets size of {{ aMsg.___name }} dynamic data
+ *
+ * @param aVal Object
+ * @return Size of dynamic data
+ * @tparam T Object type
+ */
+template<>
+inline unsigned get_full_size_dynamic<{{ struct_name}}>({{ struct_name}} const & aVal )
+{
+    unsigned _size = 0;
+
+    {% if dynamic_parent_msg %}
+    _size += get_full_size_dynamic<{{ parent_name}}>(
+            static_cast<{{ parent_name}} const&>(aVal)
+            );
+    {% endif %}
+
+    {% for field in aMsg | logical_type(["dynamic array"],True) %}
+    _size += sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type)
+            * aVal.{{field.id}}.size();
+    {% endfor %}
+    return _size;
+}
+}
+{% endif %}
+{% endmacro %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+
+{{ generate_message_impl(types[val]) }}
+
+{% endfor %}
+
+{{ generate_message_impl(header) }}
+
+{% for msg in messages-%}
+    {{ generate_message_impl(msg,msg.___parent) }}
+{% endfor %}
+
+template<class T>
+inline unsigned get_full_size(T const & aVal )
+{
+    return T::SIZE_FULL + impl::get_full_size_dynamic<T>(aVal);
+}
+}
+#endif /* {{ file_name | upper }}_IMPL_H */
+{% endautoescape %}

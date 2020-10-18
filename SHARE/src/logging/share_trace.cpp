@@ -58,8 +58,11 @@
 
 #include <SHARE/logging/CStackTrace.h>
 
-void init_share_trace(char const *aProgrammName)
+void init_share_trace(char const *aProgramm)
 {
+	std::string const _str(aProgramm);
+	size_t const _last = _str.find_last_of("/\\");
+	std::string const _n(_last==std::string::npos?_str:_str.substr(_last,std::string::npos));
 	if (!NSHARE::logging_impl::is_inited())
 	{
 		std::set_terminate(get_log_terminate_handler());
@@ -69,9 +72,9 @@ void init_share_trace(char const *aProgrammName)
 #endif
 
 #ifdef GLOG
-		init_trace_glog(aProgrammName);
+		init_trace_glog(_n.c_str());
 #elif defined(CPLUS_LOG)
-		init_trace_cplus(aProgrammName);
+		init_trace_cplus(_n.c_str());
 #endif
 		NSHARE::logging_impl::is_inited() = true;
 	}

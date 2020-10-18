@@ -54,8 +54,11 @@
         table.message_scheme tbody td.array {
             border-right-color: greenyellow;
         }
-        table.message_scheme tbody td.empty {
+        table.message_scheme tbody td.align {
             background-color: darkseagreen;
+        }
+        table.message_scheme tbody td.reserved {
+            background-color: #2b542c;
         }
         table.message_scheme tr:nth-child(even) {
             background: #888888;

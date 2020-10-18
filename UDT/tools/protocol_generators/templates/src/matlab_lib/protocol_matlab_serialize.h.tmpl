@@ -1,0 +1,275 @@
+{% set file_name = 'protocol_' + name | lower+ '_matlab_serialize' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <deftype>
+#include <{{ common.get_namespace(name) }}_udt.h>
+
+#include <mex.h>
+#include <matrix.h>
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace matlab
+{
+template<typename T>
+inline mxArray* serialize(T const& aObject);
+template<typename T>
+inline T deserialize(mxArray* aObject);
+
+
+template<typename T>
+inline mxArray* create_structure(unsigned aArraySize = 1 );
+
+template<typename T>
+inline unsigned serialize_to(mxArray* aTo, unsigned aArrayId,  T const& aObject, unsigned aStartAddr);
+template<typename T>
+inline unsigned serialize_to(mxArray* aTo, unsigned aArrayId,  T const& aObject);
+template<typename T>
+inline unsigned fill_field_info(const char ** aTo, unsigned aStartAddr);
+template<typename T>
+inline unsigned get_number_of_field();
+
+template<typename T, int MatlabClass>
+mxArray* muCreateStandard(T const* aValue, unsigned aArraySize = 1 )
+{
+    const mwSize dims[] = {1, aArraySize};
+    mxArray *var = mxCreateNumericArray(2, dims, static_cast<mxClassID>(MatlabClass), mxREAL);
+    unsigned char *start_of_pr = (unsigned char *)mxGetData(var);
+
+    const size_t _element_size = mxGetElementSize(var);
+    DCHECK_EQ(sizeof(_element_size), sizeof(T));
+    if(sizeof(_element_size) != sizeof(T))
+    {
+        //@ todo type trace
+        mexWarnMsgIdAndTxt("{{ name }}:invalidDataType", "Sizeof data isn't equal ");
+        return NULL;
+    }
+    memcpy(start_of_pr,aValue, sizeof(T) * aArraySize);
+    return var;
+}
+template<typename T, int MatlabClass>
+mxArray* muCreateStandard(T const& aValue )
+{
+    const mwSize dims[] = {1, 1};
+    mxArray *var = mxCreateNumericArray(2, dims, static_cast<mxClassID>(MatlabClass), mxREAL);
+    T *start_of_pr = (T *)mxGetData(var);
+
+    const size_t _element_size = mxGetElementSize(var);
+    DCHECK_EQ(sizeof(_element_size), sizeof(T));
+    if(sizeof(_element_size) != sizeof(T))
+    {
+        //@ todo type trace
+        mexWarnMsgIdAndTxt("{{ name }}:invalidDataType", "Sizeof data isn't equal ");
+        return NULL;
+    }
+    *start_of_pr = aValue;
+    return var;
+}
+template<typename T>
+struct matlab_code_t
+{
+    enum {
+        value = mxSTRUCT_CLASS
+    };
+};
+{% for type in [['bool','mxLOGICAL_CLASS'],
+                ['char','mxCHAR_CLASS'],
+                ['mxInt8','mxINT8_CLASS'],
+                ['mxUint8','mxUINT8_CLASS'],
+                ['mxInt16','mxINT16_CLASS'],
+                ['mxUint16','mxUINT16_CLASS'],
+                ['mxInt32','mxINT32_CLASS'],
+                ['mxUint32','mxUINT32_CLASS'],
+                ['mxInt64','mxINT64_CLASS'],
+                ['mxUint64','mxUINT64_CLASS'],
+                ['mxSingle','mxSINGLE_CLASS'],
+                ['mxDouble','mxDOUBLE_CLASS'],
+                ['void','mxVOID_CLASS']
+                ] %}
+template<>
+struct matlab_code_t<{{ type[0] }}>
+{
+    enum {
+        value = {{ type[1] }}
+    };
+};
+{% endfor %}
+
+template<typename T>
+mxArray* muCreateStandard(T const* aValue, unsigned aArraySize )
+{
+    return muCreateStandard<T, matlab_code_t<T>::value >(aValue, aArraySize);
+}
+template<>
+mxArray* muCreateStandard<char>(char const* aValue, unsigned aArraySize)
+{
+    typedef char T;
+    const mwSize dims[] = {1, aArraySize};
+    mxArray *var = mxCreateCharArray(2, dims);
+    char* start_of_pr = (char *)mxGetData(var);
+
+    const size_t _element_size = mxGetElementSize(var);
+    DCHECK_EQ(sizeof(_element_size), sizeof(T));
+    if(sizeof(_element_size) != sizeof(T))
+    {
+        //@ todo type trace
+        mexWarnMsgIdAndTxt("{{ name }}:invalidDataType", "Sizeof data isn't equal ");
+        return NULL;
+    }
+    memcpy(start_of_pr,aValue, sizeof(T) * aArraySize);
+    return var;
+}
+template<typename T>
+mxArray* muCreateStandard(T const& aValue)
+{
+    return muCreateStandard<T, matlab_code_t<T>::value >(aValue);
+}
+template<>
+mxArray* muCreateStandard<char>(char const& aValue)
+{
+    typedef char T;
+    const mwSize dims[] = {1, 1};
+    mxArray *var = mxCreateCharArray(2, dims);
+    char* start_of_pr = (char *)mxGetData(var);
+
+    const size_t _element_size = mxGetElementSize(var);
+    DCHECK_EQ(sizeof(_element_size), sizeof(T));
+    if(sizeof(_element_size) != sizeof(T))
+    {
+        //@ todo type trace
+        mexWarnMsgIdAndTxt("{{ name }}:invalidDataType", "Sizeof data isn't equal ");
+        return NULL;
+    }
+    *start_of_pr = aValue;
+    return var;
+}
+
+{% macro generate_serialize_matlab_functions(aMsg, aParentArray) %}
+
+{% set aParent =  aParentArray[0] if aParentArray else None %}
+{% set dynamic_msg = true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{% set dynamic_parent_msg = true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+{% set has_dynamic_child =  aMsg.___has_dynamic_child if '___has_dynamic_child' in aMsg else False %}
+
+template<>
+inline unsigned serialize_to<{{ struct_name }}>(mxArray* aTo, unsigned aArrayId, {{ struct_name }} const& aObject, unsigned aStartAddr)
+{
+    {% for field in aMsg.___fields |fields(True) if field.id %}
+        {%if field | is_array or field | is_dynamic %}
+            {% set _array_len = field.array_len if field | is_array else 'aObject.'+field.id+'.size()' %}
+            {% set _array_ptr = 'aObject.'+ field.id if field | is_array else '&aObject.'+field.id+'.front()' %}
+            {% set _type = field.type if field | is_array else field.TypeOfLogicalType %}
+
+            {% if  field | is_complex %}
+    {
+        mxArray *var = create_structure<{{ _type }}>({{ _array_len }});
+        for(unsigned i =0; i < {{ _array_len }};++i)
+             serialize_to<{{ _type }}>(var, i, aObject.{{ field.id }}[i]);
+
+        mxSetFieldByNumber(aTo, aArrayId, aStartAddr++, var );
+    }
+            {% else %}
+    mxSetFieldByNumber(aTo, aArrayId, aStartAddr++,  muCreateStandard({{ _array_ptr }}, {{ _array_len}}) );
+            {% endif %}
+        {% elif field | is_complex  %}
+    mxSetFieldByNumber(aTo, aArrayId, aStartAddr++, serialize(aObject.{{ field.id }}) );
+        {% else %}
+    mxSetFieldByNumber(aTo, aArrayId, aStartAddr++,  muCreateStandard(aObject.{{ field.id }}) );
+        {% endif %}
+    {% endfor %}
+
+    return aStartAddr;
+}
+template<>
+inline unsigned serialize_to<{{ struct_name }}>(mxArray* aTo, unsigned aArrayId, {{ struct_name }} const& aObject)
+{
+    unsigned _addr = 0;
+      {% if aParentArray %}
+        {% for _parent in aParentArray |reverse %}
+    _addr = serialize_to<{{ _parent.___name }}_t>(aTo, aArrayId, aObject, _addr);
+        {% endfor %}
+    {% endif %}
+    _addr = serialize_to<{{ struct_name }}>(aTo, aArrayId, aObject, _addr);
+
+    return _addr;
+}
+
+template<>
+inline unsigned get_number_of_field<{{ struct_name }}>()
+{
+    return {{ aMsg.___fields |fields(True) |length }};
+}
+template<>
+inline unsigned fill_field_info<{{ struct_name }}>(const char ** aTo, unsigned aStartAddr)
+{
+    {% for field in aMsg.___fields |fields(True) if field.id %}
+        aTo[aStartAddr++] = "{{ field.id }}";
+    {% endfor %}
+    return aStartAddr;
+}
+template<>
+inline mxArray* create_structure<{{ struct_name }}>(unsigned aArraySize )
+{
+    mwSize dims[2] = {1, aArraySize};
+    const char* field_names[
+        {{ aMsg.___fields |fields(True) |length }}
+        {% if aParentArray %}
+            {% for _parent in aParentArray %}
+                + {{ _parent.___fields | fields(True) |length }}
+            {% endfor %}
+        {% endif %}
+    ];
+    size_t const _field_number = sizeof(field_names) / sizeof(*field_names);
+    unsigned _addr = 0;
+
+    {% if aParentArray %}
+        {% for _parent in aParentArray |reverse %}
+    _addr = fill_field_info<{{ _parent.___name }}_t>(field_names, _addr);
+        {% endfor %}
+    {% endif %}
+
+    _addr = fill_field_info<{{ struct_name }}>(field_names, _addr);
+
+    DCHECK_EQ(_addr, _field_number);
+    if(_addr != _field_number)
+    {
+        mexWarnMsgIdAndTxt("{{ name }}:invalidFieldSize", "The number of fields");
+        return NULL;
+    }
+
+    mxArray *var = mxCreateStructArray(2, dims, _field_number, field_names);
+
+    return var;
+}
+template<>
+inline mxArray* serialize<{{ struct_name }}>({{ struct_name }} const& aObject)
+{
+    mxArray *var = create_structure<{{ struct_name }}>();
+    serialize_to<{{ struct_name }}>(var, 0, aObject);
+    return var;
+}
+{% endmacro %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+
+{{ generate_serialize_matlab_functions(types[val]) }}
+
+{% endfor %}
+
+{{ generate_serialize_matlab_functions(header) }}
+
+{% for msg in messages-%}
+    {{ generate_serialize_matlab_functions(msg,msg.___parent) }}
+{% endfor %}
+
+}//namespace matlab
+}//namespace {{ common.get_namespace(name) }}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

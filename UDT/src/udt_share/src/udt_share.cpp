@@ -13,12 +13,12 @@
  */
 #include <deftype>
 #include <SHARE/fdir.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <time.h>
 #include <internel_protocol.h>
 #include <shared_types.h>
 #include <udt_share.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 
 namespace NUDT
 {
@@ -89,7 +89,7 @@ static std::pair<size_t,size_t> deserialize_dg_head(user_data_info_t &_user,NSHA
 {
 	VLOG(2) << "Handle user data " << _from;
 	const size_t _events_size = _from.FEventList
-			* sizeof(demand_dg_t::event_handler_t);
+			* sizeof(user_data_info_t::event_handler_t);
 	const size_t _dest_size = _from.FDestination * sizeof(uuids_t::value_type);
 	const size_t _registrator_size = _from.FRegistrators
 			* sizeof(uuids_t::value_type);
@@ -109,12 +109,12 @@ static std::pair<size_t,size_t> deserialize_dg_head(user_data_info_t &_user,NSHA
 	size_t _offset = sizeof(user_data_header_t);
 	if (_events_size)
 	{
-		const demand_dg_t::event_handler_t* _p_begin =
-				(const demand_dg_t::event_handler_t*) ((aFrom + _offset));
-		const demand_dg_t::event_handler_t* _p_end = _p_begin
+		const user_data_info_t::event_handler_t* _p_begin =
+				(const user_data_info_t::event_handler_t*) ((aFrom + _offset));
+		const user_data_info_t::event_handler_t* _p_end = _p_begin
 				+ _from.FEventList;
 		for (; _p_begin != _p_end; ++_p_begin)
-			_user.FEventsList.push_back(aIsValidEndian?*_p_begin:swap_endian(*_p_begin));
+			_user.FHandlerEventsList.push_back(aIsValidEndian?*_p_begin:swap_endian(*_p_begin));
 	}
 	_offset += _events_size;
 	typedef uint64_t _uuid_t;
@@ -237,7 +237,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 		const user_data_info_t& _id, size_t aSize)
 {
 	VLOG(3)<<"Serialize size="<<aSize<<" "<<_id;
-	std::vector<demand_dg_t::event_handler_t> const& _events = _id.FEventsList;
+	std::vector<user_data_info_t::event_handler_t> const& _events = _id.FHandlerEventsList;
 	uuids_t const& _dest = _id.FDestination;
 	uuids_t const& _routing = _id.FRouting;
 	uuids_t const& _reg = _id.FRegistrators;
@@ -245,7 +245,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	const size_t _name_protocol = _id.FProtocol.length_code();
 
 	const size_t _events_size = _events.size()
-			* sizeof(demand_dg_t::event_handler_t);
+			* sizeof(user_data_info_t::event_handler_t);
 	const size_t _dest_size = _dest.size() * sizeof(uuids_t::value_type);
 	const size_t _reg_size = _reg.size() * sizeof(uuids_t::value_type);
 	const size_t _routing_size = _routing.size() * sizeof(uuids_t::value_type);
@@ -296,9 +296,9 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 
 	if (_events_size)
 	{
-		const size_t _it_size=sizeof(demand_dg_t::event_handler_t);
+		const size_t _it_size=sizeof(user_data_info_t::event_handler_t);
 
-		std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
+		std::vector<user_data_info_t::event_handler_t>::const_iterator _it =
 				_events.begin(), _it_end(_events.end());
 
 		for (; _it != _it_end; ++_it)

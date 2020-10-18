@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #include <core/kernel_type.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 #include "CRequiredDG.h"
 namespace NUDT
 {
@@ -33,12 +33,26 @@ CRequiredDG::CRequiredDG()
 CRequiredDG::~CRequiredDG()
 {
 }
-
+bool CRequiredDG::MIsNewDemadFor(id_t const& aFor, demand_dgs_t const& aReqDgs) const
+{
+	demand_dgs_for_t::const_iterator _it = FDGs.find(aFor);
+	if (_it != FDGs.end())
+	{
+		demand_dgs_t const& _old_demand = _it->second;
+		return aReqDgs.MIsPriorityGreateOf(_old_demand.FPriority);
+	}else
+		return true;
+}
 std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
 		id_t const& aFor, demand_dgs_t const& aReqDgs)
 {
 	VLOG(2) << "Add demands for " << aFor;
 	std::pair<demand_dgs_for_t, demand_dgs_for_t> _rval;
+	if(!MIsNewDemadFor(aFor, aReqDgs))
+	{
+		LOG(INFO)<<"Duplicate demand";
+		return _rval;
+	}
 	if (aReqDgs.empty())
 	{
 		VLOG(2) << "no demands";
@@ -56,31 +70,57 @@ std::pair<demand_dgs_for_t, demand_dgs_for_t> CRequiredDG::MSetDemandsDGFor(
 		MAddSendersOfMsgFor(aFor.FUuid, _added, &_rval.first,&_rval.second);
 	return _rval;
 }
+/** Return reference to handler
+ *
+ * @param
+ * @return
+ */
+CRequiredDG::msg_handlers_t::handler_id_array_t::iterator CRequiredDG::msg_handlers_t::MGetHandler(
+		handler_id_array_t::value_type const& aHandler)
+{
+	demand_dg_t::event_handler_value_t const _handler = user_data_info_t::sMGeHandlerOf(aHandler);
+
+	handler_id_array_t::iterator _it = FHandlersArray.begin();
+	for (; _it != FHandlersArray.end() && user_data_info_t::sMGeHandlerOf(*_it) != _handler; ++_it)
+		;
+	return _it;
+}
 /*!\brief Adds the new handlers for the message
  *
 *\return true if it the first "real" handler
  */
-bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
+CRequiredDG::msg_handlers_t::eHandlerState
+	CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
 
-	handler_id_array_t::iterator _it = std::find(FHandlers.begin(),
-			FHandlers.end(), aWhat.FHandler);
+	handler_id_array_t::value_type const _handler = user_data_info_t::sMGeHandlerOf(aWhat.FEventHandler);
 
-	bool _is_exist = _it != FHandlers.end();
+	handler_id_array_t::iterator _it = MGetHandler(_handler);
+
+	bool _is_exist = _it != FHandlersArray.end();
 	if (_is_exist)
 	{
-		VLOG(INFO) << "Handler " << aWhat.FHandler << " is exist";
+		VLOG(INFO) << "Handler " << user_data_info_t::sMGeHandlerOf(_handler)
+								<< " " << user_data_info_t::sMGeFlagsOf(_handler)
+								<< " is exist";
 
 		/// Change priority if need
 		handler_id_priority_array_t::iterator _it_priority =
-				FHandlerPriority.begin() + (_it - FHandlers.begin());
+				FHandlerPriority.begin() + (_it - FHandlersArray.begin());
+
+		handler_id_flags_array_t::iterator _it_flags =
+				FHandlerFlags.begin() + (_it - FHandlersArray.begin());
 
 		if (aWhat.FHandlerPriority < *_it_priority)
 		{
 			_is_exist = false;
 			FHandlerPriority.erase(_it_priority);
-			FHandlers.erase(_it);
+			FHandlersArray.erase(_it);
+			FHandlerFlags.erase(_it_flags);
+		}else
+		{
+			return E_ADDED_NEW_HANDLER_FOR_SUBSCRIBER;
 		}
 	}
 
@@ -90,9 +130,12 @@ bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
 				FHandlerPriority.end(), aWhat.FHandlerPriority);
 		handler_id_priority_array_t::iterator _cur_pos=FHandlerPriority.insert(_it_priority, aWhat.FHandlerPriority);
 
-		_it=FHandlers.begin()+(_cur_pos-FHandlerPriority.begin());///< Position of handler has to corresponding with its priority
+		_it=FHandlersArray.begin()+(_cur_pos-FHandlerPriority.begin());///< Position of handler has to corresponding with its priority
+		handler_id_flags_array_t::iterator const _it_flags = FHandlerFlags.begin()+(_cur_pos-FHandlerPriority.begin());
 
-		FHandlers.insert(_it, aWhat.FHandler);
+		FHandlersArray.insert(_it, _handler);
+		FHandlerFlags.insert(_it_flags, aWhat.FFlags.MGetMask());
+
 	}
 
 	if (aWhat.FWhat.FVersion.MIsExist())
@@ -101,7 +144,7 @@ bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
 																											<< "Different version for msg "
 																											<< aWhat.FWhat
 																											<< " handler= "
-																											<< aWhat.FHandler
+																											<< _handler
 																											<< " 'Old' version: "
 																											<< FVersion;
 		FVersion = aWhat.FWhat.FVersion;
@@ -110,11 +153,12 @@ bool CRequiredDG::msg_handlers_t::MAddHandler(demand_dg_t const & aWhat)
 	if (!_is_registator)
 	{
 		++FNumberOfRealHandlers;
-		return FNumberOfRealHandlers == 1;
+		return FNumberOfRealHandlers == 1 ? E_ADDED_NEW_REAL_SUBSCRIBER:
+				E_ADDED_NEW_HANDLER_FOR_SUBSCRIBER;
 	}
 	else
 
-		return false;
+		return E_REGISTRATOR_SUBSCRIBER;
 }
 /*!\brief Changes the byte order of a message header
  *
@@ -212,14 +256,22 @@ bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
 	if (!_is_registator)
 		++_r_uuid.FNumberOfRealReceivers;
 
-	bool const _is_first_real = _r_uuid[aTo].MAddHandler(aWhat);
+	msg_handlers_t::eHandlerState const _state_real = _r_uuid[aTo].MAddHandler(aWhat);
 
-	LOG_IF(INFO,_is_first_real) << "\n===> Now The packet:" << aWhat << " from "
+	LOG_IF(INFO,_state_real == msg_handlers_t::E_ADDED_NEW_REAL_SUBSCRIBER)
+										<< "\n===> Now The packet:" << aWhat << " from "
 										<< aFrom << " is received of by "
 										<< aTo;
-	LOG_IF(INFO,!_is_first_real) << "\n===> The packet:"<< aWhat.FWhat <<" from "<<aFrom<<" has been received twice of by "
+	LOG_IF(INFO,_state_real == msg_handlers_t::E_ADDED_NEW_REAL_SUBSCRIBER)
+											<< "\n===> The packet:"<< aWhat.FWhat
+											<<" from "<<aFrom<<" has been received twice of by "
 											<< aTo;
-	if (_is_first_real) //не верно, могут быть другие callbacks типа регистратор
+	LOG_IF(INFO,_state_real == msg_handlers_t::E_REGISTRATOR_SUBSCRIBER)
+												<< "\n===> The packet:"<< aWhat.FWhat
+												<<" from "<<aFrom<<" has been registrated by "
+												<< aTo;
+
+	if (_state_real == msg_handlers_t::E_ADDED_NEW_REAL_SUBSCRIBER)
 	{
 		if (aNew)
 		{
@@ -236,31 +288,34 @@ bool CRequiredDG::MRegisteringReceiverForMsg(const demand_dg_t& aWhat,
  *
  *\return true if it was the last handler
  */
-bool CRequiredDG::msg_handlers_t::MRemoveHandler(demand_dg_t const & aWhat)
+CRequiredDG::msg_handlers_t::eHandlerState
+		CRequiredDG::msg_handlers_t::MRemoveHandler(demand_dg_t const & aWhat)
 {
 	bool const _is_registator = aWhat.FFlags.MGetFlag(demand_dg_t::E_REGISTRATOR);
-	bool _rval = false;
+	eHandlerState _rval = E_NO_REAL_SUBSCRIBER;
 
 	if (!_is_registator)
 	{
 		CHECK_GT(FNumberOfRealHandlers, 0);
 		--FNumberOfRealHandlers;
 
-		_rval = FNumberOfRealHandlers == 0;
-	}
+		_rval = FNumberOfRealHandlers == 0 ? E_NO_REAL_SUBSCRIBER :E_HAS_REAL_SUBSCRIBER;
+	}else
+		_rval = E_REGISTRATOR_SUBSCRIBER;
 
-	handler_id_array_t::iterator _it = FHandlers.begin();
-	for (; _it != FHandlers.end() && *_it != aWhat.FHandler; ++_it)
-		;
+	handler_id_array_t::iterator _it = MGetHandler(aWhat.FEventHandler);
 
-	DCHECK(_it != FHandlers.end());
+	DCHECK(_it != FHandlersArray.end());
 
-	if (_it != FHandlers.end())
+	if (_it != FHandlersArray.end())
 	{
 		handler_id_priority_array_t::iterator _it_priority =
-				FHandlerPriority.begin() + (_it - FHandlers.begin());
+				FHandlerPriority.begin() + (_it - FHandlersArray.begin());
+		handler_id_flags_array_t::iterator _it_flags =
+				FHandlerFlags.begin() + (_it - FHandlersArray.begin());
 		FHandlerPriority.erase(_it_priority);
-		FHandlers.erase(_it);
+		FHandlersArray.erase(_it);
+		FHandlerFlags.erase(_it_flags);
 	}
 
 	return _rval;
@@ -282,7 +337,7 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 	uuids_of_expecting_dg_t::iterator _it_expect = aUUIds->find(aWhat.FWhat);
 	if(_it_expect==aUUIds->end())
 	{
-		LOG(DFATAL)<<"The packet: "<<aWhat.FWhat<<" is not sent by "<<aFrom;
+		LOG(ERROR)<<"The packet: "<<aWhat.FWhat<<" is not sent by "<<aFrom;
 		return false;
 	}
 
@@ -304,14 +359,18 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 	if (!_is_registator)
 		--_r_uuid.FNumberOfRealReceivers;
 
-	bool const _is_last_real = _list_it->second.MRemoveHandler(aWhat);
+	msg_handlers_t::eHandlerState const _real_state = _list_it->second.MRemoveHandler(aWhat);
 
-	LOG_IF(INFO,_is_last_real) << "\n===x Now The packet:" << aWhat.FWhat
+	LOG_IF(INFO,_real_state == msg_handlers_t::E_NO_REAL_SUBSCRIBER) << "\n===x Now The packet:" << aWhat.FWhat
 										<< " from " << aFrom
 										<< " is not received of by " << aTo;
 
-	LOG_IF(INFO,!_is_last_real) << "\n===x The packet:" << aWhat.FWhat << " from "
+	LOG_IF(INFO,_real_state == msg_handlers_t::E_HAS_REAL_SUBSCRIBER) << "\n===x The packet:" << aWhat.FWhat << " from "
 										<< aFrom << " still received of by "
+										<< aTo;
+
+	LOG_IF(INFO,_real_state == msg_handlers_t::E_REGISTRATOR_SUBSCRIBER) << "\n===x The packet:" << aWhat.FWhat << " from "
+										<< aFrom << " is not registered by "
 										<< aTo;
 	//cleanup maps
 	if (_list_it->second.MGetHandlers().empty())
@@ -324,7 +383,7 @@ bool CRequiredDG::MUnRegisteringReceiverForMsg(demand_dg_t const & aWhat,
 //	if (_r_uuid.empty())
 //		aUUIds->erase(_msg);
 
-	if (_is_last_real)
+	if (_real_state == msg_handlers_t::E_NO_REAL_SUBSCRIBER)
 	{
 		if (aOld)
 		{
@@ -664,11 +723,11 @@ void CRequiredDG::MAddSendersOfMsgFor(NSHARE::uuid_t const& aFor,
 
 			//save info about current level
 
-			DCHECK(FNearestInfo[aFor].find(_req_it->FHandler)==FNearestInfo[aFor].end());///<check for logical error
+			DCHECK(FNearestInfo[aFor].find(_req_it->MGetHandler())==FNearestInfo[aFor].end());///<check for logical error
 			if(!_uuids.empty())
-				FNearestInfo[aFor][_req_it->FHandler]=_uuids.begin()->second;
+				FNearestInfo[aFor][_req_it->MGetHandler()]=_uuids.begin()->second;
 			else
-				FNearestInfo[aFor][_req_it->FHandler]=std::numeric_limits<unsigned>::max();
+				FNearestInfo[aFor][_req_it->MGetHandler()]=std::numeric_limits<unsigned>::max();
 
 		}
 
@@ -698,7 +757,7 @@ void CRequiredDG::MRemoveSendersOfMsgFor(NSHARE::uuid_t const& aTo,
 			MGetOnlyNearestUUIDFor(&_uuids);
 
 			//remove info about current level
-			const size_t _num=FNearestInfo[aTo].erase(_jt->FHandler);
+			const size_t _num=FNearestInfo[aTo].erase(_jt->MGetHandler());
 
 			DCHECK_NE(_num,0);///<check for logical error
 		}
@@ -932,6 +991,24 @@ unsigned CRequiredDG::sMSwapEndian(user_data_t& _data)
 	return _error;
 }
 
+/** Add handler info for cutomer (with flags)
+ *
+ * @param _handlers
+ * @param _data_info
+ */
+void CRequiredDG::MAppendHandlers(user_data_info_t& aTo,
+		const msg_handlers_t* _handlers) const
+{
+	aTo.FHandlerEventsList.resize(_handlers->MGetHandlers().size());
+	for (unsigned i = 0; i < aTo.FHandlerEventsList.size(); ++i)
+	{
+		user_data_info_t::sMAddHandlerTo(aTo.FHandlerEventsList[i],
+				_handlers->MGetHandlers()[i]);
+		user_data_info_t::sMAddFlagsTo(aTo.FHandlerEventsList[i],
+				_handlers->MGetFlags()[i]);
+	}
+}
+
 void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		fail_send_array_t & aError) const
 {
@@ -984,7 +1061,8 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 		{
 			VLOG(4)
 								<< "A good programmer as he is not blending  a registrator and a real software.";
-			_data_info.FEventsList = _handlers->MGetHandlers();
+			MAppendHandlers(_data_info, _handlers);
+
 		}
 		else
 		{
@@ -1005,7 +1083,7 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			else //
 			{
 				VLOG(2)<<"Can fill all handlers for the packet as it has been sent not by uuid";
-				_data_info.FEventsList = _handlers->MGetHandlers();
+				MAppendHandlers(_data_info, _handlers);
 			}
 		}
 
@@ -1671,7 +1749,7 @@ inline unsigned CRequiredDG::sMGetDemandsByHandlers(
 		demand_dgs_t::const_iterator _it_hand = aDemand.begin();
 		for (; //
 				_it_hand != aDemand.end() //
-				&& _it_hand->FHandler != *_jt; ++_it_hand)
+				&& _it_hand->MGetHandler() != *_jt; ++_it_hand)
 			;
 
 		if (_it_hand != aDemand.end())
@@ -1862,9 +1940,9 @@ void CRequiredDG::MRemoveSenderIfNeed(NSHARE::uuid_t const& aFrom, array_of_dema
 					demand_dg_t::E_INVERT_GROUP);
 			//fixme не уверен что верно для добавления нового клиента
 			DCHECK(
-					FNearestInfo[_to].find(_what.FHandler)
+					FNearestInfo[_to].find(_what.MGetHandler())
 							!= FNearestInfo[_to].end()); ///<check for logical error
-			unsigned &_current_distance = FNearestInfo[_to][_what.FHandler];
+			unsigned &_current_distance = FNearestInfo[_to][_what.MGetHandler()];
 			if (_new_distance > _current_distance)
 			{
 				LOG(INFO) << "\n<--> Ignoring packet to " << _to
@@ -1941,10 +2019,10 @@ void CRequiredDG::MAddSenderIfNeed(NSHARE::uuid_t const & aFrom,
 		{
 			DCHECK_NE(_distance_of_rem, 0);
 			DCHECK(
-					FNearestInfo[_to].find(_what.FHandler)
+					FNearestInfo[_to].find(_what.MGetHandler())
 							!= FNearestInfo[_to].end()); ///<check for logical error
 
-			unsigned &_current_depth = FNearestInfo[_to][_what.FHandler];
+			unsigned &_current_depth = FNearestInfo[_to][_what.MGetHandler()];
 
 			CHECK_GE(_distance_of_rem, _current_depth);
 
@@ -2519,7 +2597,7 @@ bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 					else
 					{
 						_pf->second.MPutParrent(inheritance_msg_header_t(_msg_protocol,_msg,_it_child->FDepth));
-						DCHECK_EQ(_pf->second.MGetParrents().size()-1,_it_child->FDepth);
+						//DCHECK_EQ(_pf->second.MGetParrents().size()-1,_it_child->FDepth);
 					}
 				}
 			}

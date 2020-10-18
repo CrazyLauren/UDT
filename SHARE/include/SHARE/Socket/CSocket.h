@@ -44,6 +44,7 @@ public:
 
 	void MSet(socket_t aFd, eSocketType aType);
 	virtual void MClose();
+	virtual void MShutdown();
 
 	bool operator<(CSocket const& aRht) const
 	{

@@ -14,6 +14,8 @@
 #define FROM_STRING_EXIST
 namespace NSHARE
 {
+template<class T,class TStr>
+inline bool str_to_float(TStr const& aVal, T &aTo);
 /**\brief преобразование строки в стандартные типы
  *
  * стандартный ostream определяет преобразование типов
@@ -105,6 +107,14 @@ inline  bool str_to_decimal(TStr const& aVal, T &aTo)
 		T _num = 0;
 		if (isdigit(*_it))
 			_num = (*_it - '0');
+		else if (*_it== '.' || *_it == 'e' || *_it == 'E')//It's float
+		{
+			double _val;
+			bool const _is = str_to_float(aVal, _val);
+			if(_is)
+				aTo = static_cast<T>(_val);
+			return _is;
+		}
 		else if (isalpha(*_it))
 			_num = *_it - (isupper(*_it) ? 'A' - 10 : 'a' - 10);
 		else
@@ -263,6 +273,11 @@ inline bool is_decimal_correct(TStr const& aVal)
 template<class T,class TStr>
 inline bool str_to_float(TStr const& aVal, T &aTo)
 {
+#ifdef SIZE_OF_LONG_DOUBLE
+	typedef long double double_t;
+#else
+	typedef double double_t;
+#endif
 	assert(!std::numeric_limits < T > ::is_integer);
 	typename TStr::const_iterator _it = aVal.begin();
 
@@ -280,7 +295,7 @@ inline bool str_to_float(TStr const& aVal, T &aTo)
 		++_it;
 	}
 
-	long double a = 0.0;
+	double_t a = 0.0;
 	int e = 0;
 	unsigned _num_dig = 0;
 
@@ -289,7 +304,7 @@ inline bool str_to_float(TStr const& aVal, T &aTo)
 
 	if (_it != aVal.end() && *_it == '.')
 	{
-		long double _pow10=10.0;
+		double_t _pow10=10.0;
 		for (; ++_it != aVal.end() && isdigit(*_it); _pow10 *= 10.0)
 		{
 			a+=(*_it - '0')/_pow10;			
@@ -330,8 +345,8 @@ inline bool str_to_float(TStr const& aVal, T &aTo)
 	}
 	if (_is_neg)
 		a *= -1.0;
-	long double const _min=-std::numeric_limits< T >::max();
-	long double const _max=std::numeric_limits < T > ::max();
+	double_t const _min=-std::numeric_limits< T >::max();
+	double_t const _max=std::numeric_limits < T > ::max();
 	if (a < _min || _max < a)
 		return false;
 
@@ -578,6 +593,18 @@ inline long int & istream_number(std::istream & aStream, long int& aVal)
 {
 	return istream_decimal(aStream, aVal);
 }
+#ifdef SIZE_OF_LONG_LONG_INT
+template<>
+inline long long int & istream_number(std::istream & aStream, long long int& aVal)
+{
+	return istream_decimal(aStream, aVal);
+}
+template<>
+inline unsigned long long int & istream_number(std::istream & aStream, unsigned long long int& aVal)
+{
+	return istream_decimal(aStream, aVal);
+}
+#endif
 template<>
 inline double & istream_number(std::istream & aStream, double& aVal)
 {
@@ -588,11 +615,13 @@ inline float & istream_number(std::istream & aStream, float& aVal)
 {
 	return istream_float(aStream, aVal);
 }
+#ifdef SIZE_OF_LONG_DOUBLE
 template<>
 inline long double & istream_number(std::istream & aStream, long double& aVal)
 {
 	return istream_float(aStream, aVal);
 }
+#endif
 namespace detail
 {
 template<class T, bool>

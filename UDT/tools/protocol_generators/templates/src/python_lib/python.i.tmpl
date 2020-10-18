@@ -1,0 +1,68 @@
+{% import "base_macros.tmpl" as common %}
+{% autoescape false %}
+%module(package="{{ name | upper }}") customer_python
+%{
+/* Includes the header in the wrapper code */
+#include <{{ common.get_namespace(name) }}.h>
+#include  "{{ common.get_namespace(name) }}_udt_api.impl.h"
+%}
+%include  "stdint.i"
+{% if 'has_dynamic' in info and info.has_dynamic %}
+%include  "std_vector.i"
+{% endif %}
+
+{% set _no_union = 'NO_UNION_' + name | upper %}
+#define {{ _no_union | upper }}
+
+
+#define {{ common.get_namespace(name) | upper }}_NOPACKED
+#define {{ common.get_namespace(name) | upper }}_ONLY_HEADER
+%include  "../include/{{ common.get_namespace(name) }}.h"
+%include  <UDT/customer/receive_data_info_c.h>
+%include  "{{ common.get_namespace(name) }}_udt_api.h"
+
+
+
+{% for msg in messages %}
+    {%  set struct_name =  common.get_namespace(name) + '::'+msg.___name+'_t' %}
+    {%  set dynamic_msg = true if '___type' in msg and msg.___type == 'dynamic' %}
+    {%  set function_sufix =  msg.___name %}
+    {{ struct_name }} from_json_{{ function_sufix }}(const std::string& aData);
+%extend {{ struct_name }} {
+    void print_this();
+    std::string to_json( unsigned aPretty);
+
+    int send(
+    {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+        {% if not loop.first %}
+            ,
+        {% endif %}
+        {% if  field.TypeInfo.standard %}
+            const {{ field.type }}& a{{ field.id }}
+        {% else %}
+            const {{common.get_namespace(name)}}::{{ field.type }}& a{{ field.id }}
+        {% endif %}
+    {% endfor %}
+    );
+    int receive(const char* aFrom,
+    unsigned aFlags
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+        {% if  field.TypeInfo.standard %}
+            ,const {{ field.type }}& a{{ field.id }}
+        {% else %}
+            ,const {{common.get_namespace(name)}}::{{ field.type }}& a{{ field.id }}
+        {% endif %}
+    {% endfor %}
+    , new_data_cb_t aCb = NULL
+    );
+    int wait_data(double aTime = -1);
+    unsigned amount_of();
+    int does_not_receive(std::vector<{{ struct_name }}>* aTo = NULL);
+    int get_next();
+    void generate();
+    void makeZero();
+}
+{% endfor %}
+{% endautoescape %}

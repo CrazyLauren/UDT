@@ -1,0 +1,96 @@
+/*
+ * receive_data_info_c.h
+ *
+ *  Created on: 06.09.2020
+ *      Author:  https://github.com/CrazyLauren
+ *
+ *	Copyright © 2020  https://github.com/CrazyLauren
+ *
+ *	Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at
+ *	https://www.mozilla.org/en-US/MPL/2.0)
+ */
+#ifndef RECEIVE_DATA_INFO_C_H_
+#define RECEIVE_DATA_INFO_C_H_
+
+#cmakedefine CUSTOMER_C_MAX_STRING_LEN ${CUSTOMER_C_MAX_STRING_LEN}
+#cmakedefine CUSTOMER_C_MAX_MESSAGE_HEADER_SIZE ${CUSTOMER_C_MAX_MESSAGE_HEADER_SIZE}
+#cmakedefine CUSTOMER_C_MAX_UUID_TO_SIZE ${CUSTOMER_C_MAX_UUID_TO_SIZE}
+#cmakedefine CUSTOMER_C_MAX_PROGRAM_ID ${CUSTOMER_C_MAX_PROGRAM_ID}
+#cmakedefine CUSTOMER_C_MAX_MESSAGE_SUBSCRIBERS ${CUSTOMER_C_MAX_MESSAGE_SUBSCRIBERS}
+#cmakedefine CUSTOMER_C_MAX_RTC_NUMBER ${CUSTOMER_C_MAX_RTC_NUMBER}
+
+/** C string implementation
+ *
+ * To change max string length, need change
+ * value CUSTOMER_C_MAX_STRING_LEN in CMake, see build
+ * instruction.
+ */
+typedef struct
+{
+#ifdef __cplusplus
+	typedef NSHARE::CText cpp_type_t;
+#endif
+	char string[CUSTOMER_C_MAX_STRING_LEN];/*!< CUSTOMER_C_MAX_STRING_LEN is Cmake value */
+	unsigned len; /*!< if value is more CUSTOMER_C_MAX_STRING_LEN then
+					null terminated string in string value */
+} udt_customer_string_t;
+
+/*!\brief C implementation off #NSHARE::version_t
+ *
+ */
+typedef struct
+{
+#ifdef __cplusplus
+	typedef NSHARE::version_t cpp_type_t;
+#endif
+	uint8_t major; /*!< - Major version */
+	uint8_t minor; /*!< - Minor version */
+	uint16_t release; /*!< - Revision version */
+} version_c_t;
+
+/*!\brief C implementation off #NUDT::required_header_t
+ *
+ */
+typedef struct
+{
+#ifdef __cplusplus
+	typedef NUDT::required_header_t cpp_type_t;
+#endif
+	version_c_t version;/*!< A required version of the message*/
+
+	/*!\brief A message header
+	 *
+	 */
+	uint8_t header[CUSTOMER_C_MAX_MESSAGE_HEADER_SIZE];
+} required_header_c_t;
+
+/*!\brief C implementation off #NUDT::received_message_args_t
+ *
+ * @note created as detached struct for matlab and python compability 
+ */
+typedef struct
+{
+#ifdef __cplusplus
+	typedef NUDT::received_message_args_t cpp_type_t;
+#endif
+	uint64_t rfrom;/*!< UUID of message sender*/
+	udt_customer_string_t protocol_name; /*!< Type of message protocol*/
+	uint16_t packet_number;/*!<The packet (message) sequence number (continuous numbering
+	 	 	 	 	 	 	for all packets from sender)
+							two message can identical number only
+							if is sent in one packet (buffer), usually that two
+							messages in one buffer isn't sent (see send buffer method).*/
+	required_header_c_t header;/*!< The message header */
+	uint64_t to[CUSTOMER_C_MAX_UUID_TO_SIZE];/*!< List uuids of message receiver (sorted)
+	 	 	 	 	 	 	 	 	 	 	 	 The CUSTOMER_C_MAX_UUID_TO_SIZE is CMake value,
+	 	 	 	 	 	 	 	 	 	 	 	 see build documentation*/
+	unsigned to_size;/*!< Length of array in #to*/
+	uint8_t occur_user_error;/*!<if the field will changed by you, when
+									the error with code  FOccurUserError
+									is sent to message sender (FFrom)*/
+	uint8_t endian;/*!< Message byte order (see NSHARE::eEndian in endian_type.h)*/	
+	unsigned remain_CB;/*!< Amount of CB which of called after this CB*/
+	unsigned cbs;/*!< Amount of CB which is called*/
+} received_message_info_c_t;
+
+#endif /* RECEIVE_DATA_INFO_C_H_ */

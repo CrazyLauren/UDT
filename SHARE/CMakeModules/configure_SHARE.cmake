@@ -7,6 +7,7 @@ include(CheckIncludeFiles)
 include(CheckCXXSourceCompiles)
 include(CheckTypeSize)
 include(FindPackageHandleStandardArgs)
+include(TestBigEndian)
 
 
 check_library_exists(dex dex_open "" HAVE_DEX)
@@ -25,6 +26,15 @@ check_include_files(dlfcn.h  HAVE_DLFCN)
 check_include_files(signal.h HAVE_SIGNAL_H)
 check_include_files(semaphore.h HAVE_POSIX_SEMAPHORES)
 check_include_files(pthread.h HAVE_PTHREAD_H)
+check_include_files(sys/types.h HAVE_SYS_TYPES_H)
+check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)
+if(NOT HAVE_SYS_SOCKET_H AND HAVE_SYS_TYPES_H)
+	unset(HAVE_SYS_SOCKET_H CACHE)
+	check_include_files("sys/types.h;sys/socket.h" HAVE_SYS_SOCKET_H)
+endif()
+
+check_type_size("long long int" SIZE_OF_LONG_LONG_INT)
+check_type_size("long double" SIZE_OF_LONG_DOUBLE)
 
 if(HAVE_POSIX_SEMAPHORES)
 	set(CMAKE_EXTRA_INCLUDE_FILES semaphore.h )
@@ -63,21 +73,16 @@ template<typename T>
 struct deserialize_check
 {
 	template<typename U>
-	static U test2(U const& = U(std::string()));
-
-	template<std::size_t>
-	struct dummy
-	{
-	};
-	template<typename U>
-	static is_method_t test(dummy< sizeof(test2<U>()) > *);
-
+	static is_method_t test(U const& );
 	template<typename U> static nobody_t test(...);
 	enum
 	{
-		result = sizeof(test<T>(0))
+		result = sizeof(test<T>(std::string()))
 	};
 };
+typedef deserialize_check<int> deserialize_check_int_t;
+typedef deserialize_check<std::string> deserialize_check_string_t; 
+
 template<typename T>
 struct serialize_check
 {
@@ -92,12 +97,14 @@ struct serialize_check
         result = sizeof(test<T>(0))
     };
 };
+typedef serialize_check<int> serialize_check_int_t;
+typedef serialize_check<std::string> serialize_check_string_t; 
 int main() { 
-char _int[  deserialize_check<int>::result - sizeof(nobody_t) + 1];
-char _str[  sizeof(nobody_t) - deserialize_check<std::string>::result  -1];
+char _int[  deserialize_check_int_t::result - sizeof(nobody_t) + 1];
+char _str[  sizeof(nobody_t) - deserialize_check_string_t::result  -1];
 
-char _int2[  serialize_check<int>::result - sizeof(nobody_t)  + 1];
-char _str2[  sizeof(nobody_t) - serialize_check<std::string>::result  -1];
+char _int2[  serialize_check_int_t::result - sizeof(nobody_t)  + 1];
+char _str2[  sizeof(nobody_t) - serialize_check_string_t::result  -1];
  return 0;}
 "
                         CAN_USE_SFINAE_METHODS_DETECTOR )
@@ -125,6 +132,7 @@ find_shared_ptr()
 if(NOT SHARED_PTR_FOUND)
 	message(WARNING " shared_ptr has not founded, specialize boost library search path Boost_INCLUDE_DIR ")
 endif()
+test_big_endian(SHARE_BIGENDIAN)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 

@@ -21,12 +21,12 @@
                 type: "GET",
                 dataType: "script",
                 cache: true
-            }).done(function ()
+            }).success(function ()
         {
             storage.parsers.add(aVal);
         }).error(function (jqXHR, textStatus)
         {
-            //throw "cannot load protocol parser from " + _file;
+            console.log("cannot load protocol parser from " + _file +" " + textStatus);
         });
         if (self.protocol_parser.hasOwnProperty(aVal))
             return self.protocol_parser[aVal];
@@ -36,41 +36,50 @@
     jQuery.toRepresentationData = function (aProtocol, aData, aHead, aId)
     {
         let _parser = jQuery.get_protocol_parser(aProtocol);
-        if (_parser && _parser.hasOwnProperty("data"))
+        let _is_raw = true;
+        if (_parser)
         {
-            return jQuery.to_representation_form({
-                "data": aData
-            }, _parser, aHead);
-        } else
+            _is_raw = false;
+            for (let _key in aData )
+                if(aData.hasOwnProperty(_key) && !_parser.hasOwnProperty(_key))
+                {
+                    _is_raw = true;
+                    break;
+                }
+        }
+        if(_is_raw)
             return jQuery.to_representation_form({
                 "data": aData
             });
+        else
+            return jQuery.to_representation_form(aData, _parser, aHead);
+
     }
     jQuery.toRepresentationHead = function (aProtocol, aVal)
     {
         const _protocol = aProtocol;
 
         let _parser = jQuery.get_protocol_parser(_protocol);
-        if (_parser && _parser.hasOwnProperty("head"))
+        if (_parser && _parser.hasOwnProperty("header"))
             return jQuery.to_representation_form({
-                "head": aVal
+                "header": aVal
             }, _parser);
         else//convert object to array
             return jQuery.to_representation_form({
-                "head": aVal
+                "header": aVal
             });
     }
     jQuery.head_entry_field = function (aProtocol, aTo)
     {
         const _protocol = aProtocol;
         let _parser = $.get_protocol_parser(_protocol);
-        if (_parser && _parser.hasOwnProperty("head"))
+        if (_parser && _parser.hasOwnProperty("header"))
         {
-            _parser.head.entry_field(aTo);
+            _parser.header.entry_field(aTo);
         } else
         {
             let _tr = $("<tr>").appendTo(aTo);
-            $("<label>").text('Enter the protocol head.').appendTo($("<td>").appendTo(_tr));
+            $("<label>").text('Enter the protocol message header.').appendTo($("<td>").appendTo(_tr));
             $("<textarea>").attr({
                 id: "json_input",
                 placeholder: "as JSON"
@@ -82,9 +91,9 @@
     {
         const _protocol = aProtocol;
         let _parser = $.get_protocol_parser(_protocol);
-        if (_parser && _parser.hasOwnProperty("head"))
+        if (_parser && _parser.hasOwnProperty("header"))
         {
-            return _parser.head.serialize(aFrom);
+            return _parser.header.serialize(aFrom);
         } else
         {
             try

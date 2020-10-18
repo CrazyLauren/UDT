@@ -16,7 +16,7 @@ int initialize_library(int argc, char const*argv[])
 	 * 1) Initialize UDT library
 	 */
 	const int _val = CCustomer::sMInit(argc, argv, INDITIFICATION_NAME,
-			NSHARE::version_t(1, 0), CONFIG_PATH);
+			NSHARE::version_t(1, 0));
 	if (_val != 0)
 	{
 		std::cerr << "Cannot initialize library as " << _val << std::endl;

@@ -81,6 +81,9 @@ void CUDP::MClose()
 			sent_state_t const _is=MSend(&_val, sizeof(_val), _addr);
 			DCHECK(_is.MIs());
 		}
+#ifndef WIN32
+		FSock.MShutdown();
+#endif
 		FSock.MClose();
 	}
 }

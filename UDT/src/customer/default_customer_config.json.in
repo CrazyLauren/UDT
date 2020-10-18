@@ -22,14 +22,7 @@ plugins.
 			{
 				/** The library name
 				*/
-				"rtc_for_modeling":
-				{
-				},
-				"tcp_client_io_manager":
-				{
-					"port": "18011"
-				},
-				"sm_main_channel": {}
+				@_LIBRARIES@
 			}
         },
 

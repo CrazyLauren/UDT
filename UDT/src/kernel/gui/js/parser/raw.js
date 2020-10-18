@@ -1,7 +1,7 @@
 
 jQuery.get_protocol_parser().raw =
     {
-        head: {
+        header: {
             getName:function()
             {
                 return "raw";

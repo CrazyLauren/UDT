@@ -284,6 +284,9 @@ void IMPL::MCloseHostSocket()
 	VLOG(2) << "Try close host socket." << FHostSock;
 	if (FHostSock.MIsValid())
 	{
+#ifndef WIN32
+		FHostSock.MShutdown();
+#endif
 		FHostSock.MClose();
 	}
 	DCHECK(!FHostSock.MIsValid());

@@ -3,7 +3,7 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 PROJECT_NAME           = "${PROJECT_NAME}"
-PROJECT_NUMBER         = "${${CUSTOMER_TARGET_NAME_UP}_MAJOR_VERSION}.${${CUSTOMER_TARGET_NAME_UP}_MINOR_VERSION}.${${CUSTOMER_TARGET_NAME_UP}_REVISION_VERSION}"
+PROJECT_NUMBER         = "${${PROJECT_NAME}_VERSION}.${${PROJECT_NAME}_REVISION_VERSION}"
 OUTPUT_DIRECTORY       = "@DOC_PATH@"
 OUTPUT_LANGUAGE        = English
 DOXYFILE_ENCODING      = UTF-8
@@ -123,7 +123,7 @@ TREEVIEW_WIDTH         = 250
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
 #---------------------------------------------------------------------------
-GENERATE_LATEX         = NO
+GENERATE_LATEX         = YES
 LATEX_OUTPUT           = latex
 LATEX_CMD_NAME         = latex
 MAKEINDEX_CMD_NAME     = makeindex

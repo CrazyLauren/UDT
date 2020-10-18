@@ -1057,14 +1057,15 @@ CConfig& CConfig::MAddTo(const CText& key, CBuffer const & aTo)
 {
 	return MAdd(key, aTo.ptr_const(), aTo.size());
 }
-template<>
-CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
-{
-	MValue(_val);
-	return _val;
-}
+//template<>
+//CBuffer CConfig::MValue<CBuffer>(CBuffer _val) const
+//{
+//	MValue(_val);
+//	return _val;
+//}
 bool CConfig::sMUnitTest()
 {
+#ifdef CAN_USE_SFINAE_METHODS_DETECTOR
 	COMPILE_ASSERT(impl::cconfig::
 			   deserialize_check<CProgramName>::result
 			   == sizeof(impl::cconfig::is_method_t),NotValidDeductName);
@@ -1072,6 +1073,7 @@ bool CConfig::sMUnitTest()
 			   deserialize_check<int>::result
 			   == sizeof(impl::cconfig::nobody_t),
 			   NotValidDeduct);
+#endif
 	{
 		CConfig _conf(impl::cconfig::ser_t<int>::serialize(5));
 
@@ -1159,5 +1161,13 @@ bool CConfig::sMUnitTest()
 		CHECK_EQ(_test_str,_result);
 	}
 	return true;
+}
+bool CConfig::data_t::operator==( const data_t& aRhs) const
+{
+	const data_t& aLhs(*this);
+	return aLhs.FKey == aRhs.FKey //
+			&& aLhs.FValue == aRhs.FValue
+			&& aLhs.FChildren == aRhs.FChildren
+			;
 }
 } /* namespace NSHARE */

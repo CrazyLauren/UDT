@@ -13,9 +13,9 @@
 #define KERNEL_TYPE_H_
 
 #include <SHARE/share_socket.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <internel_protocol.h>
-#include <udt/udt_types.h>
+#include <UDT/udt_types.h>
 #include <shared_types.h>
 #include <udt_rtc_types.h>
 namespace NUDT

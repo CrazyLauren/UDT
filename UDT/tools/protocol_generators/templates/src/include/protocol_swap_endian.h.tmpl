@@ -1,0 +1,181 @@
+{% set file_name = 'protocol_' + name | lower + '_swap_endian' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <deftype>
+# include <{{ name | upper }}/config/config.h>
+#include "{{ common.get_namespace(name) }}.h"
+
+namespace {{ common.get_namespace(name) }}
+{
+{% macro swap_endian_message(aMsg) %}
+    {%  set struct_name =  aMsg.___name+'_t' %}
+
+    {{ struct_name }} * const _msg = static_cast<{{ struct_name }}*> (aP);
+
+    {% for field in aMsg.___fields %}
+        {%if 'array_len' in field and field.array_len  > 0%}
+    for (unsigned i=0; i< sizeof(_msg->{{ field.id }})/sizeof(_msg->{{ field.id }}[0]); ++i)
+            swap_endian_of<{{field.type}}>(&_msg->{{field.id}}[i]);
+        {% elif field.LogicalType|string() == "dynamic array"  %}
+    for (unsigned i=0; i< _msg->{{field.id}}.size(); ++i)
+            swap_endian_of<{{field.TypeOfLogicalType}}>(&_msg->{{field.id}}[i]);
+        {% elif field.id and 'bit_len' not in field %}
+            swap_endian_of<{{field.type}}>(&_msg->{{field.id}});
+        {% elif 'bit_len' in field and (field.fields|length > 0 )
+        and
+        ( (field.fields|length > 1 ) or (field.fields|first).id ) %}
+    {
+        /*! Swap bit
+        *
+        {% for bf in field.fields if bf.id  %}
+        *    {{ bf.id }},
+        {% endfor %}
+        * @note bit sequence in bitfield isn't standardized
+        */
+        union
+        {
+            struct
+            {
+{#        {% for field in field.fields | eswap  %}#}{##}
+        {% for bf in field.fields|reverse %}
+                {% set id = bf.id if bf.id else '___bit_' + loop.index |string%}
+                {{bf.type}} {{id }}:{{  bf.bits }};
+        {% endfor %}
+            };
+            {{field.type}} value;
+        } _value;
+#ifdef COMPILE_ASSERT
+       COMPILE_ASSERT(sizeof(_value) == sizeof({{ field.type }}), InvalidSizeOfField);
+#endif
+        _value.value = _msg->{{field.id}};
+        {% for bf in field.fields if bf.id %}
+            _msg->{{bf.id }} = _value.{{bf.id }};
+        {% endfor %}
+    }
+        {% endif %}
+    {% endfor %}
+
+{#    {% for fields in aMsg.___fields|fields(True)#}
+{#        if 'bit_len' in fields#}
+{#            and fields.bit_len > 8 and#}
+{#            (fields.fields|length >1 or  (fields.fields|first).id)#}
+{#            %}#}
+{#    {#}
+{#        /*! Swap bit fields#}
+{#        *#}
+{#        {% for field in fields.fields if field.id  %}#}
+{#        *    {{ field.id }},#}
+{#        {% endfor %}#}
+{#        * @note bit sequence in bitfield isn't standardized#}
+{#        */#}
+{#        union
+{#        {#}
+{#            struct#}
+{#            {#}
+{##}{#        {% for field in fields.fields | eswap  %}#}{##}
+{#        {% for field in fields.fields %}#}
+{#                {% set id = field.id if field.id else '___bit_' + loop.index |string%}#}
+{#                {{field.type}} {{id }}:{{  field.bits }};#}
+{#        {% endfor %}#}
+{#            };#}
+{#            {{fields.type}} value;#}
+{#        } _value;#}
+{##}
+{##ifdef COMPILE_ASSERT#}
+{#       COMPILE_ASSERT(sizeof(_value) == sizeof({{ fields.type }}), InvalidSizeOfField);#}
+{##endif#}
+{#        {% for field in fields.fields if field.id %}#}
+{#        _value.{{field.id}} = _msg->{{field.id }};#}
+{#        {% endfor %}#}
+{#        unsigned _offset = {{ fields.offset //8 }};// Offset of field
+{#        {% if '___parent' in aMsg and aMsg.___parent|length >0 %}#}
+{#            _offset += {{ (aMsg.___parent|first).___name }}_t::SIZE_FULL;//Offset of data#}
+{#        {% endif %}#}
+{#        _value.value = *reinterpret_cast<{{fields.type}}*>((char*)aP + _offset);#}
+{#        swap_endian_of<{{fields.type}}>(&_msg->{{field.id}});#}
+{##}
+{#        {% for field in fields.fields if field.id %}#}
+{#        _msg->{{field.id }} = _value.{{field.id }};#}
+{#        {% endfor %}#}
+{#    }#}
+{#    {% endfor %}#}
+{% endmacro %}
+
+/*! Swap message endian
+*
+* return true if no error
+*/
+template <typename T>
+inline  bool swap_endian_of(T* aTo)
+{
+    *aTo = NSHARE::swap_endain<T>(*aTo);
+    return true;
+}
+{% set struct_header_name =  header.___name+'_t' %}
+
+
+
+/*! Predefined  of specialized function
+ *
+ * @{
+ */
+template <>
+inline bool swap_endian_of<{{ struct_header_name }}> ({{ struct_header_name }}* aP);
+{% for msg in messages %}
+    {%  set struct_name =  msg.___name+'_t' %}
+template <>
+inline bool swap_endian_of<{{ struct_name }}> ({{ struct_name }}* aP);
+{% endfor %}
+///@}
+
+/** Swap endian for header
+*/
+template <>
+inline bool swap_endian_of<{{ struct_header_name }}> ({{ struct_header_name }}* aP)
+{
+    {{  swap_endian_message(header) }}
+    return true;
+}
+{% macro add_swap_function(msg, aParent = None) %}
+    {% set struct_name =  msg.___name+'_t' %}
+    {% set struct_parent_name =  aParent.___name+'_t' if aParent else ''%}
+/*! Swap endian function of {{ msg.___name }}
+*
+* return true if no error
+*/
+template <>
+inline bool swap_endian_of<{{ struct_name }}> ({{ struct_name }}* aP)
+{
+    {% if struct_parent_name %}
+    bool _is = swap_endian_of(static_cast<{{ struct_parent_name }}*>(aP));
+    {% else %}
+    bool _is = true;
+    {% endif %}
+    {%  if  '___parent' in msg and msg.___parent | length > 0  %}
+            {%  set parent_name =  msg.___parent[0].___name+'_t' %}
+    _is = _is && swap_endian_of(static_cast<{{ parent_name }}*>(aP));
+    {% endif %}
+
+    {{  swap_endian_message(msg) }}
+
+    return _is;
+}
+{% endmacro %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+    {{ add_swap_function(types[val]) }}
+{% endfor %}
+
+{% for msg in messages %}
+    {{ add_swap_function(msg, header) }}
+{% endfor %}
+
+
+}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

@@ -1,0 +1,397 @@
+{% macro append_field(aNumBits, bf, aField, aChild, aIsLast) %}
+    {% set aId = None if 'id' not in aField else aField.id %}
+    {% set _next_str = '' if aIsLast else '\\\\' %}
+    {% set _end = _next_str if bf.end_word else '& ' %}
+    {% if 'skippedwords' in bf %}
+        \skippedwords {{_end}}
+    {% else%}
+        {% set _len = bf.bits if 'bits' in bf and bf.bits > 0 else bf.word * 8  %}
+        {% set _real_len = aField.bits if 'bits' in aField and aField.bits > 0 else aField.word * 8  %}
+        {% set _sub_id = _real_len|string if not (aField|is_array) else (_real_len // aField.array_len)|string %}
+        {% if aChild and 'LogicalType' in aField and aField.LogicalType == 'number' and '___number' in aChild %}
+            {% set _sub_id = '=' + aChild.___number | string %}
+        {% elif aChild and 'LogicalType' in aField and aField.LogicalType == 'size'
+                and aChild.___type == 'static'
+                and '___constants' in aChild %}
+            {% set _sub_id = '=' + (aChild.___constants.size_full / 8)|int  | string %}
+        {% elif aChild and aId in aChild %}
+            {% set _sub_id = '=' + (aChild[aId]) | string %}
+        {% endif %}
+        {% set _empty_id = '' if aId else '\\color{lightgray}\\rule{\\width}{\\height}'  %}
+        {% set _id = bf.number|latex_escape + '\\\\ \\tiny{ '+ _sub_id  + '}' if 'number' in bf and bf.number|length > 0 else _empty_id %}
+        {% set _sides = '['+bf.sides+']' if 'sides' in bf else ''%}
+        {%if _len < aNumBits %}
+        \bitbox{{ _sides }}{ {{ _len }} }{ {{ _id }} } {{_end}}
+        {% else %}
+        \wordbox{{ _sides }}{ {{ _len // aNumBits }} }{ {{ _id  }} } {{_end}}
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% macro generate_dynamic_fields(word_group, aMsg, aChild = None) %}
+    {% set _ref = aMsg.___name if not aChild else aChild.___name + aMsg.___name %}
+    {% set _have_dynamic = True if '___dynamic_fields' in aMsg and
+            aMsg.___dynamic_fields|length >0 else False%}
+    {% if _have_dynamic %}
+    \begin{{word_group}}{ \rotatebox{90}{
+    \tablename \space \ref{tableref:{{ _ref }} } } }
+       {% for field in aMsg.___dynamic_fields %}
+            {% set is_last = loop.last %}
+            {% set _next_str = '' if is_last else '\\\\' %}
+            {% set _word = field.LogicalTypeInfo.size | int %}
+            {% if _word > 4  %}
+                {% set _word = 4 %}
+            {% endif %}
+            {% set _dynamic_type = field.TypeOfLogicalType | latex_escape  %}
+            {% for i in range(0, 4 // _word) %}
+                {% set _end = '\\\\' if loop.last else '& ' %}
+                {% set _id_text = _dynamic_type +'['+ i |string+']'
+                        + '\\\\ \\tiny{ '+ field.id| latex_escape + '}'
+                        %}
+                \bitbox{ {{ _word*8 }} }{ {{ _id_text }} } {{_end}}
+            {% endfor %}
+            \wordbox[]{1}{$\vdots$} \\[1ex]
+            {% for i in range(0, 4 // _word) %}
+                {% set _end = _next_str if loop.last else '& ' %}
+                {% set _id_text = _dynamic_type +'['+field.id| latex_escape+'-'+ (4 // _word - i) |string + ']'
+                        + '\\\\ \\tiny{ '+ field.id| latex_escape + '}' %}
+                \bitbox{ {{ _word*8 }} }{ {{ _id_text }} } {{_end}}
+            {% endfor %}
+        {% endfor %}
+        \end{{word_group}}
+    {% endif %}
+{% endmacro %}
+
+{% macro generate_fields(aNumBits, word_group, aMsg, aChild = None) %}
+    {% set _ref = aMsg.___name if not aChild else aChild.___name + aMsg.___name %}
+    {% set aField = aMsg.___fields %}
+    {% set _is = aField| length > 0 %}
+    \begin{{word_group}}{ \rotatebox{90}{
+    \tablename \space \ref{tableref:{{ _ref }} } } }
+    {% for field in aField %}
+        {% set is_last = loop.last %}
+        {% if 'fields' in field %}
+            {% for bf in field['fields'] %}
+                {% if 'fractional' in bf %}
+                    {% for fractional in bf['fractional'] %}
+                        {{ append_field(aNumBits,fractional, bf, aChild, loop.last and is_last) -}}
+                    {% endfor %}
+                {% else %}
+                        {{ append_field(aNumBits,bf, bf, aChild, loop.last and is_last) -}}
+                {% endif %}
+            {% endfor %}
+        {% elif 'word' in field %}
+            {% if 'fractional' in field %}
+                {% for fractional in field['fractional'] %}
+                    {{ append_field(aNumBits,fractional, field, aChild,loop.last and is_last) -}}
+                {% endfor %}
+            {% else %}
+                    {{ append_field(aNumBits,field, field, aChild, loop.last and is_last) -}}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+    \end{{word_group}}
+{% endmacro %}
+
+{% macro generate_fields_table(aNumBits, aMsg, aIsDynamic ,aParent = None) %}
+    {% set ns = namespace(work_group=1)  %}
+{% if aParent %}
+    {% for parent in aParent | reverse() %}
+        {% set word_group = '{rightwordgroup}' if ns.work_group
+                                    is divisibleby 2 else '{leftwordgroup}' %}
+{% if aIsDynamic %}
+    {% if '___dynamic_fields' in parent and
+            parent.___dynamic_fields|length > 0 %}
+        {% set ns.work_group = ns.work_group + 1  %}
+        {{ generate_dynamic_fields(word_group, parent, aMsg) }} \\
+    {% endif %}
+{% else %}
+    {% if parent.___fields|length > 0 %}
+        {% set ns.work_group = ns.work_group + 1  %}
+        {{ generate_fields(aNumBits, word_group, parent, aMsg) }} \\
+    {% endif %}
+{% endif %}
+    {% endfor %}
+{% endif %}
+    {% set word_group = '{rightwordgroup}' if ns.work_group
+                                    is divisibleby 2 else '{leftwordgroup}'%}
+{% if aIsDynamic %}
+    {% if '___dynamic_fields' in aMsg and
+            aMsg.___dynamic_fields|length > 0 %}
+        {{ generate_dynamic_fields(word_group, aMsg) }}
+    {% endif %}
+{% else %}
+    {% if aMsg.___fields|length > 0 %}
+        {{ generate_fields(aNumBits, word_group, aMsg) }}
+    {% endif %}
+{% endif %}
+
+{% endmacro %}
+
+{% macro create_strcuture(aNumBits, aMsg, aLanguage, aBigLitle, aParent) %}
+{% if aLanguage == 'ru' %}
+    Структура данных представлена на рисунке
+{% else %}
+    The structure is on draw
+{% endif %}
+    \ref{fig:{{ aMsg.___name }} }.
+    \par
+    \begin{figure}[!htb]
+        \begin{adjustbox}{max height={\textheight}, center}
+            \begin{bytefield}[bitformatting={\small\bfseries},
+{#                    endianness = {{ aBigLitle }},#}
+                    bitwidth=auto]{ {{ aNumBits }} }
+                \bitheader{0-{{ aNumBits -1 }} } \\
+    {{ generate_fields_table(aNumBits, aMsg,False,aParent) }}
+    {% if "___type" in aMsg and aMsg.___type != 'static' %}
+    \\
+        {{ generate_fields_table(aNumBits, aMsg,True,aParent) }}
+    {% endif %}
+            \end{bytefield}
+            \end{adjustbox}
+{% set _ct = 'The structure of message \\#' if aLanguage != 'ru' else 'Структура сообщения \\textnumero' %}
+{% set _ct2 = 'The structure of' if aLanguage != 'ru' else 'Структура ' %}
+{% set quote_l = '<<' if aLanguage == 'ru' else '\"' %}
+{% set quote_r = '>>' if aLanguage == 'ru' else '\"' %}
+{% set _capition_text = _ct + aMsg.___number|string()
+    if '___number' in aMsg else _ct2 + ' '+ quote_l + aMsg.___title |latex_escape + quote_r %}
+        \caption{\label{fig:{{ aMsg.___name }} } {{ _capition_text }} }
+    \end{figure}
+
+    {% if aParent %}
+        {% for _parent in aParent | reverse() %}
+             {{ creare_table(aNumBits, _parent,aLanguage, aMsg) }}
+        {% endfor %}
+    {% endif %}
+
+    {{ creare_table(aNumBits, aMsg, aLanguage) }}
+{% endmacro %}
+
+{% macro creare_table(aNumBits, aMsg, aLanguage, aOf = None) %}
+{% set _label = aMsg.___name if not aOf else aOf.___name + aMsg.___name %}
+{% set _caption = aMsg.___title if not aOf else aOf.___title + " (" + aMsg.___title + ")" %}
+\setcounter{rownumbercounter}{0}
+{#\begin{table}[!htb]#}
+{#\begin{threeparttable}#}
+    {% set centering = '>{\\centering\\arraybackslash\\hspace{0pt}}' %}
+    \begin{longtable}[l]{|{{ centering }}p{\widthof{99} }|
+                            {{ centering }}p{\widthof{ \_{% for i in range(0,aMsg.___latex.max_unique_id) %}a{% endfor %}\_ } }|
+                            {{ centering }}p{0.1\linewidth}|
+                            {{ centering }}p{\widthof{ \_{% for i in range(0,aMsg.___latex.max_type_id) %}a{% endfor %}\_ } }|
+                            {{ centering }}p{0.06\linewidth}|
+                            {{ centering }}p{0.06\linewidth}|
+                            {{ centering }}p{0.1\linewidth}|
+                            {{ centering }}p{\widthof{Samples} }|
+                            {{ centering }}p{0.1\linewidth}|}
+     \caption{ {{ _caption }} \label{tableref:{{ _label }} } } \\ \nopagebreak
+    {% set word_bit = '\\tiny{Word} \\textbackslash \\\\ \\tiny{Bits}' if aLanguage != 'ru' else
+                      '\\tiny{Слова} \\textbackslash \\\\ \\tiny{Биты}'%}
+    \hline {% if aLanguage != 'ru' %} \#  {% else %} \textnumero {% endif %}
+    & {% if aLanguage != 'ru' %} Unique id {% else %} УИД {% endif %}
+    & {% if aLanguage != 'ru' %} Description {% else %} Описание {% endif %}
+    & {% if aLanguage != 'ru' %} Type {% else %} Тип {% endif %}
+    {% set _align_cell="{{>{\\parindent 1em}c}}" %}
+    & \makecell[{{_align_cell}}]{ {% if aLanguage != 'ru' %} Be-\\gin {% else %}Нача-\\ло{% endif %} \\ {{ word_bit }} }
+    & \makecell[{{_align_cell}}]{ {% if aLanguage != 'ru' %} Len\\gth {% else %}Раз-\\мер{% endif %} \\ {{ word_bit }} }
+    & {% if aLanguage != 'ru' %} Range {% else %} Ограни\-чения {% endif %}
+    & {% if aLanguage != 'ru' %} Samples {% else %} ЦМР {% endif %}
+    & {% if aLanguage != 'ru' %} Comment {% else %} Коммен\-тарий {% endif %}\\ \nopagebreak
+    \hline
+    {% for field in aMsg.___fields %}
+        {% if 'fields' in field %}
+            {% for bf in field['fields'] %}
+                {% if 'number' in bf %}
+                    {{ add_table_row(aNumBits, aMsg, bf, aLanguage) }} \\
+                    \hline
+                {% endif %}
+            {% endfor %}
+        {% elif 'word' in field and 'number' in field  %}
+            {{ add_table_row(aNumBits, aMsg, field, aLanguage) }} \\
+            \hline
+        {% endif %}
+    {% endfor %}
+    \end{longtable}
+{#\end{threeparttable}#}
+{#\end{table}#}
+{% endmacro %}
+
+{% macro add_table_row(aNumBits, aMsg, aField, aLanguage) %}
+    {% set _new_line =  '\\\\' %}
+    {% set _desription = aField.description | latex_escape if aField.description else '-' %}
+    {% set _len = aField.bits if 'bits' in aField and aField.bits > 0 else aField.word * 8  %}
+    {% set  ns=namespace(range = '') %}
+    {% set _samples =  aField.sampling | string %}
+    {% set comments = '' %}
+    {% set _max_len = aMsg.___latex.max_unique_id %}
+    {% set _max_type_len = aMsg.___latex.max_type_id %}
+    {% set _max_len_lim = 8 %}
+    {% set _limitation = aField|limitation %}
+
+    {% if 'LogicalType' in aField  and 'LogicalTypeInfo' in aField
+            and aField.LogicalType != 'none' and 'enum' in aField.LogicalTypeInfo %}
+        {% set _or_lang = 'or' if aLanguage!='ru' else 'или' %}
+        {% for _enum in aField.LogicalTypeInfo.enum %}
+            {% set _mark = '=' if loop.first else _or_lang %}
+            {% set _value = _enum|string %}
+            {% set _sval = _mark +' '+_value if _mark else  _value %}
+            {% set _part_num = (_value |length) // _max_len_lim + 1 %}
+            {% set _part_len = _sval|length // _part_num %}
+            {% for i in range(0, _part_num) %}
+                {% set  ns.range = ns.range if ns.range|length == 0 else ns.range + _new_line %}
+                {% set _begin = (i * _part_len)|int %}
+                {% set _end = _sval|length if loop.last else (i + 1)*_part_len|int %}
+                {% set  ns.range = ns.range +  _sval[_begin:_end] %}
+           {% endfor %}
+        {% endfor%}
+    {% elif 'LogicalType' in aField and aField.LogicalType == 'crc' %}
+        {% set  ns.range = '-'%}
+        {% set _samples = '-' %}
+        {% set _com_string = 'The polynom is 0x%X, degree - %d. The offset is 0x%X.'
+                if aLanguage!='ru' else 'Полином <<0x%X>>, степень - <<%d>>. Смещение <<0x%X>>.'
+                %}
+        {% set comments = _com_string
+                         %( aField.TypeOfLogicalType.polynom, aField.TypeOfLogicalType.size|int *8,
+                            aField.TypeOfLogicalType.crc_offset ) %}
+    {% elif _limitation %}
+        {% for _limits in _limitation %}
+            {% set _id = '' if 'id' not in _limits else _limits.id+ ': ' %}
+            {% set _mark = '' %}
+            {% set _mark2 = '' %}
+            {% set _value = '' %}
+            {% set _value2 = '' %}
+            {% if 'eq' in _limits %}
+                {% set _mark = '=' %}
+                {% set _value = _limits.eq|string %}
+            {% else %}
+                    {%if 'no' in _limits %}
+                        {% set _mark3 = '$\\neq$' %}
+                        {% set _value3 = _limits.no|string %}
+                    {% endif %}
+
+                    {% if 'ge' in _limits %}
+                        {% set _mark = '$\\geq$' %}
+                        {% set _value = _limits.ge|string %}
+                    {% elif 'g' in _limits %}
+                        {% set _mark = '$>$' %}
+                        {% set _value = _limits.g|string %}
+                    {% endif %}
+
+                    {% if 'le' in _limits %}
+                        {% set _mark2 = '$\\leq$' %}
+                        {% set _value2 = _limits.le|string %}
+                    {% elif 'l' in _limits %}
+                        {% set _mark2 = '$<$' %}
+                        {% set _value2 = _limits.l|string %}
+                    {% endif %}
+            {% endif %}
+            {% if _id  %}
+                {% set _sval = _id|split_text(_max_len_lim) %}
+                {% set  ns.range = _sval
+                    if ns.range|length == 0 else ns.range + _new_line + _sval
+                        %}
+            {% endif %}
+           {% if _value %}
+                {% set _sval = _mark +' '+_value|split_text(_max_len_lim, False) %}
+                {% set  ns.range = _sval
+                    if ns.range|length == 0 else ns.range + _new_line + _sval%}
+            {% endif %}
+            {% if _value2 %}
+                {% set _sval = _mark2 +' '+_value2|split_text(_max_len_lim, False) %}
+                {% set  ns.range = _sval
+                    if ns.range|length == 0 else ns.range + _new_line + _sval%}
+            {% endif %}
+            {% if _value3 %}
+                {% set _sval = _mark3 +' '+_value3|split_text(_max_len_lim, False) %}
+                {% set  ns.range = _sval
+                    if ns.range|length == 0 else ns.range + _new_line + _sval%}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if ns.range | length == 0  %}
+        {% set  ns.range = '-'%}
+    {% endif %}
+
+    {% set begin = '' %}
+    {% set _len_txt = '' %}
+    {% if 'offset' in aField %}
+        {% set _offset = aField.offset + aMsg.___constants.offset | int
+                        if '___constants' in aMsg else aField.offset %}
+        {% set word_num = _offset | int // aNumBits %}
+        {% set bit_num = _offset | int % aNumBits %}
+        {% set begin = word_num|string + '\\textbackslash' + bit_num |string%}
+    {% endif %}
+    {% if begin | length == 0  %}
+        {% set  begin = '-'%}
+    {% endif %}
+
+    {% if _len %}
+        {% set word_ = _len | int // aNumBits %}
+        {% set bit_ = _len | int % aNumBits %}
+        {% set _len_txt = word_|string + '\\textbackslash' + bit_ |string%}
+    {% endif %}
+
+    {% if _len_txt | length == 0  %}
+        {% set _len_txt = '-'%}
+    {% endif %}
+    {% set _type_text = aField.type  %}
+
+    {% if 'array_len' in aField and aField.array_len|int >0  %}
+        {% set _type_text = _type_text + '['+ aField.array_len|string +']' %}
+    {% endif %}
+
+    {% if 'LogicalType' in aField and aField.LogicalType == 'dynamic array' %}
+        {% set _com_1 = 'Length of dynamic array. Range is for each array value.
+        Type of dyanamic array is ' if aLanguage!='ru' else
+                'Задаёт длину динамического массива. Ограничения заданы для элемента массива.
+                Тип элемента массива - '
+                %}
+        {% set _com_2 = '. The order from begin is ' if aLanguage!='ru' else
+                '. Очерёдность следования массива '
+                %}
+        {% set comments = _com_1 + aField.TypeOfLogicalType| latex_escape +
+        _com_2 +  aField.DynamicOrder|string %}
+    {% endif %}
+    {% if _samples | length == 0  %}
+        {% set _samples = '-'%}
+    {% endif %}
+
+    {% if comments | length == 0  %}
+        {% set comments = '-'%}
+    {% endif %}
+
+    \rownumber
+    {% if aField.id |length > _max_len %}
+    & {{ split_text(aField.id, _max_len ) -}}
+    {% else %}
+    & \makecell[c]{ {{ aField.id| latex_escape }} }
+    {% endif %}
+    & {{ _desription }}
+    {% if _type_text |length > _max_type_len %}
+    & {{ split_text(_type_text, _max_type_len ) -}}
+    {% else %}
+    & \makecell[c]{ {{ _type_text| latex_escape }} }
+    {% endif %}
+    & \makecell[c]{ {{ begin }} }
+    & \makecell[c]{ {{ _len_txt }} }
+    & \makecell[c]{ {{ ns.range }} }
+    {% if _samples|string |length > 5 %}
+    & {{ split_text(_samples|string, 5 ) -}}
+    {% else %}
+    & \makecell[c]{ {{ _samples}} }
+    {% endif %}
+    & {{ comments }}
+{% endmacro %}
+{% macro split_text(aText, aMaxLen) %}
+    {% set _len = aText|length %}
+    {% set _parts = (_len// aMaxLen) + 1 %}
+    {% set _part_len = _len // _parts %}
+\makecell[c]{
+        {%- for i in range(0, _parts) %}
+            {% set _begin = (i * _part_len)|int %}
+            {% set _end = _len if loop.last else (i + 1)*_part_len|int %}
+{{ aText[_begin:_end] | latex_escape }}
+            {%- if not loop.last %}\\
+                \relax {% endif %}
+        {%- endfor -%}
+        }
+{% endmacro %}

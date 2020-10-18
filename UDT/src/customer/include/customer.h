@@ -54,10 +54,10 @@
 #include <SHARE/UType/version.h>
 
 #include <SHARE/UType/share_uuid_t.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <SHARE/UType/CAddress.h>
-#include <udt/CCustomer.h>
-#include <udt/IRtc.h>
+#include <UDT/CCustomer.h>
+#include <UDT/IRtc.h>
 #include <SHARE/UType/IFactory.h>
 #include <SHARE/UType/CMutex.h>
 #include <SHARE/UType/CFactoryManager.h>

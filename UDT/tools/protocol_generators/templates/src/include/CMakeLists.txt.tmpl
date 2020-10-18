@@ -1,0 +1,19 @@
+{% set file_protocol_name = 'protocol_'+name | lower  %}
+install(FILES
+                {{ file_protocol_name }}_attribute_packed.h
+                {{ file_protocol_name }}_import_export.h
+                {{ file_protocol_name }}.h
+                {{ file_protocol_name }}_compare_operators.h
+                {{ file_protocol_name }}_msg_headers.h
+                {{ file_protocol_name }}_ostream.h
+                {{ file_protocol_name }}_parser.h
+                {{ file_protocol_name }}_serialize.h
+                {{ file_protocol_name }}_serialize_binary.h
+                {{ file_protocol_name }}_swap_endian.h
+                {{ file_protocol_name }}_udt.h
+                {{ file_protocol_name }}_test_message.h
+
+
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_INCLUDEDIR}/{{ name | upper }}"
+                COMPONENT headers
+		)

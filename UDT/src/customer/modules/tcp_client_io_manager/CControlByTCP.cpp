@@ -20,12 +20,12 @@
 #include <arpa/inet.h>                      // htons, htonl
 #include <sys/socket.h>
 #endif
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
 #include "receive_from.h"
 #include <parser_in_protocol.h>
-#include <udt/CCustomer.h>
+#include <UDT/CCustomer.h>
 #include <CDataObject.h>
 #include <CIOFactory.h>
 #include <CConfigure.h>
@@ -95,16 +95,17 @@ void CControlByTCP::MInit(ICustomer *aCustomer)
 //----------------------
 //
 template<>
-void CControlByTCP::MFill<dg_info2_t>(data_t* aTo)
+int CControlByTCP::MFill<dg_info2_t>(data_t* aTo)
 {
 	VLOG(2) << "Create info DG";
 	program_id_t  const _id = CCustomer::sMGetInstance().MGetID();
 	CHECK_EQ(_id.FType,E_CONSUMER);
 	serialize<dg_info2_t>(aTo,_id, routing_t(), error_info_t());
+	return 0;
 }
 
 template<>
-void CControlByTCP::MFill<custom_filters_dg2_t>(data_t* aTo)
+int CControlByTCP::MFill<custom_filters_dg2_t>(data_t* aTo)
 {
 	CHECK_NOTNULL(FCustomer);
 	req_recv_t _data;
@@ -115,10 +116,11 @@ void CControlByTCP::MFill<custom_filters_dg2_t>(data_t* aTo)
 	/*	return;
 	}*/
 	serialize<custom_filters_dg2_t,demand_dgs_t>(aTo,_data.FDemand,routing_t (),error_info_t ());
+	return _data.FDemand.FPriority;
 }
 
 template<>
-void CControlByTCP::MFill<protocol_type_dg_t>(data_t* aTo)
+int CControlByTCP::MFill<protocol_type_dg_t>(data_t* aTo)
 {
 	VLOG(2) << "Create protocol DG";
 
@@ -145,6 +147,8 @@ void CControlByTCP::MFill<protocol_type_dg_t>(data_t* aTo)
 
 	VLOG(2) << "DG Protocol Info "
 						<< *reinterpret_cast<protocol_type_dg_t*>(_begin);
+
+	return 0;
 }
 //
 //-----------------
@@ -424,11 +428,26 @@ void CControlByTCP::MSendFail(fail_send_t const&aVal)
 void CControlByTCP::MSendFilters()
 {
 	VLOG(2) << "Send filters.";
+
 	data_t _data;
-	MFill<custom_filters_dg2_t>(&_data);
+	int const _prior = MFill<custom_filters_dg2_t>(&_data);
+
+	{
+			NSHARE::CRAII<NSHARE::CMutex> _blocked(FDemandLock);
+
+			if(FOldPriority.MIs() &&
+					!demand_dgs_t::sMIsPriorityGreateOf(_prior,
+							FOldPriority.MGetConst()))
+			{
+				LOG(INFO)<<"The filter is repeated";
+				return;
+			}
+			FOldPriority.MGet() = _prior;
+	}
 	int _rval = MSend(_data); //fixme
-	(void) _rval;
 	LOG_IF(ERROR,_rval<0) << "Cannot send filters";
+	if(_rval < 0 )
+		FOldPriority.MUnSet();
 }
 int CControlByTCP::MSendMainChannelError(NSHARE::CText const& _channel_type,
 		unsigned aError)
@@ -523,7 +542,10 @@ int CControlByTCP::MCloseMain()
 		return main_channel_error_param_t::E_NOT_OPENED;
 
 	if (!FMain->MIsOpened())
+	{
+		FMain = NULL;
 		return main_channel_error_param_t::E_NOT_OPENED;
+	}
 
 	FMain->MClose();
 	FMain = NULL;	
@@ -543,6 +565,7 @@ void CControlByTCP::MClose()
 	MStop();
 
 	FKernelId.MUnSet();
+	FParser.MCleanBuffer();
 //!<\todo close idiom
 }
 bool CControlByTCP::MIsConnected() const
@@ -808,19 +831,15 @@ bool CControlByTCPRegister::MIsAlreadyRegistered() const
 }
 }
 #if !defined(TCP_CLIENT_IO_MANAGER_STATIC)
-static NSHARE::factory_registry_t g_factory;
 extern "C" TCP_CLIENT_IO_MANAGER_EXPORT NSHARE::factory_registry_t* get_factory_registry()
+#else
+extern "C" TCP_CLIENT_IO_MANAGER_EXPORT NSHARE::factory_registry_t* get_factory_registry_tcp_client_io_manager()
+#endif
 {
+	static NSHARE::factory_registry_t g_factory;
 	if (g_factory.empty())
 	{
 		g_factory.push_back(new NUDT::CControlByTCPRegister());
 	}
 	return &g_factory;
 }
-#else
-#	include <load_static_module.h>
-namespace
-{
-	static NUDT::CStaticRegister<NUDT::CControlByTCPRegister> _reg;
-}
-#endif

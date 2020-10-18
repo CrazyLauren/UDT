@@ -50,7 +50,7 @@ if(NOT DEFINED INSTALL_PREFIX_OLD OR
 			FORCE)
 
 		set(${PROJECT_NAME}_GUI_PATH
-			"/var/lib/${PROJECT_NAME}/"
+			"/var/lib/${PROJECT_NAME}/gui"
 			CACHE STRING "The absolute path for GUI"
 			FORCE
 			)
@@ -68,26 +68,63 @@ if(NOT DEFINED INSTALL_PREFIX_OLD OR
 			CACHE STRING "The absolute path to install config"
 			FORCE)
 	else()
-		set(${PROJECT_NAME}_DEFAULT_PLUGIN_DIR	"./plugins"	CACHE PATH  "UDT plugins directory" FORCE)
-		set(${PROJECT_NAME}_INSTALL_PLUGIN_PATH
-			"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR}"
+		if(NOT WIN32)
+			set(${PROJECT_NAME}_DEFAULT_PLUGIN_DIR	
+				"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/plugins"	
+				CACHE PATH  "UDT plugins directory" FORCE)
+			set(${PROJECT_NAME}_INSTALL_PLUGIN_PATH
+			"${${PROJECT_NAME}_DEFAULT_PLUGIN_DIR}"
 			CACHE PATH  "UDT plugins path"
-			FORCE)
-
-		set(${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR	"./plugins_customer"	CACHE PATH  "UDT plugins directory" FORCE)
-		set(${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH
-			"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/${${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR}"
-			CACHE PATH  "UDT plugins path"
-			FORCE)
+			FORCE)				
+		else()
+			set(${PROJECT_NAME}_DEFAULT_PLUGIN_DIR	
+				"./plugins"	
+				CACHE PATH  "UDT plugins directory" FORCE)
+			set(${PROJECT_NAME}_INSTALL_PLUGIN_PATH
+				"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/plugins"
+				CACHE PATH  "UDT plugins path"
+				FORCE)				
+		endif()
 		
-
-		set(${PROJECT_NAME}_GUI_PATH "./" CACHE STRING "The absolute path for GUI" FORCE)
+		if(NOT WIN32)
+			set(${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR	
+				"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/plugins_customer"
+				 CACHE PATH  "UDT plugins directory" FORCE)
+			set(${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH
+				"${${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR}"
+				CACHE PATH  "UDT plugins path"
+				FORCE)				 		
+		else()
+			set(${PROJECT_NAME}_DEFAULT_CUSTOMER_PLUGIN_DIR	"./plugins_customer" 
+				CACHE PATH  "UDT plugins directory" FORCE)
+			set(${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH
+				"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/plugins_customer"
+				CACHE PATH  "UDT plugins path"
+				FORCE)				
+		endif()	
+		
+		
+		if(NOT WIN32)
+			set(${PROJECT_NAME}_GUI_PATH "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/gui" 
+				CACHE STRING "The absolute path for GUI" FORCE)
+		else()
+			set(${PROJECT_NAME}_GUI_PATH "./gui"
+			 CACHE STRING "The absolute path for GUI" FORCE)
+		endif()			
 		set(UDT_INSTALL_GUI_PATH
-			${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}
+			"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/gui"
 			CACHE STRING "The absolute path to install GUI"
 			FORCE)
-
-		set(${PROJECT_NAME}_CONFIG_DEFAULT_PATH "./" CACHE STRING "The absolute path for default config path" FORCE)
+		
+		if(NOT WIN32)
+			set(${PROJECT_NAME}_CONFIG_DEFAULT_PATH 
+				${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/ 
+				CACHE STRING "The absolute path for default config path" FORCE)				
+		else()
+			set(${PROJECT_NAME}_CONFIG_DEFAULT_PATH 
+				"./" CACHE STRING "The absolute path for default config path" FORCE)
+		endif()
+						
 		set(UDT_INSTALL_CONFIG_DEFAULT_PATH
 			${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}
 			CACHE STRING "The absolute path to install config"
@@ -95,3 +132,13 @@ if(NOT DEFINED INSTALL_PREFIX_OLD OR
 	endif()
 	set(INSTALL_PREFIX_OLD ${${PROJECT_NAME}_INSTALL_PREFIX} CACHE INTERNAL "Copy of INSTALL_PREFIX" FORCE)
 endif()
+set(${PROJECT_NAME}_MAX_MESSAGE_HEADER_SIZE
+			"8"
+			CACHE STRING  "Max message header size"
+			)	
+
+set(${PROJECT_NAME}_BUILD_COMPONENT_PYTHON
+    TRUE
+    CACHE BOOL
+    "Build Python bindings")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)	

@@ -15,7 +15,7 @@
 #include <SHARE/Socket/diagnostic_io_t.h>
 #include <SHARE/Socket/ISocket.h>
 #include <SHARE/Socket/socket_parser.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 #include <core/kernel_type.h>
 #include <core/CDescriptors.h>
 #include <core/CDataObject.h>
@@ -41,7 +41,8 @@ CExternalChannel::CFrontEnd::CFrontEnd(NSHARE::CConfig const& aConf,
 		FThis(aThis), //
 		FConfig(aConf), //
 		FProgId(get_my_id()), //
-		FRepeatTime(10000)
+		FRepeatTime(10000),//
+		FEndian(NSHARE::E_SHARE_ENDIAN)
 {
 	FProgId.FId.FUuid = NSHARE::get_uuid(FProgId.FId.FName);
 	FProgId.FType = E_CONSUMER;
@@ -74,7 +75,7 @@ void CExternalChannel::CFrontEnd::MParseDemands(const NSHARE::CConfig& aConf)
 		{
 			VLOG(2) << "dem info " << *_it;
 			demand_dg_t _dem(*_it);
-			_dem.FHandler = 0;
+			_dem.FEventHandler = 0;
 			LOG_IF(ERROR,!_dem.MIsValid()) << "Cannot create demands from "
 													<< _it->MToJSON(true);
 			if (_dem.MIsValid())
@@ -126,6 +127,9 @@ void CExternalChannel::CFrontEnd::MInit(const NSHARE::CConfig& aConf)
 		CText _name;
 		aConf.MGetIfSet(FRONTEND_NAME, _name);
 		aConf.MGetIfSet(REPEAT_TIME, FRepeatTime);
+		unsigned _val=0;
+		if(aConf.MGetIfSet<unsigned>(user_data_info_t::KEY_DATA_ENDIAN, _val))
+			FEndian=(NSHARE::eEndian)_val;
 		LOG_IF(ERROR,_name.empty()) << "No front end name "
 											<< aConf.MToJSON(true);
 		if (!_name.empty())

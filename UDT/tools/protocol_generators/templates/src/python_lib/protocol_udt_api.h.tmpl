@@ -1,0 +1,17 @@
+{% set file_name = 'protocol_' + name | lower+ '_udt_api' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#ifndef {{ common.get_namespace(name) | upper }}_ONLY_HEADER
+# include "{{ common.get_namespace(name) }}.h"
+#endif
+#include  <UDT/customer/receive_data_info_c.h>
+typedef int (*new_data_cb_t)(received_message_info_c_t* );
+
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

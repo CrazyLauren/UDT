@@ -11,7 +11,7 @@
  */
 #ifndef IMODULE_H_
 #define IMODULE_H_
-#include "udt/customer_export.h"
+#include "UDT/customer_export.h"
 #include "ICustomer.h"
 
 namespace NUDT

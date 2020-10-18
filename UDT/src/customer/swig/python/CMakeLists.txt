@@ -1,0 +1,40 @@
+if((NOT Python3_FOUND AND NOT PYTHONLIBS_FOUND) OR NOT SWIG_FOUND)
+    set(UDT_BUILD_COMPONENT_PYTHON
+        FALSE
+        CACHE BOOL "Build Python bindings"
+        FORCE)
+    message(WARNING "Python Component disabled because SWIG or Python was not found")
+    return()
+endif()
+
+set(PYTHON_SITE_PACKAGES
+    "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/dist-packages/${PROJECT_NAME}")
+
+set(_TARGET_NAME customer_python)
+set(_CUSTOMER_TARGET_NAME ${_TARGET_NAME})
+include(${SWIG_USE_FILE})
+
+set (_PUBLIC_LIBRARIS
+		${${PROJECT_NAME}_NAMESPACE}::customer
+		)
+set (_PUBLIC_INCLUDE_DIR
+		#		
+		)
+set (_PRIVATE_INCLUDE_DIR
+		${CMAKE_CURRENT_SOURCE_DIR}
+		${CMAKE_CURRENT_SOURCE_DIR}/../../include
+		)
+helper_add_swig_python_library(${_TARGET_NAME}
+								_PUBLIC_LIBRARIS 
+								_PUBLIC_INCLUDE_DIR
+								_PRIVATE_INCLUDE_DIR
+								${CUSTOMER_SWIG_OUTPUT_PATH}
+								${PYTHON_SITE_PACKAGES}
+								)
+								
+install(TARGETS ${SWIG_MODULE_${_TARGET_NAME}_REAL_NAME}
+        LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries
+        ARCHIVE DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries
+        RUNTIME DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries
+        )
+

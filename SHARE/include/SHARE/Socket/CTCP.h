@@ -57,7 +57,7 @@ public:
 		 * used the MIsValid().
 		 * @param aConf Serialized object
 		 */
-		explicit settings_t(NSHARE::CConfig const& aConf);
+		settings_t(NSHARE::CConfig const& aConf);
 
 		/*! @brief Serialize object
 		 *

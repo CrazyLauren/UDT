@@ -51,6 +51,8 @@ private:
 	};
 	typedef std::list<module_t> mod_channels_t;
 
+	void MAddStaticFactory();
+
     NSHARE::Strings  FExtLibraryPath;
 	mod_channels_t FModules;
 };

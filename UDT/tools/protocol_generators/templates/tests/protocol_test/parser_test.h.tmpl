@@ -1,0 +1,20 @@
+{% set file_name = 'parser_test_' + name | lower %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <{{ common.get_namespace(name) }}.h>
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+    extern bool parser_test();
+}
+}
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

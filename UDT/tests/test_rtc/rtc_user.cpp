@@ -14,7 +14,7 @@
 #include <deftype>
 #include <SHARE/random_value.h>
 #include <customer.h>
-#include <udt/IRtc.h>
+#include <UDT/IRtc.h>
 #include <thread>
 #include "api_test.h"
 
@@ -248,7 +248,7 @@ static int msg_control_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
 	}
 	return 0;
 }
-int timer_integer_impl(IRtc* WHO, void* WHAT, void* YOU_DATA)
+int timer_integer_impl(void* WHO, void* WHAT, void* YOU_DATA)
 {
 	IRtc::millisecond_t & _time=*((IRtc::millisecond_t*)WHAT);
 	LOG(INFO)<<"Timer is waked up "<<_time;
@@ -264,7 +264,7 @@ int timer_integer_impl(IRtc* WHO, void* WHAT, void* YOU_DATA)
 
 	return NSHARE::E_CB_SAFE_IT;
 }
-int timer_double_impl(IRtc* WHO, void* WHAT, void* YOU_DATA)
+int timer_double_impl(void* WHO, void* WHAT, void* YOU_DATA)
 {
 	IRtc::time_in_second_t & _time=*((IRtc::time_in_second_t*)WHAT);
 	LOG(INFO)<<"Timer is waked up "<<_time;

@@ -1,0 +1,102 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+{% import "base_macros.tmpl" as common %}
+{% set file_name = 'serialize_test_' + name | lower %}
+{{ common.add_file_secription(file_name+'.cpp') }}
+{% autoescape false %}
+#include <deftype>
+
+#define {{ name | upper }}_FLOAT_COMPARE_PRECISION 1e-7
+
+#include "{{ common.get_namespace(name) }}_test_generator.h"
+#include "{{ common.get_namespace(name) }}_serialize.h"
+#include "{{ common.get_namespace(name) }}_compare_operators.h"
+#include "{{ common.get_namespace(name) }}_ostream.h"
+#include "{{file_name }}.h"
+
+using namespace NSHARE;
+
+{% macro generate_test(aMsg) %}
+{% set struct_name =  aMsg.___name+'_t' %}
+
+    if(_is)
+    {
+        {{ struct_name }} const& _test_value(generate<{{ struct_name }}>());
+        LOG(INFO)<<" generated struct {{ aMsg.___name }} :";
+        VLOG(1)<<_test_value;
+        _is = _is && is_valid(_test_value);
+        if(!_is)
+        {
+            LOG(ERROR) << "***Test error**: generated struct {{ aMsg.___name }}"
+    {% if '___number' in aMsg %}
+                <<"(#"<<{{ struct_name }}::NUMBER<<")"
+    {% endif %}
+                <<" is invalid! \n"
+                <<_test_value;
+        }
+        else
+        {
+            CConfig const _serialized = serialize(_test_value);
+            LOG(INFO)<<" serialized struct {{ aMsg.___name }} :";
+            VLOG(1)<<_serialized.MToJSON(true);
+
+            {{ struct_name }} const _test_value2(deserialize<{{ struct_name }}>(_serialized));
+
+            LOG(INFO)<<" deserialized struct {{ aMsg.___name }} :";
+            VLOG(1)<<_test_value2;
+
+            _is = _is && is_valid(_test_value2);
+            if(!_is)
+            {
+              LOG(ERROR) << "***Test error**: deserialized struct {{ aMsg.___name }}"
+    {% if '___number' in aMsg %}
+                    <<"(#"<<{{ struct_name }}::NUMBER<<")"
+    {% endif %}
+                    <<" is invalid! \n"
+                    <<_test_value2;
+            }
+            else
+            {
+                _is = _is && _test_value == _test_value2;
+                if(!_is)
+                {
+                    LOG(ERROR) << "***Test error**: deserialized struct {{ aMsg.___name }} isn't equal serialized"
+        {% if '___number' in aMsg %}
+                        <<"(#"<<{{ struct_name }}::NUMBER<<")"
+        {% endif %}
+                        <<'\n'
+                        <<_test_value<<"\n!=\n"<<_test_value2;
+                }
+            }
+        }
+    }
+
+{% endmacro %}
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+bool serialize_test()
+{
+    LOG(INFO)<< "Serialize test";
+    bool _is=true;
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+    {{ generate_test(types[val]) }}
+{% endfor %}
+
+    {{ generate_test(header) }}
+
+{% for msg in messages-%}
+    {{ generate_test(msg) }}
+{% endfor %}
+    if(_is)
+    {
+        std::cout << "Serialize test finished successfully " << std::endl;
+        LOG(INFO)<< "Serialize test finished successfully ";
+    }
+
+    return _is;
+}
+}
+}
+{% endautoescape %}

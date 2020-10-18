@@ -9,7 +9,7 @@ find_package(log4cplus)
 find_package(SHARE REQUIRED)
 
 if(NOT SHARE_FOUND)
-	message(FATAL "SHARE (http://github.com/CrazyLauren/UDT) could not be found. Set SHARE_INCLUDE_PATH to point to the headers adding '-DSHARE_INCLUDE_PATH=/path/to/udt/share' to the cmake command.")	
+	message(FATAL "SHARE (http://github.com/CrazyLauren/UDT) could not be found. Set SHARE_INCLUDE_PATH to point to the headers adding '-DSHARE_INCLUDE_PATH=/path/to/UDT/share' to the cmake command.")	
 	return()
 endif()
 
@@ -32,3 +32,31 @@ if(NOT DEFINED BOOST_ROOT)
 endif(NOT DEFINED BOOST_ROOT)
 
 find_package(Boost 1.56)
+
+if(${CMAKE_VERSION} GREATER_EQUAL "3.12")
+	find_package(Python3 COMPONENTS Interpreter Development)
+else()
+	set(Python3_FOUND FALSE)
+endif()
+
+if(NOT Python3_FOUND)
+	find_package(PythonLibs)
+	find_package(PythonInterp)
+	if(NOT PYTHONLIBS_FOUND)
+		message(STATUS "Python 3 Language could not be found http://www.python.org/")
+	else()
+		set(Python3_FOUND TRUE)
+	endif()
+endif()
+
+find_package(SWIG)
+if(NOT SWIG_FOUND)
+	message(STATUS "SWIG could not be found http://www.swig.org")
+endif()
+
+find_package(Matlab COMPONENTS
+    MEX_COMPILER)
+
+if(NOT Matlab_FOUND)
+	message(STATUS "Matlab doesn't found")
+endif()

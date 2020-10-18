@@ -30,14 +30,6 @@ The communication settings is present in "Kernel" configure file.\n
 For TCP you should setting tcp client and server, key in configure file "tcp" and "tcpser" correspondingly.\n
 The key in configure file  for SM is "sm".\n
 The setting description is present in default configure file. \n
-TODO description
-Поскольку к «ядру» по одному и тому же порту могут подключаться как другие «ядра»,
-так и «пользовательская библиотека», то в tcp_io_manager(tcp_client_io_manager),
- соответственно, существует параметр настройки протокола «protocol».
- Она сообщает ядру, какой протокол поддерживает порт. В текущей версии существует всего
-  четыре протокола: "consumer", "udt_client","udt_server","http". "consumer
-  " – «пользовательская библиотека»; "udt_client","udt_server" – client и server в «межъядерном» обмене данными;
-  "http" – http сервер.
 
 @subsection protocol_info About protocol's
 In the UDT for user is available two types of protocol: raw, user's. \n
@@ -133,6 +125,7 @@ Usually the difficult system consists of several modules. Thereby the filters se
 every modules as most message transmitted into one modules.
 The rule applies to only the kernel where it's defined.
 @todo Add manual of filter rule and how it sets.
+
 @section front_end Connect to exist program and device
 By oneself the "Kernel" can connect to exist program. It's very usefully as you \n
 doesn't need to develop program to communication. For example, if you need to receive data from device\n
@@ -146,22 +139,24 @@ The communication with exist program setups in tag "frontend" of configure file.
 		"rpl":"<name of exist protocol>",
 		"mtu":"<mtu>",
 		"onerror":"<type>",
-		"repeat_time":"<repeat time>"
+		"repeat_time":"<repeat time>",
+		"endian":"<received data endian>"
 		"demand":[
 			{
-				"f":"from",
+				"id":"from",
 				"pl":"protocol",
 				"num":"message number"
 			}
 		]
 	}
 @endcode
-In the tag "interface type" contain information which is need to setup "physic" interface.
+In the tag <interface type> contain information which is need to setup "physic" interface.
+@subsection front_end_physic_interface Physic interfaces
 <table>
 <caption> Interfaces </caption>
 <tr>    <th>Description </th>   <th> \<interface type\></th>   <th>Settings description </th> </tr>
-<tr>    <td>TCP client </td> <td>tcp</td><td>"port ":"<port>" \n
-                                             "ip ":"<ip table >"\n
+<tr>    <td>TCP client </td> <td>tcp</td><td> <b>"port ":"< port>" \n
+                                             "ip ":"< ip >" </b> \n
                                              "send_buf ":"maximum send buffer"\n
                                              "recv_buf ":"maximum receive buffer"\n
                                              "ka_time ":"Keep alive time"\n
@@ -170,7 +165,7 @@ In the tag "interface type" contain information which is need to setup "physic" 
                                              "buf_size_on ":"true to set buf size"\n
                                              "reuse_on ":"true to reuse port"
                                             </td></tr>
-<tr>    <td>TCP server </td> <td>tcpser</td><td>"port ":"<port>" \n
+<tr>    <td>TCP server </td> <td>tcp</td><td><b> "port ":"<port>" </b>\n
                                              "send_buf ":"maximum send buffer"\n
                                              "recv_buf ":"maximum receive buffer"\n
                                              "ka_time ":"Keep alive time"\n
@@ -178,6 +173,163 @@ In the tag "interface type" contain information which is need to setup "physic" 
                                              "ka_on ":"true for enable keep alive"\n
                                              "buf_size_on ":"true to set buf size"\n
                                              "reuse_on ":"true to reuse port"
+                                            </td></tr>
+<tr>
+<td>PIPE (Server, Client)
+        <sup>1</sup></td> <td>pipe_sever - for server \n
+                            pipe - for client
+                            </td> <td>
+                                            For server: \n
+                                                <b> "path ":"<path to 'file' for reading data>" </b>\n
+                                                "client ":["<path to write 'file' for client 1 (read client 'file')>", \n
+                                                            "<path to write 'file' for client 2>" \n
+                                                 ] \n
+                                            For client: \n
+                                                "path ":"<path to 'file' for reading data (write 'file' server)>" \n
+                                                <b> "server_path ":"<path to 'file' for writing data>"  </b>
+                                            </td></tr>
+<tr>
+<td>Unix socket
+            <sup>2</sup></td> <td>
+                                    unix_dgram - for dgram
+                                    </td> <td>
+                                                 <b>"from":"<path to 'file' for reading data>" </b>\n
+                                                "to":"<path to 'file' for writing data>"
+                                            </td></tr>
+<tr>
+<td>Serial port</td> <td> rs232 \n
+                          rs485 \n
+                          rs422
+                                    </td> <td>
+                                                <b>"notation":"<8N1 or 7E1 or 7O1 or 7M1 or 7S1>", \n
+                                                "speed":"<speed>",
+                                                "path":"<path>"</b>
+                                            </td></tr>
+<tr>
+<td>UDP</td> <td> udp
+                    </td> <td>
+                                               <b> "port":"<listen port>", </b>\n
+                                                "type":"<unicast or broadcast or multicast>",
+                                                not obligatory if specified "toip" \n
+                                                "remove_invalid_send_ip":"<true of false>",
+                                                 If set invalid send ip will be ignored \n
+                                                "replace_full_broadcast_addr":"<true of false>"
+                                                If set when full broadcast address 255.255.255.255
+                                                    will replace to broadcast of
+                                                    network interfaces \n
+                                                "toip":[{ send data to ip\n
+                                                    "port ":"<port>" \n
+                                                    "ip ":"<ip>"\n
+                                                    }]\n
+                                                "fromip":[{ Receive data from if empty - from all\n
+                                                    "port ":"<port>" \n
+                                                    "ip ":"<ip>"\n
+                                                    }]\n
+                                             "send_buf ":"maximum send buffer"\n
+                                             "recv_buf ":"maximum receive buffer"\n
+                                             "buf_size_on ":"true to set buf size"\n
+                                             "reuse_on ":"true to reuse port"
+                                            </td></tr>
+<tr>
+<td>Read or write from (to) file
+    <sup>3</sup></td> <td> file \n </td>
+                                            <td>
+                                            [{ \n
+                                                <b>"direction": "<out or in>", </b>\n
+                                                <b> "path" : "path to file", </b>\n
+                                                "period" : "<period of sending data ( ms - integer) (for 'in' only)>" \n
+                                                "size" : "<size of sending "message" (for 'out' only) >" \n
+                                            }]
+                                            </td></tr>
+<tr>
+<td>Loop (received data, will sent back
+    )                   /td> <td> loop
+                                    </td> <td>
+                                                "max_speed":"<simulated channel speed>"
                                             </td></tr>
 </table>
+<sup>1</sup> Realization for windows and unix is differ.\n
+<sup>2</sup> Only for unix system \n
+<sup>3</sup> Interface can be one-directional or bidirectional \n
+
+In the tag "<mtu>" contain information about mtu See @ref set_com "Mtu".\n
+In the tag "<received data endian>" contain information about received data endian.\n
+If it isn't set then the endian is equal of target computer endian. The value is\n
+0 for Little endian\n
+1 for Big endian\n
+
+@subsection front_end_logical_interface Logical interfaces
+In logical interface you settup behavior of external program in UDT.\n
+The name of "exist" program is set in the tag "<name>". The name is specified on \n
+common rules. \n
+When Kernel receives the data from exists program it has to parse data to find messages.\n
+Thus you should to specify the protocol id in the tag "<rpl>". If you dons't specify \n
+protocol the data will published by 'raw' protocol. The message number will 1. \n
+To send data to "exist" program you should specify subscription info. \n
+To do this you can by specified tag "demand". \n
+The tag is array. Every items are consists info about: \n
+- from whom receive data (tag "id") see @ref request Subscription rule \n
+- protocol name of data (tag "pl") \n
+
+Further it will be more difficult: if you specified tag 'rh' - JSON object:\n
+
+@code
+{
+    "id":"<from>",
+    "pl":"<my protocol>",
+    'rh':
+    {
+        "ver":
+        {
+            "major":"<val>",
+            "minor":"<val>"
+        },
+        "buf":"< 8 byte in base64  >"
+    }
+}
+@endcode
+
+- tag "ver" - specified version of requirement message \n
+- tag "buf" - specified message header in  byte ('raw') format (base64 code) \n
+\n
+    In the other case, to deserialize message header the method NUDT::IExtParser::MHeader  \n
+of protocol parser library is used. The value of "<protocol name>" tag will be passed to the method \n
+argument. \n
+that is \n
+@code
+{
+    "id":"<from>",
+    "pl":"<my protocol>",
+    "<my protocol>":{ // This object will be passed to NUDT::IExtParser::MHeader
+    }
+}
+@endcode
+That isn't all \n
+If You use "raw" protocol (UDT inner protocol) then \n
+@code
+{
+    "id":"<from>",
+    "pl":"raw",
+    "raw":{
+        "num": "<message number>",
+        "ver":
+            {
+                "major":"<val>",
+                "minor":"<val>"
+            }
+    }
+}
+@endcode
+
+All message are sent to physic interface sequentially. Thus while the message \n
+doesn't transmitted, the other messages are buffered. If in during data transmission \n
+the error is occurred, the kernel behaviour is defined by tag "onerror": \n
+- "close" - close port
+- "reopen" - reopen port
+- "ignore" - ignore error
+ \n By default is "ignore".
+
+@section kernel_help Command line argument
+To see list of available parameters call kernel with flag "-h"
+
 */

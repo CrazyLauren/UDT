@@ -18,8 +18,8 @@
 #endif
 #include <SHARE/fdir.h>
 #include <SHARE/revision.h>
-#include <udt/programm_id.h>
-#include <udt/CCustomer.h>
+#include <UDT/programm_id.h>
+#include <UDT/CCustomer.h>
 
 #include <CCustomerImpl.h>
 #include <shared_types.h>
@@ -121,20 +121,23 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 		if (!_name.empty())
 		{
 			_stream.open(_name.c_str());
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 			LOG_IF(DFATAL,!_stream.is_open() && !envModuleDir)
 														<< "***ERROR***:Configuration file - "
 														<< _name << ".";
+#endif
 		}
 
 		if (!_stream.is_open() && envModuleDir)
 		{
 			_name=envModuleDir;
 			_stream.open(envModuleDir);
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 			LOG_IF(DFATAL,!_stream.is_open())
 														<< "***ERROR***:Cannot open configuration file from Environment and from local path"
 														<< ENV_CONFIG_PATH
-														<< " == "
-														<< envModuleDir<< ".";
+														<< " == "<< envModuleDir<< ".";
+#endif
 		}
 
 
@@ -157,11 +160,15 @@ int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::ve
 			}
 			_stream.close();
 		}
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 		else
-		_rval=static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
+			_rval=static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
+#endif
 	}
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 	else
 		_rval=static_cast<int>(ERROR_CANNOT_READ_CONFIGURE);
+#endif
 
 	if(_rval==0)
 		_rval= sMInit(argc, argv, aName,aVersion, _conf);
@@ -248,13 +255,13 @@ int CCustomer::MIWantReceivingMSG(const requirement_msg_info_t& aHeader, const c
 	return MGetImpl().MSettingDgParserFor( aHeader, aCB);
 }
 
-int CCustomer::MDoNotReceiveMSG(const requirement_msg_info_t& aNumber)
+int CCustomer::MDoNotReceiveMSG(const requirement_msg_info_t& aNumber,callback_t * aTo)
 {
-	return MGetImpl().MRemoveDgParserFor(aNumber);
+	return MGetImpl().MRemoveDgParserFor(aNumber, aTo);
 }
-int CCustomer::MDoNotReceiveMSG(unsigned aHandlerId)
+int CCustomer::MDoNotReceiveMSG(unsigned aHandlerId, request_info_t* aTo)
 {
-	return MGetImpl().MRemoveDgParserFor(aHandlerId);
+	return MGetImpl().MRemoveDgParserFor(aHandlerId, aTo);
 }
 int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 		const unsigned& aNumber)
@@ -263,7 +270,7 @@ int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 	_msg.FRequired.FVersion = MGetID().FVersion;
 	_msg.FRequired.FNumber = aNumber;
 	_msg.FFrom=aFrom;
-	return MGetImpl().MRemoveDgParserFor( _msg);
+	return MGetImpl().MRemoveDgParserFor( _msg, NULL);
 }
 
 int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
@@ -282,7 +289,7 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 	return _result;
 }
 
-int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
+int CCustomer::MSend(NSHARE::CText aProtocolName, void const* aBuffer, size_t aSize,
 		eSendToFlags aFlag)
 {
 
@@ -294,7 +301,7 @@ int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
 	int _result = MGetImpl().MSendTo(aProtocolName.MToLowerCase(), _buf, "", aFlag);
 	return _result;
 }
-int CCustomer::MSend(NSHARE::CText aProtocolName, void* aBuffer, size_t aSize,
+int CCustomer::MSend(NSHARE::CText aProtocolName, void const* aBuffer, size_t aSize,
 		const NSHARE::uuid_t& aTo, eSendToFlags aFlag)
 {
 
@@ -416,7 +423,7 @@ IRtc* CCustomer::MGetRTC(NSHARE::CText const& aName) const
 {
 	return MGetImpl().MGetRTC(aName);
 }
-std::vector<IRtc*> CCustomer::MGetListOfRTC() const
+CCustomer::rtc_list_t CCustomer::MGetListOfRTC() const
 {
 	return MGetImpl().MGetListOfRTC();
 }
@@ -428,6 +435,410 @@ CCustomer::_pimpl& CCustomer::MGetImpl() const
 {
 	DCHECK_NOTNULL(FImpl);
 	return *FImpl;
+}
+#define SERIALIZE_FUNCTION_OF(aType)\
+		NSHARE::CConfig serialize_##aType(NUDT:: aType const& aObject)\
+		/*END*/
+
+#define DESERIALIZE_FUNCTION_OF(aType)\
+		NUDT:: aType deserialize_##aType(NSHARE::CConfig const& aConf)\
+		/*END*/
+
+const NSHARE::CText requirement_msg_info_t::NAME = "req";
+const NSHARE::CText requirement_msg_info_t::KEY_PROTOCOL_NAME = "protocol";
+const NSHARE::CText requirement_msg_info_t::KEY_FLAGS = "flags";
+const NSHARE::CText requirement_msg_info_t::KEY_FROM = "from";
+
+SERIALIZE_FUNCTION_OF(requirement_msg_info_t)
+{
+	NSHARE::CConfig _conf(requirement_msg_info_t::NAME);
+	_conf.MAdd(requirement_msg_info_t::KEY_PROTOCOL_NAME, aObject.FProtocolName);
+	_conf.MAdd(NSHARE::serialize(aObject.FRequired));
+	_conf.MAdd(requirement_msg_info_t::KEY_FLAGS, aObject.FFlags);
+	_conf.MAdd(requirement_msg_info_t::KEY_FROM, aObject.FFrom);
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(requirement_msg_info_t)
+{
+	requirement_msg_info_t _rval;
+	aConf.MGetIfSet(requirement_msg_info_t::KEY_PROTOCOL_NAME, _rval.FProtocolName);
+	_rval.FRequired = NSHARE::deserialize<required_header_t>(
+			aConf.MChild(required_header_t::NAME));
+	aConf.MGetIfSet(requirement_msg_info_t::KEY_FLAGS, _rval.FFlags);
+	aConf.MGetIfSet(requirement_msg_info_t::KEY_FROM, _rval.FFrom);
+	return _rval;
+}
+
+
+const NSHARE::CText received_data_t::NAME = "receive_data";
+const NSHARE::CText received_data_t::KEY_HEADER_BEGIN = "header_begin";
+SERIALIZE_FUNCTION_OF(received_data_t)
+{
+	NSHARE::CConfig _conf(received_data_t::NAME);
+	if(aObject.FHeaderBegin != NULL)
+		_conf.MAdd(received_data_t::KEY_HEADER_BEGIN, aObject.FHeaderBegin - aObject.FBegin);
+	else
+		_conf.MAdd(received_data_t::KEY_HEADER_BEGIN, 0);
+
+	_conf.MAdd(NSHARE::serialize(aObject.FBuffer));
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(received_data_t)
+{
+	received_data_t _rval;
+	_rval.FBuffer = NSHARE::deserialize<NSHARE::CBuffer>(
+			aConf.MChild(NSHARE::CBuffer::NAME));
+	if(_rval.FBuffer.empty())
+	{
+		_rval.FBegin = NULL;
+		_rval.FEnd = NULL;
+		_rval.FHeaderBegin = NULL;
+	}else
+	{
+		_rval.FBegin = (const uint8_t*)_rval.FBuffer.ptr_const();
+		_rval.FEnd = _rval.FBegin + _rval.FBuffer.size();
+		_rval.FHeaderBegin = _rval.FBegin;
+		unsigned _offset = 0;
+		if(aConf.MGetIfSet(received_data_t::KEY_HEADER_BEGIN, _offset))
+		{
+			_rval.FHeaderBegin += _offset;
+		}
+	}
+	return _rval;
+}
+
+
+const NSHARE::CText received_message_info_t::NAME = "received_info";
+const NSHARE::CText received_message_info_t::KEY_FROM = "from";
+const NSHARE::CText received_message_info_t::KEY_PROTOCOL_NAME = "protocol";
+const NSHARE::CText received_message_info_t::KEY_PACKET_NUMBER = "packet_number";
+const NSHARE::CText received_message_info_t::KEY_TO = "to";
+const NSHARE::CText received_message_info_t::KEY_OCCUR_USER_ERROR = "user_error";
+const NSHARE::CText received_message_info_t::KEY_ENDIAN = "endian";
+const NSHARE::CText received_message_info_t::KEY_REMAIN_CALLBACKS = "remain_cb";
+const NSHARE::CText received_message_info_t::KEY_CBS = "cbs";
+const NSHARE::CText received_message_info_t::KEY_FLAGS = "flags";
+SERIALIZE_FUNCTION_OF(received_message_info_t)
+{
+	NSHARE::CConfig _conf(received_message_info_t::NAME);
+
+	_conf.MAdd(received_message_info_t::KEY_FROM,
+			NSHARE::serialize(aObject.FFrom));
+	_conf.MAdd(received_message_info_t::KEY_PROTOCOL_NAME,
+			aObject.FProtocolName);
+	_conf.MAdd(received_message_info_t::KEY_PACKET_NUMBER,
+				aObject.FPacketNumber);
+
+	_conf.MAdd(
+			NSHARE::serialize(aObject.FHeader));
+
+	{
+		received_message_info_t::uuids_t::const_iterator _it(aObject.FTo.begin()),
+				 _it_end(aObject.FTo.end());
+		for(;_it!=_it_end;++_it)
+			_conf.MAdd(received_message_info_t::KEY_TO,
+					NSHARE::serialize<NSHARE::uuid_t>(*_it));
+	}
+
+	_conf.MAdd(received_message_info_t::KEY_OCCUR_USER_ERROR,
+				aObject.FOccurUserError);
+
+	_conf.MAdd(received_message_info_t::KEY_ENDIAN,
+				aObject.FEndian);
+
+
+	_conf.MAdd(received_message_info_t::KEY_REMAIN_CALLBACKS,
+					aObject.FRemainCallbacks);
+	_conf.MAdd(received_message_info_t::KEY_CBS,
+					aObject.FCbs);
+	_conf.MAdd(received_message_info_t::KEY_FLAGS,
+					aObject.FFlags);
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(received_message_info_t)
+{
+	received_message_info_t _rval;
+	_rval.FFrom = NSHARE::deserialize<NSHARE::uuid_t>(
+			aConf.MChild(received_message_info_t::KEY_FROM));
+
+	aConf.MGetIfSet(received_message_info_t::KEY_PROTOCOL_NAME,
+			_rval.FProtocolName);
+	aConf.MGetIfSet(received_message_info_t::KEY_PACKET_NUMBER,
+			_rval.FPacketNumber);
+
+	_rval.FHeader = NSHARE::deserialize<required_header_t>(
+			aConf.MChild(required_header_t::NAME));
+
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(received_message_info_t::KEY_TO);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FTo.push_back(NSHARE::deserialize<NSHARE::uuid_t>(*_it));
+		}
+	}
+
+	aConf.MGetIfSet(received_message_info_t::KEY_OCCUR_USER_ERROR,
+			_rval.FOccurUserError);
+
+	aConf.MGetIfSet(received_message_info_t::KEY_ENDIAN,
+			_rval.FEndian);
+
+	aConf.MGetIfSet(received_message_info_t::KEY_REMAIN_CALLBACKS,
+			_rval.FRemainCallbacks);
+
+	aConf.MGetIfSet(received_message_info_t::KEY_CBS,
+			_rval.FCbs);
+
+	aConf.MGetIfSet(received_message_info_t::KEY_FLAGS,
+			_rval.FFlags);
+
+	return _rval;
+}
+const NSHARE::CText received_message_args_t::NAME = "received_msg";
+SERIALIZE_FUNCTION_OF(received_message_args_t)
+{
+	NSHARE::CConfig _conf(received_message_args_t::NAME,
+			NSHARE::serialize<received_message_info_t>(
+					static_cast<received_message_info_t const>(aObject))
+			);
+	_conf.MAdd(NSHARE::serialize(aObject.FMessage));
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(received_message_args_t)
+{
+	received_message_args_t _rval;
+	_rval.FMessage = NSHARE::deserialize<received_data_t>(
+			aConf.MChild(received_data_t::NAME));
+
+	_rval.FFrom = NSHARE::deserialize<NSHARE::uuid_t>(
+			aConf.MChild(received_message_args_t::KEY_FROM));
+
+	aConf.MGetIfSet(received_message_args_t::KEY_PROTOCOL_NAME,
+			_rval.FProtocolName);
+	aConf.MGetIfSet(received_message_args_t::KEY_PACKET_NUMBER,
+			_rval.FPacketNumber);
+
+	_rval.FHeader = NSHARE::deserialize<required_header_t>(
+			aConf.MChild(required_header_t::NAME));
+
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(received_message_args_t::KEY_TO);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FTo.push_back(NSHARE::deserialize<NSHARE::uuid_t>(*_it));
+		}
+	}
+
+	aConf.MGetIfSet(received_message_args_t::KEY_OCCUR_USER_ERROR,
+			_rval.FOccurUserError);
+
+	aConf.MGetIfSet(received_message_args_t::KEY_ENDIAN,
+			_rval.FEndian);
+
+	aConf.MGetIfSet(received_message_args_t::KEY_REMAIN_CALLBACKS,
+			_rval.FRemainCallbacks);
+
+	aConf.MGetIfSet(received_message_args_t::KEY_CBS,
+			_rval.FCbs);
+
+	aConf.MGetIfSet(received_message_args_t::KEY_FLAGS,
+			_rval.FFlags);
+
+	return _rval;
+}
+
+const NSHARE::CText customers_updated_args_t::NAME = "customers_updated";
+const NSHARE::CText customers_updated_args_t::KEY_DISCONNECTED = "disconnected";
+const NSHARE::CText customers_updated_args_t::KEY_CONNECTED = "connected";
+
+SERIALIZE_FUNCTION_OF(customers_updated_args_t)
+{
+	NSHARE::CConfig _conf(customers_updated_args_t::NAME);
+
+	{
+		std::set<program_id_t>::const_iterator _it(aObject.FDisconnected.begin()),
+				 _it_end(aObject.FDisconnected.end());
+		for(;_it!=_it_end;++_it)
+			_conf.MAdd(customers_updated_args_t::KEY_DISCONNECTED,
+					NSHARE::serialize<program_id_t>(*_it));
+	}
+	{
+		std::set<program_id_t>::const_iterator _it(aObject.FConnected.begin()),
+				 _it_end(aObject.FConnected.end());
+		for(;_it!=_it_end;++_it)
+			_conf.MAdd(customers_updated_args_t::KEY_CONNECTED,
+					NSHARE::serialize<program_id_t>(*_it));
+	}
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(customers_updated_args_t)
+{
+	customers_updated_args_t _rval;
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(customers_updated_args_t::KEY_DISCONNECTED);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FDisconnected.insert(NSHARE::deserialize<program_id_t>(*_it));
+		}
+	}
+	{
+			NSHARE::ConfigSet _set = aConf.MChildren(customers_updated_args_t::KEY_CONNECTED);
+			NSHARE::ConfigSet::const_iterator _it = _set.begin();
+			for (; _it != _set.end(); ++_it)
+			{
+				_rval.FConnected.insert(NSHARE::deserialize<program_id_t>(*_it));
+			}
+	}
+	return _rval;
+}
+
+
+const NSHARE::CText subcribe_receiver_args_t::what_t::NAME = "req";
+const NSHARE::CText subcribe_receiver_args_t::what_t::KEY_WHO = "who";
+NSHARE::CConfig serialize_deserialize_subcribe_receiver_args_t_what_t(
+		subcribe_receiver_args_t::what_t const& aObject)
+{
+	NSHARE::CConfig _conf(subcribe_receiver_args_t::what_t::NAME);
+
+	_conf.MAdd(NSHARE::serialize(aObject.FWhat));
+	_conf.MAdd(subcribe_receiver_args_t::what_t::KEY_WHO,
+			NSHARE::serialize(aObject.FWho));
+
+	return _conf;
+}
+NUDT::subcribe_receiver_args_t::what_t deserialize_subcribe_receiver_args_t_what_t(
+		NSHARE::CConfig const& aConf)
+{
+	subcribe_receiver_args_t::what_t _rval;
+	_rval.FWhat = NSHARE::deserialize<requirement_msg_info_t>(
+			aConf.MChild(requirement_msg_info_t::NAME));
+
+	_rval.FWho = NSHARE::deserialize<NSHARE::uuid_t>(
+			aConf.MChild(subcribe_receiver_args_t::what_t::KEY_WHO));
+
+	return _rval;
+}
+const NSHARE::CText subcribe_receiver_args_t::NAME = "receivers_info";
+const NSHARE::CText subcribe_receiver_args_t::KEY_RECEIVERS = "receivers";
+
+SERIALIZE_FUNCTION_OF(subcribe_receiver_args_t)
+{
+	NSHARE::CConfig _conf(subcribe_receiver_args_t::NAME);
+
+	{
+		subcribe_receiver_args_t::receivers_t::const_iterator _it(
+				aObject.FReceivers.begin()),
+				 _it_end(aObject.FReceivers.end());
+		for(;_it!=_it_end;++_it)
+		{
+			_conf.MAdd(subcribe_receiver_args_t::KEY_RECEIVERS,
+					NSHARE::serialize<NUDT::subcribe_receiver_args_t::what_t>(*_it));
+		}
+	}
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(subcribe_receiver_args_t)
+{
+	subcribe_receiver_args_t _rval;
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(subcribe_receiver_args_t::KEY_RECEIVERS);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FReceivers.push_back(NSHARE::deserialize<NUDT::subcribe_receiver_args_t::what_t>(*_it));
+		}
+	}
+	return _rval;
+}
+
+
+
+
+const NSHARE::CText fail_sent_args_t::NAME = "fail_sent";
+const NSHARE::CText fail_sent_args_t::KEY_FROM = "from";
+const NSHARE::CText fail_sent_args_t::KEY_PROTOCOL_NAME = "protocol";
+const NSHARE::CText fail_sent_args_t::KEY_PACKET_NUMBER = "packet_number";
+const NSHARE::CText fail_sent_args_t::KEY_ERROR_CODE = "error_code";
+const NSHARE::CText fail_sent_args_t::KEY_SENT_TO = "to";
+const NSHARE::CText fail_sent_args_t::KEY_FAILS = "fail_to";
+const NSHARE::CText fail_sent_args_t::KEY_USER_ERROR = "user_error";
+
+SERIALIZE_FUNCTION_OF(fail_sent_args_t)
+{
+	NSHARE::CConfig _conf(fail_sent_args_t::NAME);
+
+	_conf.MAdd(fail_sent_args_t::KEY_FROM,
+			NSHARE::serialize(aObject.FFrom));
+	_conf.MAdd(fail_sent_args_t::KEY_PROTOCOL_NAME,
+			aObject.FProtocolName);
+	_conf.MAdd(fail_sent_args_t::KEY_PACKET_NUMBER,
+				aObject.FPacketNumber);
+
+	_conf.MAdd(
+			NSHARE::serialize(aObject.FHeader));
+
+	_conf.MAdd(fail_sent_args_t::KEY_ERROR_CODE,
+				aObject.FErrorCode);
+
+	_conf.MAdd(fail_sent_args_t::KEY_USER_ERROR,
+				aObject.FUserCode);
+
+	{
+		fail_sent_args_t::uuids_t::const_iterator _it(aObject.FSentTo.begin()),
+				 _it_end(aObject.FSentTo.end());
+		for(;_it!=_it_end;++_it)
+			_conf.MAdd(fail_sent_args_t::KEY_SENT_TO,
+					NSHARE::serialize<NSHARE::uuid_t>(*_it));
+	}
+	{
+		fail_sent_args_t::uuids_t::const_iterator _it(aObject.FFails.begin()),
+				 _it_end(aObject.FFails.end());
+		for(;_it!=_it_end;++_it)
+			_conf.MAdd(fail_sent_args_t::KEY_FAILS,
+					NSHARE::serialize<NSHARE::uuid_t>(*_it));
+	}
+	return _conf;
+}
+DESERIALIZE_FUNCTION_OF(fail_sent_args_t)
+{
+	fail_sent_args_t _rval;
+	_rval.FFrom = NSHARE::deserialize<NSHARE::uuid_t>(
+			aConf.MChild(fail_sent_args_t::KEY_FROM));
+
+	aConf.MGetIfSet(fail_sent_args_t::KEY_PROTOCOL_NAME,
+			_rval.FProtocolName);
+	aConf.MGetIfSet(fail_sent_args_t::KEY_PACKET_NUMBER,
+			_rval.FPacketNumber);
+
+	_rval.FHeader = NSHARE::deserialize<required_header_t>(
+			aConf.MChild(required_header_t::NAME));
+	aConf.MGetIfSet(fail_sent_args_t::KEY_ERROR_CODE,
+			_rval.FErrorCode);
+
+	aConf.MGetIfSet(fail_sent_args_t::KEY_USER_ERROR,
+			_rval.FUserCode);
+
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(fail_sent_args_t::KEY_SENT_TO);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FSentTo.push_back(NSHARE::deserialize<NSHARE::uuid_t>(*_it));
+		}
+	}
+	{
+		NSHARE::ConfigSet _set = aConf.MChildren(fail_sent_args_t::KEY_FAILS);
+		NSHARE::ConfigSet::const_iterator _it = _set.begin();
+		for (; _it != _set.end(); ++_it)
+		{
+			_rval.FFails.push_back(NSHARE::deserialize<NSHARE::uuid_t>(*_it));
+		}
+	}
+
+	return _rval;
 }
 } //
 

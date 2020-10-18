@@ -173,6 +173,10 @@ function(install_target_binary_impl
 		 aTARGET_NAME # - Name of the library to create.
 		 aIS_EXPORT
 		 )
+	get_target_property(_TYPE ${aTARGET_NAME} TYPE)
+
+	set(_INSTALL_PREFIX	${${PROJECT_NAME}_INSTALL_PREFIX})
+	
 	if (DEFINED DIRECTORY_TYPE)
 
 		set(_COMONENT_TYPE ${DIRECTORY_TYPE})
@@ -180,8 +184,7 @@ function(install_target_binary_impl
 		if (NOT ${_COMONENT_TYPE} STREQUAL "tests" AND NOT ${_COMONENT_TYPE} STREQUAL "examples")
 			message(FATAL_ERROR "Invalid type of component" ${_COMONENT_TYPE})
 		endif ()
-
-		set(_INSTALL_PREFIX	${${PROJECT_NAME}_INSTALL_PREFIX})
+		
 
 		if(aIS_EXPORT)
 			install(TARGETS ${aTARGET_NAME}
@@ -198,18 +201,26 @@ function(install_target_binary_impl
 					)
 		endif()
 	else ()
+		if("${_TYPE}" STREQUAL "EXECUTABLE")
+			set(_COMP_LIB "applications")
+			set(_COMP_RT "applications")
+		else()
+			set(_COMP_LIB "libraries")
+			set(_COMP_RT "applications")
+		endif()
+		
 		if(aIS_EXPORT)
 			install(TARGETS ${aTARGET_NAME}
 				EXPORT ${aTARGET_NAME}-export
-				LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
-				ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}"  COMPONENT libraries
-				RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT applications
+				LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMP_LIB}
+				ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}"  COMPONENT ${_COMP_LIB}
+				RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT ${_COMP_RT}
 				)
 		else()
 			install(TARGETS ${aTARGET_NAME}
-					LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
-					ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
-					RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT applications
+					LIBRARY DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMP_LIB}
+					ARCHIVE DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT ${_COMP_LIB}
+					RUNTIME DESTINATION "${_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}" COMPONENT ${_COMP_RT}
 					)
 		endif()
 	endif ()
@@ -440,6 +451,18 @@ function(configure_version aTARGET aFILE_PATH aOUT_PATH aMAJOR aMINOR )
 	
 	set_source_files_properties(${aOUT_PATH}/revision.c PROPERTIES GENERATED TRUE)
 	
+	if(EXISTS "${aFILE_PATH}/revision.h.in")
+		configure_file(${aFILE_PATH}/revision.h.in
+                "${aOUT_PATH}/${CONF_TARGET_NAME}_revision.h")
+		set_source_files_properties("${aOUT_PATH}/${CONF_TARGET_NAME}_revision.h" 
+					PROPERTIES GENERATED TRUE)
+		install(FILES "${aOUT_PATH}/${CONF_TARGET_NAME}_revision.h" 
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/${PROJECT_NAME}/config/${CONF_TARGET_NAME}/" COMPONENT headers
+		)					                
+	endif()
+
+	
+	
 	unset(CONF_VERSION_MAJOR CACHE)
 	unset(CONF_VERSION_MINOR  CACHE)
 	unset(CONF_VERSION_REVISION CACHE)
@@ -519,7 +542,11 @@ function (helper_add_library
 					${${aSOURCE_FILES_VAR}}
 					${${aHEADER_FILES_VAR}}
 					)
-
+#		if (UNIX)					
+#			set_target_properties(${aTARGET_NAME} PROPERTIES
+#		                      BUILD_RPATH "\$ORIGIN:../${CMAKE_INSTALL_LIBDIR}"
+#		                      )
+#		endif()		                      					
 		add_library(${${PROJECT_NAME}_NAMESPACE}::${aTARGET_NAME}
 					ALIAS
 					${aTARGET_NAME})
@@ -573,10 +600,9 @@ function (helper_add_library
 				ALIAS
 				${aTARGET_NAME}_Static)
 				
-		target_compile_definitions(${aTARGET_NAME}_Static 
+		target_compile_definitions(${aTARGET_NAME}_Static
+		                            PRIVATE ${${aPRIVATE_DEFINITIONS}}
 									PUBLIC ${_TARGET_NAME_UPPER}_STATIC
-									PRIVATE ${${aPRIVATE_DEFINITIONS}}
-									
 									PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFENITIONS}
 									PUBLIC ${${aPUBLIC_DEFINITIONS}}
 							)
@@ -817,6 +843,11 @@ macro(configure_project
 		 aPROJECT_NAME #	aPROJECT_NAME - Name of the project
 		 )
 
+	set(${PROJECT_NAME}_PYTHONS_MODULES ""
+	    CACHE INTERNAL "Python modules"
+	    FORCE)
+	include (CMakeModules/functions/package_python.cmake)
+
 	set(CMAKE_MODULE_PATH
 		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"		
 		CACHE STRING "Path to search modules" FORCE)		 
@@ -872,4 +903,14 @@ macro(configure_project
 	include (CMakeModules/dependencies_search.cmake)
 	include (CMakeModules/functions/configure_doxygen.cmake)
 	include (CMakeModules/functions/configure_CPack.cmake)
+
+endmacro()
+
+macro(end_of_project
+      aPROJECT_NAME #	aPROJECT_NAME - Name of the project
+      )
+	if(${PROJECT_NAME}_PYTHONS_MODULES)
+		pacakage_python()
+	endif()
+	generate_cpack()
 endmacro()

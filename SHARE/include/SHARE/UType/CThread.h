@@ -106,7 +106,7 @@ public:
  */
 	CThread();
 	explicit CThread(const param_t& aParam);
-	explicit CThread(const NSHARE::CConfig& aConf);
+	CThread(const NSHARE::CConfig& aConf);
 	explicit CThread(CB_t const&,const param_t& aParam=param_t());
 	CThread(CB_t const&,const NSHARE::CConfig& aConf);
 

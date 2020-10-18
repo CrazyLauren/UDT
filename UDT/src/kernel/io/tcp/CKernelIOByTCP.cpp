@@ -14,7 +14,7 @@
 #include <deftype>
 #include <SHARE/share_socket.h>
 #include <string.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <internel_protocol.h>
 #include <core/kernel_type.h>
 #include <core/CConfigure.h>

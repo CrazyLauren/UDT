@@ -270,6 +270,8 @@ var sniffer =//static pane
 
                 let _parsed_head = $.toRepresentationHead(_protocol, _head);
                 $.object_to_table(_parsed_head, _table, true);
+                jQuery("<td>").attr("colspan", 2).text("Request")
+                    .appendTo(jQuery("<tr>").prependTo($("> tbody:last-child",_table)));
             }
 
             if (aData.udata.data)
@@ -280,6 +282,8 @@ var sniffer =//static pane
 
                 let _parsed_data = $.toRepresentationData(_protocol, aData.udata.data, _head, _id);
                 $.object_to_table(_parsed_data, _table, true);
+                jQuery("<td>").attr("colspan", 2).text("Message "+ Object.keys(_parsed_data)[0])
+                    .appendTo(jQuery("<tr>").prependTo($("> tbody:last-child",_table)));
             }
             self.filling_errors(aData, _table);
             filling_data_style(_table);

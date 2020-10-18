@@ -262,7 +262,7 @@ void CRoutingService::MHandleCloseId(bool aIs, program_id_t const& aFor,
 
 void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 {
-	VLOG(2) << "New demands  " << *aP << " From: " << aFrom;
+	LOG(INFO) << "New demands  " << *aP << " From: " << aFrom;
 	std::pair<descriptor_info_t, bool> _info =
 			CDescriptors::sMGetInstance().MGet(aFrom);
 	std::pair<demand_dgs_for_t, demand_dgs_for_t> _receivers;
@@ -276,6 +276,9 @@ void CRoutingService::MHandleFrom(demand_dgs_t const* aP, descriptor_t aFrom)
 					_info.first.FProgramm.FId, *aP);
 		}
 	}
+	LOG(INFO)<<"New \n"<<_receivers.first;
+	LOG(INFO)<<"Removed \n"<<_receivers.second;
+
 	MInformNewReceiver(&_receivers);
 
 	uuids_t _inform_array(CInfoService::sMGetInstance().MGetOtherKernelds());

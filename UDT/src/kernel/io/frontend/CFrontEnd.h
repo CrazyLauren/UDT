@@ -59,6 +59,7 @@ private:
 	program_id_t FProgId;
 	demand_dgs_t FDemands;
 	unsigned FRepeatTime;
+	NSHARE::eEndian FEndian;
 };
 
 } /* namespace NUDT */

@@ -14,8 +14,17 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
+
 #include <deftype>
 #include <SHARE/Socket/CSocket.h>
+#ifdef HAVE_SYS_TYPES_H
+#	include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#	include <sys/socket.h>
+#endif
+
 namespace NSHARE
 {
 unsigned CSocket::g_counter = 0;
@@ -73,6 +82,15 @@ void CSocket::MClose()
 {
 	MCloseImpl();
 }
+void CSocket::MShutdown()
+{
+#if defined(_WIN32)
+	shutdown(FFd,SD_BOTH);
+#else
+	shutdown(FFd,SHUT_RDWR);
+#endif
+}
+
 void CSocket::MCloseImpl()
 {
 	VLOG(2) << "Close socket " << FFd;

@@ -44,7 +44,7 @@ enum eParserError
 /*!\brief A message header type
  *
  */
-struct msg_head_t
+SHARED_PACKED(struct msg_head_t
 {
 	uint32_t  FType           : 8;            ///< A type of message eParserError
 	uint32_t  FSize           : 24;           ///< A size of message include header
@@ -65,7 +65,9 @@ struct msg_head_t
 		FSize(aSize)
 	{
 	}
-};
+});
+COMPILE_ASSERT(sizeof(msg_head_t) == 4,
+        InvalidSizeOfMessage_Head);
 /*!\brief The structure for demonstration
  * swapping byte order of message
  *

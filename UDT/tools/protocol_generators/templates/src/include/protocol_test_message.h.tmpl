@@ -1,0 +1,169 @@
+{% set file_name = 'protocol_' + name | lower + '_test_message' %}
+{% import "base_macros.tmpl" as common %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <{{ common.get_namespace(name) }}.h>
+#include <{{ common.get_namespace(name) }}_serialize_binary.h>
+#include <{{ common.get_namespace(name) }}_msg_headers.h>
+#include <SHARE/random_value.h>
+
+#define INDITIFICATION_NAME "{{ name|lower }}_test"
+namespace {{ common.get_namespace(name) }}
+{
+namespace test
+{
+/** Class to generate test message
+
+* \tparam T object type
+*/
+template<typename T>
+struct generator_t
+{
+};
+{% macro gen_random(aMin, aMax, aEnum, aNotIn = None) %}
+    {% set _is_limit_valid =
+            (aEnum == None or (aMax > (aEnum |  min)  and  (aEnum | max) > aMin))
+            and
+            (aNotIn == None or (aMax > (aNotIn |max ) + 1  or aMin < aNotIn| min) )
+            %}
+    {% set _val =  range(aMin , aMax ) | random  if not aEnum else aEnum | random %}
+    {% if _val < aMin or _val > aMax
+        or ( aEnum != None and _val not in aEnum )
+        or ( aNotIn != None and _val in aNotIn )
+            %}
+        {% if _is_limit_valid %}
+        {# Repeat  #}
+            {{ gen_random(aMin,aMax, aEnum, aNotIn) }}
+        {% elif aEnum != None %}
+            {{ aEnum | random }}
+        {% endif %}
+    {% else %}
+        {{ _val }}
+    {% endif %}
+{% endmacro %}
+{% macro gen_random_for(aValue, aField, aSub = None) %}
+
+{#    {% set _is_dynamic_array = 'LogicalType' in aField#}
+{#            and aField.LogicalType|string() == "dynamic array" %}#}
+
+{#    {% set _static_cast_to =  aField.TypeOfLogicalType if _is_dynamic_array else aField.type %}#}
+
+    {% set prefix = 'aObject.'+aField.id + aSub
+                            if aSub != None else 'aObject.'+aField.id %}
+
+    {% if aValue is number or aValue is string  %}
+        {{ prefix }} =  {{ aValue }};
+    {% else %}
+        {% for _val in aValue|path_list %}
+        {{ prefix }}{{ _val.key }} =  {{ _val.value }};
+        {% endfor %}
+    {% endif %}
+{% endmacro -%}
+{% macro generate_test_for(aMsg, aParentArray) %}
+
+{#{% set aParent =  aParentArray[0] if aParentArray else None %}#}
+{% set struct_name =  aMsg.___name+'_t' %}
+{#{% set parent_name =  aParent.___name+'_t' if aParent else '' %}#}
+{% set dynamic_msg=true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{#{% set dynamic_parent_msg=true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}#}
+{#{% set paret_dynamic_name =  aParent.___name+'_dynamic_t' if dynamic_parent_msg else '' %}#}
+{% set dynamic_fields = aMsg | logical_type("dynamic array",True) %}
+
+template<>
+struct generator_t<{{ struct_name }}>
+{
+    generator_t():
+        FObject(generate())
+    {
+    }
+    template <typename T>
+    inline static void generate_to(T& aObject)
+    {
+        {% if '___constants' in aMsg %}
+            {% for enum_const in aMsg.___constants.byprotocol
+                if aMsg.___constants.byprotocol[enum_const].value is iterable %}
+                {% set _val = aMsg.___constants.byprotocol[enum_const] %}
+            aObject.{{ enum_const }} = T::{{ enum_const | upper }}_{{ (_val.enumSource | random).id | upper }};
+            {% endfor %}
+        {% endif %}
+
+        {% for field in aMsg.___fields|fields(True) %}
+
+            {% set _is_dynamic_array = 'LogicalType' in field
+                        and field.LogicalType|string() == "dynamic array" %}
+                  {% if _is_dynamic_array %}
+       aObject.{{ field.id }}.resize({{ field.test|length }});
+                {% endif %}
+       {{ gen_random_for(field.test, field) }}
+
+        {% endfor %}
+    }
+
+    static inline {{ struct_name }} generate()
+    {
+        {{ struct_name }} aObject;
+
+        {% if aParentArray %}
+            {% for _parent in aParentArray | reverse %}
+        generator_t<{{ _parent.___name }}_t>::generate_to(aObject);
+            {% endfor %}
+        {% endif %}
+        generate_to(aObject);
+
+        {% if '___number' in aMsg %}
+        {% set header_structure = (aMsg.___parent|last).___name + '_t' %}
+        get_header_of<{{ struct_name }}>(&aObject);
+        fill_header(&aObject);
+        {% endif %}
+        return aObject;
+    }
+    template<typename TContainer>
+    inline TContainer& serialized(TContainer& aTo) const
+    {
+        return serialize_binary(aTo, FObject);
+    }
+    {{ struct_name }} const FObject;
+};
+{% endmacro %}
+
+{% for val in types if not types[val].standard and '___fields' in  types[val] %}
+{{ generate_test_for(types[val]) }}
+{% endfor %}
+
+
+{{ generate_test_for(header) }}
+
+{% for msg in messages-%}
+    {{ generate_test_for(msg,msg.___parent) }}
+{% endfor %}
+
+/** Gets test message
+
+* \tparam T object type
+*/
+template<typename T>
+inline T const& generate()
+{
+    static const generator_t<T> _val;
+    return _val.FObject;
+}
+/** Generate test message
+
+* \tparam T object type
+* \tparam TContainer container type (for example std::vector)
+*/
+template<typename TContainer, typename T>
+inline TContainer& generate(TContainer& aTo)
+{
+    return generate<T>().serialized(aTo);
+}
+
+}
+}
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

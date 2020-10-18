@@ -13,7 +13,7 @@
 #ifndef CIOFACTORY_H_
 #define CIOFACTORY_H_
 
-#include "udt/customer_export.h"
+#include "UDT/customer_export.h"
 #include "IIOConsumer.h"
 namespace NUDT
 {

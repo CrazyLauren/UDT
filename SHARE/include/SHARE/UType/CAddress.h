@@ -235,7 +235,7 @@ public:
 	 *\param aGroup domains
 	 */
 	explicit CProgramName(NSHARE::CText const& aName,CProgramGroup const&aGroup);
-	explicit CProgramName(NSHARE::CConfig const& aConf);
+	CProgramName(NSHARE::CConfig const& aConf);
 	NSHARE::CConfig MSerialize() const;
 	bool MIsValid()const;
 

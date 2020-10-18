@@ -13,8 +13,8 @@
  */
 
 #include <deftype>
-#include <udt/programm_id.h>
-#include "udt/CCustomer.h"
+#include <UDT/programm_id.h>
+#include "UDT/CCustomer.h"
 #include "CIOFactory.h"
 
 template<>

@@ -15,7 +15,8 @@
 
 #include <CResources.h>
 #include <CConfigure.h>
-#include <udt/CCustomer.h>
+#include <UDT/config/customer/customer_config.h>
+#include <UDT/CCustomer.h>
 #include <CIOFactory.h>
 #include <CDataObject.h>
 #include <ICustomer.h>
@@ -143,10 +144,11 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 			NSHARE::CBuffer & aBuffer, const NSHARE::uuid_t& aTo, eSendToFlags);
 
 	void MGetMyWishForMSG(std::vector<request_info_t>& aTo) const;
+	void MGet(request_info_t* aTo,callback_t const&, demand_dg_t const& ) const;
 	int MSettingDgParserFor(requirement_msg_info_t  aNumber,
 			const callback_t& aHandler);
-	int MRemoveDgParserFor( requirement_msg_info_t  aNumber);
-	int MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber);
+	int MRemoveDgParserFor( requirement_msg_info_t  aNumber,callback_t * aTo);
+	int MRemoveDgParserFor( demand_dg_t::event_handler_value_t  aNumber, request_info_t* aTo);
 
 
 	int  MUdpateRecvList() const;
@@ -168,7 +170,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	 *
 	 * @return list of RTC
 	 */
-	std::vector<IRtc*> MGetListOfRTC() const;
+	rtc_list_t MGetListOfRTC() const;
 
 	/** Store info about new module
 	 *
@@ -183,6 +185,7 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	void MPopModule(IModule* aModule);
 private:
 	typedef std::set<NSHARE::CText,NSHARE::CStringFastLessCompare> wait_for_t;
+	typedef std::vector<callback_t> event_hash_map_t; // If callback is not exist when MIs() false and FYouData pointer to next free cell
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMFailSents(CHardWorker* aWho, args_data_t* aWhat, void* aData);
@@ -211,7 +214,7 @@ private:
 	void MInformSubscriber(received_message_args_t* const aData,
 			user_data_info_t const& aFrom);
 	bool MHandleSubscription(
-			demand_dg_t::event_handler_t const& aHandler,
+			demand_dg_t::event_handler_value_t const& aHandler,
 			 user_data_info_t const& aDataInfo,
 			received_message_args_t& aMessage);
 	void MInformInvalidMessage(const user_data_info_t& aDataInfo,
@@ -221,7 +224,7 @@ private:
 	bool MIsKeepOnWaiting(NSHARE::Strings* aEvents) const;
 	unsigned MPutEvents(const NSHARE::Strings& aEvents,
 			NSHARE::Strings* aAddedList);
-
+	void MUpdateDemandPriority();
 	//-----------------
 	CCustomer& FThis;
 
@@ -236,11 +239,14 @@ private:
 	safety_customers_t FCustomers;
 
 	demand_dgs_t FDemands;
-	HASH_MAP<uint32_t,callback_t> FEvents;
+	NSHARE::atomic_t FDemandPriority;
+	event_hash_map_t FEventsData;
+	unsigned FEventsNextFreeNumber;
+	unsigned FEventsSize;
 
 	mutable NSHARE::CMutex FCommonMutex;
 	mutable NSHARE::CMutex FParserMutex;
-	uint32_t FUniqueNumber;
+	demand_dg_t::event_handler_value_t FUniqueNumber;
 	uint16_t FMainPacketNumber;
 	array_of_modules_t FModules;//!< Info about modules (sorted)
 

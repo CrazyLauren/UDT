@@ -11,10 +11,10 @@
  */
 #ifndef CREQUIREDDG_H_
 #define CREQUIREDDG_H_
-#include <udt/udt_types.h>
+#include <UDT/udt_types.h>
 #include <shared_types.h>
 
-#include <udt/IExtParser.h>
+#include <UDT/IExtParser.h>
 
 namespace NUDT
 {
@@ -178,29 +178,42 @@ private:
 	 */
 	struct msg_handlers_t
 	{
+		enum eHandlerState
+		{
+			E_ADDED_NEW_REAL_SUBSCRIBER = 1,
+			E_ADDED_NEW_HANDLER_FOR_SUBSCRIBER = 0,
+			E_REGISTRATOR_SUBSCRIBER = 2,
+			E_HAS_REAL_SUBSCRIBER = 3,
+			E_NO_REAL_SUBSCRIBER = 4,
+		};
 		typedef user_data_info_t::handler_id_array_t handler_id_array_t;///< List of handlers
 		typedef std::vector<unsigned> handler_id_priority_array_t;///< Priority of handlers
+		typedef std::vector<demand_dg_t::flags_t> handler_id_flags_array_t;///< Flags of handlers info
 
 		msg_handlers_t():FNumberOfRealHandlers(0)
 		{
 
 		}
 		bool MIsRegistrarExist() const;
-		bool MAddHandler(demand_dg_t const & aWhat);
-		bool MRemoveHandler(demand_dg_t const & aWhat);
+		eHandlerState MAddHandler(demand_dg_t const & aWhat);
+		eHandlerState MRemoveHandler(demand_dg_t const & aWhat);
 		handler_id_array_t const& MGetHandlers()const;
+		handler_id_flags_array_t const& MGetFlags()const;
 		bool MIsOnlyRealHandlers() const;
 		bool MIsOnlyNonRealHandlers() const;
 		NSHARE::version_t const& MGetVersion() const;
-
 		int FNumberOfRealHandlers;
 	private:
+		handler_id_array_t::iterator MGetHandler(handler_id_array_t::value_type const&);
 		NSHARE::version_t FVersion;///< Requirement version of the message
-		handler_id_array_t FHandlers;/*!< A list of the unique id of
+		handler_id_array_t FHandlersArray;/*!< A list of the unique id of
 									the callback function which has to process the message
 									It's sorted by priority which is kept in #FHandlerPriority*/
 
 		handler_id_priority_array_t FHandlerPriority;/*!< A list of handler priority
+														  which is kept in #FHandlers/
+		 	 	 	 	 	 	 	 	 	 	 	 	 */
+		handler_id_flags_array_t FHandlerFlags;/*!< A list of handler flags
 														  which is kept in #FHandlers/
 		 	 	 	 	 	 	 	 	 	 	 	 	 */
 	};
@@ -301,7 +314,7 @@ private:
 	/** key message protocol, value	-  genealogy tree of this tree*/
 	typedef std::map<NSHARE::CText, msg_inheritance_tree_t> msg_inheritances_t;
 
-	typedef std::map<demand_dg_t::event_handler_t, unsigned> current_nearest_t;
+	typedef std::map<demand_dg_t::event_handler_value_t, unsigned> current_nearest_t;
 	typedef std::map<NSHARE::uuid_t, current_nearest_t> nearest_info_t;
 
 	struct demand_for_info_t
@@ -418,8 +431,11 @@ private:
 			array_of_demand_for_t const& aRemoved, array_of_demand_for_t*const aAdded);
 	demand_dg_t MGetChildDemand(const demand_dg_t& aWhat,
 			inheritance_msg_header_t const& aChildHeader) const;
+	bool MIsNewDemadFor(id_t const& aFor, demand_dgs_t const& aReqDgs) const;
 
 	static unsigned sMCheckCorrectionOfGenealogyTree(msg_inheritances_t const& aWhat,msg_inheritances_t* aTo,bool aParentCheck=false);
+	void MAppendHandlers(user_data_info_t& _data_info, const msg_handlers_t* _handlers
+			) const;
 
 	mutable protocol_of_uuid_t FWhatIsSendingBy;
 	demand_dgs_for_t FDGs;///< list of the requirement messages for uuid
@@ -447,7 +463,7 @@ private:
 };
 inline bool CRequiredDG::msg_handlers_t::MIsRegistrarExist() const
 {
-	return !FHandlers.empty() && FNumberOfRealHandlers!=FHandlers.size();
+	return !FHandlersArray.empty() && FNumberOfRealHandlers!=FHandlersArray.size();
 }
 /** Returns list of message handles
  *
@@ -455,15 +471,25 @@ inline bool CRequiredDG::msg_handlers_t::MIsRegistrarExist() const
  */
 inline CRequiredDG::msg_handlers_t::handler_id_array_t const& CRequiredDG::msg_handlers_t::MGetHandlers() const
 {
-	return FHandlers;
+	return FHandlersArray;
 }
+/** Returns list of message handles flags
+ *
+ * @return list of message handles flags
+ */
+inline CRequiredDG::msg_handlers_t::handler_id_flags_array_t const&
+	CRequiredDG::msg_handlers_t::MGetFlags() const
+{
+	return FHandlerFlags;
+}
+
 /** Check if only real handler
  *
  * @return true only real handler
  */
 inline bool CRequiredDG::msg_handlers_t::MIsOnlyRealHandlers() const
 {
-	return FNumberOfRealHandlers==FHandlers.size();
+	return FNumberOfRealHandlers==FHandlersArray.size();
 }
 /** Check if only registrator handler
  *

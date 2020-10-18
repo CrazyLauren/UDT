@@ -13,7 +13,7 @@
  */
 
 #include <deftype>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 
 #include "import_export_macros.h"
 #include "CProtocolParser.h"
@@ -147,7 +147,7 @@ NSHARE::CConfig CProtocolParser::MToConfig(
 {
 	/*! This is example of serialization  the message header.*/
 
-	NSHARE::CConfig _conf("head");
+	NSHARE::CConfig _conf("header");
 	_conf.MAdd("num",aHeader.FNumber);
 	_conf.MAdd("ver",aHeader.FVersion.MSerialize());
 	return _conf;

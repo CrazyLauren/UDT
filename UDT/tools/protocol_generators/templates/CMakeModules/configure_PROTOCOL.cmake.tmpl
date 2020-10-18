@@ -44,5 +44,9 @@ if (MSVC)
 				_USE_MATH_DEFINES
 				)
 endif(MSVC)
-
+set(${PROJECT_NAME}_BUILD_COMPONENT_PYTHON
+    TRUE
+    CACHE BOOL
+    "Build Python bindings")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 		

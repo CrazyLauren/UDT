@@ -13,7 +13,7 @@
  */
 #include <deftype>
 #include <udt_share.h>
-#include <udt/CParserFactory.h>
+#include <UDT/CParserFactory.h>
 #include <core/kernel_type.h>
 #include <core/CDataObject.h>
 #include <core/CDescriptors.h>
@@ -35,7 +35,7 @@ NSHARE::CText const CHttpIOManger::PORT = "port";
 NSHARE::CText const CHttpIOManger::BUF_MAX_SIZE="maxbuf";
 NSHARE::CText const CHttpIOManger::PARSER_ERROR = "par_fail";
 NSHARE::CText const CHttpIOManger::SNIFFER = "sniffer";
-NSHARE::CText const CHttpIOManger::WWW_PATH = UDT_GUI_PATH "gui";
+NSHARE::CText const CHttpIOManger::WWW_PATH = UDT_GUI_PATH;
 NSHARE::CText const CHttpIOManger::I_WHAT_RECEIVE = "i_what_receive";
 NSHARE::CText const CHttpIOManger::DO_NOT_RECEIVE_MSG = "do_not_receive_msg";
 NSHARE::CText const CHttpIOManger::SNIFFER_STATE = "snif_state";
@@ -56,6 +56,7 @@ CHttpIOManger::CHttpIOManger() :
 	FProgId.FId.FName="GUI";
 	FProgId.FId.FUuid = NSHARE::get_uuid(FProgId.FId.FName);
 	FProgId.FType = E_CONSUMER;
+	FDemPriority.MWrite(0);
 }
 
 CHttpIOManger::~CHttpIOManger()
@@ -413,7 +414,7 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 	if ((_pos = aPath.find(I_WHAT_RECEIVE)) != CText::npos)
 	{
 		demand_dg_t _demamd(aConf.MChild(demand_dg_t::NAME));
-		_demamd.FHandler = 0; //will changed
+		_demamd.FEventHandler = 0; //will changed
 		if (_demamd.MIsValid())
 		{
 			CText const _parser=aConf.MValue(user_data_t::PARSER, CText());
@@ -431,7 +432,7 @@ eStatusCode CHttpIOManger::MHandleSniffer(const NSHARE::CConfig& aConf,
 	}
 	else if ((_pos = aPath.find(DO_NOT_RECEIVE_MSG)) != CText::npos)
 	{
-		demand_dg_t::event_handler_t _handler=0;
+		demand_dg_t::event_handler_value_t _handler=0;
 		if(aConf.MGetIfSet(demand_dg_t::HANDLER,_handler))
 		{
 			if(MRemoveDgParserFor(_handler))
@@ -498,16 +499,17 @@ bool CHttpIOManger::MSend(const program_id_t& aVal, descriptor_t const&,
 
 bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 {
-	std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
-			aVal.FDataId.FEventsList.begin(), _it_end(
-			aVal.FDataId.FEventsList.end());
+	user_data_info_t::handler_id_array_t::const_iterator _jt =
+			aVal.FDataId.FHandlerEventsList.begin(), _jt_end(
+			aVal.FDataId.FHandlerEventsList.end());
 
-	for (; _it != _it_end; ++_it) //the data can be parsed by different parsers
+	for (; _jt != _jt_end; ++_jt) //the data can be parsed by different parsers
 	{
+		demand_dg_t::event_handler_value_t const _handler = user_data_info_t::sMGeHandlerOf(*_jt);
 		serializator_t _ser;
 		{
 			CRAII<CMutex> _block(FParserMutex);
-			serializators_t::const_iterator _jt = FSerializators.find(*_it);
+			serializators_t::const_iterator _jt = FSerializators.find(_handler);
 			if (_jt != FSerializators.end())
 				_ser = _jt->second;
 		}
@@ -517,7 +519,7 @@ bool CHttpIOManger::MSend(const user_data_t& aVal, descriptor_t const&)
 		_conf.FData=NSHARE::CConfig(SNIFFED_DATA);
 		_conf.FSize=aVal.FData.size();
 
-		_conf.FData.MAdd(demand_dg_t::HANDLER, *_it);
+		_conf.FData.MAdd(demand_dg_t::HANDLER, _handler);
 		//_conf.second.MAdd(aVal.FDataId.MSerialize());
 
 		_conf.FData.MAdd(user_data_t::PARSER, _ser.second);
@@ -642,13 +644,16 @@ bool CHttpIOManger::MReceive(demand_dg_t& _val, NSHARE::CText aParser)
 	if (_i == _size)
 	{
 		LOG(INFO)<< "Add additional parser for channel '" << _val.FNameFrom << "' by "<< aParser<<"'";
-
-		_val.FHandler=++FUniqueNumber;
+		++FUniqueNumber;
+		if (FUniqueNumber > demand_dg_t::MAX_HANDLER)
+			FUniqueNumber = 0;
+		_val.FEventHandler = FUniqueNumber;
+		
 		_val.FFlags.MSetFlag( demand_dg_t::E_REGISTRATOR,true);
-		FSerializators[_val.FHandler] = serializator_t(_val.FWhat, aParser);
+		FSerializators[_val.FEventHandler] = serializator_t(_val.FWhat, aParser);
 		FDemands.push_back(_val);
-		CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
-				error_info_t());
+		MNoteNewDemands();
+
 		return true;
 	}
 	else
@@ -678,7 +683,7 @@ int CHttpIOManger::MSettingDgParserFor(const NSHARE::CText& aReq,
 
 	VLOG(2) << "New demand:" << _val;
 	MReceive(_val, aParser);
-	return _val.FHandler;
+	return _val.MGetHandler();
 }
 std::pair<demand_dg_t, bool> CHttpIOManger::MGetDemand(uint32_t aNumber)
 {
@@ -688,7 +693,7 @@ std::pair<demand_dg_t, bool> CHttpIOManger::MGetDemand(uint32_t aNumber)
 
 	size_t _i = 0;
 	size_t const _size = FDemands.size();
-	for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
+	for (; _i != _size && (FDemands[_i].MGetHandler() != aNumber); ++_i)
 		;
 	if (_i == _size)
 	{
@@ -706,16 +711,15 @@ bool CHttpIOManger::MRemoveDgParserFor(uint32_t aNumber)
 
 		size_t _i = 0;
 		size_t const _size = FDemands.size();
-		for (; _i != _size && (FDemands[_i].FHandler != aNumber); ++_i)
-			VLOG(5) << FDemands[_i].FHandler << " != " << aNumber;
+		for (; _i != _size && (FDemands[_i].MGetHandler() != aNumber); ++_i)
+			VLOG(5) << FDemands[_i].MGetHandler() << " != " << aNumber;
 		if (_i == _size)
 		{
 			return false;
 		}
 		FSerializators.erase(aNumber);
 		FDemands.erase(FDemands.begin() + _i);
-		CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
-				error_info_t());
+		MNoteNewDemands();
 	}
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _block(FSniffedMutex);
@@ -732,4 +736,10 @@ bool CHttpIOManger::MRemoveDgParserFor(uint32_t aNumber)
 	}
 	return true;
 }
-} /* namespace NSHARE */
+void CHttpIOManger::MNoteNewDemands()
+{
+	FDemands.FPriority = ++FDemPriority;
+	CKernelIo::sMGetInstance().MReceivedData(FDemands, Fd, routing_t(),
+			error_info_t());
+}
+} /* namespace NUDT */

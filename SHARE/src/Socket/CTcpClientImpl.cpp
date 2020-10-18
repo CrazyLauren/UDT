@@ -207,6 +207,9 @@ void IMPL::MClose()
 	if(MIsOpen())
 	{
 		FIsDoing = 0;
+#ifndef WIN32
+		FSock.MShutdown();
+#endif
 		FSock.MClose();
 	}
 }}

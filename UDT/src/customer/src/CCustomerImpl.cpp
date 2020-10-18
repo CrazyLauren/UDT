@@ -16,9 +16,9 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 
-#include <udt/CCustomer.h>
+#include <UDT/CCustomer.h>
 #include <CCustomerImpl.h>
 #include <CLocalChannelFactory.h>
 #include <CRTCFactory.h>
@@ -35,7 +35,19 @@ CCustomer::_pimpl::_pimpl(CCustomer& aThis) :
 		FUniqueNumber(0),//
 		FMainPacketNumber(0)
 {
+	FDemandPriority.MWrite(0);
 
+	FEventsNextFreeNumber = 0 ;
+	FEventsSize = 0;
+	FEventsData.reserve(demand_dg_t::MAX_HANDLER);
+
+	for(unsigned i=0; i < demand_dg_t::MAX_HANDLER;++i)
+	{
+		FEventsData.push_back(callback_t(NULL, NULL));
+
+		if(i != 0)
+			FEventsData[i- 1].FYouData = &FEventsData.back();
+	}
 }
 int CCustomer::_pimpl::MInitialize(NSHARE::CText const& aProgram,
 		NSHARE::CText const& aName, NSHARE::version_t const& aVersion)
@@ -145,14 +157,14 @@ int CCustomer::_pimpl::MLoadLibraries()
 		return 0;
 	//MODULE
 	CConfig const* const _p = CConfigure::sMGetInstance().MGet().MChildPtr(MODULES);
-
+#ifndef CUSTOMER_WITH_STATIC_MODULES
 	LOG_IF(DFATAL,!_p) << "Invalid config file.Key " << MODULES
 	    << " is not exist.";
 
 	if (!_p)
 	    return static_cast<int>(ERROR_CONFIGURE_IS_INVALID);
-
-	new CResources(*_p);
+#endif
+	new CResources(_p !=NULL ? *_p :NSHARE::CConfig::sMGetEmpty());
 
 	CResources::sMGetInstance().MLoad();
 	return 0;
@@ -298,14 +310,14 @@ bool CCustomer::_pimpl::MOpen()
 	NSHARE::CThread::param_t _param;
 	NSHARE::CThread::param_t* _pparam=NULL;
 	{
-		NSHARE::CThread::eThreadPriority _priority =
+		unsigned _priority =
 				NSHARE::CThread::THREAD_PRIORITY_DEFAULT;
 
 		if (CConfigure::sMGetInstance().MGet().MGetIfSet(THREAD_PRIORITY,
 				_priority))
 		{
 			NSHARE::CThread::param_t _param;
-			_param.priority = _priority;
+			_param.priority = static_cast<NSHARE::CThread::eThreadPriority> (_priority);
 			_pparam = &_param;
 		}
 	}
@@ -550,7 +562,7 @@ void CCustomer::_pimpl::MInformInvalidMessage(const user_data_info_t& aDataInfo,
  * @param aMessage message
  * @return true if no error
  */
-bool CCustomer::_pimpl::MHandleSubscription(demand_dg_t::event_handler_t const& aHandler,
+bool CCustomer::_pimpl::MHandleSubscription(demand_dg_t::event_handler_value_t const& aHandler,
 		user_data_info_t const& aDataInfo,
 		received_message_args_t& aMessage)
 {
@@ -559,7 +571,7 @@ bool CCustomer::_pimpl::MHandleSubscription(demand_dg_t::event_handler_t const& 
 							<< aMessage.FFrom << " Raw="
 							<< aMessage.FHeader.FNumber << " by CB #"
 							<< aHandler;
-	FEvents[aHandler].operator ()(&FThis, &aMessage);
+	FEventsData[aHandler].operator ()(&FThis, &aMessage);
 
 	if (!aMessage.FOccurUserError)
 	{
@@ -597,17 +609,23 @@ void CCustomer::_pimpl::MInformSubscriber(received_message_args_t* const aData,
 	int _count = 0;
 	_count += MCallImpl(EVENT_RAW_DATA, &_raw_args);
 
-	if (!aDataInfo.FEventsList.empty() && !FEvents.empty())
+	if (!aDataInfo.FHandlerEventsList.empty() && FEventsSize > 0)
 	{
-		std::vector<demand_dg_t::event_handler_t>::const_iterator _it =
-				aDataInfo.FEventsList.begin(), _it_end(
-				aDataInfo.FEventsList.end());
-		for (; _it != _it_end; ++_it)
+		user_data_info_t::handler_id_array_t::const_iterator _hit =
+				aDataInfo.FHandlerEventsList.begin(), _hit_end(
+				aDataInfo.FHandlerEventsList.end());
+		_raw_args.FRemainCallbacks = aDataInfo.FHandlerEventsList.size();
+		_raw_args.FCbs = _raw_args.FRemainCallbacks;
+		for (; _hit != _hit_end; ++_hit)
 		{
-			cb_event_t::const_iterator _jt = FEvents.find(*_it);
-			if (_jt != FEvents.end())
+			--_raw_args.FRemainCallbacks;
+			demand_dg_t::event_handler_value_t const _handler =
+					user_data_info_t::sMGeHandlerOf(*_hit);
+			_raw_args.FFlags = user_data_info_t::sMGeFlagsOf(*_hit);
+			//cb_event_t::const_iterator _jt = FEvents.find(*_it);
+			if (FEventsData[_handler].MIs())
 			{
-				if(MHandleSubscription(*_it, aDataInfo, _raw_args))
+				if(MHandleSubscription(_handler, aDataInfo, _raw_args))
 					++_count;
 				else
 				{
@@ -616,13 +634,13 @@ void CCustomer::_pimpl::MInformSubscriber(received_message_args_t* const aData,
 														<< ", but the error "
 														<< _raw_args.FOccurUserError
 														<< " is occurred in handler "
-														<< *_it;
+														<< *_hit;
 					break;
 				}
 			}
 			else
 			{
-				LOG(ERROR) << " CB " << (*_it)
+				LOG(ERROR) << " CB " << _handler
 										<< " is not founded. Ignoring";
 			}
 		}
@@ -673,10 +691,13 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 
 	VLOG(2)<<"New demand:"<<_val;
 	CRAII<CMutex> _block(FParserMutex);
+	if(FEventsNextFreeNumber == demand_dg_t::NO_HANDLER)
+		return -1;
 
-	DCHECK_EQ(FDemands.size(), FEvents.size());
+	DCHECK_EQ(FDemands.size(), FEventsSize);
 
 	VLOG(2) << "Our turn.";
+
 	size_t _i = 0;
 	size_t const _size = FDemands.size();
 	for (; _i != _size && !(FDemands[_i] == _val); ++_i)
@@ -686,46 +707,76 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 	{
 		LOG(INFO)<< "Add additional parser for channel '" << aNumber.FRequired << "' by "<< aNumber.FProtocolName<<"'";
 
-		_val.FHandler=++FUniqueNumber;
+		_val.FEventHandler = FEventsNextFreeNumber;
+
+		unsigned _next_free = demand_dg_t::NO_HANDLER;
+		if(FEventsData[FEventsNextFreeNumber].FYouData != NULL)
+		{
+			_next_free = (callback_t*)FEventsData[FEventsNextFreeNumber].FYouData
+					- (callback_t*)(&FEventsData.front());
+		}
+		FEventsNextFreeNumber = _next_free;
+
+		//FEventsNextFreeNumber = FEventsData[];
 
 		FDemands.push_back(_val);
-		FEvents[_val.FHandler]=aHandler;
+		FEventsData[_val.MGetHandler()] = aHandler;
+		++FEventsSize;
 	}
 	else
 	{
-		LOG(WARNING) << "Replace handler "<<FEvents[(uint32_t)_i]<< " to " << aHandler;
-		CHECK(FEvents.find(_val.FHandler)!=FEvents.end());
-		FEvents[_val.FHandler]=aHandler;
+		LOG(WARNING) << "Replace handler "<<FEventsData[(uint32_t)_i]<< " to " << aHandler;
+		CHECK(FEventsData[_val.MGetHandler()].MIs());
+		FEventsData[_val.MGetHandler()] = aHandler;
 	}
+
+	MUpdateDemandPriority();
 
 	DVLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	DCHECK_EQ(FDemands.size(), FEvents.size());
-	return _val.FHandler;
+	DCHECK_EQ(FDemands.size(), FEventsSize);
+	return _val.MGetHandler();
 }
-int CCustomer::_pimpl::MRemoveDgParserFor( demand_dg_t::event_handler_t  aNumber)
+int CCustomer::_pimpl::MRemoveDgParserFor( demand_dg_t::event_handler_value_t  aNumber, request_info_t* aTo)
 {
 	size_t _i = 0;
 	size_t const _size = FDemands.size();
-	for (; _i != _size && !(FDemands[_i].FHandler == aNumber); ++_i)
+	for (; _i != _size && !(FDemands[_i].MGetHandler() == aNumber); ++_i)
 		;
 	if (_i == _size)
 	{
 		return ERROR_HANDLER_IS_NOT_EXIST;
 	}
-	const uint32_t _handler = FDemands[_i].FHandler;
-	FEvents.erase(_handler);
+	const uint32_t _handler = FDemands[_i].MGetHandler();
+
+	callback_t& _event_data = FEventsData[FDemands[_i].MGetHandler()];
+	if(aTo != NULL)
+	{
+		MGet(aTo,_event_data, FDemands[_i]);
+	}
+
+	if( FEventsNextFreeNumber == demand_dg_t::NO_HANDLER )
+	{
+		_event_data = callback_t(NULL, NULL);
+		FEventsNextFreeNumber = FDemands[_i].MGetHandler();
+	}else
+	{
+		_event_data = callback_t(NULL, &FEventsData[FEventsNextFreeNumber]);
+	}
 	FDemands.erase(FDemands.begin() + _i);
+	--FEventsSize;
+
+	MUpdateDemandPriority();
 
 	DVLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	DCHECK_EQ(FDemands.size(), FEvents.size());
+	DCHECK_EQ(FDemands.size(), FEventsSize);
 	return _handler;
 }
 int CCustomer::_pimpl::MRemoveDgParserFor(
-		requirement_msg_info_t aNumber)
+		requirement_msg_info_t aNumber,callback_t * aTo)
 {
 	const NSHARE::CText& aReq=aNumber.FFrom;
 	VLOG(2) << "Remove parser for " << aReq;
@@ -737,7 +788,7 @@ int CCustomer::_pimpl::MRemoveDgParserFor(
 	CRAII<CMutex> _block(FParserMutex);
 
 	VLOG(2) << "Our turn.";
-	CHECK_EQ(FDemands.size(), FEvents.size());
+	CHECK_EQ(FDemands.size(), FEventsSize);
 
 	demand_dgs_t::value_type _val;
 	_val.FNameFrom = NSHARE::CProgramName(aReq);
@@ -752,15 +803,50 @@ int CCustomer::_pimpl::MRemoveDgParserFor(
 	{
 		return ERROR_HANDLER_IS_NOT_EXIST;
 	}
-	const uint32_t _handler = FDemands[_i].FHandler;
-	FEvents.erase(_handler);
+	const uint32_t _handler = FDemands[_i].MGetHandler();
+
+	callback_t& _event_data = FEventsData[FDemands[_i].MGetHandler()];
+	if(aTo != NULL)
+	{
+		*aTo = _event_data;
+	}
+	if (FEventsNextFreeNumber == demand_dg_t::NO_HANDLER)
+	{
+		_event_data = callback_t(NULL, NULL);
+		FEventsNextFreeNumber = FDemands[_i].MGetHandler();
+	}
+	else
+	{
+		_event_data = callback_t(NULL, &FEventsData[FEventsNextFreeNumber]);
+	}
+
 	FDemands.erase(FDemands.begin() + _i);
+	--FEventsSize;
+	MUpdateDemandPriority();
 
 	VLOG_IF(2,!FMainIO) << " The channel has not opened yet.";
 	MUdpateRecvList();
 
-	CHECK_EQ(FDemands.size(), FEvents.size());
+	CHECK_EQ(FDemands.size(), FEventsSize);
 	return _handler;
+}
+void CCustomer::_pimpl::MUpdateDemandPriority()
+{
+	++FDemandPriority;
+	if(FDemandPriority > (unsigned)demand_dgs_t::MAX_DEM_PRIORITY)
+		FDemandPriority.MWrite(1);
+
+	FDemands.FPriority = FDemandPriority;
+}
+void CCustomer::_pimpl::MGet(request_info_t* aTo,callback_t const& aCb, demand_dg_t const& aDemand) const
+{
+	DCHECK_NOTNULL(aTo);
+	request_info_t& _msg(*aTo);
+	_msg.FWhat.FFlags = aDemand.FFlags.MGetMask();
+	_msg.FWhat.FProtocolName = aDemand.FProtocol;
+	_msg.FWhat.FRequired = aDemand.FWhat;
+	_msg.FWhat.FFrom = aDemand.FNameFrom.MGetRawName();
+	_msg.FHandler = aCb;
 }
 void CCustomer::_pimpl::MGetMyWishForMSG(std::vector<request_info_t>& aTo) const
 {
@@ -770,11 +856,7 @@ void CCustomer::_pimpl::MGetMyWishForMSG(std::vector<request_info_t>& aTo) const
 	for (size_t i = 0; i != _size;++i)
 	{
 		request_info_t _msg;
-		_msg.FWhat.FFlags=FDemands[i].FFlags.MGetMask();
-		_msg.FWhat.FProtocolName=FDemands[i].FProtocol;
-		_msg.FWhat.FRequired=FDemands[i].FWhat;
-		_msg.FWhat.FFrom=FDemands[i].FNameFrom.MGetRawName();
-		_msg.FHandler=FEvents.find(FDemands[i].FHandler)->second;
+		MGet(&_msg,FEventsData[FDemands[i].MGetHandler()], FDemands[i]);
 		aTo.push_back(_msg);
 	}
 }
@@ -1112,7 +1194,7 @@ IRtc* CCustomer::_pimpl::MGetRTC(NSHARE::CText const& aName) const
 	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
 	return _p;
 }
-std::vector<IRtc*> CCustomer::_pimpl::MGetListOfRTC() const
+CCustomer::rtc_list_t CCustomer::_pimpl::MGetListOfRTC() const
 {
 	std::vector<IRtc*> _rval;
 	CRTCFactory::factory_its_t _its=CRTCFactory::sMGetInstance().MGetIterator();
@@ -1138,5 +1220,4 @@ CConfigure& CCustomer::_pimpl::MGetConfigureObject() const
 {
 	return CConfigure::sMGetInstance();
 }
-
 }

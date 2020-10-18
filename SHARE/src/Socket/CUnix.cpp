@@ -61,13 +61,17 @@ void CUnixDGRAM::MClose()
 {
 	if (MIsOpenFrom())
 	{
+		FSockFrom.MShutdown();
 		FSockFrom.MClose();
 		//close(FSockFrom);
 		if (!MGetPathFrom().empty())
 			unlink(MGetPathFrom().c_str());
 	}
 	if (MIsOpenTo())
+	{
+		FSockTo.MShutdown();
 		FSockTo.MClose();//close(FSockTo);
+	}
 }
 inline void CUnixDGRAM::MSetAddress()
 {

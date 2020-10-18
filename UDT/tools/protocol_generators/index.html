@@ -8,18 +8,21 @@
     <link rel="stylesheet" href="css/highlight-default.css">
     <link rel="stylesheet" href="css/message.css">
     <link rel="stylesheet" href="css/jodit.min.css">
+    <link rel="stylesheet" href="css/bootstrap-toggle.min.css">
+
 
     <script src="js/lib/jquery-1.11.3.min.js"></script>
     <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/lib/bootstrap-toggle.min.js"></script>
     <script src="js/lib/jsoneditor.js"></script>
     <script src="js/lib/purify.min.js"></script>
-    <script src="js/lib/jodit.min.js"></script>
+    <script src="js/lib/swig.min.js"></script>
+
+<!--    <script src="js/lib/jodit.min.js"></script>-->
 
     <script src="js/source/numeric_limits.js"></script>
     <script src="js/source/message.js"></script>
     <script src="js/source/main.js"></script>
-
-
 
 
     <style>
@@ -69,7 +72,11 @@
                 <button id='open' type="button" title="Open" class="btn btn-info"><i
                         class="glyphicon glyphicon-open"></i> Open protocol
                 </button>
+                <button id='refresh' type="button" title="Refresh" class="btn btn-info"><i
+                        class="glyphicon glyphicon-refresh"></i> Refresh
+                </button>
             </div>
+
             <span id='valid_indicator' class='label label-default'></span>
             <p></p>
             <form class="form-horizontal">
@@ -83,17 +90,22 @@
             </form>
         </div>
     </div>
-
     <div class='row'>
         <!-- Nav tabs -->
         <ul class="nav nav-tabs col-md-12" role="tablist">
-            <li role="presentation" class="active"><a href="#model" aria-controls="model_tab" role="tab"
+            <li role="presentation" class="active"><a href="#gen_protocol" aria-controls="generator_tab" role="tab"
                                                       data-toggle="tab"><i class="glyphicon glyphicon-home"></i>
                 Protocol</a></li>
         </ul>
         <!-- Tab panes -->
-        <div class="tab-content col-md-12" id="model_tab">
-            <div role="tabpanel" class="tab-pane active" id="model">
+        <div class="tab-content col-md-12" id="generator_tab">
+            <div role="tabpanel" class="tab-pane active" id="gen_protocol">
+<!--                <div class='row'  style="margin-left: 10px;" >-->
+<!--                    <label>-->
+<!--                        <input id='endian' type="checkbox" data-toggle="toggle" data-on="Little" data-off="Big" data-onstyle="info">-->
+<!--                        endian-->
+<!--                    </label>-->
+<!--                </div>-->
                 <div id='editor_holder'></div>
             </div>
             <div role="tabpanel" class="tab-pane" id="svg">

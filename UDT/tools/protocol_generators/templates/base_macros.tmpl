@@ -1,7 +1,9 @@
-{% macro add_file_secription (file_name,author,version) -%}
+{% macro add_file_secription (file_name,authors,version) -%}
 /** @file {{ file_name }}
- *  @brief Implementation of {{ name }} protocol
- *  @author {{ author }}
+ *  @brief Implementation of {{ name }} protocol ({{ md5 }})
+{% for author in authors  %}
+ *  @author {{ author.name }}
+{% endfor %}
  *  @date {{ now }} UTC
  *
  *	@copyright Distributed under MPL 2.0 (See accompanying file LICENSE.txt or copy at

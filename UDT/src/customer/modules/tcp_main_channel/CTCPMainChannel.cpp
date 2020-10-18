@@ -15,10 +15,10 @@
 #include <deftype>
 #include <revision.h>
 #include <SHARE/share_socket.h>
-#include <udt/programm_id.h>
+#include <UDT/programm_id.h>
 #include <udt_share.h>
 #include <internel_protocol.h>
-#include <udt/CCustomer.h>
+#include <UDT/CCustomer.h>
 #include <CLocalChannelFactory.h>
 #include "receive_from.h"
 #include <parser_in_protocol.h>

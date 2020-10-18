@@ -72,8 +72,8 @@ private:
 	};
 	static const double WAIT_ANSWER_BY_KERNEL;
 	//convenient method for filling DG
-	template<class DG_T> inline void MFill(user_data_t*);
-	template<class DG_T> inline void MFill(data_t*);
+	template<class DG_T> inline int MFill(user_data_t*);
+	template<class DG_T> inline int MFill(data_t*);
 
 
 	//method for handling input DG
@@ -125,6 +125,8 @@ private:
 	ILocalChannel* FMain;
 	NSHARE::smart_field_t<program_id_t> FKernelId;
 	eState FState;//for debuging only
+	NSHARE::smart_field_t<int> FOldPriority;
+	mutable NSHARE::CMutex FDemandLock;
 
 
 	friend class CInParser<CControlByTCP> ;

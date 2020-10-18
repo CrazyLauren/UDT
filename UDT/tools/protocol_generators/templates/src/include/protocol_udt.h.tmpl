@@ -1,0 +1,433 @@
+{% set file_name = 'protocol_' + name | lower + '_udt' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape false %}
+
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+{% set struct_header_name =  header.___name+'_t' %}
+{% set field_size =header.___LogicalType.size[0]
+        if 'size'in  header.___LogicalType else None  %}
+{% set field_number = header.___LogicalType.number[0]
+        if 'number'in  header.___LogicalType else None  %}
+{% set field_crc = header.___LogicalType.crc[0]
+        if 'crc'in  header.___LogicalType else None  %}
+{% set field_version_major = header.___LogicalType.version_major[0]
+        if 'version_major'in  header.___LogicalType else None  %}
+{% set field_version_minor = header.___LogicalType.version_minor[0]
+        if 'version_minor'in  header.___LogicalType else None  %}
+
+#include <customer.h>
+#include <{{ name | upper }}/config/config.h>
+#include <{{ common.get_namespace(name) }}.h>
+#include <{{ common.get_namespace(name) }}_msg_headers.h>
+#include <{{ common.get_namespace(name) }}_ostream.h>
+#include <{{ common.get_namespace(name) }}_serialize.h>
+#include <{{ common.get_namespace(name) }}_serialize_binary.h>
+#include <{{ common.get_namespace(name) }}_test_message.h>
+
+namespace {{ common.get_namespace(name) }}
+{
+/** Returns #NUDT::required_header_t corresponding to the  message
+*
+* @tparam TMsg message type
+*/
+template<typename TMsg>
+inline NUDT::required_header_t get_header()
+{
+    return
+    NUDT::required_header_t(
+                get_header_of<TMsg>()
+{% if field_version_major and field_version_minor %}
+    ,NSHARE::version_t(TMsg::{{ field_version_major.id|upper }}, TMsg::{{ field_version_minor.id|upper }})
+{%elif field_version_major %}
+    ,NSHARE::version_t(TMsg::{{ field_version_major.id|upper }}, 0)
+{%elif field_version_minor %}
+    ,NSHARE::version_t(0, TMsg::{{ field_version_minor.id|upper }})
+{% endif %}
+    );
+}
+/** Convenient claass to receive (send) data by UDT
+*
+* @tparam T type of message
+*/
+template<class T>
+class CHandler:NSHARE::CDenyCopying
+{
+    /** Info about received data
+    */
+    struct data_info_t
+    {
+        NUDT::received_message_args_t FData;
+        unsigned FId;
+    };
+	typedef std::list<data_info_t> received_data_info_t;//!< storage of message type
+
+	public:
+	typedef T message_t;//!< type of message
+    typedef NSHARE::Callback_t<int (*)(NUDT::received_message_info_t* )> new_data_cb_t;//!< The new data CB
+
+    new_data_cb_t FNewDataCb;//!< Notification about new data
+    CHandler();
+    virtual ~CHandler()
+    {
+    }
+
+    /** Print data to console (uses in matalab (python) API)
+    *
+    * @param aData printed message
+    */
+	inline static void sMPrint(T const& aData)
+	{
+		std::cout<< aData;
+	}
+
+    /** Serialize message to JSON string
+    *
+    * @param aData printed message
+    * @param aPretty 0 - JSON string without indent
+    * @return JSON string
+    */
+    inline static std::string sMToJson(T const& aData,
+	    unsigned aPretty);
+
+    /** Deserialize message from JSON string
+    *
+    * @param aData JSON string
+    * @return the message
+    */
+	inline static T sMFromJson(const std::string& aData);
+
+    /** Send message (public)
+    *
+    * @param aMsg The message
+    * @return >0 the unique number of the message
+               otherwise  the error code
+    */
+    inline static int sMSend(const T& aMsg
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+            , const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+    );
+
+    /** Wait of new data
+    *
+    * @param aTime expect time (-1 - infinity)
+    * @return >=0 The number of available message
+               otherwise  the error code
+    */
+    inline int MWaitData(double aTime = -1) const;
+
+    /** Subscribe to message
+    *
+    * @param aFrom - Receive data from
+    * @param aFlags - Data flags
+    */
+    inline int MReceive(const char* aFrom,
+        unsigned aFlags
+         {% for field in header.___fields|fields(True)
+                if field.LogicalType|string() in ["unique"]
+                 %}
+         , const {{ field.type }}& a{{ field.id }}
+        {% endfor %}
+        );
+
+    /** Get Next received message
+    *
+    * @param aTo store message to object
+    * @param aInfo Info about message
+    * @return >=0 Amount of message
+    *           otherwise error code
+    * @tparam Objet type
+    */
+    template <typename U = T>
+    inline int MGetNext(U * aTo, NUDT::received_message_info_t* aInfo = NULL)
+    {
+        int _amount_of = 0;
+        NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+
+        if(FReceivedData.empty())
+            return -1;
+
+        data_info_t const _rd(FReceivedData.front());
+        FReceivedData.pop_front();
+        _amount_of = --FNumberOfMessage;
+        _block.MUnlock();
+        _rd.FData.FMessage.FBuffer >> (*aTo);
+
+#ifdef VLOG
+        VLOG(1)<<"Read received data "<<_rd.FId;
+        VLOG(2)<<"Received data \n"<< (*aTo)<<"\n from \n"<<static_cast<NUDT::received_message_info_t const>(_rd.FData);
+#endif
+        if(aInfo != NULL)
+            *aInfo = static_cast<NUDT::received_message_info_t const>(_rd.FData);
+        return _amount_of;
+    }
+
+    /** Amount of available received message
+    *
+    * @return the number of available message
+    */
+    inline unsigned MAmountOf() const;
+
+    /** Amount of available received message
+    *
+    * @param aTo - Store available message to
+    *
+    * @return the number of available message (in aTo)
+    *           otherwise error code
+    */
+    inline int MDoesNotReceive(std::vector<T>* aTo = NULL);
+
+    /** Generate test message
+    *
+    * @param aTo - Store to
+    *
+    */
+    inline static void generate(T* aData);
+
+    protected:
+
+    /** Callback to handle received data
+    *
+    */
+    static int sMReceivedDataCb(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA)
+    {
+        return ((CHandler*)YOU_DATA)->MReceiveData((NUDT::received_message_args_t *) WHAT);
+    }
+
+    /** Notification about new data
+    *
+    *   @param aInfo info about data
+    *   @param aDataId aDataId
+    */
+    virtual bool MDataReceived(NUDT::received_message_info_t const& aInfo, unsigned aDataId)
+    {
+        if(FNewDataCb.MIs())
+        {
+            FNewDataCb(this, aInfo);
+        }
+        return true;
+    }
+
+    /** Received data handler
+    *
+    * @param _what Received data
+    */
+    virtual int MReceiveData(NUDT::received_message_args_t *_what)
+    {
+        unsigned _id;
+        {
+            data_info_t _data;
+            _data.FData = *_what;
+            NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+            if(FCbID < 0)
+                return 0;
+            _data.FId = ++FReceivedDataUniqueId;
+            _id = _data.FId;
+            FReceivedData.push_back(_data);
+            ++FNumberOfMessage;
+
+            if(FCondVarNum > 0 )
+                FCondVar.MBroadcast();
+
+        }
+#ifdef VLOG
+        VLOG(1) <<"Receive data id = "<<_id<<" \n from \n"
+                                <<static_cast<NUDT::received_message_info_t const>(*_what);
+#endif
+        MDataReceived(*_what, _id);
+        return 0;
+    }
+
+    received_data_info_t FReceivedData;//!< Received data storage
+    unsigned FNumberOfMessage;//!< The number of received message
+    unsigned FReceivedDataUniqueId;//!< The unique Id of received data
+
+    int FCbID;//!< Unique CB Id of receiving function
+
+    mutable NSHARE::CMutex FMutex;//!< Mutex to lock FReceivedData
+    mutable unsigned FCondVarNum;//!< The number of blocking thread which is expecting data
+    mutable NSHARE::CCondvar FCondVar;//!< Condition variable
+};
+template<class T>
+inline CHandler<T>::CHandler():
+        FNumberOfMessage(0),//
+        FReceivedDataUniqueId(0),//
+        FCbID(-1),//
+        FCondVarNum(0)
+{
+        ;
+}
+template<class T>
+inline std::string CHandler<T>::sMToJson(T const& aData,
+	    unsigned aPretty)
+{
+	using namespace NSHARE;
+    NSHARE::CConfig const _serialized = serialize(aData);
+
+    return _serialized.MToJSON( aPretty !=0 ).MToStdString();
+}
+template<class T>
+inline  T CHandler<T>::sMFromJson(const std::string& aData)
+{
+    using namespace NSHARE;
+    std::istringstream _data(aData);
+    NSHARE::CConfig _serialized;
+    _serialized.MFromJSON(_data);
+    return deserialize<T>(_serialized);
+}
+template<class T>
+inline int CHandler<T>::sMSend(const T& aMsg
+{% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+        , const {{ field.type }}& a{{ field.id }}
+{% endfor %}
+)
+{
+    using namespace NUDT;
+    NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
+            sizeof(T));
+    _buf.resize(0);
+    serialize_binary(_buf, aMsg);
+    NUDT::required_header_t _header(get_header<T>());
+
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+    (({{ struct_header_name }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+    {% endfor %}
+
+    int const _rval = CCustomer::sMGetInstance().MSend(
+            _header,
+            protocol(),
+            _buf);
+#ifdef VLOG
+        LOG(INFO) <<"Send data id "<<_rval;
+        VLOG(2) <<"Send data \n "<<aMsg;
+#endif
+    return _rval;
+}
+
+template<class T>
+inline int CHandler<T>::MWaitData(double aTime ) const
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+
+    if(FCbID < 0)
+        return -1;
+
+    if(FNumberOfMessage > 0)
+        return FNumberOfMessage;
+
+    ++FCondVarNum;
+    FCondVar.MTimedwait(&FMutex, aTime);
+    --FCondVarNum;
+
+    if(FCbID < 0)
+        return -2;
+
+    return FNumberOfMessage;
+}
+template<class T>
+inline int CHandler<T>::MReceive(const char* aFrom,
+    unsigned aFlags
+     {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+     , const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+    )
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+    if(FCbID >= 0)
+    {
+        NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(
+                FCbID , NULL);
+        FCbID = -1;
+        FNumberOfMessage = 0;
+        FReceivedData.clear();
+    }
+    NUDT::requirement_msg_info_t _req;
+    _req.FProtocolName = protocol();
+    _req.FRequired = get_header<T>();
+    _req.FFlags = aFlags;
+    _req.FFrom = aFrom;
+
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+              %}
+    (({{ struct_header_name }}*)_req.FRequired.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+    {% endfor %}
+    NUDT::callback_t const _handler(&sMReceivedDataCb, this);
+    int const _rval =
+        NUDT::CCustomer::sMGetInstance().MIWantReceivingMSG(
+                _req, _handler);
+    if (_rval >= 0)
+    {
+#ifdef LOG
+        LOG(INFO)<<"Subscribe to receive data from "<<aFrom<<" unique CB is  "<<_rval<<" \n "<<_req;
+#endif
+        FCbID = _rval;
+    }
+    return _rval;
+}
+template<class T>
+inline unsigned CHandler<T>::MAmountOf() const
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+    return FNumberOfMessage;
+}
+template<class T>
+inline int CHandler<T>::MDoesNotReceive(std::vector<T>* aTo)
+{
+    if(FCbID < 0)
+        return FCbID;
+
+    int _rval =
+    NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(
+                FCbID , NULL);
+
+    if (_rval >= 0)
+    {
+        received_data_info_t _data;
+        unsigned _size = 0;
+#ifdef LOG
+        LOG(INFO)<<"Unsubscribe data unique cb id "<<FCbID;
+#endif
+        {
+            NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+            FCbID = -1;
+            _data.swap(FReceivedData);
+            _size = FNumberOfMessage;
+            FNumberOfMessage = 0;
+        }
+        if(aTo && _size > 0)
+        {
+           typename received_data_info_t::const_iterator _it = _data.begin();
+            aTo -> reserve(aTo->size() + _size);
+            for(; _it != _data.end() ;++_it)
+            {
+                aTo -> resize(aTo->size() +1 );
+                _it->FMessage.FData.FBuffer >> (aTo -> back());
+            }
+            _rval = _size;
+        }else if(aTo)
+            _rval = 0;
+    }
+    return _rval;
+}
+template<class T>
+inline void  CHandler<T>::generate(T* aData)
+{
+    using namespace {{ common.get_namespace(name) }}::test;
+    *aData = test::generate<T>();
+}
+
+}//namespace {{ common.get_namespace(name) }}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

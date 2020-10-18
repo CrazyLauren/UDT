@@ -45,12 +45,15 @@ bool CAsyncSocket::MCancel()
 }
 void CAsyncSocket::MStop()
 {
-	if (MCancel())
-	{
-		if(MGetSocket())MGetSocket()->MClose();
-		MJoin();
-	}
 	FIsWorking=false;
+
+	if(MGetSocket() != NULL) MGetSocket()->MClose();
+
+/*	if (MCancel())
+	{*/
+	MJoin();
+	/*}*/
+
 }
 bool CAsyncSocket::MJoin()
 {
@@ -92,7 +95,7 @@ void CAsyncSocket::MReceiver()
 		VLOG(1) << "Socket is null";
 	ISocket::data_t _data;
 	int _count = 0;
-	for (;FIsWorking&& MGetSocket() && MGetSocket()->MIsOpen();)
+	for (;FIsWorking&& MGetSocket()!=NULL && MGetSocket()->MIsOpen();)
 	{
 		//pthread_testcancel();
 		_data.clear();
