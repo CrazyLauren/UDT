@@ -63,7 +63,7 @@ CExampleProtocolParser::result_t CExampleProtocolParser::MParserData(
 			 * */
 
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
-			const unsigned _min_size = min(sizeof(_founded_dg.FType.FMessageHeader), sizeof(*_phead));
+			const unsigned _min_size = (unsigned) min(sizeof(_founded_dg.FType.FMessageHeader), sizeof(*_phead));
 
 			switch (_phead->FType)
 			{

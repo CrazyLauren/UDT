@@ -1,19 +1,65 @@
 {% set project_name = name|upper %}
-{% set target_name = name|lower + '_matlab' %}
+{% set target_name = name|lower  %}
 
-set(_TARGET_NAME {{ target_name }})
-include(${SWIG_USE_FILE})
+{% for msg in messages-%}
+{% set _target = msg.___name %}
+set(_TARGET_NAME {{ _target }})
 
-matlab_add_mex(
-    NAME ${_TARGET_NAME}
-    OUTPUT_NAME {{ name|lower }}
-    SRC {{ name|lower }}.cpp
-    LINK_TO CRAZY_LAUREN::customer)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.txt.in
+                "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/ChangeLog.txt")
 
-target_include_directories(${_TARGET_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+configure_target_version(${_TARGET_NAME}
+		${CMAKE_CURRENT_SOURCE_DIR}
+		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+        "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+		)
+
+
+set( _SOURCE_FILES
+    "{{ name|lower }}.cpp"
+    "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c"
     )
+set (_HEADER_FILES
+    #
+    )
+set (_PRIVATE_INCLUDE_DIR
+		${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${CMAKE_BINARY_DIR}/include
+		)
 
-add_library({{ project_name }}::${_TARGET_NAME} ALIAS ${_TARGET_NAME})
+set (_PUBLIC_INCLUDE_DIR
+        #
+		)
+set (_PRIVATE_DEFINITIONS
+		MEX_FUNCTION_FOR={{msg.___name}}_t
+        REVISION_FUNCTION=get_revision_number_{{ _target }}
+        MAJOR_FUNCTION=get_major_version_{{ _target }}
+        MINOR_FUNCTION=get_minor_version_{{ _target }}
+        REVISION_PATH_INFO=get_revision_path_{{ _target }}
+        COMPILE_TIME_FUNCTION=get_compile_time_{{ _target }}
+        COMPILE_DATE_FUNCTION=get_compile_data_{{ _target }}
+		)
+set (_PUBLIC_DEFINITIONS
+		#
+		)
+
+set(_PUBLIC_LIBRARIS
+        CRAZY_LAUREN::customer
+    )
+set(_OUTPUT_NAME {{ msg.___name |lower }})
+
+
+helper_add_matlab_library(${_TARGET_NAME}
+                        _SOURCE_FILES
+                        _HEADER_FILES
+    		            _PUBLIC_INCLUDE_DIR
+                        _PRIVATE_INCLUDE_DIR
+                        _PUBLIC_DEFINITIONS
+                        _PRIVATE_DEFINITIONS
+                        _PUBLIC_LIBRARIS
+                        ${_OUTPUT_NAME}
+                        "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}/+{{ target_name }}"
+                        )
+{#helper_export_library(${_TARGET_NAME})#}
+{% endfor %}

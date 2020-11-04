@@ -484,10 +484,10 @@ function(configure_target_version aTARGET aFILE_PATH aOUT_PATH)
 			_TARGET_UP
 			)
 
-	if (("${ARGC}" GREATER 2) AND "${ARGV3}")
-		set(_CANGELOG_PATH ${ARGV3})
+	if("${ARGV3}" STREQUAL "")
+		set(_CANGELOG_PATH ${CMAKE_CURRENT_SOURCE_DIR})		
 	else()
-		set(_CANGELOG_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+		set(_CANGELOG_PATH "${ARGV3}")
 	endif()
 	
 	read_version(${aTARGET}
@@ -846,7 +846,11 @@ macro(configure_project
 	set(${PROJECT_NAME}_PYTHONS_MODULES ""
 	    CACHE INTERNAL "Python modules"
 	    FORCE)
+	set(${PROJECT_NAME}_MATLAB_MODULES ""
+	    CACHE INTERNAL "Matlab modules"
+	    FORCE)
 	include (CMakeModules/functions/package_python.cmake)
+	include (CMakeModules/functions/package_matlab.cmake)
 
 	set(CMAKE_MODULE_PATH
 		"${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules"		
@@ -912,5 +916,60 @@ macro(end_of_project
 	if(${PROJECT_NAME}_PYTHONS_MODULES)
 		pacakage_python()
 	endif()
+	if(${PROJECT_NAME}_MATLAB_MODULES)
+		pacakage_matlab()
+	endif()
+
 	generate_cpack()
+endmacro()
+
+macro(search_library_dependencies _PACKET _PACKET_DEPEND _TO_LIST)
+	get_target_property(_LINK_LIBRARY ${_PACKET_DEPEND} INTERFACE_LINK_LIBRARIES)
+	if(_LINK_LIBRARY)
+		foreach(_LB ${_LINK_LIBRARY})
+			#if(TARGET ${_LB} AND NOT ${_LB} MATCHES "(Python)$" )
+			if(TARGET ${_LB})
+				get_target_property(_IMPORTED_LIBRARY ${_LB} IMPORTED)
+				get_target_property(_TYPE_LIBRARY ${_LB} TYPE)				
+				if("${_TYPE_LIBRARY}" STREQUAL "SHARED_LIBRARY")
+					if(NOT _IMPORTED_LIBRARY )
+						list(FIND ${_TO_LIST} "${_LB}" _index)
+						if(${_index} EQUAL -1)
+							list(APPEND ${_TO_LIST} "${_LB}")
+							if (UNIX)
+								get_target_property(_ALIASED ${_LB} ALIASED_TARGET)
+								if(TARGET ${_ALIASED})
+									set_property(TARGET ${_ALIASED} APPEND PROPERTY
+									             BUILD_RPATH ":\$ORIGIN:../${CMAKE_INSTALL_LIBDIR}"
+									             )
+								else()
+									set_property(TARGET ${_LB} APPEND PROPERTY
+									             BUILD_RPATH ":\$ORIGIN:../${CMAKE_INSTALL_LIBDIR}"
+									             )
+								endif()
+							endif()
+							search_library_dependencies(${_PACKET} ${_LB} ${_TO_LIST})
+						endif()
+					else()
+						get_target_property(_LOCATION ${_LB} IMPORTED_LOCATION)
+						if(_LOCATION)
+							get_filename_component(_DIR_PATH ${_LOCATION} DIRECTORY)
+							#get_filename_component(_FILE_NAME ${_LOCATION} NAME)
+							file(RELATIVE_PATH _FILE_RELPATH
+							     "${_DIR_PATH}/../../${PROJECT_NAME}/${_PACKET}"
+							     "${_LOCATION}"
+							     )
+							get_filename_component(_DIR_RELPATH ${_FILE_RELPATH} DIRECTORY)
+							if (UNIX)
+								set_property(TARGET
+								             ${_PACKET} APPEND PROPERTY
+								             BUILD_RPATH ":${_DIR_RELPATH}"
+								             )
+							endif()
+						endif()
+					endif()
+				endif()
+			endif()
+		endforeach()
+	endif()
 endmacro()

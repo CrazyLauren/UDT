@@ -938,28 +938,28 @@ public:
 	}
 	reference operator[](size_type __n)
 	{
-		return reinterpret_cast<reference>(FBuffer.at(__n*sizeof(TPod)));
+		return *reinterpret_cast<pointer>((void*)&FBuffer.at(__n*sizeof(TPod)));
 	}
 	const_reference operator[](size_type __n) const
 	{
-		return reinterpret_cast<const_reference>(FBuffer.at(__n*sizeof(TPod)));
+		return *reinterpret_cast<const_pointer>((void const*)&FBuffer.at(__n*sizeof(TPod)));
 	}
 
 	reference front()
 	{
-		return reinterpret_cast<reference>(FBuffer.front());
+		return *reinterpret_cast<pointer>((void*)&FBuffer.front());
 	}
 	const_reference front() const
 	{
-		return reinterpret_cast<const_reference>(FBuffer.front());
+		return *reinterpret_cast<const_pointer>((void const*)&FBuffer.front());
 	}
 	reference back()
 	{
-		return reinterpret_cast<reference>(FBuffer.back());
+		return *reinterpret_cast<pointer>((void*)&FBuffer.back());
 	}
 	const_reference back() const
 	{
-		return reinterpret_cast<const_reference>(FBuffer.back());
+		return *reinterpret_cast<const_pointer>((void const*)&FBuffer.back());
 	}
 	void resize(size_type __new_size, bool fromBegin = false,bool aCanDetach=true)//bug fix. aCanDetach - kostil'!
 	{

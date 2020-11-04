@@ -55,7 +55,7 @@ if(NOT SWIG_FOUND)
 endif()
 
 find_package(Matlab COMPONENTS
-    MEX_COMPILER)
+    MAIN_PROGRAM MEX_COMPILER)
 
 if(NOT Matlab_FOUND)
 	message(STATUS "Matlab doesn't found")

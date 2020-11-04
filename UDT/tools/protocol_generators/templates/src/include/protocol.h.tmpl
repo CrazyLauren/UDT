@@ -71,7 +71,7 @@ struct {{ struct_name }}{{ paret_inherent }}
     typedef {{ parent_name }} parent_t;//!< parent type
     {% endif %}
     {% for field in aMsg | logical_type(["dynamic array"],True) %}
-#ifndef SHARE_BUFFER_DEFINED_1
+#ifndef SHARE_BUFFER_DEFINED
     typedef std::vector<{{field.TypeOfLogicalType}}> {{field.id}}_dynamic_t;//!< array of {{field.id}}
 #else
     typedef NSHARE::CPODBuffer<{{field.TypeOfLogicalType}}> {{field.id}}_dynamic_t;//!< optimized for UDT array of {{field.id}}

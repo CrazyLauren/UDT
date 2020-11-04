@@ -492,7 +492,7 @@ data presents in source code only. In the document describes about protocol stru
         \hline
         {% set _enum_info = types[_enum] %}
         {{ _enum_info.___name | latex_escape}} ({{ _enum| latex_escape }})
-        & {{ _enum_info.size }} ({{ _enum_info.type }})
+        & {{ _enum_info.size }} ({{ _enum_info.type|latex_escape }})
         & {{ _enum_info.align }}
         &
         &
@@ -669,10 +669,12 @@ headers ({{"Boost_INCLUDE_DIR"|latex_escape}}) in cmake. The used version of the
                     Для OS Windows: Совместимый с интерпретатором компилятор.
                     {% endif %}
         \end{itemize}
-    \item To generate Matlab code to use library:
+    \item {% if _language != 'ru' %} To generate Matlab code to use library:{% else %}
+            Для генерации иходного кода для {{ quote_l }}Matlab{{ quote_r }}{% endif %}
         \begin{itemize}
-            \item Matlab coder
-            \item \href{https://www.swig.org}{SWIG}
+            \item {{ quote_l }}Matlab{{ quote_r }} {% if _language != 'ru' %} recommended version: 2016 and above {% else %}
+               версии 2016 и выше (работа исходнго кода в версии {{ quote_l }}Matlab{{ quote_r }} ниже 2016 не проверялась ){% endif %}
+            ({% if _language != 'ru' %}library for{% else %}библиотеки{% endif %} {{ quote_l }}mex{{ quote_r }})
         \end{itemize}
 \end{itemize}
 {#{% set _paragraph = "Common Requirements" if _language != 'ru' else "Инструменты разработки" %}#}
@@ -1446,6 +1448,8 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
     The {{ quote_l }}Development{{ quote_r }} component need to use libraries in the other projects.
     The {{ quote_l }}Runtime{{ quote_r }} component is consist data only for uses.
     The {{ quote_l }}Matlab{{ quote_r }} component is consist data needed to use {{ quote_l }}Matlab{{ quote_r }}.
+    If the {{ quote_l }}Matlab{{ quote_r }} is installed and its version is 2016 and above then the source code is installed
+    to {{ quote_l }}Matlab{{ quote_r }} automatically.
     The {{ quote_l }}Python{{ quote_r }} component is consist wheel packet.
     And press button {{ quote_l }}install{{ quote_r }}
 {% else %}
@@ -1466,7 +1470,9 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
         \item {{ quote_l }}Development{{ quote_r }} --- содержит файлы необходимые при использовании библиотек
         компонентами других проектов;
         \item {{ quote_l }}Runtime{{ quote_r }} --- содержит только файлы необходимые для запуска ПО;
-        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }};
+        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }}
+                (Установочный пакет типа mltbx - zip архив). Если версия {{ quote_l }}Matlab{{ quote_r }} 2016 и выще то пакет
+                будет установлен автоматически;
         \item {{ quote_l }}Python{{ quote_r }}  --- содержит пакет типа {{ quote_l }}wheel{{ quote_r }};
     \end{itemize}
     \item Нажмите кнопку {{ quote_l }}Установить{{ quote_r }}.
@@ -1493,7 +1499,8 @@ For building in Windows, the sequence of actions is as follows (For Linux is sim
         \item {{ quote_l }}Development{{ quote_r }} --- содержит файлы необходимые при использовании библиотек
         компонентами других проектов;
         \item {{ quote_l }}Runtime{{ quote_r }} --- содержит только файлы необходимые для запуска ПО;
-        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }};
+        \item {{ quote_l }}Matlab{{ quote_r }}  --- содержит файлы необходимые для использование ПО совместно с {{ quote_l }}Matlab{{ quote_r }}
+                (Установочный пакет типа mltbx - zip архив);
         \item {{ quote_l }}Python{{ quote_r }}  --- содержит пакет типа {{ quote_l }}wheel{{ quote_r }};
     \end{itemize}
     Установка осуществляется следующей командой:
@@ -1529,6 +1536,24 @@ The packet is uninstalled by command:\\
     где * --- информация о ОС, компиляторе.
 Удаление осуществляется следующей командой:\\
     {{ quote_l }}pip3 uninstall {{ name|upper|latex_escape }}{{ quote_r }}.
+{% endif %}
+
+{% set _subsection = "Matlab (mltbx)" if _language != 'ru' else quote_l+"Matlab"+quote_r + " (mltbx)" %}
+\subsection{ {{ _subsection }} }
+\label{install:mltbx_{{ name }} }
+{% if _language != 'ru' %}
+For OS GNU/Linux use deb (see \ref{install:linux_{{ name }} }) packets, For Windows the mltbx packet is installed automatically
+    (if Matlab version is 2016 and above).
+{% else %}
+В ОС {{ quote_l }}GNU/Linux{{ quote_r }} рекомендуется использовать {{ quote_l }}deb{{ quote_r }} пакеты
+    (подраздел \ref{install:linux_{{ name }} }).
+
+В ОС {{ quote_l }}Windows{{ quote_r }} {{ quote_l }}mltbx{{ quote_r }} пакет входит в состав компонента
+    {{ quote_l }}Matlab{{ quote_r }} установчного пакета для ОС {{ quote_l }}Windows{{ quote_r }}.
+    Пакет устанавливается автоматически если установлен {{ quote_l }}Matlab{{ quote_r }} версии 2016 и выше.
+    (подраздел \ref{install:windows_{{ name }} } ).
+    (После установки {{ quote_l }}mltbx{{ quote_r }} пакет будет
+    находится в директории {{ quote_l }}share/{{ name|upper|latex_escape }}/package{{ quote_r }})
 {% endif %}
 
 {% set _section = "API description" if _language != 'ru' else "Описание программного интерфейса" %}
@@ -1831,6 +1856,136 @@ if message_{{ _example_message.___number }}.wait_data() > 0:
 message_{{ _example_message.___number }}.does_not_receive()
 pnet.udt_close()
 {% endif %}
+\end{lstlisting}
+
+{% set _subsection = "API (Matlab)"
+    if _language != 'ru' else "Описание программного интерфейса ("+quote_l+"Matlab"+quote_r + ")" %}
+\subsection{ {{ _subsection }} }
+\label{api:{{ name }}_matlab }
+
+{% set _matlab_packet_name = name|latex_escape  %}
+{% set _example_message = messages|first if messages|length > 0 else None%}
+
+{% if _language != 'ru' %}
+    The packet {{ quote_l }}{{ _matlab_packet_name }}{{ quote_r }}
+    provide interface to receive,
+    send, serialize (deserialize) messages. To receive and send messages,
+    it's used {{ quote_l }}customer{{ quote_r }} module of {{ quote_l }}UDT{{ quote_r }} packet. Thus, to use
+    the packet you has to install {{ quote_l }}UDT{{ quote_r }} packet.
+{% else %}
+    Пакета {{ quote_l }}{{ _matlab_packet_name }}{{ quote_r }} предоставляет интерфейс для
+    приёма, отправки, преобразования в(из) формата JSON сообщений протокола. При этом,
+    приём и отправка сообщений осуществляется при помощи модуля {{ quote_l }}customer{{ quote_r }}
+    из пакета {{ quote_l }}UDT{{ quote_r }}. Поэтому, перед использованием пакета
+    {{ quote_l }}{{ _matlab_packet_name}}{{ quote_r }} необходимо установить пакет {{ quote_l }}UDT{{ quote_r }}.
+{% endif %}
+{% set _subsubsection = "API description"
+    if _language != 'ru' else "Описание интерфейса" %}
+\subsubsection{ {{ _subsubsection }} }
+{% set _table_api_ref = "matlab_method_description" %}
+{% if _language != 'ru' %}
+    All protocol message is into namespace {{ quote_l }}{{ _matlab_packet_name }}{{ quote_r }}.
+    The message id is name of function. The function signature of messages is similar. The first
+    argument function is command. The next argument is depended on command.
+    To see all available command you can call command {{ quote_l }}help{{ quote_r }}.
+{% else %}
+    Функции работы с сообщениями протокола находятся в пространстве имён {{ quote_l }}{{ _matlab_packet_name }}{{ quote_r }}.
+    Названия функций соответствуют идентификатором сообщений. Их сигнатура идентична.
+    Первый аргумент функции название команды. Последующие аргументы зависят от команды.
+    Чтобы увидеть список доступных команд необходимо вызвать функции с командой {{ quote_l }}help{{ quote_r }}.
+{% endif %}
+{% if _example_message != None %}
+\lstset{language=Matlab, extendedchars=\true, texcl=true}
+\begin{lstlisting}
+{{ name }}.{{ _example_message.___name }}('help')
+\end{lstlisting}
+{% endif %}
+    {% if _language != 'ru' %}
+        Algorithm of receiving is next:
+    {% else %}
+        Алгоритм получения сообщений следующий:
+    {% endif %}
+    \begin{itemize}
+        \item {% if _language != 'ru' %} Create the message handler (command: 'create') {% else %}
+                Создать обработчик сообщений (команда: {{ quote_l }}create{{ quote_r }}){% endif %}
+        \item {% if _language != 'ru' %} Call command:{% else %}
+                Вызвать команду:{% endif %} {{ quote_l }}recv{{ quote_r }}
+        \item {% if _language != 'ru' %} Block thread if need {% else %}
+                По необходимости, приостановить поток до получения сообщения
+                вызовом команды {% endif %} {{ quote_l }}wait{{ quote_r }}
+        \item {% if _language != 'ru' %} Than data is received, read data  {% else %}
+                Когда данные приняты, прочитайте сообщение вызовом команды
+                {% endif %} {{ quote_l }}getNext{{ quote_r }}
+    \end{itemize}
+{% set _subsubsection = "Example"
+    if _language != 'ru' else "Пример работы" %}
+\subsubsection{ {{ _subsubsection }} }
+
+{% if _language != 'ru' %}
+    Before You is starting the sript below, you has to start {{ quote_l }} Kernel {{ quote_r }}
+    from {{ quote_l }} UDT {{ quote_r }} {% else %}
+    Перед запуском примера необходимо запустить программу {{ quote_l }} Kernel {{ quote_r }}
+    из состава {{ quote_l }} UDT {{ quote_r }}.
+    {% endif %}
+
+\begin{lstlisting}
+
+{% set _example_name = name+"_matlab_example"%}
+% {% if _language != 'ru' %} Initialize UDT library {% else %} Инициализация библиотеки UDT {% endif %}
+
+error = udt.customer( 'init', '{{ _example_name }}', uint8({{ version.major }}), uint8({{ version.minor }}) );
+
+if error == 0
+ if udt.customer('open')  % {% if _language != 'ru' %} Start connecting to Kernel {% else %} Открывает соединение с Kernel {% endif %}
+
+   % {% if _language != 'ru' %} Wait for connected to Kernel {% else %} Ожидаем подключения к Kernel (10 сек){% endif %}
+
+   udt.customer('wait', 'event_connected', 10)
+   if udt.customer('isOpen') % {% if _language != 'ru' %} If not timeout {% else %} Если подключились {% endif %}
+    {% if _example_message != None %}
+        {% set function_name = name + '.' + _example_message.___name%}
+        {% set _header_msg = _example_message.___parent|last %}
+        {% set _uniques = _header_msg.___LogicalType.unique  if "unique" in _header_msg.___LogicalType else None %}
+
+     %{% if _language != 'ru' %} Create handler {% else %} Создаём обработчик {% endif %}
+
+     handler_id = {{ function_name }} ('create');
+
+     % {% if _language != 'ru' %} Receive from me {% else %} Получаем сообщения от себя {% endif %}
+
+     result = {{ function_name }} ('recv', handler_id, ...
+                '{{ _example_name }}', ...
+                0{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} );
+
+     %{% if _language != 'ru' %} Filling object {% else %} Создаём тестовое сообщения {% endif %}
+
+     send_message = {{ function_name }}('gen');
+
+     %{% if _language != 'ru' %} Send data ... {% else %} Отправляем данные {% endif %}
+
+     send_result = {{ function_name }}('send', send_message{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %});
+
+     %{% if _language != 'ru' %} Wait for data received {% else %} Ждём получения данных (не более 10 секунд) {% endif %}
+
+     if {{ function_name }}('wait', handler_id, 10) >=0
+        if {{ function_name }}('size', handler_id) >=0  %{% if _language != 'ru' %} Message exist {% else %} Есть сообщения {% endif %}
+
+           [ result, message ] = {{ function_name }}('getNext', handler_id);
+           if result >=0
+              % {% if _language != 'ru' %}  save received message as JSON file  {% else %} Сохраняем сообщение в строку формата JSON {% endif %}
+
+              json_string = {{ function_name }}('toJSON', message, true);
+              fileID = fopen('{{ _example_message.___name}}.json','w');
+              fwrite(fileID, json_string);
+              fclose(fileID);
+           end
+        end
+     end % wait
+    {% endif %}
+   end %  if is open
+ end % if open
+end % if error == 0
+
 \end{lstlisting}
 
 {% if versions|length > 0  %}

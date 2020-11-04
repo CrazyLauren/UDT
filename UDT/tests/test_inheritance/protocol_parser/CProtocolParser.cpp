@@ -65,7 +65,7 @@ CProtocolParser::result_t CProtocolParser::MParserData(
 			 * */
 
 			msg_head_t const *_phead = (msg_head_t const*) aItBegin;
-			const unsigned _min_size = min(sizeof(*_phead), sizeof(_founded_dg.FType.FMessageHeader));
+			const unsigned _min_size =(unsigned) min(sizeof(*_phead), sizeof(_founded_dg.FType.FMessageHeader));
 			switch (_phead->FType)
 			{
 			case eMsgType::E_MSG_SUB_SUB_MESSAGE:

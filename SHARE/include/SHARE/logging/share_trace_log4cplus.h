@@ -270,10 +270,10 @@ DEFINE_FLAG	(std::string, log_link)
 
 				unlock(Level);
 
-				if(Level==FATAL)
-				{
-					abort_impl("fatal");
-				}
+			}
+			if(Level==FATAL)
+			{
+				abort_impl("fatal");
 			}
 		}
 		template<eLoggerType aType> //I what to mutex for every logers

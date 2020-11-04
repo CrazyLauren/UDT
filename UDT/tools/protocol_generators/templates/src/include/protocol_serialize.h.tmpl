@@ -69,6 +69,11 @@ inline bool is_valid(T const& aObject){
 	return aObject.MIsValid();
 }
 
+/** \brief Return name
+*/
+template<typename T>
+inline const char* get_name();
+
 //
 // Implementation
 //
@@ -127,12 +132,12 @@ inline bool deserialize_impl<{{ struct_name }}>({{ struct_name }}* aTo,
 				    _child.end();
                 {% if _is_dynamic_array %}
             aTo->{{ field.id }}.resize(_child.size());
-            const unsigned _array_size = _child.size();
+            const std::size_t _array_size = _child.size();
                 {% else %}
-            const unsigned _array_size = sizeof(aTo->{{ field.id }})/sizeof(aTo->{{ field.id }}[0]);
+            const std::size_t _array_size = sizeof(aTo->{{ field.id }})/sizeof(aTo->{{ field.id }}[0]);
                 {% endif %}
 
-             unsigned i=0;
+             std::size_t i=0;
              for (; i < _array_size&&//
                                 _it != _it_end ; ++i,++_it)
                 {% if need_cast_to %}
@@ -167,7 +172,7 @@ inline bool deserialize_impl<{{ struct_name }}>({{ struct_name }}* aTo,
 {##}
 {#                NSHARE::ConfigSet::const_iterator _it = _child.begin(),#}
 {#                                                _it_end = _child.end();#}
-{#                for (unsigned i=0; i< _child.size() &&//#}
+{#                for (std::size_t i=0; i< _child.size() &&//#}
 {#                                _it != _it_end ; ++i, ++_it)#}
 {#                    {% if static_cast_dynamic_to %}#}
 {#			        aTo->{{ field.id }}[i] = ({{ field.type }})_it->MValue({{  static_cast_dynamic_to }}());#}
@@ -233,7 +238,7 @@ inline NSHARE::CConfig serialize({{ common.get_namespace(name) }}::{{ struct_nam
                 {% set _dcast = field|castto(True) %}
                 {% set need_cast_dynamic_to = '('+_dcast+')' if _dcast
                                       else '' %}
-    for (unsigned i = 0; i < aObject.{{ field.id }}.size(); ++i)
+    for (std::size_t i = 0; i < aObject.{{ field.id }}.size(); ++i)
     {
 	    _conf.MAdd("{{ field.id }}", {{ need_cast_dynamic_to }} aObject.{{ field.id }}[i]);
     }
@@ -305,13 +310,13 @@ inline bool is_valid<{{ struct_name }}>({{ struct_name }} const& aObject)
 
         {%if is_limit or is_complex %}
             {% if 'LogicalType' in field and field.LogicalType|string() == "dynamic array" %}
-    unsigned const {{ field.id }}_len=aObject.{{ field.id }}.size();
-    for (unsigned i = 0; i < {{ field.id }}_len; ++i)
+    std::size_t const {{ field.id }}_len=aObject.{{ field.id }}.size();
+    for (std::size_t i = 0; i < {{ field.id }}_len; ++i)
     {
         {{ fm.check_field(field,True) }}
     }
             {% elif 'array_len' in field and field.array_len  > 0 %}
-    for (unsigned i = 0; i < sizeof(aObject.{{ field.id }})/sizeof(aObject.{{ field.id }}[0]); ++i)
+    for (std::size_t i = 0; i < sizeof(aObject.{{ field.id }})/sizeof(aObject.{{ field.id }}[0]); ++i)
     {
         {{ fm.check_field(field,True) }}
     }
@@ -322,6 +327,11 @@ inline bool is_valid<{{ struct_name }}>({{ struct_name }} const& aObject)
         {% endif %}
     {% endfor %}
     return _is;
+}
+template<>
+inline const char* get_name<{{ struct_name }}>()
+{
+    return "{{ aMsg.___name }}";
 }
 {% endmacro %}
 

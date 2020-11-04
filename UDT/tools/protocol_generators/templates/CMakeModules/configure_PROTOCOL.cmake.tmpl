@@ -49,4 +49,8 @@ set(${PROJECT_NAME}_BUILD_COMPONENT_PYTHON
     CACHE BOOL
     "Build Python bindings")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-		
+
+set(${PROJECT_NAME}_MATLAB_PACKAGE_PROJECT_FILE_PATH
+    ${PROJECT_SOURCE_DIR}/CMakeModules/matlab_${PROJECT_NAME}.prj.in
+    CACHE INTERNAL "Matlab project patch")
+

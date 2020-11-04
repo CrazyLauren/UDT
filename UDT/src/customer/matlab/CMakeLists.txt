@@ -1,0 +1,12 @@
+if(${CMAKE_VERSION} VERSION_LESS "3.5")
+    message(WARNING "\nCannot build another language binding as cmake version less than 3.5 \n\n")
+elseif(Matlab_FOUND)
+    
+    if(NOT USES_MATLAB)
+        option(USES_MATLAB "Compile also Matlab-related components " ON)
+    endif()
+    
+    if(USES_MATLAB)
+        include(matlab_compatibility.cmake)
+    endif()
+endif()

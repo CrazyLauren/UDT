@@ -352,7 +352,56 @@ macro(generate_cpack)
 			list(APPEND CPACK_DEBIAN_PYTHON_PACKAGE_DEPENDS "python${Python3_VERSION_MAJOR} (>= ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})")
 		endif()											
 	endif()	
-	
+
+	if(${PROJECT_NAME}_MATLAB_MODULES)
+		list(APPEND CPACK_COMPONENTS_ALL matlab_package)
+
+		if(WIN32)
+			set(_LICENSE_INSTALL_PATH_MATLAB "${_LICENSE_INSTALL_PATH}")
+		else()
+			set(_LICENSE_INSTALL_PATH_MATLAB "${_LICENSE_INSTALL_PATH}/${PROJECT_NAME}-Matlab")
+		endif()
+
+		install(FILES
+		        ${${PROJECT_NAME}_LICENCE}
+		        DESTINATION
+		        "${_LICENSE_INSTALL_PATH_MATLAB}"
+		        COMPONENT matlab_package)
+
+		set(CPACK_COMPONENT_GROUP_MATLAB_DESCRIPTION
+		    "Matlab modules"
+		    )
+		set(CPACK_COMPONENT_MATLAB_PACKAGE_GROUP
+		    "Matlab"
+		    )
+		set(CPACK_DEBIAN_MATLAB_PACKAGE_SECTION "matlab")
+
+		list(APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS
+		     "
+SearchPath $0 matlab.exe
+\\\${If} \\\${FileExists} \\\$0
+	ExecWait '\\\"\\\$0\\\" -wait -nodisplay -nodesktop -r \\\"try, matlab.addons.toolbox.installToolbox(\$\\\\'$INSTDIR\\\\${CMAKE_INSTALL_DATAROOTDIR}\\\\${PROJECT_NAME}\\\\package\\\\${${PROJECT_NAME}_MTBLX_FILE_NAME}\$\\\\'); catch ME, warning(getReport(ME)); quit(1); end; quit\\\"'
+	DetailPrint \\\"Matlab return \\\$0 \\\"
+\\\${Else}
+      MessageBox MB_OK|MB_ICONEXCLAMATION \\\
+      \\\"No Matlab installation has been found. (Install Matlab Package manually)\\\"
+\\\${Endif}
+"
+		     )
+		list(APPEND CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
+		     "
+SearchPath $0 matlab.exe
+\\\${If} \\\${FileExists} \\\$0
+	ExecWait '\\\"\\\$0\\\" -wait -nodisplay -nodesktop -r \\\"try, tbxs = matlab.addons.toolbox.installedToolboxes; for i = 1:length(tbxs), if strcmp(lower(tbxs(i).Name),lower(\$\\\\'${${PROJECT_NAME}_MATLAB_PROJECT_NAME}\$\\\\')), matlab.addons.toolbox.uninstallToolbox(tbxs(i)); end, end, catch ME, warning(getReport(ME)); quit(1); end; quit\\\"'
+	DetailPrint \\\"Matlab return \\\$0 \\\"
+\\\${Else}
+      MessageBox MB_OK|MB_ICONEXCLAMATION \\\
+      \\\"No Matlab installation has been found. (Uninstall Matlab Package manually)\\\"
+\\\${Endif}
+"
+		     )
+	endif()
+
 	if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
 		include("${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
 	endif()

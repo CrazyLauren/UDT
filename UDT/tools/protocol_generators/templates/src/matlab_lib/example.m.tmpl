@@ -1,0 +1,56 @@
+{% set _example_message = messages|first if messages|length > 0 else None%}
+{% set _example_name = name+"_matlab_example"%}
+% {% if _language != 'ru' %} Initialize UDT library {% else %} Инициализация библиотеки UDT {% endif %}
+
+error = udt.customer( 'init', '{{ _example_name }}', uint8({{ version.major }}), uint8({{ version.minor }}) );
+
+if error == 0
+ if udt.customer('open')  % {% if _language != 'ru' %} Start connecting to Kernel {% else %} Открывает соединение с Kernel {% endif %}
+
+   % {% if _language != 'ru' %} Wait for connected to Kernel {% else %} Ожидаем подключения к Kernel (10 сек){% endif %}
+
+   udt.customer('wait', 'event_connected', 10)
+   if udt.customer('isOpen') % {% if _language != 'ru' %} If not timeout {% else %} Если подключились {% endif %}
+    {% if _example_message != None %}
+        {% set function_name = name + '.' + _example_message.___name%}
+        {% set _header_msg = _example_message.___parent|last %}
+        {% set _uniques = _header_msg.___LogicalType.unique  if "unique" in _header_msg.___LogicalType else None %}
+
+     %{% if _language != 'ru' %} Create handler {% else %} Создаём обработчик {% endif %}
+
+     handler_id = {{ function_name }} ('create');
+
+     % {% if _language != 'ru' %} Receive from me {% else %} Получаем сообщения от себя {% endif %}
+
+     result = {{ function_name }} ('recv', handler_id, ...
+                '{{ _example_name }}', ...
+                0{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} );
+
+     %{% if _language != 'ru' %} Filling object {% else %} Создаём тестовое сообщения {% endif %}
+
+     send_message = {{ function_name }}('gen');
+
+     %{% if _language != 'ru' %} Send data ... {% else %} Отправляем данные {% endif %}
+
+     send_result = {{ function_name }}('send', send_message{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %});
+
+     %{% if _language != 'ru' %} Wait for data received {% else %} Ждём получения данных (не более 10 секунд) {% endif %}
+
+     if {{ function_name }}('wait', handler_id, 10) >=0
+        if {{ function_name }}('size', handler_id) >=0  %{% if _language != 'ru' %} Message exist {% else %} Есть сообщения {% endif %}
+
+           [ result, message ] = {{ function_name }}('getNext', handler_id);
+           if result >=0
+              % {% if _language != 'ru' %}  save received message as JSON file  {% else %} Сохраняем сообщение в строку формата JSON {% endif %}
+
+              json_string = {{ function_name }}('toJSON', message, true);
+              fileID = fopen('{{ _example_message.___name}}.json','w');
+              fwrite(fileID, json_string);
+              fclose(fileID);
+           end
+        end
+     end % wait
+    {% endif %}
+   end %  if is open
+ end % if open
+end % if error == 0

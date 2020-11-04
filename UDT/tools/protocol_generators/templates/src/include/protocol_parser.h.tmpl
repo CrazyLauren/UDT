@@ -264,9 +264,9 @@ inline char const* parser(char const* aItBegin, char const* aItEnd,T* aHandler)
 				    {
                         unsigned _next = 0;
                 {% if field_size %}
-					    unsigned _full_size = _phead->getSize();
+					    std::size_t _full_size = _phead->getSize();
                 {% else %}
-					    unsigned _full_size = sizeof({{ net_struct_name }});
+					    std::size_t _full_size = sizeof({{ net_struct_name }});
                 {% endif %}
                         const char* _end=aItBegin + _full_size;
                         impl::call_process<T,{{ struct_header_name }}>::call(aHandler,

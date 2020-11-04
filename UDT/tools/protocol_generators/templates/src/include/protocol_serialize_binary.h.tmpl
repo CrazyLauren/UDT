@@ -37,7 +37,7 @@ namespace {{ common.get_namespace(name) }}
 template <typename TContainer, typename T>
 inline TContainer& serialize_binary(TContainer& aTo,T const& aObject);
 template <typename T>
-inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject);
+inline char* serialize_binary(char* aTo,std::size_t aMaxSize,T const& aObject);
 
 /// @}
 
@@ -81,7 +81,7 @@ namespace impl
  * @{
  */
 template<class Tdynamic ,class T>
-inline char* serialize_fields(char *aTo, unsigned aMaxSize,
+inline char* serialize_fields(char *aTo, std::size_t aMaxSize,
         Tdynamic* aHeader,T const & aObject );
 template<class Tdynamic ,class T>
 inline char const* deserialize_fields(T& aTo,
@@ -93,7 +93,7 @@ inline char const* deserialize_fields(T& aTo,
 * \return begin of dynamic data of message
 */
 template<class Tdynamic >
-inline unsigned dynamic_data_offset(Tdynamic const& aObject)
+inline std::size_t dynamic_data_offset(Tdynamic const& aObject)
 {
     return Tdynamic::SIZE_FULL;
 }
@@ -103,8 +103,8 @@ template<typename T>
 inline T& deserialize_binary(T& aTo, char const* aBegin,
     char const* aEnd)
 {
-    unsigned const _buf_size = aEnd-aBegin;
-    unsigned const _size = get_full_size<T>(aTo);
+    std::size_t const _buf_size = aEnd-aBegin;
+    std::size_t const _size = get_full_size<T>(aTo);
     DCHECK_GE(_size,_buf_size);
     if( _size >= _buf_size )
     {
@@ -116,7 +116,8 @@ inline T& deserialize_binary(T& aTo, char const* aBegin,
 template<typename T,typename TContainer>
 inline T& deserialize_binary(T& aTo, TContainer const& aBuf)
 {
-    unsigned const _buf_size = aBuf.size()*sizeof(typename TContainer::value_type);
+    using namespace std;
+    std::size_t const _buf_size = aBuf.size()*sizeof(typename TContainer::value_type);
     return deserialize_binary<T>(aTo,(char const*)&aBuf.front(),
                 (char const*)&aBuf.front() + _buf_size);
 }
@@ -128,7 +129,7 @@ inline T deserialize_binary(TContainer const& aBuf)
     return _rval;
 }
 template<typename T>
-inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject)
+inline char* serialize_binary(char* aTo,std::size_t aMaxSize,T const& aObject)
 {
     if(aMaxSize >= sizeof(T))
     {
@@ -142,10 +143,11 @@ inline char* serialize_binary(char* aTo,unsigned aMaxSize,T const& aObject)
 template<typename TContainer, typename T>
 inline TContainer& serialize_binary(TContainer& aTo, T const& aObject)
 {
-    unsigned const _own_size = aTo.size();
-    unsigned const _first = _own_size * sizeof(typename TContainer::value_type);
-    unsigned const _size = get_full_size<T>(aObject);
-    unsigned const _new_size = _own_size//
+    using namespace std;
+    std::size_t const _own_size = aTo.size();
+    std::size_t const _first = _own_size * sizeof(typename TContainer::value_type);
+    std::size_t const _size = get_full_size<T>(aObject);
+    std::size_t const _new_size = _own_size//
                     + _size / sizeof(typename TContainer::value_type) // if container value size more 1 byte
                     + (_size % sizeof(typename TContainer::value_type) == 0 ? 0:1) // if not multiple ratio
                     ;
@@ -161,21 +163,21 @@ inline TContainer& serialize_binary(TContainer& aTo, T const& aObject)
 }
 {% macro get_valid_len_of_array(field)%}
     {% if 'TypeInfo' in field and field.TypeInfo.is_signed %}
-unsigned const _{{ field.id }}_len = aObject.{{ field.id }} >= 0?
-                                        static_cast<unsigned>(aObject.{{ field.id }})
+std::size_t const _{{ field.id }}_len = aObject.{{ field.id }} >= 0?
+                                        static_cast<std::size_t>(aObject.{{ field.id }})
                                         :
                                         (
-                                            unsigned (
+                                            std::size_t (
                                             1
                                             + (int)std::numeric_limits<{{ field.type }}>::max()
                                             + (int)aObject.{{ field.id }}
                                             )
-                                         +   unsigned(
+                                         +   std::size_t(
                                                 -((int)std::numeric_limits<{{ field.type }}>::min())
                                             )
                                           );
     {% else %}
-unsigned const _{{ field.id }}_len = aObject.{{ field.id }};
+std::size_t const _{{ field.id }}_len = aObject.{{ field.id }};
     {% endif %}
 DCHECK_LT(_{{ field.id }}_len, std::numeric_limits<int32_t>::max());
 {% endmacro %}
@@ -224,7 +226,7 @@ struct {{ struct_name_dynamic}}
                                     and field.LogicalType == "dynamic array" %}
         {{field.id}} = 0;
             {% elif 'array_len' in field and field.array_len  > 0 %}
-        for (unsigned i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
+        for (std::size_t i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
         {
 	        {{field.id}}[i] = aData.{{field.id}}[i];
         }
@@ -249,7 +251,7 @@ struct {{ struct_name_dynamic}}
         {% for field in aMsg.___fields|fields(True) if  'LogicalType' in field
                                     and field.LogicalType != "dynamic array" %}
             {% if 'array_len' in field and field.array_len  > 0 %}
-        for (unsigned i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
+        for (std::size_t i = 0; i < sizeof(aData.{{ field.id }})/sizeof(aData.{{ field.id }}[0]); ++i)
         {
 	        aData.{{field.id}}[i] = {{field.id}}[i];
         }
@@ -259,7 +261,7 @@ struct {{ struct_name_dynamic}}
         {% endfor %}
     }
 });
-#if (__cplusplus>= 201103L) || (_MSC_VER >= 1800)
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER>= 1800)
     static_assert(sizeof({{ struct_name_dynamic }}) == {{ struct_name }}::SIZE_FULL,
                     "invalid size of message {{ aMsg.___name }}");
 #   ifdef {{ common.get_namespace(name)|upper }}_NOPACKED
@@ -283,9 +285,9 @@ namespace impl{
  * @tparam T Object type
  */
 template<>
-inline unsigned get_full_size_dynamic<{{ struct_name_dynamic}}>({{ struct_name_dynamic}} const & aVal )
+inline std::size_t get_full_size_dynamic<{{ struct_name_dynamic}}>({{ struct_name_dynamic}} const & aVal )
 {
-    unsigned _size = 0;
+    std::size_t _size = 0;
 
     {% if paret_dynamic_name %}
     _size += get_full_size_dynamic<{{ paret_dynamic_name}}>(
@@ -295,21 +297,21 @@ inline unsigned get_full_size_dynamic<{{ struct_name_dynamic}}>({{ struct_name_d
 
     {% for field in aMsg | logical_type(["dynamic array"],True) %}
         {% if 'TypeInfo' in field and field.TypeInfo.is_signed %}
-    unsigned const _{{ field.id }}_len = aVal.{{ field.id }} >= 0?
-                                                static_cast<unsigned>(aVal.{{ field.id }})
+    std::size_t const _{{ field.id }}_len = aVal.{{ field.id }} >= 0?
+                                                static_cast<std::size_t>(aVal.{{ field.id }})
                                                 :
                                                 (
-                                                    unsigned (
+                                                    std::size_t (
                                                     1
                                                     + (int)std::numeric_limits<{{ field.type }}>::max()
                                                     + (int)aVal.{{ field.id }}
                                                     )
-                                                 +   unsigned(
+                                                 +   std::size_t(
                                                         -((int)std::numeric_limits<{{ field.type }}>::min())
                                                     )
                                                   );
         {% else %}
-    unsigned const _{{ field.id }}_len = aVal.{{ field.id }};
+    std::size_t const _{{ field.id }}_len = aVal.{{ field.id }};
         {% endif %}
     _size += sizeof({{ struct_name}}::{{field.id}}_dynamic_t::value_type)
             * _{{ field.id }}_len;
@@ -318,7 +320,7 @@ inline unsigned get_full_size_dynamic<{{ struct_name_dynamic}}>({{ struct_name_d
 }
 template<>
 inline char* serialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}>
-    (char* aTo, unsigned aMaxSize, {{ struct_name_dynamic}}* aHeader,
+    (char* aTo, std::size_t aMaxSize, {{ struct_name_dynamic}}* aHeader,
     {{ struct_name}} const & aObject )
 {
     {% if paret_dynamic_name %}
@@ -341,10 +343,10 @@ inline char* serialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}>
         DCHECK_LE(_order_prev, {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }});
         _order_prev = {{ struct_name}}::DYNAMIC_ORDER_OF_{{ field.id|upper }};
 #endif
-        unsigned const _{{ field.id }}_len = aObject.{{ field.id }}.size();
+        std::size_t const _{{ field.id }}_len = aObject.{{ field.id }}.size();
         DCHECK_LE(_{{ field.id }}_len, std::numeric_limits<{{ field.type }}>::max());
-        aHeader->{{ field.id }} = _{{ field.id }}_len;
-        unsigned const _{{ field.id }}_len_byte = _{{ field.id }}_len *
+        aHeader->{{ field.id }} = static_cast<{{ field.type }}>(_{{ field.id }}_len);
+        std::size_t const _{{ field.id }}_len_byte = _{{ field.id }}_len *
            sizeof(_value_{{field.id}}_t);
 
         if(_{{ field.id }}_len_byte > aMaxSize)
@@ -353,7 +355,7 @@ inline char* serialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}>
         _ptr_{{field.id}}_t const _begin = (_ptr_{{field.id}}_t) aTo;
         _ptr_{{field.id}}_t  _to = _begin;
 
-        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        for (std::size_t i = 0; i < _{{ field.id }}_len; ++i)
         {
                 *(_to++) = aObject.{{ field.id }}[i];
         }
@@ -392,7 +394,7 @@ inline char const* deserialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}
 
         aTo.{{field.id}}.resize(_{{ field.id }}_len);
 
-        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        for (std::size_t i = 0; i < _{{ field.id }}_len; ++i)
         {
             aTo.{{ field.id }}[i]=*(_from++);
         }
@@ -406,30 +408,25 @@ inline char const* deserialize_fields<{{ struct_name_dynamic}}, {{ struct_name}}
 }
 
 template<>
-inline unsigned dynamic_data_offset<{{ struct_name_dynamic }}>({{ struct_name_dynamic }} const& aObject)
+inline std::size_t dynamic_data_offset<{{ struct_name_dynamic }}>({{ struct_name_dynamic }} const& aObject)
 {
+{% if '___child' in aMsg and aMsg.___child|length > 0 %}
     switch (aObject.getNumber())
     {
-        {% for msg2 in messages  if '___type' in msg
-                                and '___parent' in msg
-                                and msg2.___type == 'dynamic'
-                                %}
-            {% for _parent in  msg2.___parent if '___number' in _parent
-                                             and _parent.___number == aMsg.___number
-                    %}
-            {% set child_name =  msg2.___name + '_t' %}
+        {% for _child in aMsg.___child %}
+            {% set child_name =  messages[_child].___name + '_t' %}
             case {{ child_name }}::NUMBER:
                 return {{ child_name }}::SIZE_FULL;
-            {% endfor %}
         {% endfor %}
         default:
             break;
     }
+{% endif %}
     return {{ struct_name_dynamic }}::SIZE_FULL;
 }
 }
 template<>
-inline char* serialize_binary<{{ struct_name }}>(char* aTo,unsigned aMaxSize,
+inline char* serialize_binary<{{ struct_name }}>(char* aTo,std::size_t aMaxSize,
     {{ struct_name }} const& aObject)
 {
     char* const _begin = aTo;
@@ -454,7 +451,7 @@ template<>
 inline {{ struct_name }}& deserialize_binary<{{ struct_name }}>({{ struct_name }}& aTo,
     char const* aBegin, char const* aEnd)
 {
-    unsigned const _buf_size = aEnd-aBegin;
+    std::size_t const _buf_size = aEnd-aBegin;
 
     DCHECK_LE(sizeof({{ struct_name_dynamic}}), _buf_size);
     if(sizeof({{ struct_name_dynamic}}) <= _buf_size)
@@ -468,7 +465,7 @@ inline {{ struct_name }}& deserialize_binary<{{ struct_name }}>({{ struct_name }
         char const* _p = aBegin + impl::dynamic_data_offset<{{ struct_name_dynamic}}>(_val);
         _p = impl::deserialize_fields<{{ struct_name_dynamic}},{{ struct_name }}>(aTo, _val, _p);
 
-        DCHECK_GE(_buf_size, (_p-aBegin));
+        DCHECK_GE(_buf_size, (std::size_t)(_p-aBegin));
         DCHECK_EQ((_p-aBegin),get_full_size<{{ struct_name }}>(aTo));
         DCHECK_EQ((_p-aBegin),get_full_size<{{ struct_name_dynamic}}>(_val));
     }
@@ -508,7 +505,7 @@ inline NSHARE::CConfig serialize({{ common.get_namespace(name) }}::{{ struct_nam
                             impl::dynamic_data_offset<{{ struct_name_dynamic}}>(aObject));
 
         _value_{{field.id}}_t const * _from = _begin;
-        for (unsigned i = 0; i < _{{ field.id }}_len; ++i)
+        for (std::size_t i = 0; i < _{{ field.id }}_len; ++i)
         {
             _conf.MAdd("{{ field.id }}", {{ need_cast_dynamic_to }} *(_from++));
         }
@@ -556,15 +553,15 @@ inline {{ struct_name }}& operator<<({{ struct_name }}& aVal,
 
 }
 #   endif //#   ifdef SHARE_BUFFER_DEFINED
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER>= 1800)
 template<typename TContainer
         ,
 		typename value_type = typename TContainer::value_type,
 		typename TContainer::size_type (TContainer::*TSize)() const
-		= TContainer::size,
+		= &TContainer::size,
 
 		void (TContainer::*TResize)(typename TContainer::size_type)
-			= TContainer::resize
+			= &TContainer::resize
         >
 inline TContainer& operator<<(TContainer& aBuf,
 		{{ struct_name }} const& aVal)
@@ -574,10 +571,10 @@ inline TContainer& operator<<(TContainer& aBuf,
 template<typename TContainer,
 		typename value_type = typename TContainer::value_type,
 		typename TContainer::size_type (TContainer::*TSize)() const
-		= TContainer::size,
+		= &TContainer::size,
 
 		void (TContainer::*TResize)(typename TContainer::size_type)
-			= TContainer::resize
+			= &TContainer::resize
     >
 inline {{ struct_name }} const& operator>>({{ struct_name }} const& aVal,
 		TContainer& aBuf)
@@ -589,9 +586,9 @@ inline {{ struct_name }} const& operator>>({{ struct_name }} const& aVal,
 template<typename TContainer,
 		typename value_type = typename TContainer::value_type,
 		typename TContainer::size_type (TContainer::*TSize)() const
-		= TContainer::size,
+		= &TContainer::size,
 		void (TContainer::*TResize)(typename TContainer::size_type)
-			= TContainer::resize
+			= &TContainer::resize
     >
 inline TContainer const& operator>>(TContainer const& aBuf,
 		{{ struct_name }}& aVal)
@@ -603,10 +600,10 @@ inline TContainer const& operator>>(TContainer const& aBuf,
 template<typename TContainer,
 		typename value_type = typename TContainer::value_type,
 		typename TContainer::size_type (TContainer::*TSize)() const
-		= TContainer::size,
+		= &TContainer::size,
 
 		void (TContainer::*TResize)(typename TContainer::size_type)
-			= TContainer::resize
+			= &TContainer::resize
 >
 inline {{ struct_name }}& operator<<({{ struct_name }}& aVal,
 		TContainer const& aBuf)

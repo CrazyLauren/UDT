@@ -1,0 +1,31 @@
+add_custom_target(matlab_package_${PROJECT_NAME} ALL
+	                  COMMAND ${CMAKE_COMMAND} -E remove_directory ${MATLAB_PACKAGE_TOOLBOX_ROOT}
+	                  @_CREATE_DIRECTORIES@
+	                  @_COPY_LIBRARY_COMMAND@
+#	                  @_COPY_LIBRARY_DEPS_COMMAND@
+                      COMMAND "${Matlab_MAIN_PROGRAM}" -wait -nodisplay -nodesktop -r "\
+    try, matlab.addons.toolbox.packageToolbox('${MATLAB_PACKAGE_PRJ}'); \
+    catch ME, warning(getReport(ME)); quit(1); end; quit"
+	                  DEPENDS ${${PROJECT_NAME}_MATLAB_MODULES} ${MATLAB_PACKAGE_PRJ}
+	                  WORKING_DIRECTORY ${MATLAB_PACKAGE_BUILD_LOCATION}
+	                  )
+
+file(GLOB MTBLX_FILE "${MATLAB_PACKAGE_BUILD_LOCATION}/*.mltbx")
+if(MTBLX_FILE)
+    message(STATUS "Mtblx file:" ${MTBLX_FILE})
+    set(_PACKET_PATH
+    		"${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/package"
+    		)
+
+    install(FILES ${MTBLX_FILE}
+        DESTINATION ${_PACKET_PATH}
+        COMPONENT matlab_package)
+    get_filename_component(_MLTBX_FILE_NAME ${MTBLX_FILE} NAME)
+    set(${PROJECT_NAME}_MTBLX_FILE_NAME
+            ${_MLTBX_FILE_NAME}
+    	    CACHE INTERNAL "Mtblx file"
+    	    FORCE)
+    #todo matlab linux install
+    #todo matlab windows install
+
+endif()

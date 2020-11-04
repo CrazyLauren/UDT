@@ -115,7 +115,7 @@ std::pair<NUDT::required_header_t,bool> {{file_name}}::MHeader(
     DCHECK(_is_valid);
 
 	NUDT::required_header_t _header;
-    const unsigned _min_size = min(sizeof(_header.FMessageHeader), sizeof(_h));
+    const std::size_t _min_size = min(sizeof(_header.FMessageHeader), sizeof(_h));
 
     memcpy(_header.FMessageHeader,&_h, _min_size);
 	_header.FVersion = NSHARE::version_t(aFrom.MChild(NSHARE::version_t::NAME));
@@ -132,7 +132,7 @@ NSHARE::CConfig {{file_name}}::MToConfig(
     {{ struct_header_name }} _h;
     _h.makeZero();
 
-    const unsigned _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
+    const std::size_t _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
     memcpy(&_h,aHeader.FMessageHeader, _min_size);
 
     DCHECK(is_valid<>(_h))<<_h;
@@ -297,7 +297,7 @@ int {{file_name}}::MDataSize (const required_header_t& aHeader) const
     {{ struct_header_name }} _h;
     _h.makeZero();
 
-    const unsigned _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
+    const std::size_t _min_size = min(sizeof(aHeader.FMessageHeader), sizeof(_h));
     memcpy(&_h,aHeader.FMessageHeader, _min_size);
 
 	switch (_h.getNumber())

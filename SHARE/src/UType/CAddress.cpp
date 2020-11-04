@@ -17,9 +17,9 @@ namespace NSHARE
 const char CProgramName::SEPERATOR = '@';
 const char CProgramGroup::SEPERATOR = '.';
 const NSHARE::CText CProgramName::NAME = "name";
-COMPILE_ASSERT(static_cast<utf32>(CProgramName::SEPERATOR) == 64u,
+COMPILE_ASSERT(static_cast<uint32_t>(CProgramName::SEPERATOR) == 64u,
 		WtfInvalidSymbolAt);
-COMPILE_ASSERT(static_cast<utf32>('.') == 46u, WtfInvalidSymbolPoint);
+COMPILE_ASSERT(static_cast<uint32_t>('.') == 46u, WtfInvalidSymbolPoint);
 CProgramName::CProgramName()
 {
 

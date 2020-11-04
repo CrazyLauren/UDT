@@ -33,7 +33,7 @@ inline std::ostream& operator<<(std::ostream & aStream,
             {% set need_cast_to = '('+_cast+')' if _cast else ''%}
                 {% if 'array_len' in field and field.array_len  > 0 %}
     aStream << "{{  field.id }} : ";
-    for (unsigned i = 0; i < sizeof(aVal.{{ field.id }})/sizeof(aVal.{{ field.id }}[0]); ++i)
+    for (std::size_t i = 0; i < sizeof(aVal.{{ field.id }})/sizeof(aVal.{{ field.id }}[0]); ++i)
     {
         if(i!=0)
             aStream <<", ";
@@ -45,14 +45,14 @@ inline std::ostream& operator<<(std::ostream & aStream,
                     {% set need_cast_dynamic_to = '('+_cast_d+')' if _cast_d
                                          else ''%}
     {
-        unsigned const {{ field.id }}_len=aVal.{{ field.id }}.size();
+        std::size_t const {{ field.id }}_len=aVal.{{ field.id }}.size();
 
         if ( {{ field.id }}_len >0)
             aStream << "{{  field.id }} : ";
         else
             aStream << "{{  field.id }} :  empty ";
 
-        for (unsigned i = 0; i < {{ field.id }}_len; ++i)
+        for (std::size_t i = 0; i < {{ field.id }}_len; ++i)
         {
             if(i!=0)
                 aStream << ", ";

@@ -21,6 +21,7 @@
 #include <SHARE/UType/IIntrusived.h>
 #include <SHARE/UType/intrusive_ptr.h>
 
+
 #if defined(_MSC_VER)
 #	pragma warning (push)
 #	pragma warning (disable:4251)
@@ -29,7 +30,7 @@ namespace NSHARE
 {
 class CBuffer;
 typedef char utf8;
-typedef uint32_t utf32;
+
 typedef utf8 encoded_char;
 
 //don't use memcpy!!!!!!!!!!!!!!!!!!!!!!!

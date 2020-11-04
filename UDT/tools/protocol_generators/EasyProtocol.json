@@ -99,7 +99,7 @@
   ],
   "user_enums": [
     {
-      "type": "char",
+      "type": "uint8_t",
       "___name": "eDas",
       "___title": "fdsdfs",
       "description": "",

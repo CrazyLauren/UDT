@@ -49,3 +49,10 @@ find_package(SWIG)
 if(NOT SWIG_FOUND)
 	message(STATUS "SWIG could not be found http://www.swig.org")
 endif()
+
+find_package(Matlab COMPONENTS
+    MAIN_PROGRAM MEX_COMPILER)
+
+if(NOT Matlab_FOUND)
+	message(STATUS "Matlab doesn't found")
+endif()

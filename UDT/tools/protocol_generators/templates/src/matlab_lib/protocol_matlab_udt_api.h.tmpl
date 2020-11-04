@@ -1,0 +1,960 @@
+{% set file_name = 'protocol_' + name | lower+ '_matlab_udt_api' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+{% set _language = 'ru' if 'language' in settings and settings.language == 'ru' else 'en'  %}
+#include <deftype>
+
+#include <{{ common.get_namespace(name) }}_udt.h>
+
+#include "{{ common.get_namespace(name) }}_matlab_serialize.h"
+
+/** Declaration function which is defined in revision.c,
+*   the preprocessors are defined in CMake file
+* @{
+*/
+extern "C" unsigned REVISION_FUNCTION();
+extern "C" unsigned MAJOR_FUNCTION();
+extern "C" unsigned MINOR_FUNCTION();
+extern "C" const char* REVISION_PATH_INFO();
+extern "C" const char* COMPILE_TIME_FUNCTION();
+extern "C" const char* COMPILE_DATE_FUNCTION();
+/**
+* @}
+*/
+namespace {{ common.get_namespace(name) }}
+{
+namespace matlab
+{
+namespace commands
+{
+mxChar const  create_command[]={(mxChar)'c',(mxChar)'r',(mxChar)'e',(mxChar)'a',(mxChar)'t',(mxChar)'e'};
+mxChar const  destroy_command[]={(mxChar)'d',(mxChar)'e',(mxChar)'s',(mxChar)'t',(mxChar)'r',(mxChar)'o',(mxChar)'y'};
+mxChar const  print_command[]={(mxChar)'p',(mxChar)'r',(mxChar)'i',(mxChar)'n',(mxChar)'t'};
+mxChar const  to_json[]={(mxChar)'t',(mxChar)'o',(mxChar)'J',(mxChar)'S',(mxChar)'O',(mxChar)'N'};
+mxChar const  from_json[]={(mxChar)'f',(mxChar)'r',(mxChar)'o',(mxChar)'m',(mxChar)'J',(mxChar)'S',(mxChar)'O',(mxChar)'N'};
+mxChar const  to_send[]={(mxChar)'s',(mxChar)'e',(mxChar)'n',(mxChar)'d'};
+mxChar const  wait_data[]={(mxChar)'w',(mxChar)'a',(mxChar)'i',(mxChar)'t'};
+mxChar const  no_wait_data[]={(mxChar)'n',(mxChar)'o',(mxChar)'w',(mxChar)'a',(mxChar)'i',(mxChar)'t'};
+mxChar const  recv_data[]={(mxChar)'r',(mxChar)'e',(mxChar)'c',(mxChar)'v'};
+mxChar const  get_next[]={(mxChar)'g',(mxChar)'e',(mxChar)'t',(mxChar)'N',(mxChar)'e',(mxChar)'x',(mxChar)'t'};
+mxChar const  amount_of[]={(mxChar)'s',(mxChar)'i',(mxChar)'z',(mxChar)'e'};
+mxChar const  doesntreceive[]={(mxChar)'u',(mxChar)'n',(mxChar)'r',(mxChar)'e',(mxChar)'c',(mxChar)'v'};
+mxChar const  generate[]={(mxChar)'g',(mxChar)'e',(mxChar)'n'};
+mxChar const  generate_zero[]={(mxChar)'z',(mxChar)'e',(mxChar)'r',(mxChar)'o'};
+mxChar const  help[]={(mxChar)'h',(mxChar)'e',(mxChar)'l',(mxChar)'p'};
+mxChar const  api_version[]={(mxChar)'v',(mxChar)'e',(mxChar)'r',(mxChar)'s',(mxChar)'i',(mxChar)'o',(mxChar)'n'};
+mxChar const  from_bin[]={(mxChar)'f',(mxChar)'r',(mxChar)'o',(mxChar)'m',(mxChar)'B',(mxChar)'i',(mxChar)'n'};
+mxChar const  to_bin[]={(mxChar)'t',(mxChar)'o',(mxChar)'B',(mxChar)'i',(mxChar)'n'};
+
+/** Position of input argument in mex Function
+*/
+enum eArgumentInputId
+{
+    eCOMMAND = 0,//!< The command is first param
+    eHANDLER_ID = 1,//!< The message is second param
+    eMESSAGE = 1,//!< The message is second param
+    eJSON_PRETTY = 2,//!< Is pretty argument
+    eIS_HEAD = 2,//!< Is Head
+    eJSON_STRING = 1,//!< JSON string
+    eWAIT_TIME = 2,//!< wait time argument
+    eRECV_FROM = 2,//!< recv from argument
+    eRECV_FLAGS = 3,//!< recv flags argument
+    eBINARY_MESSAGE = 1,//!< Serialized to binary message
+
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+    eSEND_{{ field.id | upper}} {% if loop.first %} = 1 {% endif %},
+    {% endfor %}
+
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+    eRECV_{{ field.id | upper}} {% if loop.first %} = eRECV_FLAGS + 1 {% endif %},
+    {% endfor %}
+};
+}
+
+/** Class to parse matlab Mex Function for message protocol
+*/
+template<class T>
+class CMatlabHandler:protected CHandler<T>, public NSHARE::IIntrusived
+{
+    public:
+    typedef std::size_t handler_id_t;
+    static bool sMArgumentParse(std::size_t nlhs,
+            mxArray *plhs[],
+            std::size_t nrhs,
+            const mxArray *prhs[],
+            std::size_t aFirstOutput = 0,
+            std::size_t aFirstInput = 0
+    );
+    protected:
+    typedef std::vector< NSHARE::intrusive_ptr< CMatlabHandler> > message_handlers_t;
+
+    CMatlabHandler()
+    {
+    }
+    static NSHARE::intrusive_ptr< CMatlabHandler> sMGet(mxArray const * const aHandler);
+
+    static NSHARE::CMutex sFMutex;
+    static message_handlers_t sFHandlers;
+};
+template<class T>
+NSHARE::CMutex CMatlabHandler<T>::sFMutex;
+template<class T>
+typename CMatlabHandler<T>::message_handlers_t CMatlabHandler<T>::sFHandlers;
+
+template<class T>
+inline NSHARE::intrusive_ptr<CMatlabHandler<T> >  CMatlabHandler<T>::sMGet(mxArray const * const aHandler)
+{
+    handler_id_t _id;
+    bool const _is = NSHARE::matlab::deserialize(&_id, aHandler);
+    if(!_is)
+    {
+        mexErrMsgIdAndTxt( "{{ name }}:CannotDeserialize",
+            "Cannot deserialize id");
+    }else
+    {
+        NSHARE::CRAII<NSHARE::CMutex> _lock(sFMutex);
+        if(sFHandlers.size() <= _id ||
+              !sFHandlers[_id].MIs()  )
+        {
+            mexErrMsgIdAndTxt( "{{ name }}:No handler",
+            "No handler id");
+        }else
+        {
+            return sFHandlers[_id];
+        }
+    }
+    return NSHARE::intrusive_ptr< CMatlabHandler>();
+}
+template<class T>
+inline
+    bool CMatlabHandler<T>::sMArgumentParse(std::size_t nlhs,
+            mxArray *plhs[],
+            std::size_t nrhs,
+            const mxArray *prhs[],
+            std::size_t aFirstOutput,
+            std::size_t aFirstInput
+    )
+{
+    using namespace NSHARE::matlab;
+    VLOG(1)<<"Parse nlhs="<<nlhs<<" nrhs="<<nrhs<<" aFirstOutput = "<<aFirstOutput<< " aFirstInput="<<aFirstInput;
+    bool _is_error = false;
+    bool _is_print_help = false;
+    if( nrhs == aFirstInput )
+    {
+        VLOG(ERROR)<<"No input value ";
+        mexWarnMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No input value. The first value has to be command.");
+        _is_error = true;
+    }else
+    {
+
+    mxArray const* const _cmd_ptr = (aFirstInput + commands::eCOMMAND) < nrhs ?
+                                prhs[aFirstInput + commands::eCOMMAND]:
+                                NULL;
+    mxArray const * const _message_ptr = (aFirstInput + commands::eMESSAGE) < nrhs ?
+                                prhs[aFirstInput + commands::eMESSAGE]:
+                                NULL;
+    mxArray const * const _handler_id_ptr = (aFirstInput + commands::eHANDLER_ID) < nrhs ?
+                                prhs[aFirstInput + commands::eHANDLER_ID]:
+                                NULL;
+    mxArray const * const _pretty_ptr = (aFirstInput + commands::eJSON_PRETTY) < nrhs ?
+                                prhs[aFirstInput + commands::eJSON_PRETTY]:
+                                NULL;
+    mxArray const * const _is_head_ptr = (aFirstInput + commands::eIS_HEAD) < nrhs ?
+                                prhs[aFirstInput + commands::eIS_HEAD]:
+                                NULL;
+    mxArray const * const _json_string_ptr = (aFirstInput + commands::eJSON_STRING) < nrhs ?
+                                prhs[aFirstInput + commands::eJSON_STRING]:
+                                NULL;
+
+    mxArray const * const _binary_ptr = (aFirstInput + commands::eBINARY_MESSAGE) < nrhs ?
+                                             prhs[aFirstInput + commands::eBINARY_MESSAGE]:
+                                             NULL;
+
+    mxArray const * const _wait_time_ptr = (aFirstInput + commands::eWAIT_TIME) < nrhs ?
+                                prhs[aFirstInput + commands::eWAIT_TIME]:
+                                NULL;
+
+    mxArray const * const _recv_from_ptr = (aFirstInput + commands::eRECV_FROM) < nrhs ?
+                                prhs[aFirstInput + commands::eRECV_FROM]:
+                                NULL;
+
+    mxArray const * const _recv_flags_ptr = (aFirstInput + commands::eRECV_FLAGS) < nrhs ?
+                                prhs[aFirstInput + commands::eRECV_FLAGS]:
+                                NULL;
+
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+    mxArray const * const _recv_{{ field.id  }}_ptr = (aFirstInput + commands::eRECV_{{ field.id | upper}}) < nrhs ?
+                                prhs[aFirstInput + commands::eRECV_{{ field.id | upper}}]:
+                                NULL;
+    mxArray const * const _send_{{ field.id  }}_ptr = (aFirstInput + commands::eSEND_{{ field.id | upper}}) < nrhs ?
+                                prhs[aFirstInput + commands::eSEND_{{ field.id | upper}}]:
+                                NULL;
+    {% endfor %}
+                    
+    mxArray ** _output_ptr = aFirstOutput  < nlhs ?
+                                &plhs[0]:
+                                NULL;
+    mxArray ** _output_2_ptr = (aFirstOutput + 1)  < nlhs ?
+                                &plhs[1]:
+                                NULL;
+    mxArray ** _output_3_ptr = (aFirstOutput + 2)  < nlhs ?
+                                &plhs[2]:
+                                NULL;
+    mxArray ** _output_4_ptr = (aFirstOutput + 3)  < nlhs ?
+                                &plhs[3]:
+                                NULL;
+    mxArray ** _output_5_ptr = (aFirstOutput + 4)  < nlhs ?
+                                &plhs[4]:
+                                NULL;
+
+    mxClassID const category = mxGetClassID(_cmd_ptr);
+    if(category != mxCHAR_CLASS)
+    {
+                    //category
+        mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "First argument has to be command - type char: %s ", print_matlab_type(category));
+        _is_error = true;
+    }else
+    {
+        size_t const total_num_of_elements = static_cast<size_t>( mxGetNumberOfElements(_cmd_ptr));
+
+#define IS_COMMAND(aVar) sizeof(commands:: aVar)/sizeof(commands:: aVar[0]) == total_num_of_elements \
+            && memcmp(commands:: aVar, mxGetData(_cmd_ptr), sizeof(commands:: aVar) ) == 0
+
+        if(IS_COMMAND(print_command))
+        {
+            VLOG(1)<<"Print command detected ";
+            if(_message_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No message to print ");
+
+                _is_error = true;
+            }else
+            {
+                T _msg;
+                if(!deserialize(&_msg, _message_ptr))
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                        "Cannot deserialize message ");
+
+                        _is_error = true;
+                }else
+                {
+                    std::stringstream _stream;
+                    _stream << _msg;
+                    mexPrintf("%s", _stream.str().c_str());
+                }
+            }
+        }
+        else if(IS_COMMAND(to_json))
+        {
+            VLOG(1)<<"To JSON command detected ";
+            if(_message_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No message ");
+
+                _is_error = true;
+            }else
+                if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _msg;
+                if(!deserialize(&_msg, _message_ptr))
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                        "Cannot deserialize message ");
+
+                        _is_error = true;
+                }else
+                {
+                    bool _pretty = false;
+                    if(_pretty_ptr)
+                    {
+                        deserialize(&_pretty, _pretty_ptr);
+                    }
+                    std::string const _json = sMToJson(_msg, _pretty ? 1: 0);
+                    *_output_ptr = serialize(_json);
+                }
+            }
+        }
+        else if(IS_COMMAND(from_json))
+        {
+            VLOG(1)<<"From JSON command detected ";
+            if(_json_string_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No JSON string ");
+
+                _is_error = true;
+            }else
+                if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                std::string _str;
+                bool _is = deserialize(&_str,_json_string_ptr);
+                if(!_is)
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:CannotDeserialize",
+                        "Cannot deserialize string");
+                    _is_error = true;
+                }else
+                {
+                    bool _is_head = true;
+                    if(_is_head_ptr)
+                    {
+                        deserialize(&_is_head, _is_head_ptr);
+                    }
+                    T const _msg(sMFromJson(_str, _is_head));
+                    *_output_ptr = NSHARE::matlab::serialize(_msg);
+                }
+            }
+        }
+
+        else if(IS_COMMAND(to_bin))
+        {
+            VLOG(1)<<"To Binary command detected ";
+            if(_message_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                    "No message ");
+
+                _is_error = true;
+            }else
+            if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                    "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _msg;
+                if(!deserialize(&_msg, _message_ptr))
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                        "Cannot deserialize message ");
+
+                    _is_error = true;
+                }else
+                {
+                    std::vector<uint8_t> _buf;
+                    _buf << _msg;
+                    *_output_ptr = serialize(_buf);
+                }
+            }
+        }
+        else if(IS_COMMAND(from_bin))
+        {
+            VLOG(1)<<"From Binary command detected ";
+            if(_binary_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                    "No binary data ");
+
+                _is_error = true;
+            }else
+            if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                    "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                std::vector<uint8_t> _buf;
+                bool _is = deserialize(&_buf,_binary_ptr);
+                if(!_is)
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:CannotDeserialize",
+                        "Cannot deserialize binary data to array of uint8");
+                    _is_error = true;
+                }else
+                {
+                    T _msg;
+                    _buf >> _msg;
+                    *_output_ptr = NSHARE::matlab::serialize(_msg);
+                }
+            }
+        }
+
+        else if(IS_COMMAND(to_send))
+        {
+            VLOG(1)<<"To send command detected ";
+            if(_message_ptr == NULL
+            {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                || _send_{{ field.id  }}_ptr == NULL
+            {% endfor %}
+                )
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No message ");
+
+                _is_error = true;
+            }else
+                if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _msg;
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                {{ field.type  }} _{{ field.id  }};
+                {% endfor %}
+                if(!deserialize(&_msg, _message_ptr)
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                || !deserialize(&_{{ field.id  }}, _send_{{ field.id  }}_ptr )
+                {% endfor %}
+                )
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                        "Cannot deserialize message ");
+
+                        _is_error = true;
+                }else
+                {
+                    int const _rval = sMSend(_msg
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                    , _{{ field.id  }}
+                {% endfor %});
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(wait_data))
+        {
+            VLOG(1)<<"Wait data command detected ";
+            if(!_output_ptr || _handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No input/output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    double _time = -1;
+                    if(_wait_time_ptr != NULL)
+                    {
+                        if(!deserialize(&_time, _pretty_ptr))
+                        {
+                            mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                            "Cannot read time info ");
+
+                            _is_error = true;
+                        }
+                    }
+                    int const _rval = _ptr -> MWaitData(_time);
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(no_wait_data))
+        {
+            VLOG(1)<<"No wait data command detected ";
+            if(_handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No input/output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    bool const _rval = _ptr -> MForceUnlock();
+                    if(_output_ptr != NULL)
+                      *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(recv_data))
+        {
+            VLOG(1)<<"Recv data command detected ";
+            if(_recv_from_ptr == NULL
+                || _handler_id_ptr == NULL
+                || _recv_flags_ptr == NULL
+            {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                || _recv_{{ field.id  }}_ptr == NULL
+            {% endfor %}
+                )
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "Not all arguments ");
+
+                _is_error = true;
+            }else
+                if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    std::string _from;
+                    unsigned _flags;
+                    {% for field in header.___fields|fields(True)
+                        if field.LogicalType|string() in ["unique"]
+                         %}
+                    {{ field.type  }} _{{ field.id  }};
+                    {% endfor %}
+                    if(
+                        !deserialize(&_from, _recv_from_ptr)
+                        || !deserialize(&_flags, _recv_flags_ptr)
+                    {% for field in header.___fields|fields(True)
+                        if field.LogicalType|string() in ["unique"]
+                         %}
+                    || !deserialize(&_{{ field.id  }}, _recv_{{ field.id  }}_ptr )
+                    {% endfor %}
+                    )
+                    {
+                        mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                            "Cannot deserialize arguments ");
+
+                            _is_error = true;
+                    }else
+                    {
+                        int const _rval = _ptr-> MReceive(_from.c_str(),
+                        _flags
+                    {% for field in header.___fields|fields(True)
+                        if field.LogicalType|string() in ["unique"]
+                         %}
+                        , _{{ field.id  }}
+                    {% endfor %});
+                        *_output_ptr = NSHARE::matlab::serialize(_rval);
+                    }
+                }
+            }
+        }
+        else if(IS_COMMAND(get_next))
+        {
+            VLOG(1)<<"Get next command detected ";
+            if(!_output_ptr || !_output_2_ptr || _handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    T _to;
+                    NUDT::received_message_info_t _info;
+
+                    int const _rval = _ptr->MGetNext(&_to,
+                                           !_output_3_ptr ? NULL: &_info);
+
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                    *_output_2_ptr = NSHARE::matlab::serialize(_to);
+                    if(_output_3_ptr)
+                    {
+                        //todo serialize to matlab
+                        std::string const _json = NSHARE::serialize(_info).MToJSON(true).MToStdString();
+                        *_output_3_ptr = NSHARE::matlab::serialize(_json);
+                    }
+                }
+            }
+        }
+        else if(IS_COMMAND(amount_of))
+        {
+            VLOG(1)<<"Amount of command detected ";
+            if(!_output_ptr || _handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    unsigned const _rval = _ptr -> MAmountOf();
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(doesntreceive))
+        {
+            VLOG(1)<<"Doesn't receive command detected ";
+            if(!_output_ptr || _handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+
+                NSHARE::intrusive_ptr<CMatlabHandler<T> > _ptr(sMGet(_handler_id_ptr));
+                if(!_ptr.MIs())
+                {
+                    _is_error = true;
+                }
+                else
+                {
+                    //todo return messages
+                    int const _rval = _ptr -> MDoesNotReceive();
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(generate))
+        {
+            VLOG(1)<<"Generate command detected ";
+            if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _rval;
+                generate(& _rval);
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+            }
+        }
+        else if(IS_COMMAND(generate_zero))
+        {
+            VLOG(1)<<"Generate Zero command detected ";
+            if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _rval;
+                _rval.makeZero();
+                get_header_of<T>(&_rval);
+                fill_header(&_rval);
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+            }
+        }
+        else if(IS_COMMAND(create_command))
+        {
+            VLOG(1)<<"Create command detected ";
+            if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                NSHARE::CRAII<NSHARE::CMutex> _lock(sFMutex);
+                sFHandlers.push_back( message_handlers_t::value_type (new CMatlabHandler));
+                handler_id_t _rval(sFHandlers.size() - 1 );
+                NSHARE::matlab::serialize(_rval);
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+            }
+        } else if(IS_COMMAND(destroy_command))
+        {
+            VLOG(1)<<"Destroy command detected ";
+            if(_handler_id_ptr == NULL)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No input argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                handler_id_t _id;
+                bool _is = deserialize(&_id,_handler_id_ptr);
+                if(!_is)
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:CannotDeserialize",
+                        "Cannot deserialize id");
+                    _is_error = true;
+                }else
+                {
+                    NSHARE::CRAII<NSHARE::CMutex> _lock(sFMutex);
+                    if(sFHandlers.size() <= _id ||
+                          !sFHandlers[_id].MIs()  )
+                    {
+                        mexErrMsgIdAndTxt( "{{ name }}:No handler",
+                        "No handler id");
+                        _is_error = true;
+                    }else
+                    {
+                        sFHandlers[_id] = message_handlers_t::value_type ();
+                    }
+                }
+            }
+        }else if(IS_COMMAND(api_version))
+        {
+            if(_output_ptr != NULL)
+            {
+                uint32_t const _rval = static_cast<uint32_t>(MAJOR_FUNCTION());
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+            }
+            if(_output_2_ptr != NULL)
+            {
+                uint32_t const _rval = static_cast<uint32_t>(MINOR_FUNCTION());
+                *_output_2_ptr = NSHARE::matlab::serialize(_rval);
+            }
+            if(_output_3_ptr != NULL)
+            {
+                uint32_t const _rval = static_cast<uint32_t>(REVISION_FUNCTION());
+                *_output_3_ptr = NSHARE::matlab::serialize(_rval);
+            }
+            if(_output_4_ptr != NULL)
+            {
+                std::string const _rval(REVISION_PATH_INFO());
+                *_output_4_ptr = NSHARE::matlab::serialize(_rval);
+            }
+            if(_output_5_ptr != NULL)
+            {
+                std::string _rval(COMPILE_DATE_FUNCTION());
+                _rval+= ' ';
+                _rval += std::string(COMPILE_TIME_FUNCTION());
+                *_output_5_ptr = NSHARE::matlab::serialize(_rval);
+            }
+        }
+        else if(IS_COMMAND(help))
+        {
+            _is_print_help = true;
+        }
+        else
+        {
+            LOG(ERROR)<<"No command";
+            _is_error = true;
+            mexErrMsgIdAndTxt( "{{ name }}:InvalidCommand",
+                "Invalid command");
+        }
+
+#undef IS_COMMAND
+    }
+    }
+    if(_is_error || _is_print_help)
+    {
+           	mexPrintf("\nUsage:\n\n"
+    				  "     \t# Create new message handler:\n\n"
+    				  "     \t\tid={{ name }}('create')\n\n"
+    				  "     \t      id (%s) - Unique id of handler \n\n\n"
+    				  "     \t# Destroy message handler:\n\n"
+    				  "     \t\t{{ name }}('destroy', id )\n\n"
+    				  "     \t      id (%s) - Unique id of handler \n\n\n"
+    				  "     \t# Print message:\n\n"
+    				  "     \t\t{{ name }}('print',message)\n\n"
+    				  "     \t      message (%s) - The printed message \n\n\n"
+    				  "     \t# Serialize to JSON string:\n\n"
+    				  "     \t\tjson_string = {{ name }}('toJSON', message, pretty)\n\n"
+    				  "     \t      message (%s) - The serialized message \n"
+    				  "     \t      pretty (%s) - if True - JSON string with indent (doesn't required)\n\n\n"
+                      "     \t# Deserialize from JSON string:\n\n"
+    				  "     \t\tmessage = {{ name }}('fromJSON', string, is_head)\n\n"
+    				  "     \t      message (%s) - The deserialized message\n"
+    				  "     \t      string (%s) - JSON string\n"
+    				  "     \t      is_head (%s) - JSON with head (default true, doesn't required)\n\n\n"
+
+                      "     \t# Serialize to binary array:\n\n"
+                      "     \t\tbinary_array = {{ name }}('toBin', message)\n\n"
+                      "     \t      message (%s) - The serialized message \n\n\n"
+                      "     \t# Deserialize from binary array:\n\n"
+                      "     \t\tmessage = {{ name }}('fromBin', binary_array)\n\n"
+                      "     \t      message (%s) - The deserialized message\n"
+                      "     \t      binary_array (%s) - binary array\n\n\n"
+
+                      "     \t# Send message:\n\n"
+    				  "     \t\tresult = {{ name }}('send', message{% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %},  a{{ field.id }}{% endfor %} )\n\n"
+    				  "     \t      message (%s) - The printed message\n"
+                    {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+                      "     \t      a{{ field.id }} (%s) - {{ field.description }}\n"
+                    {% endfor %}
+    				  "     \t      result (%s) - >0 - unique message id, otherwise error code\n\n\n"
+                      "     \t#  Wait of new data:\n\n"
+    				  "     \t\tresult = {{ name }}('wait', id, time)\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      time (%s) - Timeout if less zero - infinity (doesn't required)\n"
+    				  "     \t      result (%s) - <0 - error code\n\n\n"
+                      "     \t#  Force unlock wait command :\n\n"
+    				  "     \t\tis = {{ name }}('nowait', id)\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      is (%s) - Is some thread unlocked (doesn't required)\n\n\n"
+                      "     \t# Receive message:\n\n"
+    				  "     \t\tresult = {{ name }}('recv', id, aFrom, aFlags{% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %},  a{{ field.id }}{% endfor %} )\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      aFrom (%s) - The receiving data from\n"
+    				  "     \t      aFlags (%s) - The receiving flags\n"
+                    {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+                      "     \t      a{{ field.id }} (%s) - {{ field.description }}\n"
+                    {% endfor %}
+    				  "     \t      result (%s) - < 0 error code \n\n\n"
+                      "     \t#  Get next received message\n\n"
+    				  "     \t\tresult, message, info = {{ name }}('getNext', id)\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      info (%s) - Info about sender (doesn't required)\n"
+                      "     \t      message (%s) - Received message\n"
+    				  "     \t      result  (%s)- <0 - error code otherwise Amount of message\n\n\n"
+                      "     \t#  Amount of available received message\n\n"
+    				  "     \t\tresult = {{ name }}('size', id)\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      result (%s) - <0 - error code otherwise Amount of message\n\n\n"
+                      "     \t#  Doesn't receive message\n\n"
+    				  "     \t\tresult = {{ name }}('unrecv', id)\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      result (%s)  - <0 - kerror code otherwise amount of message\n\n\n"
+                      "     \t#  Generate test message\n\n"
+    				  "     \t\tmessage = {{ name }}('gen')\n\n"
+    				  "     \t      message (%s) - test message\n\n\n"
+                      "     \t#  Generate zero message\n\n"
+    				  "     \t\tmessage = {{ name }}('zero')\n\n"
+    				  "     \t      message (%s) - zero message\n\n\n"
+                      "     \t#  Output API version\n\n"
+    				  "     \t\t [major, minor, revision, path, compile_time ] = {{ name }}('version')\n\n"
+    				  "     \t      major (%s) - API major version\n"
+    				  "     \t      minor (%s) - API minor version\n"
+    				  "     \t      revision (%s) - Realization revision\n"
+    				  "     \t      path (%s) - Source path\n"
+    				  "     \t      compile_time (%s) - Compile time\n"
+            , matlab_code_t<handler_id_t>::type()//create id
+
+            , matlab_code_t<handler_id_t>::type()//destroy id
+
+            , matlab_code_t<T>::type()//print message
+
+            , matlab_code_t<T>::type()// toJSON message
+            , matlab_code_t<bool>::type()//toJSON pretty
+
+            , matlab_code_t<T>::type()//fromJSON message
+            , matlab_code_t<std::string::value_type>::type()//fromJSON string
+            , matlab_code_t<bool>::type()//fromJSON is_head
+
+            , matlab_code_t<T>::type()// toBin message
+
+            , matlab_code_t<T>::type()//fromBin message
+            , matlab_code_t<uint8_t>::type()//fromBin binary_array
+
+            , matlab_code_t<T>::type()//send message
+            {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+            {% set _type = field.TypeOfLogicalType if field | is_dynamic else field.type %}
+            , matlab_code_t<{{ _type }}>::type()//send a{{ field.id }}
+            {% endfor %}
+            , matlab_code_t<int>::type()//send result
+
+            , matlab_code_t<handler_id_t>::type()//wait id
+            , matlab_code_t<double>::type()//wait time
+            , matlab_code_t<int>::type()//wait result
+
+            , matlab_code_t<handler_id_t>::type()//nowait id
+            , matlab_code_t<bool>::type()//nowait is
+
+            , matlab_code_t<handler_id_t>::type()//recv id
+            , matlab_code_t<std::string::value_type>::type()//recv aFrom
+            , matlab_code_t<unsigned>::type()//recv aFlags
+            {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+            {% set _type = field.TypeOfLogicalType if field | is_dynamic else field.type %}
+            , matlab_code_t<{{ _type }}>::type()//recv a{{ field.id }}
+            {% endfor %}
+            , matlab_code_t<int>::type()//recv result
+
+            , matlab_code_t<handler_id_t>::type()//getNext id
+            , matlab_code_t<std::string::value_type>::type()//getNext info
+            , matlab_code_t<T>::type()//getNext message
+            , matlab_code_t<int>::type()//getNext result
+
+            , matlab_code_t<handler_id_t>::type()//size id
+            , matlab_code_t<unsigned>::type()//size result
+
+            , matlab_code_t<handler_id_t>::type()//unrecv id
+            , matlab_code_t<int>::type()//unrecv result
+
+            , matlab_code_t<T>::type()//generate message
+
+            , matlab_code_t<T>::type()//generate_zero message
+
+            , matlab_code_t<uint32_t>::type()//version major
+            , matlab_code_t<uint32_t>::type()//version minor
+            , matlab_code_t<uint32_t>::type()//version revision
+            , matlab_code_t<std::string::value_type>::type()//version path
+            , matlab_code_t<std::string::value_type>::type()//version compile_time
+            );
+    }
+    return !_is_error;
+}
+}//namespace matlab
+}//namespace {{ common.get_namespace(name) }}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

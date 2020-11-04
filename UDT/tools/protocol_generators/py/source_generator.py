@@ -182,6 +182,12 @@ def generate_source(lib_path, _protocol):
              "src/matlab_lib/{0}.cpp".format(str.lower(lib_name)), _protocol)
     gen_file("src/matlab_lib/protocol_matlab_serialize.h", lib_path,
              "src/matlab_lib/protocol_{0}_matlab_serialize.h".format(str.lower(lib_name)), _protocol)
+    gen_file("src/matlab_lib/protocol_matlab_udt_api.h", lib_path,
+             "src/matlab_lib/protocol_{0}_matlab_udt_api.h".format(str.lower(lib_name)), _protocol)
+    gen_file("src/matlab_lib/revision.c.in", lib_path,"", _protocol)
+    gen_file("src/matlab_lib/ChangeLog.txt.in", lib_path, "", _protocol)
+    gen_file("src/matlab_lib/example.m", lib_path, "", _protocol)
+
     #Generate cmake files
     gen_file("CMakeModules/config.h.cmake", lib_path, '', _protocol)
     gen_file("CMakeModules/configure_PROTOCOL.cmake", lib_path,
@@ -189,6 +195,9 @@ def generate_source(lib_path, _protocol):
     gen_file("CMakeModules/dependencies_search.cmake", lib_path, '', _protocol)
     gen_file("CMakeModules/PROTOCOL_CPack.cmake", lib_path,
              "CMakeModules/{0}_CPack.cmake".format(str.upper(lib_name)), _protocol)
+    gen_file("CMakeModules/matlab.prj.in", lib_path,
+             "CMakeModules/matlab_{0}.prj.in".format(str.upper(lib_name)),
+              _protocol)
     gen_file("LICENCE.txt", lib_path, '', _protocol)
     gen_file("CMakeLists.txt", lib_path, '', _protocol)
 
@@ -196,6 +205,10 @@ def generate_source(lib_path, _protocol):
     shutil.copytree("templates/CMakeModules/functions",
                     os.path.join(lib_path,
                                  "CMakeModules/functions"))
+
+    shutil.copytree("templates/dependencies",
+                    os.path.join(lib_path,
+                                 "dependencies"))
 
     # Generate tools files
     gen_file("tools/CMakeLists.txt", lib_path, '', _protocol)

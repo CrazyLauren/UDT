@@ -1,8 +1,15 @@
 {% set gui_file_name = name|lower + '.js'  %}
 if(NOT UDT_INSTALL_GUI_PATH)
-    set(UDT_INSTALL_GUI_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/gui")
+    set(UDT_INSTALL_GUI_PATH "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_BINDIR}/gui")
 endif()
+if(NOT "${${PROJECT_NAME}_INSTALL_PREFIX}" STREQUAL "" OR NOT WIN32)
 install(FILES   {{ gui_file_name }}
 				DESTINATION "${UDT_INSTALL_GUI_PATH}/js/parser"
                 COMPONENT headers
 		)
+else()
+install(FILES {{ gui_file_name }}
+				DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/js/parser"
+                COMPONENT headers
+		)
+endif()

@@ -130,7 +130,7 @@ namespace {{ common.get_namespace(name) }}
 #ifdef HAVE_OFFSET_OF
                     offsetof({{ struct_header_name }},{{ field_crc.id }})
 #else
-                    (unsigned)&((({{ struct_header_name }}*)0)->{{ field_crc.id }})
+                    (std::size_t)&((({{ struct_header_name }}*)0)->{{ field_crc.id }})
 #endif
 {% endif %}
             );

@@ -880,7 +880,7 @@ void CSharedAllocator::MCreateHeap(void* aBase, block_size_t aSize,size_t aReser
 											<< _heap_offset;
 
 	heap_head_t* const _p_head = new ((void*) _cor_heap_addr) heap_head_t(
-			aSize,_heap_offset);
+			aSize, (uint32_t)_heap_offset);
 
 	uintptr_t const _buf_addr = _cor_heap_addr + sizeof(heap_head_t);
 	//filling first node

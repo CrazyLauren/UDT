@@ -28,10 +28,13 @@ namespace NSHARE
 SHARED_PACKED(struct SHARE_EXPORT version_t
 {
 	static const NSHARE::CText NAME;///< A serializing key
+	typedef uint8_t major_t;
+	typedef uint8_t minor_t;
+	typedef uint16_t release_t;
 
-	uint8_t FMajor;///< - Major version
-	uint8_t FMinor;///< - Minor version
-	mutable uint16_t FRelease;///< - Revision(SVN)  or repository Hash(Git)
+	major_t FMajor;///< - Major version
+	minor_t FMinor;///< - Minor version
+	mutable release_t FRelease;///< - Revision(SVN)  or repository Hash(Git)
 
 
 	version_t(uint8_t aMajor=0,uint8_t aMinor=0,uint16_t aRelease=0);

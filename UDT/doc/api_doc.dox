@@ -1,0 +1,106 @@
+/**
+@page  api_doc API doc
+@section api_doc_common Common information
+
+The UDT provided interface for next language:
+- C++ (basic interface) (customer.h file)
+- C (pure C interface) (customer_c.h file)
+- Python (uses C++ library with C interface) (customer_python.py file)
+- Matlab (Simulink)
+
+For all realization You, of course, link C++ library "customer" with your dependencies. \n
+The dependencies are linked automatically if you use cmake. Easy CMakeLists.txt file you can \n
+see in the "example_number_one" directory (see share directory in install path).\n
+If you don't want to use cmake, you can create "example_number_one" project and copy \n
+settings.\n
+Of course, there are several examples, that you can see in "example" directory of project \n
+or read in this documentation.
+@subsection api_doc_general_info General Info
+The algorithm to use UDT is easy.\n
+The first step you has to be initialize the library. To do it  you need pass to #NUDT::CCustomer::sMInit (for C++) \n
+ the arc and argv argument of main function and program name in UDT. The first "argv" array cell \n
+ has to have name executable file.\n
+ Of course you can pass additional arguments, To see all available arguments, pass "-h" argument. \n
+The second step you has to specialise what data you want to receive, of course you can do it late, but  \n
+You can skip "the first" message from the other program in the start. \n
+The third step you has to call "open" function (It's start to connect to Kernel, if it's not exist it will try to connect \n
+while you doesn't call 'close' function).\n
+The 4-th step you can doing everything(To block main thread you can call 'join' function. It unblocks thread then \n
+after call 'close' function), for example send data.\n
+The 5-th step you has to "close"'" and "free" function. \n
+
+The system was developed for decrease the number of copy operation during sending the data. \n
+For this, In the system isn't used serialize and deserialize operation. \n
+And all data is transmitted by pointer, that is if you transmit data between two programs which \n
+works in on the same computer, then the pointers to the send data in the both programs will be equal.\n
+
+@section api_doc_receiving Receiving messages
+The receiving data process is based on asynchronous idiom. That is, to receive data you has to\n
+pass the function which is handling the received data (callback function). \n
+Thus when the data is received, the customer is called callback function .\n
+The callback function has to created by You to each message which you what to receive. \n
+Of course, the UDT guarantee that you receive only requested message.
+
+@warning If in the protocol the message (for example, number 1) will inherent
+by the other message (for example, number 2), than, of course, the message number 1 callback function
+ also will called for message number 2 (to callback function the info about "reason" is passed).
+ Be carefully!!! Doesn't check the message number
+in callback function!!! The UDT guarantee correctness data passed to callback function!!!
+
+The callbacks are calling sequentially. The first is called callback of the message, then \n
+the callback functions of parent message. The max number callback function is 65535.\n
+Example C++:
+@code
+extern int msg_test_handler(CCustomer* WHO, void* aWHAT, void* YOU_DATA)
+{
+	/*! Algorithm:*/
+	/*! 1) Convention void pointer to pointer to #NUDT::received_message_args_t structure */
+	received_message_args_t * _recv_arg=(received_message_args_t*)aWHAT;
+
+	/*! 2) Handle the received data which is located
+	 * from NUDT::received_data_t::FBegin
+	 * to NUDT::received_data_t::FEnd*/
+	const uint8_t* _it = _recv_arg->FMessage.FBegin;
+	for (int i = 0; _it != _recv_arg->FMessage.FEnd; ++i, ++_it)
+	{
+		if (i % 255 != *_it)
+		{
+			STREAM_MUTEX_LOCK
+			std::cerr << "Fail data:" << i << "!=" << (unsigned) (*_it)
+					<< std::endl;
+			STREAM_MUTEX_UNLOCK
+			std::abort();
+		}
+	}
+}
+CCustomer::sMGetInstance().MIWantReceivingMSG(
+	"from_program", MESSAGE_NUMBER, msg_test_handler,
+			NSHARE::version_t(1, 1));
+@endcode
+As UDT uses two type of protocol "RAW" ans user's, the API is specialized for both variances. \n
+To detail see full example UDT::CCustomer::MIWantReceivingMSG. \n
+For C++ API You may not copy the received data, as NSHARE::CBuffer is a "shared_ptr", but be carefully, \n
+as in the received NSHARE::CBuffer object the data is stored in Shared Memory which can ended.\n
+@warning If you try to change data in the received NSHARE::CBuffer object it will copy. If You doesn't to change data
+use only "const" method of class. The behavior of applying "const_cast" operation (and analogous) isn't defined!
+
+@subsection api_doc_about_send How To Send
+
+The typical pseudocode of send opration can be represented as follows:
+Assume that we have struct "A" that need to be sent.
+
+1) Allocates memory in memory that is common to all processes in the operation system
+@code
+NSHARE::CBuffer _p_buf=CCustomer::MGetNewBuf(sizeof(A));
+@endcode
+
+2) Creates the object of type A in the allocated memory
+@code
+A * _p_data=new (_p_buf.ptr()) A;
+@endcode
+Now You can fill object of type A. And then call the NUDT::CCustomer::MSend method. \n
+If you use protocol generator then you can see generated test to see how to send \n
+
+@section api_doc_event Events
+There are several "kernel" events, which you can handle by CB. To detail see C++ API and examples.
+*/

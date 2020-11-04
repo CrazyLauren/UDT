@@ -48,7 +48,69 @@ struct buf_val_t
 	{
 		return FVal;
 	}
-private:
+	inline void operator-=(const buf_val_t &i)
+	{
+		FVal -= i.FVal;
+	}
+	inline void operator+=(const buf_val_t &i)
+	{
+		FVal += i.FVal;
+	}
+
+	inline buf_val_t operator++(int)
+	{
+		return FVal++;
+	}
+	inline buf_val_t operator--(int)
+	{
+		return FVal--;
+	}
+	inline buf_val_t& operator++()
+
+	{
+		++FVal;
+		return *this;
+	}
+	inline buf_val_t& operator--()
+	{
+		--FVal;
+		return *this;
+	}
+	inline buf_val_t& operator=(const buf_val_t& aVal)
+	{
+		FVal = aVal.FVal;
+		return *this;
+	}
+	inline void operator-=(const buf_val_t &i) volatile
+	{
+		FVal -= i.FVal;
+	}
+	inline void operator+=(const buf_val_t &i) volatile
+	{
+		FVal += i.FVal;
+	}
+
+	inline buf_val_t operator++(int) volatile
+	{
+		return FVal++;
+	}
+	inline buf_val_t operator--(int) volatile
+	{
+		return FVal--;
+	}
+	inline buf_val_t& operator++() volatile
+
+	{
+		++FVal;
+		return *this;
+	}
+	inline buf_val_t& operator--() volatile
+	{
+		--FVal;
+		return *this;
+	}
+
+
 	T FVal;
 };
 #ifdef COMPILE_ASSERT

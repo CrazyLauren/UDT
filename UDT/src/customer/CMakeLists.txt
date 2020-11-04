@@ -172,6 +172,10 @@ install(FILES 	${CMAKE_CURRENT_SOURCE_DIR}/include/UDT/customer/customer_c_type.
 install(FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/include/UDT/impl/customer_covert_impl.h
 		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/UDT/impl" COMPONENT headers)
+install(FILES
+		${CMAKE_CURRENT_SOURCE_DIR}/include/UDT/impl/customer_covert_impl_matlab.h
+		DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}include/UDT/impl" COMPONENT headers)
+
 		
 install(FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/include/customer.h
@@ -188,5 +192,6 @@ set(CUSTOMER_AVAILABLE_MODULES
 #build modules
 add_subdirectory(modules)
 add_subdirectory(swig)
+add_subdirectory(matlab)
 
 include(create_default_config.cmake)

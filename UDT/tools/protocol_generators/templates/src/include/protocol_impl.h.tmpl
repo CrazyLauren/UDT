@@ -16,7 +16,7 @@ namespace {{ common.get_namespace(name) }}
  * @tparam T message type
  */
 template<class T>
-inline unsigned get_full_size(T const & aVal );
+inline std::size_t get_full_size(T const & aVal );
 
 namespace impl //implementation definitions
 {
@@ -27,7 +27,7 @@ namespace impl //implementation definitions
  * @tparam T Object type
  */
 template<class T>
-inline unsigned get_full_size_dynamic(T const & aVal )
+inline std::size_t get_full_size_dynamic(T const & aVal )
 {
     return 0;
 }
@@ -97,9 +97,9 @@ namespace impl{
  * @tparam T Object type
  */
 template<>
-inline unsigned get_full_size_dynamic<{{ struct_name}}>({{ struct_name}} const & aVal )
+inline std::size_t get_full_size_dynamic<{{ struct_name}}>({{ struct_name}} const & aVal )
 {
-    unsigned _size = 0;
+    std::size_t _size = 0;
 
     {% if dynamic_parent_msg %}
     _size += get_full_size_dynamic<{{ parent_name}}>(
@@ -130,7 +130,7 @@ inline unsigned get_full_size_dynamic<{{ struct_name}}>({{ struct_name}} const &
 {% endfor %}
 
 template<class T>
-inline unsigned get_full_size(T const & aVal )
+inline std::size_t get_full_size(T const & aVal )
 {
     return T::SIZE_FULL + impl::get_full_size_dynamic<T>(aVal);
 }

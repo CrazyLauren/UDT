@@ -614,7 +614,7 @@ void CCustomer::_pimpl::MInformSubscriber(received_message_args_t* const aData,
 		user_data_info_t::handler_id_array_t::const_iterator _hit =
 				aDataInfo.FHandlerEventsList.begin(), _hit_end(
 				aDataInfo.FHandlerEventsList.end());
-		_raw_args.FRemainCallbacks = aDataInfo.FHandlerEventsList.size();
+		_raw_args.FRemainCallbacks = (unsigned)aDataInfo.FHandlerEventsList.size();
 		_raw_args.FCbs = _raw_args.FRemainCallbacks;
 		for (; _hit != _hit_end; ++_hit)
 		{
@@ -712,8 +712,8 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 		unsigned _next_free = demand_dg_t::NO_HANDLER;
 		if(FEventsData[FEventsNextFreeNumber].FYouData != NULL)
 		{
-			_next_free = (callback_t*)FEventsData[FEventsNextFreeNumber].FYouData
-					- (callback_t*)(&FEventsData.front());
+			_next_free = (unsigned)( (callback_t*)FEventsData[FEventsNextFreeNumber].FYouData
+					- (callback_t*)(&FEventsData.front()));
 		}
 		FEventsNextFreeNumber = _next_free;
 

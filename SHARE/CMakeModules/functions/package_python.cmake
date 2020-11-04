@@ -13,54 +13,6 @@ set(_COPY_LIBRARY_DEPS )
 set(_DEPENDS_PROJECT "")
 set(_CREATE_DIRECTORIES "COMMAND \${CMAKE_COMMAND} -E make_directory \${PROJECT_NAME}/${CMAKE_INSTALL_LIBDIR}")
 
-macro(search_library_dependencies _PACKET _PACKET_DEPEND)
-	get_target_property(_LINK_LIBRARY ${_PACKET_DEPEND} INTERFACE_LINK_LIBRARIES)
-	if(_LINK_LIBRARY)
-		foreach(_LB ${_LINK_LIBRARY})
-			#if(TARGET ${_LB} AND NOT ${_LB} MATCHES "(Python)$" )
-			if(TARGET ${_LB})
-				get_target_property(_IMPORTED_LIBRARY ${_LB} IMPORTED)
-				if(NOT _IMPORTED_LIBRARY )
-					list(FIND _COPY_LIBRARY_DEPS "${_LB}" _index)
-					if(${_index} EQUAL -1)			
-						list(APPEND _COPY_LIBRARY_DEPS "${_LB}")
-						if (UNIX)
-							get_target_property(_ALIASED ${_LB} ALIASED_TARGET)							
-							if(TARGET ${_ALIASED})								
-								set_property(TARGET ${_ALIASED} APPEND PROPERTY
-		                      		BUILD_RPATH ":\$ORIGIN:../${CMAKE_INSTALL_LIBDIR}"
-		                      	)
-  							else()
-  								set_property(TARGET ${_LB} APPEND PROPERTY
-		                      		BUILD_RPATH ":\$ORIGIN:../${CMAKE_INSTALL_LIBDIR}"
-		                      	)
-							endif()												
-						endif()		                      											
-						search_library_dependencies(${_PACKET} ${_LB})
-					endif()
-				else()
-					get_target_property(_LOCATION ${_LB} IMPORTED_LOCATION)
-					if(_LOCATION)
-						get_filename_component(_DIR_PATH ${_LOCATION} DIRECTORY)
-						#get_filename_component(_FILE_NAME ${_LOCATION} NAME)				
-						file(RELATIVE_PATH _FILE_RELPATH
-							"${_DIR_PATH}/../../${PROJECT_NAME}/${_PACKET}"
-							"${_LOCATION}"						 
-						 )
-						get_filename_component(_DIR_RELPATH ${_FILE_RELPATH} DIRECTORY)
-						if (UNIX)	
-							set_property(TARGET 
-								${_PACKET} APPEND PROPERTY
-				                BUILD_RPATH ":${_DIR_RELPATH}"
-				            )
-			            endif()
-		            endif()		            
-				endif()
-			endif()	    				
-		endforeach()
-	endif()	
-endmacro()
-
 set(_PACKET_PYTHON_REQUIREMENT )
 
 foreach(_PACKET ${PYTHON_SETUP_PYTHONS_MODULES})
@@ -83,7 +35,7 @@ foreach(_PACKET ${PYTHON_SETUP_PYTHONS_MODULES})
 		list(APPEND _PACKET_PYTHON_REQUIREMENT ${${_PACKET}_PYTHONS_DEPENDS_MODULES})
 	endif()
 	
-	search_library_dependencies(${_PACKET} ${_PACKET})
+	search_library_dependencies(${_PACKET} ${_PACKET} _COPY_LIBRARY_DEPS)
 
 	string(APPEND _DEPENDS_PROJECT
 	    " ${_PACKET}")

@@ -66,22 +66,14 @@ class CHandler:NSHARE::CDenyCopying
 
 	public:
 	typedef T message_t;//!< type of message
-    typedef NSHARE::Callback_t<int (*)(NUDT::received_message_info_t* )> new_data_cb_t;//!< The new data CB
+    typedef int (*signal_new_t)(CHandler*, NUDT::received_message_info_t* , void*);
+    typedef NSHARE::Callback_t<signal_new_t> new_data_cb_t;//!< The new data CB
 
     new_data_cb_t FNewDataCb;//!< Notification about new data
     CHandler();
     virtual ~CHandler()
     {
     }
-
-    /** Print data to console (uses in matalab (python) API)
-    *
-    * @param aData printed message
-    */
-	inline static void sMPrint(T const& aData)
-	{
-		std::cout<< aData;
-	}
 
     /** Serialize message to JSON string
     *
@@ -95,9 +87,10 @@ class CHandler:NSHARE::CDenyCopying
     /** Deserialize message from JSON string
     *
     * @param aData JSON string
+    * @param aIsHead True - if only data without head
     * @return the message
     */
-	inline static T sMFromJson(const std::string& aData);
+	inline static T sMFromJson(const std::string& aData, bool aIsHead = true);
 
     /** Send message (public)
     *
@@ -120,6 +113,12 @@ class CHandler:NSHARE::CDenyCopying
                otherwise  the error code
     */
     inline int MWaitData(double aTime = -1) const;
+
+    /** Force unlock MWaitData()
+    *
+    * return true if some thread is unlocked
+    */
+    inline bool MForceUnlock() const;
 
     /** Subscribe to message
     *
@@ -173,7 +172,7 @@ class CHandler:NSHARE::CDenyCopying
     */
     inline unsigned MAmountOf() const;
 
-    /** Amount of available received message
+    /** Doesn't receive message
     *
     * @param aTo - Store available message to
     *
@@ -204,11 +203,11 @@ class CHandler:NSHARE::CDenyCopying
     *   @param aInfo info about data
     *   @param aDataId aDataId
     */
-    virtual bool MDataReceived(NUDT::received_message_info_t const& aInfo, unsigned aDataId)
+    virtual bool MDataReceived(NUDT::received_message_info_t& aInfo, unsigned aDataId)
     {
         if(FNewDataCb.MIs())
         {
-            FNewDataCb(this, aInfo);
+            FNewDataCb(this, &aInfo);
         }
         return true;
     }
@@ -272,13 +271,18 @@ inline std::string CHandler<T>::sMToJson(T const& aData,
     return _serialized.MToJSON( aPretty !=0 ).MToStdString();
 }
 template<class T>
-inline  T CHandler<T>::sMFromJson(const std::string& aData)
+inline  T CHandler<T>::sMFromJson(const std::string& aData, bool aIsHead)
 {
     using namespace NSHARE;
     std::istringstream _data(aData);
     NSHARE::CConfig _serialized;
     _serialized.MFromJSON(_data);
-    return deserialize<T>(_serialized);
+    return deserialize<T>(
+                        aIsHead ?
+                        _serialized.MChild(get_name<T>())
+                        :
+                        _serialized
+                        );
 }
 template<class T>
 inline int CHandler<T>::sMSend(const T& aMsg
@@ -332,6 +336,14 @@ inline int CHandler<T>::MWaitData(double aTime ) const
         return -2;
 
     return FNumberOfMessage;
+}
+template<class T>
+inline bool CHandler<T>:: MForceUnlock() const
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+    if(FCondVarNum > 0 )
+        FCondVar.MBroadcast();
+    return  FCondVarNum > 0;
 }
 template<class T>
 inline int CHandler<T>::MReceive(const char* aFrom,
@@ -413,11 +425,14 @@ inline int CHandler<T>::MDoesNotReceive(std::vector<T>* aTo)
             for(; _it != _data.end() ;++_it)
             {
                 aTo -> resize(aTo->size() +1 );
-                _it->FMessage.FData.FBuffer >> (aTo -> back());
+                _it->FData.FMessage.FBuffer >> (aTo -> back());
             }
             _rval = _size;
         }else if(aTo)
             _rval = 0;
+
+        if(_size > 0)
+            MForceUnlock();
     }
     return _rval;
 }

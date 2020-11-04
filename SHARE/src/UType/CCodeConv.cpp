@@ -16,7 +16,7 @@
 
 namespace NSHARE
 {
-size_t ICodeConv::MSizeOf(uint32_t const* aBegin, uint32_t const* aEnd) const
+size_t ICodeConv::MSizeOf(utf32 const* aBegin, utf32 const* aEnd) const
 {
 	size_t _size = MCharLen(*aBegin);
 	for (; ++aBegin != aEnd; _size += MCharLen(*aBegin))
@@ -28,7 +28,7 @@ std::ostream& ICodeConv::MPrint(std::ostream& aStream) const
 	return aStream << "Unknown type";
 }
 
-size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
+size_t CCodeUTF8::MSeqLen(utf32 aCode) const
 	{
 		utf8_t lead = MMask8(aCode);
 		size_t _size=0;
@@ -56,7 +56,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 				&& aMax!=0;--aMax)
 		{
 				
-			uint32_t const _code=/*static_cast<uint32_t>(
+			utf32 const _code=/*static_cast<utf32>(
 					 static_cast<uint8_t>(_str_size>=0?*(aBegin+0):0)<<24//
 					|static_cast<uint8_t>(_str_size>=1?*(aBegin+1):0)<<16//
 					|static_cast<uint8_t>(_str_size>=2?*(aBegin+2):0)<<8//
@@ -68,7 +68,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		}
 		return _length;
 	}
-	size_t CCodeUTF8::MCharLenInline(uint32_t aCode) const
+	size_t CCodeUTF8::MCharLenInline(utf32 aCode) const
 	{
 		size_t _size=4;
 		if (aCode < 0x80)
@@ -82,14 +82,14 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 
 		return _size;
 	}
-	 size_t CCodeUTF8::MCharLen(uint32_t aCode) const
+	 size_t CCodeUTF8::MCharLen(utf32 aCode) const
 	{
 		return MCharLenInline(aCode);
 	}
-	 uint32_t CCodeUTF8::MNext(it_char_t& aBegin, it_char_t aEnd) const
+	 utf32 CCodeUTF8::MNext(it_char_t& aBegin, it_char_t aEnd) const
 	{
 		it_utf8_t _putf8=reinterpret_cast<it_utf8_t>(aBegin);
-		uint32_t _code = 0;
+		utf32 _code = 0;
 		size_t  _len = MSeqLen(*_putf8);
 		if (!_len)			
 			{
@@ -132,7 +132,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		aBegin=reinterpret_cast<it_char_t>(_putf8);
 		return _code;
 	}
-	 size_t CCodeUTF8::MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const
+	 size_t CCodeUTF8::MAppend(utf32 aCode, char_t*& aBegin, char_t* aEnd) const
 	{
 		if (MCharLenInline(aCode) > static_cast<size_t>(aEnd-aBegin))
 			return 0;
@@ -140,7 +140,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		aBegin=reinterpret_cast<char_t*>(sMAppend(aCode,reinterpret_cast<utf8_t*>(aBegin)));
 		return aBegin-_befor;
 	}
-	 CCodeUTF8::utf8_t* CCodeUTF8::sMAppend(uint32_t aCode,utf8_t* _putf8)
+	 CCodeUTF8::utf8_t* CCodeUTF8::sMAppend(utf32 aCode,utf8_t* _putf8)
 	{
 		if (aCode < 0x80)
 		{
@@ -166,7 +166,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		}
 		return _putf8;
 	}
-	 bool CCodeUTF8::MIsCodeValid(uint32_t aCode) const
+	 bool CCodeUTF8::MIsCodeValid(utf32 aCode) const
 	{
 		return (aCode <= 0x0010ffffu
 				&& !(aCode >= 0xd800u && aCode <= 0xdfffu));
@@ -178,7 +178,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		for (; _putf8 != _putf8_end;)
 		{
 			size_t _len = MSeqLen(*_putf8);
-			uint32_t _code = 0;
+			utf32 _code = 0;
 			switch (_len)
 			{
 			case 1:
@@ -226,11 +226,11 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		//return strnlen(aBegin,aMax);
 		return strlen(aBegin);
 	}
-	 size_t CCodeANSII::MCharLen(uint32_t aCode) const
+	 size_t CCodeANSII::MCharLen(utf32 aCode) const
 	{
 		return 1;
 	}
-	 uint32_t CCodeANSII::MNext(it_char_t& aBegin, it_char_t aEnd) const
+	 utf32 CCodeANSII::MNext(it_char_t& aBegin, it_char_t aEnd) const
 	{
 		if (!::iscntrl(*aBegin)||!::isprint(*aBegin))
 		{
@@ -243,7 +243,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 
 		return *aBegin++;
 	}
-	 size_t CCodeANSII::MAppend(uint32_t aCode, char_t*& aBegin, char_t* aEnd) const
+	 size_t CCodeANSII::MAppend(utf32 aCode, char_t*& aBegin, char_t* aEnd) const
 	{
 		if (aCode>=0x80)
 		{				
@@ -255,7 +255,7 @@ size_t CCodeUTF8::MSeqLen(uint32_t aCode) const
 		*(aBegin++) = static_cast<char_t>(aCode);
 		return 1;
 	}
-	 bool CCodeANSII::MIsCodeValid(uint32_t aCode) const
+	 bool CCodeANSII::MIsCodeValid(utf32 aCode) const
 	{
 		return (aCode <= 0x0010ffffu
 				&& !(aCode >= 0xd800u && aCode <= 0xdfffu));
