@@ -105,10 +105,38 @@ static void f_init_log(int argc, char const* argv[])
 	//init trace
 	init_trace(argc, argv);
 }
+int CCustomer::sMInit(char const* aProgramName,
+		char const* aName,
+		char const* aLogOption,
+		NSHARE::version_t const& aVersion,
+		const NSHARE::CText& aConf)
+{
+	if(aName == NULL)
+		return ERROR_NO_NAME;
 
+	if(aProgramName == NULL)
+	{
+		NSHARE::CText _program_name("no_name_");
+		_program_name += aName;
+		aProgramName = _program_name.c_str();
+	}
+
+	char const* argv[]={aProgramName, aLogOption};
+	int const _size = aLogOption == NULL ? 1 : 2;
+
+	return sMInit(_size,
+			argv,
+			aName,
+			aVersion,
+			aConf
+			);
+}
 int CCustomer::sMInit(int argc, char const* argv[], char const* aName,NSHARE::version_t const& aVersion,
 		const NSHARE::CText& aConf)
 {
+	if(CCustomer::sMGetInstancePtr() != NULL)
+		return 0;
+
 	f_init_log(argc, argv);
 	NSHARE::CConfig _conf;
 

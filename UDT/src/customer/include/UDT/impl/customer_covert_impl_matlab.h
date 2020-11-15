@@ -24,7 +24,7 @@ namespace matlab
 	{\
 		_is_found = true;\
 		_is_##aKey##_value = true;\
-		if (!NSHARE::matlab::deserialize(&_rval.##aKey, fieldContent, 1, 0))\
+		if (!NSHARE::matlab::deserialize(&_rval.aKey, fieldContent, 1, 0))\
 		{\
 			mexErrMsgIdAndTxt("ConvertingError",\
 					"Error is occurred for %s",\
@@ -39,7 +39,7 @@ namespace matlab
 	{\
 		_is_found = true;\
 		_is_##aKey##_value = true;\
-		if (!NSHARE::matlab::deserialize(_rval.##aKey, fieldContent, aSize, 0))\
+		if (!NSHARE::matlab::deserialize(_rval.aKey, fieldContent, aSize, 0))\
 		{\
 			mexErrMsgIdAndTxt("ConvertingError",\
 					"Error is occurred for %s",\

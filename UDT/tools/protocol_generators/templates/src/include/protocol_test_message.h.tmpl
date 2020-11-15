@@ -6,9 +6,9 @@
 #ifndef {{ file_name | upper }}_H
 #define {{ file_name | upper }}_H
 
-#include <{{ common.get_namespace(name) }}.h>
-#include <{{ common.get_namespace(name) }}_serialize_binary.h>
-#include <{{ common.get_namespace(name) }}_msg_headers.h>
+#include "{{ common.get_namespace(name) }}.h"
+#include "{{ common.get_namespace(name) }}_serialize_binary.h"
+#include "{{ common.get_namespace(name) }}_msg_headers.h"
 #include <SHARE/random_value.h>
 
 #define INDITIFICATION_NAME "{{ name|lower }}_test"

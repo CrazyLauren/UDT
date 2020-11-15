@@ -7,7 +7,7 @@ include(CheckIncludeFiles)
 include(CheckCXXSourceCompiles)
 #include(CheckTypeSize)
 
-check_include_files(stdint.h HAVE_STDINT_H)
+check_include_files(stdint.h ${PROJECT_NAME}_HAVE_STDINT_H)
 check_cxx_source_compiles("
           #include <cstddef>
             struct D{
@@ -37,11 +37,13 @@ if (MSVC)
 		/GL
 		/MANIFEST:NO
 		/LTCG")]]
-	
-	list(APPEND ${PROJECT_NAME}_PLATFORM_DEFENITIONS 
+		
+	set(${PROJECT_NAME}_PLATFORM_DEFINITIONS 
+		${${PROJECT_NAME}_PLATFORM_DEFINITIONS}
 				_CRT_SECURE_NO_WARNINGS
 				NOMINMAX
-				_USE_MATH_DEFINES
+				_USE_MATH_DEFINES				
+				CACHE STRING "Platform definitions" FORCE				
 				)
 endif(MSVC)
 set(${PROJECT_NAME}_BUILD_COMPONENT_PYTHON

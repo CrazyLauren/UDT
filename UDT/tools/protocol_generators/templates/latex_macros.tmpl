@@ -130,14 +130,14 @@
 
 {% macro create_strcuture(aNumBits, aMsg, aLanguage, aBigLitle, aParent) %}
 {% if aLanguage == 'ru' %}
-    Структура данных представлена на рисунке
+    Структура данных ({{ aMsg.___name |latex_escape }}) представлена на рисунке
 {% else %}
-    The structure is on draw
+    The structure ({{ aMsg.___name |latex_escape }}) is on draw
 {% endif %}
     \ref{fig:{{ aMsg.___name }} }.
     \par
     \begin{figure}[!htb]
-        \begin{adjustbox}{max height={\textheight}, center}
+        \begin{adjustbox}{max height={\textheight},max width={\textwidth}, center}
             \begin{bytefield}[bitformatting={\small\bfseries},
 {#                    endianness = {{ aBigLitle }},#}
                     bitwidth=auto]{ {{ aNumBits }} }

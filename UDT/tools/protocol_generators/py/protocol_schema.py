@@ -457,9 +457,9 @@ def get_path_list(aObject):
         if type(_value) == list or type(_value) == dict:
             _data = get_path_list(_value)
             for _adata in _data:  # array
-                _rval.append({"key": _key+_adata["key"],
-                 "value": _adata["value"]
-                 })
+                _rval.append({"key": _key + _adata["key"],
+                              "value": _adata["value"]
+                              })
         else:
             _rval.append(
                 {"key": _key,
@@ -756,7 +756,6 @@ def is_complex_type(field):
 
 
 def generate_test_for(aMsgInfo):
-
     _const_value = dict()
     if '___constants' in aMsgInfo:
         for _const in aMsgInfo['___constants']["byprotocol"]:
@@ -1136,6 +1135,15 @@ def all_field(fields, aIgnoreReserv=False):
 
     return _rval
 
+
+def all_field_msg(aMsg, aIgnoreReserv=False):
+    _rval = []
+    if len(aMsg['___parent']) > 0:
+        for _parent in reversed(aMsg['___parent']):
+            _rval.extend(all_field(_parent['___fields'], aIgnoreReserv))
+
+    _rval.extend(all_field(aMsg['___fields'], aIgnoreReserv))
+    return _rval
 
 def bit_field(fields, aIsIgnore=True, aBegin=0):
     _rval = []

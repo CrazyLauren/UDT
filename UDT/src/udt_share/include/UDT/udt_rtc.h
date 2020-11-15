@@ -49,11 +49,15 @@ enum eRTCType
  */
 struct  UDT_SHARE_EXPORT rtc_info_t
 {
+	typedef uint32_t unique_id_t;
 	static const NSHARE::CText NAME;///< A serializing key
 	static const NSHARE::CText KEY_RTC_TYPE;///< A serializing key of #FRTCType
 	static const NSHARE::CText KEY_NAME;///< A serializing key of #FName
 	static const NSHARE::CText KEY_NULL_OFFSET;///< A serializing key of #FOffset
+	static const NSHARE::CText KEY_UNIQUE_ID;///< A serializing key of #FUniqueId
 
+	NSHARE::uuid_t FOwner;//!< RTC owner
+	unique_id_t FUniqueId;//!< Unique id of RTC of owner (Cannot be zero)
 	eRTCType FRTCType; //!< Type of RTC
 	name_rtc_t FName;//!< The unique name of RTC
 	NSHARE::IAllocater::offset_pointer_t FOffset;//!< offset to info in shared memory
@@ -92,16 +96,27 @@ struct  UDT_SHARE_EXPORT rtc_info_t
 	 */
 	bool operator==(rtc_info_t const& aInfo) const;
 };
+typedef std::vector<rtc_info_t> rtc_info_array_t;
 
 /** Info about available real time clocks
  *
  */
-struct UDT_SHARE_EXPORT real_time_clocks_t:std::vector<rtc_info_t>
+struct UDT_SHARE_EXPORT real_time_clocks_t
 {
 	static const NSHARE::CText NAME;///< A serializing key
 	static const NSHARE::CText SHARED_MEMORY_NAME; ///< A serialization key of shared memory unique name
+	static const NSHARE::CText KEY_INFO_FROM; ///< A serialization key of info from
 
 	NSHARE::CText  FShdMemName;//!< shared memory name
+	rtc_info_array_t FRtc;//!<Info about RTC (sorted vector by ID)
+	NSHARE::uuid_t FInfoFrom;//!< RTC owner
+
+	/** Sorted insert to vector
+	 *
+	 * @param aValue
+	 */
+	void MInsert(rtc_info_t const& aValue);
+
 	/*! @brief The default constructor
 	 */
 	real_time_clocks_t()
@@ -166,11 +181,11 @@ inline std::ostream& operator<<(std::ostream & aStream,
 inline std::ostream& operator<<(std::ostream & aStream,
 		NUDT::real_time_clocks_t const& aVal)
 {
-	for (NUDT::real_time_clocks_t::const_iterator _it = aVal.begin();
-			_it != aVal.end();)
+	for (NUDT::rtc_info_array_t::const_iterator _it = aVal.FRtc.begin();
+			_it != aVal.FRtc.end();)
 	{
 		aStream << (*_it);
-		if (++_it != aVal.end())
+		if (++_it != aVal.FRtc.end())
 			aStream << std::endl;
 	}
 	return aStream;

@@ -23,15 +23,17 @@ macro(pacakage_matlab)
 	set(MATLAB_PACKAGE_BUILD_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/matlab_package)
 	set(MATLAB_PACKAGE_PRJ ${MATLAB_PACKAGE_BUILD_LOCATION}/${MATLAB_PROJECT_NAME}.prj)
 	set(MATLAB_PACKAGE_TOOLBOX_ROOT ${MATLAB_PACKAGE_BUILD_LOCATION}/+${MATLAB_PROJECT_NAME})
+    set(MATLAB_PACKAGE_DATA_ROOT ${MATLAB_PACKAGE_BUILD_LOCATION}/data)
 
 	set(MATLAB_PACKAGE_MLTBX ${MATLAB_PACKAGE_BUILD_LOCATION}/${MATLAB_PROJECT_NAME}.mltbx)
 
 	set(MATLAB_SRCS )
 
-	set(_COPY_LIBRARY_COMMAND "")
+	set(__MATLAB_COPY_LIBRARY_COMMAND "")
 
-	set(_CREATE_DIRECTORIES
-	    "COMMAND \${CMAKE_COMMAND} -E make_directory \${MATLAB_PACKAGE_TOOLBOX_ROOT}"
+	set(_MATLAB_CREATE_DIRECTORIES
+	    "COMMAND \${CMAKE_COMMAND} -E make_directory \${MATLAB_PACKAGE_TOOLBOX_ROOT}
+		\n COMMAND \${CMAKE_COMMAND} -E make_directory \${MATLAB_PACKAGE_DATA_ROOT}"
 	    )
 
 	set(MATLAB_PACAKGE_TOOLBOX_SOURCES "")
@@ -44,7 +46,7 @@ macro(pacakage_matlab)
 		set(_NEW_COPY_VAL
 		    "COMMAND \${CMAKE_COMMAND} -E copy \$<TARGET_FILE:${_TARGET}> \${MATLAB_PACKAGE_TOOLBOX_ROOT}/"
 		    )
-		string(APPEND _COPY_LIBRARY_COMMAND "\n${_NEW_COPY_VAL}")
+		string(APPEND __MATLAB_COPY_LIBRARY_COMMAND "\n${_NEW_COPY_VAL}")
 
 		string(APPEND MATLAB_PACAKGE_SRC_ITEM_XML
 		       "<file>${MATLAB_PACKAGE_TOOLBOX_ROOT}/$<TARGET_FILE_NAME:${_TARGET}></file>\n"
@@ -54,13 +56,13 @@ macro(pacakage_matlab)
 	if(_MATLAB_COPY_LIBRARY_DEPS)
 		foreach(_LB ${_MATLAB_COPY_LIBRARY_DEPS})
 			if(WIN32)
-				string(APPEND _COPY_LIBRARY_COMMAND
+				string(APPEND __MATLAB_COPY_LIBRARY_COMMAND
 				       "\nCOMMAND \${CMAKE_COMMAND} -E copy \$<TARGET_FILE:${_LB}> \${MATLAB_PACKAGE_TOOLBOX_ROOT}/")
 				string(APPEND MATLAB_PACAKGE_SRC_ITEM_XML
 				       "<file>${MATLAB_PACKAGE_TOOLBOX_ROOT}/$<TARGET_FILE_NAME:${_LB}></file>\n"
 				       )
 			else()
-				string(APPEND _COPY_LIBRARY_COMMAND
+				string(APPEND __MATLAB_COPY_LIBRARY_COMMAND
 				       "\nCOMMAND \${CMAKE_COMMAND} -E copy \$<TARGET_FILE:${_LB}> \${MATLAB_PACKAGE_TOOLBOX_ROOT}/\$<TARGET_SONAME_FILE_NAME:${_LB}> ")
 				string(APPEND MATLAB_PACAKGE_SRC_ITEM_XML
 				       "<file>${MATLAB_PACKAGE_TOOLBOX_ROOT}/$<TARGET_SONAME_FILE_NAME:${_LB}></file>\n"
@@ -69,18 +71,19 @@ macro(pacakage_matlab)
 		endforeach()
 
 	endif()
-	foreach(_DATA ${MATLAB_DATES})
-		#		get_target_property(_LOCATION ${_TARGET} IMPORTED_LOCATION)
-		set(_NEW_COPY_VAL
-		    "COMMAND \${CMAKE_COMMAND} -E copy \${_DATA} \${MATLAB_PACKAGE_MODULES}/"
-		    )
-		string(APPEND _COPY_LIBRARY_COMMAND "\n${_NEW_COPY_VAL}")
+    foreach(_DATA ${${PROJECT_NAME}_MATLAB_DATAS})
+	    #		get_target_property(_LOCATION ${_TARGET} IMPORTED_LOCATION)
+	    set(_NEW_COPY_VAL
+	        "COMMAND \${CMAKE_COMMAND} -E copy ${_DATA} \${MATLAB_PACKAGE_DATA_ROOT}/"
+	        )
+	    string(APPEND __MATLAB_COPY_LIBRARY_COMMAND "\n${_NEW_COPY_VAL}")
 
-		get_filename_component(_FILE_NAME ${_DATA} NAME)
-		string(APPEND MATLAB_PACAKGE_SRC_ITEM_XML
-		       "<file>${MATLAB_PACKAGE_MODULES}/${_FILE_NAME}</file>\n"
-		       )
-	endforeach()
+	    get_filename_component(_FILE_NAME ${_DATA} NAME)
+	    string(APPEND MATLAB_PACAKGE_SRC_ITEM_XML
+	           "<file>data/${_FILE_NAME}</file>\n"
+	           )
+    endforeach()
+
 
 	configure_file(${MATLAB_PACKAGE_PROJECT_FILE_PATH}
 	               ${MATLAB_PACKAGE_PRJ}.tmp @ONLY)
@@ -135,7 +138,7 @@ target_compile_definitions(${_TARGET_NAME}
                            PRIVATE ${_TARGET_NAME_UPPER}_EXPORTS
                            PRIVATE ${${aPRIVATE_DEFINITIONS}}
 
-                           PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFENITIONS}
+                           PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFINITIONS}
                            PUBLIC ${${aPUBLIC_DEFINITIONS}}
                            )
 

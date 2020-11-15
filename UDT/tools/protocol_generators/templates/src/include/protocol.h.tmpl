@@ -8,7 +8,7 @@
 
 #ifndef {{ common.get_namespace(name) | upper }}_ONLY_HEADER
 #  include <{{ name | upper }}/config/config.h>
-#  ifdef HAVE_STDINT_H
+#  ifdef {{ name | upper }}_HAVE_STDINT_H
 #    include <stdint.h>
 #  endif
 {% if 'has_dynamic' in info and info.has_dynamic %}
@@ -28,6 +28,12 @@
 //#  warning In the protocol the float types of IEEE 754 Standard is used but ___STDC_IEC_559___ preprocessor doesn't set. May be your float type isn't of IEEE 754 Standard
 #endif
 {% endif %}
+#define {{ name | upper }}_VERSION_MAJOR {{ version.major }}
+#define {{ name | upper }}_VERSION_MINOR {{ version.minor }}
+#define {{ name | upper }}_VERSION_REVISION {{ version.revision }}
+#define {{ name | upper }}_VERSION_DATE "{{ version.date }}"
+
+
 namespace {{ common.get_namespace(name) }}
 {
 /*! Returns unique protocol name

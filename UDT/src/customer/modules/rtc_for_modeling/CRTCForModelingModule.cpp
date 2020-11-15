@@ -1,7 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
- * CRTCForModeling.h
+ * CRTCForModelingModule.h
  *
  * Copyright © 2019  https://github.com/CrazyLauren
  *
@@ -21,20 +21,22 @@
 
 #include "CRTCForModelingModule.h"
 
-
 namespace NUDT
 {
 using namespace NSHARE;
 NSHARE::CText const CRTCForModelingModule::NAME = "modeling";
+rtc_info_t::unique_id_t CRTCForModelingModule::sFIdCounter = 0;
 
 CRTCForModelingModule::CRTCForModelingModule() :
-		IRtcControl(NAME),//
-		FPCustomer(NULL)
+		IRtcControl(NAME), //
+		FCommonMutex(NSHARE::CMutex::MUTEX_NORMAL),
+		FPCustomer(NULL) //
 {
 	{
 		callback_data_t _callbak(sMReceiveRTC, this);
 		FHandler = CDataObject::value_t(new_real_time_clocks_t::NAME, _callbak);
 	}
+	FOwnTimeClocks.FInfoFrom = get_my_id().FId.FUuid;
 }
 
 /** Push new RTC
@@ -44,9 +46,9 @@ CRTCForModelingModule::CRTCForModelingModule() :
  */
 IRtcControl::rtc_id_t CRTCForModelingModule::MPushRTC(CRTCModelingImpl* aRtc)
 {
-	protected_RTC_array_t::WAccess<> _access=FRTCArray.MGetWAccess();
+	protected_RTC_array_t::WAccess<> _access = FRTCArray.MGetWAccess();
 	_access->FRtc.push_back(aRtc);
-	return static_cast<IRtcControl::rtc_id_t>(_access->FRtc.size()-1);
+	return static_cast<IRtcControl::rtc_id_t>(_access->FRtc.size() - 1);
 }
 /** Open share memory for RTC
  *
@@ -56,17 +58,18 @@ bool CRTCForModelingModule::MOpenSharedMemory()
 {
 	if (FMemory.MIsOpened())
 	{
-		LOG(DFATAL)<<"Shared memory has been opened early.";
+		LOG(DFATAL) << "Shared memory has been opened early.";
 		return false;
 	}
 
 	DLOG_IF(FATAL,FRealTimeClocks.FShdMemName.empty())
-													<< "Cannot open sm server as the name is not set. Value: "
-													<< FRealTimeClocks.FShdMemName;
+																<< "Cannot open sm server as the name is not set. Value: "
+																<< FRealTimeClocks.FShdMemName;
 	if (FRealTimeClocks.FShdMemName.empty())
 		return false;
 
-	LOG(INFO) << "Time dispatcher shared memory name:" << FRealTimeClocks.FShdMemName;
+	LOG(INFO) << "Time dispatcher shared memory name:"
+							<< FRealTimeClocks.FShdMemName;
 
 	if (FMemory.MOpen(FRealTimeClocks.FShdMemName)
 			== CSharedMemory::E_NO_ERROR)
@@ -76,12 +79,12 @@ bool CRTCForModelingModule::MOpenSharedMemory()
 }
 CRTCForModelingModule::rtc_id_t CRTCForModelingModule::MGetNameByRTC(
 		name_rtc_t const& aName) const
-{
+		{
 	protected_RTC_array_t::RAccess<> const _access(FRTCArray.MGetRAccess());
 	array_of_RTC_t const& _array(_access->FRtc);
 
-	for(unsigned i=0;i<_array.size();++i)
-		if(_array[i]->MGetRTCInfo().FName==aName)
+	for (unsigned i = 0; i < _array.size(); ++i)
+		if (_array[i]->MGetRTCInfo().FName == aName)
 			return i;
 	return std::numeric_limits<rtc_id_t>::max();
 }
@@ -98,39 +101,40 @@ bool CRTCForModelingModule::MIsRTC() const
 }
 name_rtc_t CRTCForModelingModule::MGetRTCByName(
 		rtc_id_t const& aID) const
-{
+		{
 	protected_RTC_array_t::RAccess<> const _access(FRTCArray.MGetRAccess());
-	DCHECK_LT(aID,_access->FRtc.size());
+	DCHECK_LT(aID, _access->FRtc.size());
 
 	return (*_access).FRtc[aID]->MGetRTCInfo().FName;
 }
 
 IRtc* CRTCForModelingModule::MGetRTC(name_rtc_t const& aID) const
-{
+		{
 	protected_RTC_array_t::RAccess<> const _access(FRTCArray.MGetRAccess());
 	array_of_RTC_t const& _array(_access->FRtc);
 
-	for(array_of_RTC_t::const_iterator _it=_array.begin();_it!=_array.end();++_it)
+	for (array_of_RTC_t::const_iterator _it = _array.begin();
+			_it != _array.end(); ++_it)
 		if ((*_it)->MGetRTCInfo().FName == aID)
 		{
-			VLOG(2)<<"Rtc is founded "<<aID;
+			VLOG(2) << "Rtc is founded " << aID;
 			return *_it;
 		}
 
-	LOG(INFO)<<"No RTC named "<<aID;
+	LOG(INFO) << "No RTC named " << aID;
 	return NULL;
 }
 void CRTCForModelingModule::MInit(ICustomer * aP)
 {
-	VLOG(2)<<" Initialize RTC for modeling ...";
-	FPCustomer=aP;
+	VLOG(2) << " Initialize RTC for modeling ...";
+	FPCustomer = aP;
 
 }
 bool CRTCForModelingModule::MOpen(const NSHARE::CThread::param_t*)
 {
-	VLOG(2)<<" Open RTC for modeling ...";
+	VLOG(2) << " Open RTC for modeling ...";
 
-	CDataObject::sMGetInstance()+= FHandler;
+	CDataObject::sMGetInstance() += FHandler;
 	return true;
 }
 void CRTCForModelingModule::MJoin()
@@ -145,7 +149,8 @@ void CRTCForModelingModule::MClose()
 {
 	CDataObject::sMGetInstance() -= FHandler;
 }
-int CRTCForModelingModule::sMReceiveRTC(CHardWorker* aWho, args_data_t* aWhat, void* aData)
+int CRTCForModelingModule::sMReceiveRTC(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
 {
 	DCHECK_EQ(aWhat->FType, new_real_time_clocks_t::NAME);
 	reinterpret_cast<CRTCForModelingModule*>(aData)->MUpdateRTCInfo(
@@ -161,16 +166,16 @@ int CRTCForModelingModule::sMReceiveRTC(CHardWorker* aWho, args_data_t* aWhat, v
 bool CRTCForModelingModule::MCreateRTC(real_time_clocks_t const& aRtc)
 {
 	//rtc_id_t _rval = std::numeric_limits<rtc_id_t>::max();
-	real_time_clocks_t::const_iterator _it = aRtc.begin();
+	rtc_info_array_t::const_iterator _it = aRtc.FRtc.begin();
 	bool _is = false;
-	for (; _it != aRtc.end(); ++_it)
+	for (; _it != aRtc.FRtc.end(); ++_it)
 	{
 		if (_it->FRTCType == eRTC_MODELING)
 		{
 			CRTCModelingImpl* _p = new CRTCModelingImpl(*_it, FMemory);
 			if (_p->MIsInitialized())
 			{
-				VLOG(1)<<"Push RTC "<<(*_it);
+				VLOG(1) << "Push RTC " << (*_it);
 
 				/*_rval = */MPushRTC(_p);
 				_is = true;
@@ -180,6 +185,58 @@ bool CRTCForModelingModule::MCreateRTC(real_time_clocks_t const& aRtc)
 		}
 	}
 	return _is;
+}
+IRtc* CRTCForModelingModule::MGetOrCreateRTC(name_rtc_t const& aID,
+		eRTCType const& aType)
+{
+	IRtc* _val = MGetRTC(aID);
+	if(_val != NULL)
+		return _val;
+
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+	{
+		//todo check is exist
+
+		rtc_info_t _info;
+		_info.FName = aID;
+		_info.FRTCType = aType;
+		_info.FOwner = get_my_id().FId.FUuid;
+		_info.FUniqueId = ++sFIdCounter;
+		FOwnTimeClocks.MInsert(_info);
+
+		update_own_real_time_clocks_t _cval;
+		_cval.FNewRTC = FOwnTimeClocks;
+		CDataObject::sMGetInstance().MPush(_cval);
+	}
+	_val = MWaitForRTC(aID);
+	DCHECK_NOTNULL(_val);
+	bool const _is = _val->MIsJoinToRTC();
+	DCHECK(_is);
+	return _val;
+}
+IRtc* CRTCForModelingModule::MWaitForRTC(name_rtc_t const& aID,
+		double aTime) const
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+	IRtc* _val = NULL;
+
+	if (aTime < 0)
+		for (; (_val = MGetRTC(aID)) == NULL;)
+			FWaitForEvent.MTimedwait(&FCommonMutex, aTime);
+	else
+	{
+		double const _cur_time = NSHARE::get_time();
+		double _time = _cur_time;
+		for (; (_val = MGetRTC(aID)) == NULL //
+				&& aTime > (_time - _cur_time);)
+		{
+			FWaitForEvent.MTimedwait(&FCommonMutex,
+					aTime - (_time - _cur_time));
+			double _time = NSHARE::get_time();
+		}
+	}
+
+	return _val;
 }
 /** Update RTC
  *
@@ -199,25 +256,25 @@ bool CRTCForModelingModule::MUpdateRTC()
 		{
 			rtc_info_t _info = (*_jt)->MGetRTCInfo();
 
-			real_time_clocks_t::iterator _it = _rtc.begin();
-			for (; _it != _rtc.end() && !(_info == *_it);)
+			rtc_info_array_t::iterator _it = _rtc.FRtc.begin();
+			for (; _it != _rtc.FRtc.end() && !(_info == *_it);)
 				if (_it->FRTCType != eRTC_MODELING)
-					_it = _rtc.erase(_it);
+					_it = _rtc.FRtc.erase(_it);//!< doesn't our type of RTC (no more handle it )
 				else
 					++_it;
 
-			if (_it == _rtc.end())
+			if (_it == _rtc.FRtc.end())
 			{
-				VLOG(1)<<"Remove RTC "<<_info.FName;
+				VLOG(1) << "Remove RTC " << _info.FName;
 				//remove
 				_jt = _state.FRtc.erase(_jt);
-				_is_removed=true;
+				_is_removed = true;
 			}
 			else
 				++_jt;
 		}
 	}
-	bool const _is_created =MCreateRTC(_rtc);
+	bool const _is_created = MCreateRTC(_rtc);
 	return _is_removed || _is_created;
 }
 /** Update info about RTC
@@ -226,27 +283,30 @@ bool CRTCForModelingModule::MUpdateRTC()
  */
 void CRTCForModelingModule::MUpdateRTCInfo(real_time_clocks_t const& aRTC)
 {
-	VLOG(1)<<"Update RTC "<<aRTC;
+	VLOG(1) << "Update RTC " << aRTC;
 
 	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
-	real_time_clocks_t const _old=FRealTimeClocks;
-	FRealTimeClocks=aRTC;
+	real_time_clocks_t const _old = FRealTimeClocks;
+	FRealTimeClocks = aRTC;
 
-	if(_old.FShdMemName!=FRealTimeClocks.FShdMemName)
+	if (_old.FShdMemName != FRealTimeClocks.FShdMemName)
 	{
-		bool _is_changed=false;
-		if(!MOpenSharedMemory())
+		bool _is_changed = false;
+		if (!MOpenSharedMemory())
 		{
 			LOG(DFATAL) << "Cannot open new shared memory:"
 									<< FRealTimeClocks.FShdMemName;
 		}
-		else if(!MIsRTC())
-			_is_changed=MCreateRTC(FRealTimeClocks);
+		else if (!MIsRTC())
+			_is_changed = MCreateRTC(FRealTimeClocks);
 		else
-			_is_changed=MUpdateRTC();
+			_is_changed = MUpdateRTC();
 
-		if(_is_changed)
+		if (_is_changed)
+		{
 			CDataObject::sMGetInstance().MPush(real_time_clocks_updated_t());
+			FWaitForEvent.MBroadcast();
+		}
 	}
 }
 } /* namespace NUDT */

@@ -58,6 +58,7 @@
 #include "services/CPacketDivisor.h"
 #include "services/CAutoSearchByEthernet.h"
 #include "services/CTimeDispatcher.h"
+#include "services/CDoubleStartprotection.h"
 
 using namespace NUDT;
 DECLARATION_VERSION_FOR(Kernel)
@@ -78,7 +79,7 @@ void initialize_core(int argc, char* argv[]);
 void initalize_io();
 void remove_io();
 void perpetual_loop();
-void start();
+bool start();
 void stop();
 
 int main(int argc, char *argv[])
@@ -89,6 +90,8 @@ int main(int argc, char *argv[])
 #endif
 
 	initialize_core(argc, argv);
+
+	new CDoubleStartprotection;
 
 	initialize_def_sevices();
 
@@ -103,14 +106,20 @@ int main(int argc, char *argv[])
 	initalize_io();
 	//-----------------------------
 
-	start();
-	perpetual_loop();
-	stop();
+	int _rval = EXIT_SUCCESS;
+	if(start())
+	{
+		perpetual_loop();
+		stop();
+	}else
+		_rval = EXIT_FAILURE;
+
 //	remove_extern_modules();
 	remove_def_io_managers();
 	remove_def_main_channels();
 	remove_io();
 	remove_def_sevices();
+
 
 	return EXIT_SUCCESS;
 }
@@ -404,9 +413,15 @@ void stop()
 	std::cout << "Stopping ..." << std::endl;
 	CCore::sMGetInstance().MStop();
 }
-void start()
+bool start()
 {
 	std::cout << "Starting..." << std::endl;
-	CCore::sMGetInstance().MStart();
-	std::cout << "Working ..." << std::endl;
+	if(!CCore::sMGetInstance().MStart())
+	{
+		std::cout << "Error is occured" << std::endl;
+		return false;
+	}
+	else
+		std::cout << "Working ..." << std::endl;
+	return true;
 }

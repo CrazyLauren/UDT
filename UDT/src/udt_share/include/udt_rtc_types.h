@@ -29,7 +29,7 @@ struct UDT_SHARE_EXPORT time_info_t
 	typedef uint64_t rtc_time_t;//!< Used to hold time (precision is #E_TIME_PRECISION)
 	static const uint64_t END_OF_TIME;//!< End of time value
 	time_info_t();
-	rtc_info_t FRtc; //!< Info about used RTC
+	//rtc_info_t FRtc; //!< Info about used RTC
 	NSHARE::atomic_t FNumOfWorking; //!< The number of thread which is working
 	NSHARE::atomic_t FNumOfWait; //!< The number of thread wait for time updated
     NSHARE::atomic_t FNumOfLocked; //!< The number of locked thread
@@ -68,7 +68,7 @@ inline std::ostream& operator <<(std::ostream& aStream,
              <<" rtc users="<<aInfo.FNumOfWorking
              <<" step="<<aInfo.FTimeStep
              <<" HW time="<<aInfo.FTimeHW
-             <<aInfo.FRtc;
+            /* <<aInfo.FRtc*/;
     return aStream;
 }
 }

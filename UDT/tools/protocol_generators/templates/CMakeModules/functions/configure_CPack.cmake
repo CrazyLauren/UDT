@@ -402,8 +402,8 @@ SearchPath $0 matlab.exe
 		     )
 	endif()
 
-	if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
-		include("${CMAKE_CURRENT_LIST_DIR}/../${PROJECT_NAME}_CPack.cmake")
+	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/${PROJECT_NAME}_CPack.cmake")
+		include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/${PROJECT_NAME}_CPack.cmake")
 	endif()
 
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

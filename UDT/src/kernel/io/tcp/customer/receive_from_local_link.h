@@ -21,6 +21,7 @@
 	RECEIVE(E_MAIN_CHANNEL_ERROR,main_channel_error_param_t)/*Ошибки открытия, закрытияб работы основного канала*/\
 	RECEIVE(E_CUSTOMER_FILTERS,custom_filters_dg2_t)/*Фильтр данных*/\
 	RECEIVE(E_USER_DATA_FAIL_SEND,user_data_fail_send_t)/*Данные не доставлены*/\
+	RECEIVE(E_RTC_INFO,real_time_clocks_dg_t)/*Инормация об RTC*/\
 	/*END*/
 
 

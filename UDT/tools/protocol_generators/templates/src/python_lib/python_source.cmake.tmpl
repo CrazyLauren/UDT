@@ -15,6 +15,7 @@ set(PYTHON_SITE_PACKAGES
 
 set(_TARGET_NAME {{ target_name }})
 
+
 include(${SWIG_USE_FILE})
 
 set (_PUBLIC_LIBRARIS
@@ -27,6 +28,7 @@ set (_PRIVATE_INCLUDE_DIR
 		${CMAKE_CURRENT_SOURCE_DIR}/../include
 		${CMAKE_BINARY_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}"
 		)
 
 helper_add_swig_python_library(${_TARGET_NAME}
@@ -41,8 +43,23 @@ set(${SWIG_MODULE_${_TARGET_NAME}_REAL_NAME}_PYTHONS_DEPENDS_MODULES
         CACHE INTERNAL "Depends python modules "
 	    FORCE
     )
+set(_SWIG_TARGET_NAME ${SWIG_MODULE_${_TARGET_NAME}_REAL_NAME})
 
-install(TARGETS ${SWIG_MODULE_${_TARGET_NAME}_REAL_NAME}
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/protocol_{{ name | lower }}_python_revision.h.in
+                "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/protocol_{{ name | lower }}_python_revision.h")
+
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.txt.in
+                "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/ChangeLog.txt")
+
+configure_target_version(${_SWIG_TARGET_NAME}
+		${CMAKE_CURRENT_SOURCE_DIR}
+		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+        "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
+		)
+target_sources(${_SWIG_TARGET_NAME}
+        PRIVATE "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c")
+
+install(TARGETS ${_SWIG_TARGET_NAME}
         LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries
         ARCHIVE DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries
         RUNTIME DESTINATION ${PYTHON_SITE_PACKAGES} COMPONENT libraries

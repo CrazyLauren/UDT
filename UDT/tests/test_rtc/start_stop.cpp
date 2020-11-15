@@ -116,10 +116,10 @@ extern int start_child(char const* aName)
 
 	NSHARE::CThread::process_id_t _id = 0;
 #ifdef __linux__
-	int const exit_val=posix_spawn((pid_t*)&_id, g_argv[0],NULL,NULL,(char *const*)_p,(char* const*)environ);
+	int const exit_val= (int)posix_spawn((pid_t*)&_id, g_argv[0],NULL,NULL,(char *const*)_p,(char* const*)environ);
 	signal(SIGCHLD,SIG_IGN);
 #else
-	int const exit_val = spawnv(P_NOWAIT, g_argv[0],(char *const*) _p);
+	int const exit_val = (int)spawnv(P_NOWAIT, g_argv[0],(char *const*) _p);
 	_id = exit_val;
 #endif
 	if (exit_val < 0)

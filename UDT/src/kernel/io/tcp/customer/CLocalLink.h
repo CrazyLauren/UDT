@@ -46,6 +46,8 @@ public:
 	bool MReceivedData(demand_dgs_t const&, const routing_t&,error_info_t const&);
 	bool MReceivedData(demand_dgs_for_t const&, const routing_t&,error_info_t const&);
 	bool MReceivedData(fail_send_t const&, const routing_t& aFrom,error_info_t const& aError);
+	bool MReceivedData(real_time_clocks_t const&, const routing_t& aFrom,error_info_t const& aError);
+
 	void MCloseRequest();
 	void MClose();
 
@@ -101,6 +103,8 @@ private:
 	SHARED_PTR<demand_dgs_for_t> FpDemandsDgFor;
 	SHARED_PTR<user_data_t> FpUserDataFor;
 	SHARED_PTR<fail_send_t> FpFailSent;
+	SHARED_PTR<real_time_clocks_t> FpRtc;
+
 
 
 

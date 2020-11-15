@@ -9,6 +9,8 @@ include(CheckTypeSize)
 include(FindPackageHandleStandardArgs)
 include(TestBigEndian)
 
+message(STATUS "Configure SHARE")
+
 
 check_library_exists(dex dex_open "" HAVE_DEX)
 
@@ -132,11 +134,14 @@ find_shared_ptr()
 if(NOT SHARED_PTR_FOUND)
 	message(WARNING " shared_ptr has not founded, specialize boost library search path Boost_INCLUDE_DIR ")
 endif()
+
 test_big_endian(SHARE_BIGENDIAN)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(${PROJECT_NAME}_PLATFORM_DEFENITIONS  "" CACHE STRING "" FORCE)
+set(${PROJECT_NAME}_PLATFORM_DEFINITIONS  "" CACHE STRING "Platform definitions" FORCE)
+
+message(STATUS "Setup platform settings")
 
 if (MSVC)
 	# This option is to enable the /MP switch for Visual Studio 2005 and above compilers
@@ -149,12 +154,12 @@ if (MSVC)
 	endif(BUILD_BY_MP)
 
 	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4200") #disabling of 4200 warning
-	set(${PROJECT_NAME}_PLATFORM_DEFENITIONS 
-		${${PROJECT_NAME}_PLATFORM_DEFENITIONS} 
+	set(${PROJECT_NAME}_PLATFORM_DEFINITIONS 
+		${${PROJECT_NAME}_PLATFORM_DEFINITIONS} 
 			-D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DNOMINMAX 
-			CACHE STRING "" FORCE
+			CACHE STRING "Platform definitions" FORCE
 		)
-    
+	message(STATUS "Append platform definitions " ${${PROJECT_NAME}_PLATFORM_DEFINITIONS} )
     if(LIBADVAPI32)
     	set(HAVE_LIBADVAPI32 1)
     endif()

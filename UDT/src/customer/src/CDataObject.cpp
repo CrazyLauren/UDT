@@ -23,6 +23,8 @@ NUDT::CDataObject::singleton_pnt_t  NUDT::CDataObject::singleton_t::sFSingleton 
 namespace NUDT
 {
 const NSHARE::CText real_time_clocks_updated_t::NAME = "RealTimeClockUpdated";
+const NSHARE::CText update_own_real_time_clocks_t::NAME = "OwnRealTimeClock";
+
 const NSHARE::CText new_real_time_clocks_t::NAME = "RealTimeClock";
 const NSHARE::CText progs_id_from_t::NAME = "ProgsIdFrom";
 const NSHARE::CText recv_data_from_t::NAME = "ReceiveFrom";

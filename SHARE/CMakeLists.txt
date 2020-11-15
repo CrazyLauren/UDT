@@ -24,6 +24,6 @@ add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(examples)
 add_subdirectory(tests)
-
+end_of_project(${PROJECT_NAME})
 
 		  

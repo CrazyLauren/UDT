@@ -7,6 +7,10 @@
 #define {{ file_name | upper }}_H
 {% set _language = 'ru' if 'language' in settings and settings.language == 'ru' else 'en'  %}
 #include <deftype>
+{% set field_version_major = header.___LogicalType.version_major[0]
+        if 'version_major'in  header.___LogicalType else None  %}
+{% set field_version_minor = header.___LogicalType.version_minor[0]
+        if 'version_minor'in  header.___LogicalType else None  %}
 
 #include <{{ common.get_namespace(name) }}_udt.h>
 
@@ -46,7 +50,11 @@ mxChar const  doesntreceive[]={(mxChar)'u',(mxChar)'n',(mxChar)'r',(mxChar)'e',(
 mxChar const  generate[]={(mxChar)'g',(mxChar)'e',(mxChar)'n'};
 mxChar const  generate_zero[]={(mxChar)'z',(mxChar)'e',(mxChar)'r',(mxChar)'o'};
 mxChar const  help[]={(mxChar)'h',(mxChar)'e',(mxChar)'l',(mxChar)'p'};
-mxChar const  api_version[]={(mxChar)'v',(mxChar)'e',(mxChar)'r',(mxChar)'s',(mxChar)'i',(mxChar)'o',(mxChar)'n'};
+mxChar const  api_version[]={(mxChar)'A', (mxChar)'P', (mxChar)'I',
+    (mxChar)'V',
+    (mxChar)'e',(mxChar)'r',(mxChar)'s',(mxChar)'i',(mxChar)'o',(mxChar)'n'};
+mxChar const  msg_version[]={(mxChar)'v',
+    (mxChar)'e',(mxChar)'r',(mxChar)'s',(mxChar)'i',(mxChar)'o',(mxChar)'n'};
 mxChar const  from_bin[]={(mxChar)'f',(mxChar)'r',(mxChar)'o',(mxChar)'m',(mxChar)'B',(mxChar)'i',(mxChar)'n'};
 mxChar const  to_bin[]={(mxChar)'t',(mxChar)'o',(mxChar)'B',(mxChar)'i',(mxChar)'n'};
 
@@ -68,7 +76,7 @@ enum eArgumentInputId
     {% for field in header.___fields|fields(True)
             if field.LogicalType|string() in ["unique"]
              %}
-    eSEND_{{ field.id | upper}} {% if loop.first %} = 1 {% endif %},
+    eSEND_{{ field.id | upper}} {% if loop.first %} = eMESSAGE + 1 {% endif %},
     {% endfor %}
 
     {% for field in header.___fields|fields(True)
@@ -559,15 +567,19 @@ inline
                         if field.LogicalType|string() in ["unique"]
                          %}
                     {{ field.type  }} _{{ field.id  }};
+                    if(
+                        _recv_{{ field.id  }}_ptr == NULL ||
+                        !deserialize(&_{{ field.id  }}, _recv_{{ field.id  }}_ptr )
+                        )
+                    {
+                        mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                            "Cannot deserialize arguments ");
+                            _is_error = true;
+                    }
                     {% endfor %}
                     if(
                         !deserialize(&_from, _recv_from_ptr)
                         || !deserialize(&_flags, _recv_flags_ptr)
-                    {% for field in header.___fields|fields(True)
-                        if field.LogicalType|string() in ["unique"]
-                         %}
-                    || !deserialize(&_{{ field.id  }}, _recv_{{ field.id  }}_ptr )
-                    {% endfor %}
                     )
                     {
                         mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
@@ -792,6 +804,36 @@ inline
                 *_output_5_ptr = NSHARE::matlab::serialize(_rval);
             }
         }
+        else if(IS_COMMAND(msg_version))
+        {
+            {% if field_version_major and field_version_minor %}
+            if(_output_ptr != NULL)
+            {
+                {% if field_version_major %}
+                uint32_t const _rval = static_cast<uint32_t>(T::{{ field_version_major.id | upper}});
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+                {% endif %}
+            }
+            if(_output_2_ptr != NULL)
+            {
+                {% if field_version_minor %}
+                uint32_t const _rval = static_cast<uint32_t>(T::{{ field_version_minor.id | upper}});
+                *_output_2_ptr = NSHARE::matlab::serialize(_rval);
+                {% endif %}
+            }
+            {% elif field_version_major or field_version_minor  %}
+            if(_output_ptr != NULL)
+            {
+                {% if field_version_major %}
+                uint32_t const _rval = static_cast<uint32_t>(T::{{ field_version_major.id | upper}});
+                {% else %}
+                uint32_t const _rval = static_cast<uint32_t>(T::{{ field_version_minor.id | upper}});
+                {% endif %}
+                *_output_ptr = NSHARE::matlab::serialize(_rval);
+
+            }
+            {% endif %}
+        }
         else if(IS_COMMAND(help))
         {
             _is_print_help = true;
@@ -883,12 +925,17 @@ inline
     				  "     \t\tmessage = {{ name }}('zero')\n\n"
     				  "     \t      message (%s) - zero message\n\n\n"
                       "     \t#  Output API version\n\n"
-    				  "     \t\t [major, minor, revision, path, compile_time ] = {{ name }}('version')\n\n"
+    				  "     \t\t [major, minor, revision, path, compile_time ] = {{ name }}('APIVersion')\n\n"
     				  "     \t      major (%s) - API major version\n"
     				  "     \t      minor (%s) - API minor version\n"
     				  "     \t      revision (%s) - Realization revision\n"
     				  "     \t      path (%s) - Source path\n"
     				  "     \t      compile_time (%s) - Compile time\n"
+                      "     \t#  Output message version\n\n"
+    				  "     \t\t [major, minor] = {{ name }}('version')\n\n"
+    				  "     \t      major (%s) - API major version\n"
+    				  "     \t      minor (%s) - API minor version\n"
+
             , matlab_code_t<handler_id_t>::type()//create id
 
             , matlab_code_t<handler_id_t>::type()//destroy id
@@ -945,11 +992,14 @@ inline
 
             , matlab_code_t<T>::type()//generate_zero message
 
+            , matlab_code_t<uint32_t>::type()//APIVersion major
+            , matlab_code_t<uint32_t>::type()//APIVersion minor
+            , matlab_code_t<uint32_t>::type()//APIVersion revision
+            , matlab_code_t<std::string::value_type>::type()//APIVersion path
+            , matlab_code_t<std::string::value_type>::type()//APIVersion compile_time
+
             , matlab_code_t<uint32_t>::type()//version major
             , matlab_code_t<uint32_t>::type()//version minor
-            , matlab_code_t<uint32_t>::type()//version revision
-            , matlab_code_t<std::string::value_type>::type()//version path
-            , matlab_code_t<std::string::value_type>::type()//version compile_time
             );
     }
     return !_is_error;

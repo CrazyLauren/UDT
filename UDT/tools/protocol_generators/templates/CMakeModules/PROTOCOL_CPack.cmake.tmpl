@@ -1,0 +1,11 @@
+{#if(CPACK_GENERATOR STREQUAL "NSIS")#}
+{#    set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS#}
+{#         "#}
+{#SearchPath \\\$0 Kernel.exe#}
+{#\\\${If} \\\${FileExists} \\\$0#}
+{#	\\\${GetParent} \\\"\\\$0\\\" $R0#}
+{#	StrCpy \\\$INSTDIR \\\$R0#}
+{#\\\${Endif}#}
+{#        "#}
+{#         )#}
+{#endif()#}

@@ -723,9 +723,8 @@ bool CHttpIOManger::MRemoveDgParserFor(uint32_t aNumber)
 	}
 	{
 		NSHARE::CRAII<NSHARE::CMutex> _block(FSniffedMutex);
-		data_fifo_t::iterator _it = FSniffedData.begin(), _it_end =
-				FSniffedData.end();
-		for (; _it != _it_end;)
+		data_fifo_t::iterator _it = FSniffedData.begin();
+		for (; _it != FSniffedData.end();)
 		{
 			if (_it->FData.MValue(demand_dg_t::HANDLER,
 					demand_dg_t::NO_HANDLER) == aNumber)

@@ -128,6 +128,11 @@ bool CLocalLink::MAccept()
 				routing_t(), error_info_t());
 		FpFailSent.reset();
 	}
+	if (FpRtc)
+	{
+		CDataObject::sMGetInstance().MPush(*FpRtc, true);
+		FpRtc.reset();
+	}
 
 	VLOG(2) << "Open " << _info << " :" << this;
 	return true;
@@ -209,6 +214,18 @@ bool CLocalLink::MReceivedData(fail_send_t const& aInfo, const routing_t& aRoute
 		CKernelIo::sMGetInstance().MReceivedData(aInfo, MGetID(),aRoute,aError);
 	else
 		FpFailSent=SHARED_PTR<fail_send_t>(new fail_send_t(aInfo));
+	return true;
+}
+
+bool CLocalLink::MReceivedData(real_time_clocks_t const& aRTC,
+			const routing_t& aRoute,error_info_t const& aError)
+{
+	if (E_OPEN == FState)
+	{
+		CDataObject::sMGetInstance().MPush(aRTC, true);
+	}
+	else
+		FpRtc=SHARED_PTR<real_time_clocks_t>(new real_time_clocks_t(aRTC));
 	return true;
 }
 bool CLocalLink::MReceivedData(demand_dgs_for_t const& _demands, const routing_t& aRoute,error_info_t const& aError)
@@ -371,6 +388,15 @@ void CLocalLink::MProcess(user_data_fail_send_t const* aP, parser_t* aThis)
 	fail_send_t _customer(deserialize<user_data_fail_send_t,fail_send_t>(aP,&_uuid,&_err));
 	MReceivedData(_customer,_uuid,_err);
 }
+template<>
+void CLocalLink::MProcess(real_time_clocks_dg_t const* aP, parser_t* aThis)
+{
+
+	routing_t _uuid;
+	real_time_clocks_t _customer(deserialize<real_time_clocks_dg_t,real_time_clocks_t>(aP,&_uuid,NULL));
+	MReceivedData(_customer,_uuid,error_info_t());
+}
+
 bool CLocalLink::MSetting()
 {
 	CHECK(FState == E_NOT_OPEN);

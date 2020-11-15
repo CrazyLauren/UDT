@@ -15,6 +15,12 @@ jobs:
       MSYS_ROOT: ${{ matrix.compiler}}${{ matrix.arch}}
     steps:
       - uses: actions/checkout@v1
+      - uses: msys2/setup-msys2@v2
+        with:
+          path: msys64
+          msystem: MINGW64
+          update: true
+          install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
       - name: Set variables
         id: vars
         shell: bash
@@ -34,98 +40,85 @@ jobs:
           # # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env
           echo ::set-env name=GIT_TYPE::${GIT_TYPE}
           echo ::set-env name=GIT_SLUG::${GIT_SLUG}
-      - name: Downloas Msys
-        shell: cmd
-        run: |
-              git clone https://github.com/msys2/msys2-ci-base.git %GITHUB_WORKSPACE%\msys64
-              %GITHUB_WORKSPACE%\msys64\usr\bin\rm -rf %GITHUB_WORKSPACE%\msys64\.git
-      - name: Update
-        shell: cmd
-        run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Syyuu
       - name: Install mingwX86 Packages
         env:
           MINGW_ARCH: ${{ matrix.arch }}
-        shell: cmd
+        shell: msys2 {0}
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S git base-devel mingw-w64-%MINGW_ARCH%-toolchain mingw-w64-%MINGW_ARCH%-boost mingw-w64-%MINGW_ARCH%-cmake
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm --needed -S  doxygen mingw-w64-%MINGW_ARCH%-nsis
-          %GITHUB_WORKSPACE%\msys64\usr\bin\pacman --noconfirm -Scc
+          pacman --noconfirm --needed -S git base-devel mingw-w64-${{ matrix.arch }}-toolchain mingw-w64-${{ matrix.arch }}-boost mingw-w64-${{ matrix.arch }}-cmake
+          pacman --noconfirm --needed -S  doxygen mingw-w64-${{ matrix.arch }}-nsis
+          pacman --noconfirm -Scc
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           mkdir build
           cd build
-          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+          cmake -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: cmake-build-files-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build
       - name: Compile
         working-directory: ./build
         env:
           CONFIGURATION: ${{ matrix.configuration }}
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
           cmake --build . --config "%CONFIGURATION%" --target install
       - name:  SHARE unit test
-        shell: cmd
+        working-directory: ./build/binary/bin
+        shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
-            cd build/binary/bin
-            set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
             timeout --signal=SIGABRT 100 ./unit_tests
       - name:  Testing RTC
+        working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
-        shell: cmd
+        shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
-          cd build/binary/bin
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          start /B timeout --signal=SIGABRT 100 ./Kernel.exe -c tests/test_kernel.json
+          timeout --signal=SIGABRT 100 ./Kernel -c ./tests/test_kernel.json &
           timeout --signal=SIGABRT 100 ./test_rtc
-          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+          taskkill //F //IM Kernel.exe
       - name:  Testing inheritance
         working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
-        shell: cmd
+        shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_inheritance
-          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+          taskkill //F //IM Kernel.exe
       - name:  Testing errors
         working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
-        shell: cmd
+        shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false && matrix.configuration != 'Debug'
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_errors
-          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+          taskkill //F //IM Kernel.exe
       - name:  Testing high load
         working-directory: ./build/binary/bin
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
-        shell: cmd
+        shell: bash
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
-          start /B timeout --signal=SIGABRT 100 ./Kernel.exe
+          timeout --signal=SIGABRT 100 ./Kernel &
           timeout --signal=SIGABRT 100 ./test_of_speed
-          taskkill  /IM Kernel.exe /F /FI "STATUS eq RUNNING"
+          taskkill //F //IM Kernel.exe
       - name: build package
         working-directory: ./build
         env:
@@ -134,9 +127,8 @@ jobs:
           ARCHITECTURE: ${{ matrix.arch }}
         shell: cmd
         run: |
-          set PATH=%GITHUB_WORKSPACE%\msys64\mingw64\bin;%GITHUB_WORKSPACE%\msys64\mingw32\bin;%GITHUB_WORKSPACE%\msys64\usr\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem
 
-          cmake -DBOOST_ROOT=./boost_1_56_0 -DCMAKE_INSTALL_PREFIX="" -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
+          cmake -DCMAKE_INSTALL_PREFIX="" -DCMAKE_BUILD_TYPE=%CONFIGURATION%  -DCMAKE_SH="CMAKE_SH-NOTFOUND" -G "MinGW Makefiles" ..
           cmake --build . --target doc_SHARE
           cmake --build . --target doc_UDT
           cmake --build . --target package

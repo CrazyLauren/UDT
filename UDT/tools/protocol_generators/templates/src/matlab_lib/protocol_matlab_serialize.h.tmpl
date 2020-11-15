@@ -150,7 +150,7 @@ using namespace {{ common.get_namespace(name) }};
 {% macro serialize_matlab_field(aField) %}
     {%if aField | is_array or aField | is_dynamic %}
         {% set _array_len = aField.array_len if aField | is_array else '_object.'+aField.id+'.size()' %}
-        {% set _array_ptr = '_object.'+ aField.id if aField | is_array else '&_object.'+aField.id+'.front()' %}
+        {% set _array_ptr = '_object.'+ aField.id if aField | is_array else '_object.'+aField.id+'.empty()?NULL: &_object.'+aField.id+'.front()' %}
         {% set _type = aField.type if aField | is_array else aField.TypeOfLogicalType %}
     mxSetFieldByNumber(_rval, aArrayId, (int)aStartAddr++,  serialize({{ _array_ptr }}, {{ _array_len}}) );
     {% else %}

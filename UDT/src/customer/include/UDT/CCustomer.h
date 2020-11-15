@@ -594,6 +594,8 @@ public:
 	*\param argc The number of entries in the argv array
 	*\param argv An array of pointers to strings that contain the arguments to the program
 	*\param aName The desired name of program
+	*\param aProgramName - Name of "exe" file
+	*\param aLogOption - option of logging
 	*\param aVersion Version of program
 	*\param aConfPath Path to the configuration file if it not set
 	 *					The file is read from environment specificated in ENV_CONFIG_PATH.
@@ -605,6 +607,13 @@ public:
             UDT_CONFIG_DEFAULT_PATH
 	        "default_customer_config.json");
 
+	static int sMInit(char const* aProgramName,
+			char const* aName,
+			char const* aLogOption = NULL,
+			NSHARE::version_t const&  aVersion=NSHARE::version_t(),
+	    const NSHARE::CText& aConfPath=
+            UDT_CONFIG_DEFAULT_PATH
+	        "default_customer_config.json");
 	/*!\brief Initialize library
 	 *
 	 *	Initialize the library and create singleton for this type

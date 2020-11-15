@@ -7,14 +7,89 @@
 
 /* Simulink */
 #include "mex.h"
-
 #include "{{ common.get_namespace(name) }}_matlab_serialize.h"
 #include "{{ common.get_namespace(name) }}_matlab_udt_api.h"
 
+using namespace {{ common.get_namespace(name) }};
+using namespace {{ common.get_namespace(name) }}::matlab;
+
+
+#if defined(MATLAB_MEX_FILE)
+/*#define MDL_CHECK_PARAMETERS
+void mdlCheckParameters(SimStruct *S)
+{
+    if (mxGetClassID(ssGetSFcnParam(S, eSUBSCRIBE_TO)) != NSHARE::matlab::matlab_code_t<char>::value
+        || mxIsEmpty(ssGetSFcnParam(S, eSUBSCRIBE_TO)))
+    {
+        ssSetErrorStatus(S, "Specialize name of sender");
+        return;
+    }
+    if (!mxIsNumeric(ssGetSFcnParam(S, eSUBSCRIBE_FLAGS))
+        || mxIsEmpty(ssGetSFcnParam(S, eSUBSCRIBE_FLAGS)))
+    {
+        ssSetErrorStatus(S, "Invalid flags ");
+        return;
+    }
+ {% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+     {% set _type = field.type if aField | is_array else field.TypeOfLogicalType %}
+    if (mxGetClassID(ssGetSFcnParam(S, eINPUT_{{ field.id |upper}})) != NSHARE::matlab::matlab_code_t<{{ _type }}>::value
+        || mxIsEmpty(ssGetSFcnParam(S, eINPUT_{{ field.id |upper}})))
+    {
+        ssSetErrorStatus(S, "Invalid type of value");
+        return;
+    }
+{% endfor %}
+}
+*/
+#endif /* MDL_CHECK_PARAMETERS */
+
+/* ======================================================================== */
+#define MDL_INITIAL_SIZES
+/*
+void mdlInitializeSizes(SimStruct *S)
+{
+
+    ssSetNumSFcnParams(S, NUM_INPUT_PARAMS);
+    #if defined(MATLAB_MEX_FILE)
+    if (ssGetNumSFcnParams(S) == ssGetSFcnParamsCount(S)) {
+        mdlCheckParameters(S);
+        if (ssGetErrorStatus(S) != NULL) return;
+    } else
+        return;
+    #endif
+
+    ssSetSFcnParamTunable(S, eSUBSCRIBE_TO, SS_PRM_NOT_TUNABLE);
+    ssSetSFcnParamTunable(S, eSUBSCRIBE_FLAGS,   SS_PRM_NOT_TUNABLE);
+{% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+    ssSetSFcnParamTunable(S, eINPUT_{{ field.id |upper}},   SS_PRM_NOT_TUNABLE);
+{% endfor %}
+
+
+    ssSetNumSampleTimes(S, 1);
+    if (!ssSetNumInputPorts(S, 0) || !ssSetNumOutputPorts(S, 1)) return;
+    ssSetOutputPortWidth(S, 0, (int) GetParam(FRAME_SIZE));
+    ssSetOutputPortComplexSignal(S, 0, COMPLEX_YES);
+    ssSetOutputPortDataType(S, 0, (GetParam(USE_DOUBLE)) ? SS_DOUBLE : SS_INT8);
+    ssSetOutputPortOptimOpts(S, 0, SS_REUSABLE_AND_LOCAL);
+
+
+    ssSetNumPWork(S, P_WORK_LENGTH);
+    ssSetNumIWork(S, 0);
+    ssSetNumRWork(S, NUM_PARAMS);
+    ssSetNumModes(S, 0);
+
+    ssSetNumNonsampledZCs(S, 0);
+    ssSetSimStateCompliance(S, USE_DEFAULT_SIM_STATE);
+    ssSetOptions(S, 0);
+}*/
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    using namespace {{ common.get_namespace(name) }};
-    using namespace {{ common.get_namespace(name) }}::matlab;
+
     typedef CMatlabHandler<MEX_FUNCTION_FOR> handler_t;
     handler_t::sMArgumentParse(nlhs, plhs, nrhs , prhs);
 }

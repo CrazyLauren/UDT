@@ -90,6 +90,14 @@ void CControlByTCP::MInit(ICustomer *aCustomer)
 		CDataObject::sMGetInstance() += _val_channel;
 	}
 
+	{
+		callback_data_t _callbak(sMUpdateRTC, this);
+
+		CDataObject::value_t _val_channel(update_own_real_time_clocks_t::NAME,
+				_callbak);
+		CDataObject::sMGetInstance() += _val_channel;
+	}
+
 }
 //
 //----------------------
@@ -117,6 +125,17 @@ int CControlByTCP::MFill<custom_filters_dg2_t>(data_t* aTo)
 	}*/
 	serialize<custom_filters_dg2_t,demand_dgs_t>(aTo,_data.FDemand,routing_t (),error_info_t ());
 	return _data.FDemand.FPriority;
+}
+template<>
+int CControlByTCP::MFill<real_time_clocks_dg_t>(data_t* aTo)
+{
+	VLOG(2) << "Create info About RTC";
+	update_own_real_time_clocks_t _data;
+	CDataObject::sMGetInstance().MGetLast(_data);
+
+	serialize<real_time_clocks_dg_t, real_time_clocks_t>(aTo, _data.FNewRTC,
+			routing_t(), error_info_t());
+	return 0;
 }
 
 template<>
@@ -400,6 +419,17 @@ int CControlByTCP::sMFailSend(CHardWorker* aWho, args_data_t* aWhat,
 	return 0;
 }
 
+int CControlByTCP::sMUpdateRTC(CHardWorker* aWho, args_data_t* aWhat,
+		void* aData)
+{
+	CControlByTCP* _this = (CControlByTCP*) aData;
+	CHECK_NOTNULL(_this);
+	update_own_real_time_clocks_t const* _p =
+			reinterpret_cast<update_own_real_time_clocks_t const*>(aWhat->FPointToData);
+	_this->MSend(_p->FNewRTC);
+	return 0;
+}
+
 //
 //----------------------
 //
@@ -424,6 +454,18 @@ void CControlByTCP::MSendFail(fail_send_t const&aVal)
 	int _rval = MSend(_data); //fixme
 	(void) _rval;
 	LOG_IF(ERROR,_rval<0) << "Cannot send filters";
+}
+void CControlByTCP::MSend(real_time_clocks_t const & aData)
+{
+	VLOG(2) << "Send RTC info.";
+	data_t _data;
+	serialize<real_time_clocks_dg_t, real_time_clocks_t>(&_data, aData,
+			routing_t(), error_info_t());
+
+	int _rval = MSend(_data); //fixme
+
+	(void) _rval;
+	LOG_IF(ERROR,_rval<0) << "Cannot send RTC info";
 }
 void CControlByTCP::MSendFilters()
 {

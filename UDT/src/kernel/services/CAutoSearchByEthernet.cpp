@@ -373,6 +373,8 @@ inline void CAutoSearchByEthernet::MInit()
 NSHARE::CConfig CAutoSearchByEthernet::MSerialize() const
 {
 	NSHARE::CConfig _config(NAME);
+	_config.MAdd(FUdp.MSerialize()); //todo
+
 	return _config;
 }
 } /* namespace NUDT */

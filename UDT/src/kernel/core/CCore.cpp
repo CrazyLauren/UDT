@@ -189,7 +189,22 @@ bool CCore::MStart()
 		ICore* const _state = (*_it);
 		CHECK_NOTNULL(_state);
 
-		_state->MStart();
+		if(!_state->MStart())
+		{
+			if (_it != FStatesByPtr.begin())
+				do
+				{
+					ICore* const _state_old = (*_it);
+					_state_old->MStop();
+
+					if (_it == FStatesByPtr.begin())
+						break;
+					else
+						--_it;
+				} while (1);
+
+			return false;
+		}
 	}
 	return true;
 }

@@ -21,17 +21,27 @@
 %include  <UDT/customer/receive_data_info_c.h>
 %include  "{{ common.get_namespace(name) }}_udt_api.h"
 
+unsigned api_revision_version();
+unsigned api_major_version();
+unsigned api_minor_version();
+const char* api_revision_path_info();
+const char* api_compile_time();
+const char* api_compile_date();
+
+unsigned protocol_revision_version();
+unsigned protocol_major_version();
+unsigned protocol_minor_version();
 
 
 {% for msg in messages %}
     {%  set struct_name =  common.get_namespace(name) + '::'+msg.___name+'_t' %}
     {%  set dynamic_msg = true if '___type' in msg and msg.___type == 'dynamic' %}
     {%  set function_sufix =  msg.___name %}
-    {{ struct_name }} from_json_{{ function_sufix }}(const std::string& aData);
+
 %extend {{ struct_name }} {
     void print_this();
     std::string to_json( unsigned aPretty);
-
+    void from_json(const std::string& aData);
     int send(
     {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
         {% if not loop.first %}
@@ -63,6 +73,9 @@
     int get_next();
     void generate();
     void makeZero();
+
+    {{ msg.___name }}_t();
+    ~{{ msg.___name }}_t();
 }
 {% endfor %}
 {% endautoescape %}

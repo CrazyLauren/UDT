@@ -1,0 +1,69 @@
+{% set file_name = 'protocol_' + name | lower+ '_simulink_udt_api' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+{% set _language = 'ru' if 'language' in settings and settings.language == 'ru' else 'en'  %}
+#include <deftype>
+
+#include <{{ common.get_namespace(name) }}_udt.h>
+
+#include "{{ common.get_namespace(name) }}_matlab_serialize.h"
+
+namespace {{ common.get_namespace(name) }}
+{
+namespace matlab
+{
+enum eInputIndex
+{
+    eSUBSCRIBE_TO = 0,
+    eSUBSCRIBE_FLAGS,
+ {% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+    eINPUT_{{ field.id |upper}}
+{% endfor %}
+    NUM_INPUT_PARAMS
+};
+
+/** Class to parse simulink data
+*/
+template<class T>
+class CSimulinkHandler
+{
+    public:
+
+};
+
+{% macro generate_simulink_functions(aMsg, aParentArray) %}
+{% set aParent =  aParentArray[0] if aParentArray else None %}
+{% set dynamic_msg = true if '___type' in aMsg and aMsg.___type == 'dynamic' %}
+{% set dynamic_parent_msg = true if parent_name and '___type' in aParent and aParent.___type == 'dynamic' %}
+{% set struct_name =  aMsg.___name+'_t' %}
+{% set parent_name =  aParent.___name+'_t' if aParent else ''  %}
+{% set has_dynamic_child =  aMsg.___has_dynamic_child if '___has_dynamic_child' in aMsg else False %}
+/** Class to parse simulink data
+*/
+template<>
+class CSimulinkHandler<{{ struct_name }}>
+{
+    public:
+    enum aOutputParams
+    {
+        {% for field in aMsg | all_fields(True) if field.id %}
+        e{{ field.id |upper }}{% if loop.first %} = 0{% endif %},//!< {{ field.description }}
+        {% endfor %}
+        E_NUM_PARAMS
+    };
+};
+{% endmacro %}
+
+{% for msg in messages-%}
+    {{ generate_simulink_functions(msg,msg.___parent) }}
+{% endfor %}
+}//namespace matlab
+}//namespace {{ common.get_namespace(name) }}
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

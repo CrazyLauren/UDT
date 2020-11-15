@@ -63,3 +63,14 @@ helper_add_matlab_library(${_TARGET_NAME}
                         )
 {#helper_export_library(${_TARGET_NAME})#}
 {% endfor %}
+
+set(${PROJECT_NAME}_MATLAB_DATAS ${${PROJECT_NAME}_MATLAB_DATAS}
+        "${CMAKE_CURRENT_SOURCE_DIR}/example.m"
+	    CACHE INTERNAL "Matlab Data"
+	    FORCE)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/protocol_{{ name|lower }}.pdf")
+    set(${PROJECT_NAME}_MATLAB_DATAS ${${PROJECT_NAME}_MATLAB_DATAS}
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/protocol_{{ name|lower }}.pdf"
+	    CACHE INTERNAL "Matlab Data"
+	    FORCE)
+endif()

@@ -58,7 +58,7 @@ template<> void convert<buffer_c_t, NSHARE::CBuffer>
 	else
 	{
 		aTo->ptr = (char const*) aWhat.ptr_const();
-		aTo->size = aWhat.size();
+		aTo->size = static_cast<unsigned>(aWhat.size());
 	}
 }
 
@@ -92,7 +92,7 @@ template<> void convert<NSHARE::CText, udt_customer_string_t>(
 {
 	unsigned const _str_len(
 			(aWhat.len > (CUSTOMER_C_MAX_STRING_LEN - 1)) ?
-															strlen(aWhat.string)
+															(unsigned)strlen(aWhat.string)
 																	:
 															aWhat.len
 															);
@@ -289,9 +289,9 @@ void convert<NUDT::received_data_t, received_data_c_t>(
 	aTo->FEnd = aWhat.end;
 }
 template<>
-void convert<received_message_info_c_t, NUDT::received_message_args_t>(
+void convert<received_message_info_c_t, NUDT::received_message_info_t>(
 		received_message_info_c_t* aTo,
-		NUDT::received_message_args_t const& aWhat)
+		NUDT::received_message_info_t const& aWhat)
 {
 	convert(&aTo->rfrom, aWhat.FFrom);
 	convert(&aTo->protocol_name, aWhat.FProtocolName);
@@ -317,6 +317,13 @@ void convert<received_message_info_c_t, NUDT::received_message_args_t>(
 	aTo->cbs = aWhat.FCbs;
 }
 template<>
+void convert<received_message_info_c_t, NUDT::received_message_args_t>(
+		received_message_info_c_t* aTo,
+		NUDT::received_message_args_t const& aWhat)
+{
+	convert(aTo, static_cast<NUDT::received_message_info_t const&>(aWhat));
+}
+template<>
 void convert<received_message_args_c_t, NUDT::received_message_args_t>(
 		received_message_args_c_t* aTo,
 		NUDT::received_message_args_t const& aWhat)
@@ -325,8 +332,8 @@ void convert<received_message_args_c_t, NUDT::received_message_args_t>(
 	convert(&aTo->message, aWhat.FMessage);
 }
 template<>
-void convert<NUDT::received_message_args_t, received_message_info_c_t>(
-		NUDT::received_message_args_t* aTo,
+void convert<NUDT::received_message_info_t, received_message_info_c_t>(
+		NUDT::received_message_info_t* aTo,
 		received_message_info_c_t const& aWhat)
 {
 	convert(&aTo->FFrom, aWhat.rfrom);
@@ -347,6 +354,13 @@ void convert<NUDT::received_message_args_t, received_message_info_c_t>(
 	aTo->FEndian = aWhat.endian;
 	aTo->FRemainCallbacks = aWhat.remain_CB;
 	aTo->FCbs = aWhat.cbs;
+}
+template<>
+void convert<NUDT::received_message_args_t, received_message_info_c_t>(
+		NUDT::received_message_args_t* aTo,
+		received_message_info_c_t const& aWhat)
+{
+	convert(static_cast<NUDT::received_message_info_t*>(aTo), aWhat);
 }
 template<>
 void convert<NUDT::received_message_args_t, received_message_args_c_t>(

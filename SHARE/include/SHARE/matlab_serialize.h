@@ -81,6 +81,11 @@ struct matlab_code_t
 	{
 		return "structure";
 	}
+	static inline bool MCastFrom(mxClassID const& aVal)
+	{
+		return false;
+	}
+
 };
 template<>
 struct matlab_code_t<bool>
@@ -92,12 +97,83 @@ struct matlab_code_t<bool>
 	typedef mxLogical matlab_t;
 	inline static const char* type()
 	{
-		return "Logical";
+		return "logical";
+	}
+	static inline bool MCanCastFrom(mxClassID const& aVal)
+	{
+		return aVal == mxDOUBLE_CLASS //
+				||aVal == mxSINGLE_CLASS //
+				||aVal == mxINT8_CLASS //
+				||aVal == mxUINT8_CLASS //
+				||aVal == mxINT16_CLASS //
+				||aVal == mxUINT16_CLASS //
+				||aVal == mxINT32_CLASS //
+				||aVal == mxUINT32_CLASS //
+				||aVal == mxINT64_CLASS //
+				||aVal == mxUINT64_CLASS //
+				;
+	}
+	template<class U>
+	static inline bool MCastFrom(bool * aTo, U const& aVal)
+	{
+		*aTo = aVal == 0 ? false : true;
+		return true;
+	}
+	static inline bool MCastFrom(bool * aTo, mxDouble const& aVal)
+	{
+		*aTo = (-1.0 < aVal && aVal < 1.0)  ? false : true;
+		return true;
+	}
+	static inline bool MCastFrom(bool * aTo, mxSingle const& aVal)
+	{
+		*aTo = (-1.0 < aVal && aVal < 1.0)  ? false : true;
+		return true;
 	}
 };
-
+template<typename T>
+struct matlab_code_numeric_t
+{
+	static inline bool MCanCastFrom(mxClassID const& aVal)
+	{
+		return aVal == mxLOGICAL_CLASS //
+				||aVal == mxDOUBLE_CLASS //
+				||aVal == mxSINGLE_CLASS //
+				||aVal == mxINT8_CLASS //
+				||aVal == mxUINT8_CLASS //
+				||aVal == mxINT16_CLASS //
+				||aVal == mxUINT16_CLASS //
+				||aVal == mxINT32_CLASS //
+				||aVal == mxUINT32_CLASS //
+				||aVal == mxINT64_CLASS //
+				||aVal == mxUINT64_CLASS //
+				;
+	}
+	template<class U>
+	static inline bool MCastFrom(T * aTo, U const& aVal)
+	{
+		bool const _is = static_cast<U>(std::numeric_limits<T>::min()) <= aVal
+				&& aVal <= static_cast<U>(std::numeric_limits<T>::max());
+		*aTo = static_cast<T>(aVal);
+		return _is;
+	}
+	static inline bool MCastFrom(T * aTo, mxDouble const& aVal)
+	{
+		*aTo = static_cast<T>(round(aVal));
+		return true;
+	}
+	static inline bool MCastFrom(T * aTo, mxSingle const& aVal)
+	{
+		*aTo = static_cast<T>(round(aVal));
+		return true;
+	}
+	static inline bool MCastFrom(T * aTo, mxLogical const& aVal)
+	{
+		*aTo = aVal ? 1 : 0;
+		return true;
+	}
+};
 template<>
-struct matlab_code_t<int8_t>
+struct matlab_code_t<int8_t>:matlab_code_numeric_t<int8_t>
 {
 	enum
 	{
@@ -106,8 +182,9 @@ struct matlab_code_t<int8_t>
 	typedef mxInt8 matlab_t;
 	inline static const char* type()
 	{
-		return "Int8";
+		return "int8";
 	}
+
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexInt8 complex_t;
 
@@ -132,7 +209,7 @@ struct matlab_code_t<int8_t>
 #endif
 };
 template<>
-struct matlab_code_t<uint8_t>
+struct matlab_code_t<uint8_t>:matlab_code_numeric_t<uint8_t>
 {
 	enum
 	{
@@ -141,7 +218,7 @@ struct matlab_code_t<uint8_t>
 	typedef mxUint8 matlab_t;
 	inline static const char* type()
 	{
-		return "Uint8";
+		return "uint8";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexUint8 complex_t;
@@ -167,7 +244,7 @@ struct matlab_code_t<uint8_t>
 #endif
 };
 template<>
-struct matlab_code_t<int16_t>
+struct matlab_code_t<int16_t>:matlab_code_numeric_t<int16_t>
 {
 	enum
 	{
@@ -176,7 +253,7 @@ struct matlab_code_t<int16_t>
 	typedef mxInt16 matlab_t;
 	inline static const char* type()
 	{
-		return "Int16";
+		return "int16";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexInt16 complex_t;
@@ -202,7 +279,7 @@ struct matlab_code_t<int16_t>
 #endif
 };
 template<>
-struct matlab_code_t<uint16_t>
+struct matlab_code_t<uint16_t>:matlab_code_numeric_t<uint16_t>
 {
 	enum
 	{
@@ -211,7 +288,7 @@ struct matlab_code_t<uint16_t>
 	typedef mxUint16 matlab_t;
 	inline static const char* type()
 	{
-		return "Uint16";
+		return "uint16";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexUint16 complex_t;
@@ -237,7 +314,7 @@ struct matlab_code_t<uint16_t>
 #endif
 };
 template<>
-struct matlab_code_t<int32_t>
+struct matlab_code_t<int32_t>:matlab_code_numeric_t<int32_t>
 {
 	enum
 	{
@@ -246,7 +323,7 @@ struct matlab_code_t<int32_t>
 	typedef mxInt32 matlab_t;
 	inline static const char* type()
 	{
-		return "Int32";
+		return "int32";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexInt32 complex_t;
@@ -272,7 +349,7 @@ struct matlab_code_t<int32_t>
 #endif
 };
 template<>
-struct matlab_code_t<uint32_t>
+struct matlab_code_t<uint32_t>:matlab_code_numeric_t<uint32_t>
 {
 	enum
 	{
@@ -281,7 +358,7 @@ struct matlab_code_t<uint32_t>
 	typedef mxUint32 matlab_t;
 	inline static const char* type()
 	{
-		return "Uint32";
+		return "uint32";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexUint32 complex_t;
@@ -307,7 +384,7 @@ struct matlab_code_t<uint32_t>
 #endif
 };
 template<>
-struct matlab_code_t<int64_t>
+struct matlab_code_t<int64_t>:matlab_code_numeric_t<int64_t>
 {
 	enum
 	{
@@ -316,7 +393,7 @@ struct matlab_code_t<int64_t>
 	typedef mxInt64 matlab_t;
 	inline static const char* type()
 	{
-		return "Int64";
+		return "int64";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexInt64 complex_t;
@@ -342,7 +419,7 @@ struct matlab_code_t<int64_t>
 #endif
 };
 template<>
-struct matlab_code_t<uint64_t>
+struct matlab_code_t<uint64_t>:matlab_code_numeric_t<uint64_t>
 {
 	enum
 	{
@@ -351,7 +428,7 @@ struct matlab_code_t<uint64_t>
 	typedef mxUint64 matlab_t;
 	inline static const char* type()
 	{
-		return "Uint64";
+		return "uint64";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexUint64 complex_t;
@@ -376,8 +453,40 @@ struct matlab_code_t<uint64_t>
 	}
 #endif
 };
+template<typename T>
+struct matlab_code_real_t
+{
+	static inline bool MCanCastFrom(mxClassID const& aVal)
+	{
+		return aVal == mxLOGICAL_CLASS //
+				|| aVal == mxDOUBLE_CLASS //
+				||aVal == mxSINGLE_CLASS //
+				||aVal == mxINT8_CLASS //
+				||aVal == mxUINT8_CLASS //
+				||aVal == mxINT16_CLASS //
+				||aVal == mxUINT16_CLASS //
+				||aVal == mxINT32_CLASS //
+				||aVal == mxUINT32_CLASS //
+				||aVal == mxINT64_CLASS //
+				||aVal == mxUINT64_CLASS //
+				;
+	}
+	template<class U>
+	static inline bool MCastFrom(T * aTo, U const& aVal)
+	{
+		bool const _is = static_cast<U>(std::numeric_limits<T>::min()) <= aVal
+				&& aVal <= static_cast<U>(std::numeric_limits<T>::max());
+		*aTo = static_cast<T>(aVal);
+		return _is;
+	}
+	static inline bool MCastFrom(T * aTo, mxLogical const& aVal)
+	{
+		*aTo = aVal ? 1 : 0;
+		return true;
+	}
+};
 template<>
-struct matlab_code_t<float>
+struct matlab_code_t<float>:matlab_code_real_t<float>
 {
 	enum
 	{
@@ -386,8 +495,9 @@ struct matlab_code_t<float>
 	typedef mxSingle matlab_t;
 	inline static const char* type()
 	{
-		return "Single";
+		return "single";
 	}
+
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexSingle complex_t;
 
@@ -412,7 +522,7 @@ struct matlab_code_t<float>
 #endif
 };
 template<>
-struct matlab_code_t<double>
+struct matlab_code_t<double>:matlab_code_real_t<double>
 {
 	enum
 	{
@@ -421,7 +531,7 @@ struct matlab_code_t<double>
 	typedef mxDouble matlab_t;
 	inline static const char* type()
 	{
-		return "Double";
+		return "double";
 	}
 #if MX_HAS_INTERLEAVED_COMPLEX
 	typedef mxComplexDouble complex_t;
@@ -460,10 +570,22 @@ struct matlab_code_t<mxChar>
 	{
 		value = mxCHAR_CLASS
 	};
+	static inline bool MCanCastFrom(mxClassID const& aVal)
+	{
+		return aVal == mxOBJECT_CLASS;
+	}
+
+	template<typename T, class U>
+	static inline bool MCastFrom(T * aTo, U const& aVal)
+	{
+		*aTo = static_cast<T>(aVal);
+		return true;
+	}
+
 	typedef mxChar matlab_t;
 	inline static const char* type()
 	{
-		return "Char";
+		return "char";
 	}
 };
 
@@ -526,7 +648,141 @@ inline const char* print_matlab_type(mxClassID aClass)
 	}
 	return NULL;
 }
+inline void const* get_next(void const* aPtr, mxClassID aClass)
+{
+	switch (aClass)
+	{
+	case mxLOGICAL_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<bool>::matlab_t);
+		break;
+	case mxCHAR_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<mxChar>::matlab_t);
+		break;
+	case mxINT8_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<int8_t>::matlab_t);
+		break;
+	case mxUINT8_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<uint8_t>::matlab_t);
+		break;
+	case mxINT16_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<int16_t>::matlab_t);
+		break;
+	case mxUINT16_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<uint16_t>::matlab_t);
+		break;
+	case mxINT32_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<int32_t>::matlab_t);
+		break;
+	case mxUINT32_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<uint32_t>::matlab_t);
+		break;
+	case mxINT64_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<int64_t>::matlab_t);
+		break;
+	case mxUINT64_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<uint64_t>::matlab_t);
+		break;
+	case mxSINGLE_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<float>::matlab_t);
+		break;
+	case mxDOUBLE_CLASS:
+		return (char const*)aPtr + sizeof(matlab_code_t<double>::matlab_t);
+		break;
+	}
+	return NULL;
+}
+inline void * get_ptr(mxArray const * aFrom, mxClassID aClass)
+{
 
+#ifndef	MX_HAS_INTERLEAVED_COMPLEX
+	switch (aClass)
+	{
+	case mxLOGICAL_CLASS:
+		return mxGetData(aFrom);
+		break;
+	case mxCHAR_CLASS:
+		return mxGetData(aFrom);
+		break;
+	case mxINT8_CLASS:
+		return matlab_code_t<int8_t>::sMGet(aFrom);
+		break;
+	case mxUINT8_CLASS:
+		return matlab_code_t<uint8_t>::sMGet(aFrom);
+		break;
+	case mxINT16_CLASS:
+		return matlab_code_t<int16_t>::sMGet(aFrom);
+		break;
+	case mxUINT16_CLASS:
+		return matlab_code_t<uint16_t>::sMGet(aFrom);
+		break;
+	case mxINT32_CLASS:
+		return matlab_code_t<int32_t>::sMGet(aFrom);
+		break;
+	case mxUINT32_CLASS:
+		return matlab_code_t<uint32_t>::sMGet(aFrom);
+		break;
+	case mxINT64_CLASS:
+		return matlab_code_t<int64_t>::sMGet(aFrom);
+		break;
+	case mxUINT64_CLASS:
+		return matlab_code_t<uint64_t>::sMGet(aFrom);
+		break;
+	case mxSINGLE_CLASS:
+		return matlab_code_t<float>::sMGet(aFrom);
+		break;
+	case mxDOUBLE_CLASS:
+		return matlab_code_t<double>::sMGet(aFrom);
+		break;
+	}
+	return NULL;
+#endif
+	return mxGetData(aFrom);
+}
+template<typename T>
+inline bool cast_from(T * aTo, void const* aPtr, mxClassID aClass)
+{
+	typedef matlab_code_t<T> matlab_api_t;
+	switch (aClass)
+	{
+	case mxLOGICAL_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(bool const*) aPtr);
+		break;
+	case mxCHAR_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(char const*) aPtr);
+		break;
+	case mxINT8_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(int8_t const*) aPtr);
+		break;
+	case mxUINT8_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(uint8_t const*) aPtr);
+		break;
+	case mxINT16_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(int16_t const*) aPtr);
+		break;
+	case mxUINT16_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(uint16_t const*) aPtr);
+		break;
+	case mxINT32_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(int32_t const*) aPtr);
+		break;
+	case mxUINT32_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(uint32_t const*) aPtr);
+		break;
+	case mxINT64_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(int64_t const*) aPtr);
+		break;
+	case mxUINT64_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(uint64_t const*) aPtr);
+		break;
+	case mxSINGLE_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(float const*) aPtr);
+		break;
+	case mxDOUBLE_CLASS:
+		return matlab_api_t::MCastFrom(aTo, *(double const*) aPtr);
+		break;
+	}
+	return NULL;
+}
 template<>
 inline bool deserialize<std::string>(std::string* aTo, mxArray const* aObject,
 		size_t aArraySize,
@@ -582,7 +838,7 @@ inline bool deserialize(NSHARE::CBuffer* aTo, mxArray const* aObject, size_t aAr
 {
 	size_t const total_num_of_elements = static_cast<size_t>( mxGetNumberOfElements(aObject));
 	aTo->resize(total_num_of_elements);
-	return aTo->empty() || deserialize((unit8_t*)&aTo -> front(), aObject, total_num_of_elements);
+	return aTo->empty() || deserialize((uint8_t*)&aTo -> front(), aObject, total_num_of_elements);
 }
 #endif
 
@@ -721,12 +977,15 @@ bool deserialize(T* aTo, mxArray const * aFrom, size_t aArraySize,
 	bool const _is = sizeof(T) == sizeof(matlab_t);
 
 	mxClassID const category = mxGetClassID(aFrom);
-	bool const _is_valid = category == matlab_api_t::value;
+	bool const _is_valid = category == static_cast<mxClassID>(matlab_api_t::value);
+	bool const _is_need_cast = !_is_valid && matlab_api_t::MCanCastFrom(category);
 
-	DCHECK(_is_valid) << (unsigned) category << " != "
+
+
+	LOG_IF(ERROR, !_is_valid) << (unsigned) category << " != "
 			<< (unsigned) matlab_api_t::value;
 
-	if (!_is_valid)
+	if (!_is_valid && !_is_need_cast)
 	{
 		mexErrMsgIdAndTxt("InvalidDataType", "Invalid type of data. Need %s",
 				matlab_api_t::type());
@@ -743,6 +1002,7 @@ bool deserialize(T* aTo, mxArray const * aFrom, size_t aArraySize,
 				"Invalid array len. Require %d ",
 				aArraySize);
 
+	bool _rval = true;
 #if MX_HAS_INTERLEAVED_COMPLEX
 
 	typedef typename matlab_api_t::complex_t complex_t;
@@ -753,12 +1013,15 @@ bool deserialize(T* aTo, mxArray const * aFrom, size_t aArraySize,
 
 		complex_t const * pc = matlab_api_t::sMGetComplex(aFrom);
 
-		for (size_t index = 0; index < _size;
+		for (size_t index = 0; index < _size && _rval;
 				++index,
 						++aTo,
 						++pc
 				)
-			*aTo = pc->real;
+			if(_is_need_cast)
+				_rval = matlab_api_t::MCastFrom(aTo, pc->real));
+			else
+				*aTo = pc->real;
 	}
 	else
 	{
@@ -766,28 +1029,50 @@ bool deserialize(T* aTo, mxArray const * aFrom, size_t aArraySize,
 		if (_is)
 			memcpy(aTo, p, sizeof(T) * _size);
 		else
-			for (size_t index = 0; index < _size;
+			for (size_t index = 0; index < _size && _rval;
 					++index,
 							++aTo,
 							++p
 					)
-				*aTo = *p;
+				if(_is_need_cast)
+					_rval = matlab_api_t::MCastFrom(aTo, *p);
+				else
+					*aTo = *p;
 	}
 #else
-	if(_is)
-	memcpy(aTo, mxGetData(aFrom), sizeof(T) * _size);
+	if(_is && !_is_need_cast)
+		memcpy(aTo, mxGetData(aFrom), sizeof(T) * _size);
+	else if(_is_need_cast)
+	{
+		void const* p= mxGetData(aFrom);
+		for (size_t index=0; index< _size //
+							&& _rval//
+							&& p != NULL
+							;
+						++index,
+						++aTo,
+						p = get_next(p, category)
+				)
+					_rval = cast_from(aTo, p, category);
+
+		_rval = _rval && p != NULL;
+	}
 	else
 	{
 		matlab_t const* p= static_cast<matlab_t const*> (mxGetData(aFrom));
-		for (size_t index=0; index< _size;
+		for (size_t index=0; index< _size && _rval;
 				++index,
 				++aTo,
 				++p
 		)
-		*aTo = *p;
+			*aTo = static_cast<T>(*p);
 	}
 #endif
-	return true;
+	if(!_rval)
+		mexErrMsgIdAndTxt("CannotCastType", "Cannot cast type. Need type %s",
+				matlab_api_t::type());
+
+	return _rval;
 }
 } //namespace matlab
 } //namespace NSHARE

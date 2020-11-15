@@ -1,8 +1,7 @@
 add_custom_target(matlab_package_${PROJECT_NAME} ALL
 	                  COMMAND ${CMAKE_COMMAND} -E remove_directory ${MATLAB_PACKAGE_TOOLBOX_ROOT}
-	                  @_CREATE_DIRECTORIES@
-	                  @_COPY_LIBRARY_COMMAND@
-#	                  @_COPY_LIBRARY_DEPS_COMMAND@
+	                  @_MATLAB_CREATE_DIRECTORIES@
+	                  @_MATLAB_COPY_LIBRARY_COMMAND@
                       COMMAND "${Matlab_MAIN_PROGRAM}" -wait -nodisplay -nodesktop -r "\
     try, matlab.addons.toolbox.packageToolbox('${MATLAB_PACKAGE_PRJ}'); \
     catch ME, warning(getReport(ME)); quit(1); end; quit"

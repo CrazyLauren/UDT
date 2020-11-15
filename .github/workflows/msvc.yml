@@ -55,7 +55,13 @@ jobs:
         run: |
           mkdir build
           cd build
+          cmake --version
           cmake -DBOOST_ROOT=../boost_1_56_0 -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: cmake-build-files-${{ matrix.compiler }}-${{ matrix.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          path: build
       - name: Compile
         working-directory: ./build
         env:

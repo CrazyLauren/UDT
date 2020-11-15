@@ -469,6 +469,15 @@ bool CNetBase::MMakeNonBlocking(CSocket& aSocket)
 	VLOG(2) << aSocket << " is NON BLOCKING";
 	return true;
 }
+bool CNetBase::MSetCloseOnExist(CSocket& aSocket)
+{
+#if defined(unix) || defined(__QNX__) ||defined( __linux__)
+	int flags = fcntl(aSocket.MGet(), F_GETFD, 0);
+	if (-1 != flags && (flags & FD_CLOEXEC) == 0)
+		return fcntl(aSocket.MGet(), F_SETFD, flags | FD_CLOEXEC) == 0;
+#endif
+	return false;
+}
 const CText socket_setting_t::NAME="socket";
 const CText socket_setting_t::KEY_SEND_BUFFER_SIZE="send_buf";
 const CText socket_setting_t::KEY_RECV_BUFFER_SIZE="recv_buf";

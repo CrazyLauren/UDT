@@ -25,6 +25,15 @@ namespace NUDT
 /** RTC info Updated
  *
  */
+struct CUSTOMER_EXPORT update_own_real_time_clocks_t
+{
+	static const data_events_t::key_t NAME;//!< Type of event
+	real_time_clocks_t FNewRTC;
+};
+
+/** RTC info Updated
+ *
+ */
 struct CUSTOMER_EXPORT real_time_clocks_updated_t
 {
 	static const data_events_t::key_t NAME;//!< Type of event

@@ -555,7 +555,7 @@ function (helper_add_library
 							PRIVATE ${_TARGET_NAME_UPPER}_EXPORTS
 							PRIVATE ${${aPRIVATE_DEFINITIONS}}
 							
-							PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFENITIONS}
+							PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFINITIONS}
 							PUBLIC ${${aPUBLIC_DEFINITIONS}}
 							)
 
@@ -603,7 +603,7 @@ function (helper_add_library
 		target_compile_definitions(${aTARGET_NAME}_Static
 		                            PRIVATE ${${aPRIVATE_DEFINITIONS}}
 									PUBLIC ${_TARGET_NAME_UPPER}_STATIC
-									PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFENITIONS}
+									PUBLIC ${${PROJECT_NAME}_PLATFORM_DEFINITIONS}
 									PUBLIC ${${aPUBLIC_DEFINITIONS}}
 							)
 		
@@ -849,6 +849,10 @@ macro(configure_project
 	set(${PROJECT_NAME}_MATLAB_MODULES ""
 	    CACHE INTERNAL "Matlab modules"
 	    FORCE)
+	set(${PROJECT_NAME}_MATLAB_DATAS ""
+	    CACHE INTERNAL "Matlab Data"
+	    FORCE)
+
 	include (CMakeModules/functions/package_python.cmake)
 	include (CMakeModules/functions/package_matlab.cmake)
 

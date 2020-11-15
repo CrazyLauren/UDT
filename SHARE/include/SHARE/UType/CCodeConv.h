@@ -34,19 +34,28 @@ struct utf32
 	}
 
 	template<typename U>
-	explicit utf32(U const & aVal) :
-			FVal(aVal)
+	utf32(U const & aVal) :
+			FVal(static_cast<uint32_t>(aVal))
 	{
 	}
 
-	operator char()
+/*	operator char()
 	{
 		return FVal;
 	}
 	operator char const() const
 	{
 		return FVal;
-	}
+	}*/
+    operator uint32_t()
+    {
+        return FVal;
+    }
+    operator uint32_t const() const
+    {
+        return FVal;
+    }
+
 	inline void operator-=(const utf32 &i)
 	{
 		FVal -= i.FVal;
@@ -153,7 +162,7 @@ public:
 	//return the size of buffer required to encode the given utf32 code point
 	virtual size_t MSizeOf(utf32 const* aBegin, utf32 const* aEnd) const;
 	//return number of utf32 code  required to re-encode buffer
-	virtual size_t MLengthOf(it_char_t aBegin, size_t aMax=std::numeric_limits<size_t>::max()) const =0;
+	virtual size_t MLengthOf(it_char_t aBegin, size_t aMax= (std::numeric_limits<size_t>::max)()) const =0;
 
 	//return the size of buffer required to encode the given utf32 code point
 	virtual size_t MCharLen(utf32 aCode) const =0;
@@ -167,7 +176,7 @@ public:
 	virtual size_t MSeqLen(utf32 aCode) const;
 	//return number of utf32 code  required to re-encode buffer
 	virtual size_t MLengthOf(it_char_t aBegin,
-									size_t aMax=std::numeric_limits<size_t>::max()) const;
+									size_t aMax= (std::numeric_limits<size_t>::max)()) const;
 	size_t MCharLenInline(utf32 aCode) const;
 	virtual size_t MCharLen(utf32 aCode) const;
 	virtual utf32 MNext(it_char_t& aBegin, it_char_t aEnd) const;
@@ -185,7 +194,7 @@ class SHARE_EXPORT CCodeANSII: public ICodeConv
 public:
 	//return number of utf32 code  required to re-encode buffer
 	virtual size_t MLengthOf(it_char_t aBegin,
-					size_t aMax=std::numeric_limits<size_t>::max()) const;
+					size_t aMax= (std::numeric_limits<size_t>::max)()) const;
 	virtual size_t MCharLen(utf32 aCode) const;
 	virtual utf32 MNext(it_char_t& aBegin, it_char_t aEnd) const;
 	virtual size_t MAppend(utf32 aCode, char_t*& aBegin, char_t* aEnd) const;

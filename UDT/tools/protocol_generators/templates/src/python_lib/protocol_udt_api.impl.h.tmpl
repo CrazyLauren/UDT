@@ -9,6 +9,7 @@
 #include <deftype>
 #include <customer.h>
 
+
 #include "{{ common.get_namespace(name) }}.h"
 #include "{{ common.get_namespace(name) }}_msg_headers.h"
 #include "{{ common.get_namespace(name) }}_ostream.h"
@@ -18,6 +19,7 @@
 #include "{{ common.get_namespace(name) }}_udt_api.h"
 #include "../../tests/{{ name|lower}}_test/{{ common.get_namespace(name) }}_test_generator.h"
 #include <UDT/impl/customer_covert_impl.h>
+#include <{{ common.get_namespace(name) }}_python_revision.h>
 
 using namespace {{ common.get_namespace(name) }};
 using namespace NSHARE;
@@ -32,25 +34,60 @@ typedef std::list<NUDT::received_message_args_t> received_data_info_t;
 
     {%  set function_sufix =  msg.___name %}
     {%  set dynamic_msg = true if '___type' in msg and msg.___type == 'dynamic' %}
-inline void {{ func_prefix }}_print_this({{ struct_name }}* aData)
+class {{ struct_name }}_impl_t:public {{ struct_name }},
+    public CHandler<{{ struct_name }}>
 {
-    std::cout<< (*aData);
+    public:
+    typedef CHandler<{{ struct_name }}> handler_t;
+
+    ::new_data_cb_t FCb;
+
+    virtual bool MDataReceived(NUDT::received_message_info_t& aInfo, unsigned aDataId)
+    {
+        bool const _rval = handler_t::MDataReceived(aInfo, aDataId);
+        if(FCb!=NULL && _rval)
+        {
+        	received_message_info_c_t _what_c;
+	        NUDT::convert(&_what_c, aInfo);
+            (*FCb)(&_what_c);
+            aInfo.FOccurUserError = _what_c.occur_user_error;
+        }
+        return _rval;
+    }
+};
+{{ struct_name }} *new_{{ common.get_namespace(name) }}_{{ struct_name }}()
+{
+   {{ struct_name }}_impl_t *v = new {{ struct_name }}_impl_t;
+    v -> makeZero();
+    v ->FCb = NULL;
+
+    return reinterpret_cast<{{ struct_name }} *>(v);
 }
-inline std::string {{ func_prefix }}_to_json({{ struct_name }}* aData,
+void delete_{{ common.get_namespace(name) }}_{{ struct_name }}({{ struct_name }}* aThis)
+{
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    delete _ptr;
+}
+inline void {{ func_prefix }}_print_this({{ struct_name }}* aThis)
+{
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    std::cout<< (*static_cast<{{ struct_name }}*>(_ptr));
+}
+inline std::string {{ func_prefix }}_to_json({{ struct_name }}* aThis,
     unsigned aPretty)
 {
-    NSHARE::CConfig const _serialized = serialize(*aData);
-
-    return _serialized.MToJSON( aPretty !=0 ).MToStdString();
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return {{ struct_name }}_impl_t::sMToJson(*static_cast<{{ struct_name }}*>(_ptr) , aPretty !=0);
 }
-inline {{ struct_name }} from_json_{{ function_sufix }}(const std::string& aData)
+inline void {{ func_prefix }}_from_json({{ struct_name }}* aThis, const std::string& aData)
 {
-    std::istringstream _data(aData);
-    NSHARE::CConfig _serialized;
-    _serialized.MFromJSON(_data);
-    return deserialize<{{ struct_name }}>(_serialized);
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    *static_cast<{{ struct_name }}*>(_ptr) = {{ struct_name }}_impl_t::sMFromJson(aData);
 }
-inline int {{ func_prefix }}_send({{ struct_name }} * aData
+inline int {{ func_prefix }}_send({{ struct_name }} * aThis
     {% for field in header.___fields|fields(True)
             if field.LogicalType|string() in ["unique"]
              %}
@@ -62,85 +99,100 @@ inline int {{ func_prefix }}_send({{ struct_name }} * aData
     {% endfor %}
     )
 {
-    {{ struct_name }} const& aMsg(*aData);
-    NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-			sizeof({{ struct_name }}));
-    _buf.resize(0);
-    serialize_binary(_buf, aMsg);
-    NUDT::required_header_t _header(get_header<{{ struct_name }}>());
-
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return {{ struct_name }}_impl_t::sMSend(*static_cast<{{ struct_name }}*>(_ptr)
     {% for field in header.___fields|fields(True)
             if field.LogicalType|string() in ["unique"]
              %}
-    (({{ header_structure_t }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+            , a{{ field.id }}
     {% endfor %}
+    );
 
-    int const _rval = CCustomer::sMGetInstance().MSend(
-            _header,
-            protocol(),
-            _buf);
-    return _rval;
+{#    (({{ header_structure_t }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};#}
+
+{#    {{ struct_name }} const& aMsg(*aData);#}
+{#    NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(#}
+{#			sizeof({{ struct_name }}));#}
+{#    _buf.resize(0);#}
+{#    serialize_binary(_buf, aMsg);#}
+{#    NUDT::required_header_t _header(get_header<{{ struct_name }}>());#}
+{##}
+{#    {% for field in header.___fields|fields(True)#}
+{#            if field.LogicalType|string() in ["unique"]#}
+{#             %}#}
+{#    (({{ header_structure_t }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};#}
+{#    {% endfor %}#}
+{##}
+{#    int const _rval = CCustomer::sMGetInstance().MSend(#}
+{#            _header,#}
+{#            protocol(),#}
+{#            _buf);#}
+{#    return _rval;#}
 }
-namespace
-{
-static received_data_info_t g_{{ function_sufix }};
-static unsigned g_{{ function_sufix }}_size = 0;
-
-static new_data_cb_t g_{{ function_sufix }}_cb = NULL;
-static int g_{{ function_sufix }}_cb_id = -1;
-
-static NSHARE::CMutex g_{{ function_sufix }}_lock;
-static unsigned g_{{ function_sufix }}_cond_var_num = 0;
-static NSHARE::CCondvar g_{{ function_sufix }}_cond_var;
-
-static int receive_data_cb_{{ function_sufix }}(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA)
-{
-    new_data_cb_t _cb = NULL;
-    NUDT::received_message_args_t *_what = NULL;
-    {
-        NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);
-        if(g_{{ function_sufix }}_cb_id < 0)
-            return 0;
-
-        _what =
-                (NUDT::received_message_args_t *) WHAT;
-
-        g_{{ function_sufix }}.push_back(*_what);
-        ++g_{{ function_sufix }}_size;
-        _cb = g_{{ function_sufix }}_cb;
-        if(g_{{ function_sufix }}_cond_var_num > 0 )
-            g_{{ function_sufix }}_cond_var.MBroadcast();
-
-    }
-    if( _cb != NULL)
-    {
-    	received_message_info_c_t _what_c;
-	    NUDT::convert(&_what_c, *_what);
-        (*_cb)(&_what_c);
-        _what->FOccurUserError = _what_c.occur_user_error;
-    }
-    return 0;
-}
-}
+{#namespace#}
+{#{#}
+{#static received_data_info_t g_{{ function_sufix }};#}
+{#static unsigned g_{{ function_sufix }}_size = 0;#}
+{##}
+{#static new_data_cb_t g_{{ function_sufix }}_cb = NULL;#}
+{#static int g_{{ function_sufix }}_cb_id = -1;#}
+{##}
+{#static NSHARE::CMutex g_{{ function_sufix }}_lock;#}
+{#static unsigned g_{{ function_sufix }}_cond_var_num = 0;#}
+{#static NSHARE::CCondvar g_{{ function_sufix }}_cond_var;#}
+{##}
+{#static int receive_data_cb_{{ function_sufix }}(NUDT::CCustomer* WHO, void* WHAT, void* YOU_DATA)#}
+{#{#}
+{#    new_data_cb_t _cb = NULL;#}
+{#    NUDT::received_message_args_t *_what = NULL;#}
+{#    {#}
+{#        NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);#}
+{#        if(g_{{ function_sufix }}_cb_id < 0)#}
+{#            return 0;#}
+{##}
+{#        _what =#}
+{#                (NUDT::received_message_args_t *) WHAT;#}
+{##}
+{#        g_{{ function_sufix }}.push_back(*_what);#}
+{#        ++g_{{ function_sufix }}_size;#}
+{#        _cb = g_{{ function_sufix }}_cb;#}
+{#        if(g_{{ function_sufix }}_cond_var_num > 0 )#}
+{#            g_{{ function_sufix }}_cond_var.MBroadcast();#}
+{##}
+{#    }#}
+{#    if( _cb != NULL)#}
+{#    {#}
+{#    	received_message_info_c_t _what_c;#}
+{#	    NUDT::convert(&_what_c, *_what);#}
+{#        (*_cb)(&_what_c);#}
+{#        _what->FOccurUserError = _what_c.occur_user_error;#}
+{#    }#}
+{#    return 0;#}
+{#}#}
+{#}#}
 inline int {{ func_prefix }}_wait_data({{ struct_name }} * aThis,
     double aTime = -1)
 {
-    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);
-
-    if(g_{{ function_sufix }}_cb_id < 0)
-        return -1;
-
-    if(g_{{ function_sufix }}_size > 0)
-        return g_{{ function_sufix }}_size;
-
-    ++g_{{ function_sufix }}_cond_var_num;
-    g_{{ function_sufix }}_cond_var.MTimedwait(&g_{{ function_sufix }}_lock, aTime);
-    --g_{{ function_sufix }}_cond_var_num;
-
-    if(g_{{ function_sufix }}_cb_id < 0)
-        return -2;
-
-    return g_{{ function_sufix }}_size;
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return _ptr->MWaitData(aTime);
+{#    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);#}
+{##}
+{#    if(g_{{ function_sufix }}_cb_id < 0)#}
+{#        return -1;#}
+{##}
+{#    if(g_{{ function_sufix }}_size > 0)#}
+{#        return g_{{ function_sufix }}_size;#}
+{##}
+{#    ++g_{{ function_sufix }}_cond_var_num;#}
+{#    g_{{ function_sufix }}_cond_var.MTimedwait(&g_{{ function_sufix }}_lock, aTime);#}
+{#    --g_{{ function_sufix }}_cond_var_num;#}
+{##}
+{#    if(g_{{ function_sufix }}_cb_id < 0)#}
+{#        return -2;#}
+{##}
+{#    return g_{{ function_sufix }}_size;#}
 }
 inline int {{ func_prefix }}_receive({{ struct_name }} * aThis, const char* aFrom,
     unsigned aFlags
@@ -156,108 +208,144 @@ inline int {{ func_prefix }}_receive({{ struct_name }} * aThis, const char* aFro
     , new_data_cb_t aCb = NULL
     )
 {
-    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);
-    if(g_{{ function_sufix }}_cb_id >= 0)
-    {
-        NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(
-                g_{{ function_sufix }}_cb_id , NULL);
-        g_{{ function_sufix }}_cb_id = -1;
-        g_{{ function_sufix }}_cb = NULL;
-        g_{{ function_sufix }}_size = 0;
-        g_{{ function_sufix }}.clear();
-    }
-    NUDT::requirement_msg_info_t _req;
-    _req.FProtocolName = protocol();
-    _req.FRequired = get_header<{{ struct_name }}>();
-    _req.FFlags = aFlags;
-    _req.FFrom = aFrom;
-
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    _ptr -> FCb = aCb;
+    return _ptr->MReceive(aFrom, aFlags
     {% for field in header.___fields|fields(True)
             if field.LogicalType|string() in ["unique"]
-              %}
-    (({{ header_structure_t }}*)_req.FRequired.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+             %}
+     , a{{ field.id }}
     {% endfor %}
-    NUDT::callback_t const _handler(&receive_data_cb_{{ function_sufix }});
-    int const _rval =
-        NUDT::CCustomer::sMGetInstance().MIWantReceivingMSG(
-                _req, _handler);
-    if (_rval >= 0)
-    {
-
-        g_{{ function_sufix }}_cb = aCb;
-        g_{{ function_sufix }}_cb_id = _rval;
-    }
-    return _rval;
+    );
+{#    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);#}
+{#    if(g_{{ function_sufix }}_cb_id >= 0)#}
+{#    {#}
+{#        NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(#}
+{#                g_{{ function_sufix }}_cb_id , NULL);#}
+{#        g_{{ function_sufix }}_cb_id = -1;#}
+{#        g_{{ function_sufix }}_cb = NULL;#}
+{#        g_{{ function_sufix }}_size = 0;#}
+{#        g_{{ function_sufix }}.clear();#}
+{#    }#}
+{#    NUDT::requirement_msg_info_t _req;#}
+{#    _req.FProtocolName = protocol();#}
+{#    _req.FRequired = get_header<{{ struct_name }}>();#}
+{#    _req.FFlags = aFlags;#}
+{#    _req.FFrom = aFrom;#}
+{##}
+{#    {% for field in header.___fields|fields(True)#}
+{#            if field.LogicalType|string() in ["unique"]#}
+{#              %}#}
+{#    (({{ header_structure_t }}*)_req.FRequired.FMessageHeader)->{{ field.id }} = a{{ field.id }};#}
+{#    {% endfor %}#}
+{#    NUDT::callback_t const _handler(&receive_data_cb_{{ function_sufix }});#}
+{#    int const _rval =#}
+{#        NUDT::CCustomer::sMGetInstance().MIWantReceivingMSG(#}
+{#                _req, _handler);#}
+{#    if (_rval >= 0)#}
+{#    {#}
+{##}
+{#        g_{{ function_sufix }}_cb = aCb;#}
+{#        g_{{ function_sufix }}_cb_id = _rval;#}
+{#    }#}
+{#    return _rval;#}
 }
 inline int {{ func_prefix }}_get_next({{ struct_name }} * aThis)
 {
-    int _amount_of = 0;
-    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);
-
-    if(g_{{ function_sufix }}.empty())
-        return -1;
-
-    NUDT::received_message_args_t const _rd(g_{{ function_sufix }}.front());
-    g_{{ function_sufix }}.pop_front();
-    _amount_of = --g_{{ function_sufix }}_size;
-    _block.MUnlock();
-
-    _rd.FMessage.FBuffer >> (*aThis);
-
-    return _amount_of;
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return  _ptr->MGetNext(static_cast<{{ struct_name }}*>(_ptr));
+{#    int _amount_of = 0;#}
+{#    NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);#}
+{##}
+{#    if(g_{{ function_sufix }}.empty())#}
+{#        return -1;#}
+{##}
+{#    NUDT::received_message_args_t const _rd(g_{{ function_sufix }}.front());#}
+{#    g_{{ function_sufix }}.pop_front();#}
+{#    _amount_of = --g_{{ function_sufix }}_size;#}
+{#    _block.MUnlock();#}
+{##}
+{#    _rd.FMessage.FBuffer >> (*aThis);#}
+{##}
+{#    return _amount_of;#}
 }
 inline unsigned {{ func_prefix }}_amount_of({{ struct_name }} * aThis)
 {
-    return g_{{ function_sufix }}_size;
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return _ptr->MAmountOf();
+{#    return g_{{ function_sufix }}_size;#}
 }
 inline int {{ func_prefix }}_does_not_receive({{ struct_name }} * aThis,
     std::vector<{{ struct_name }}>* aTo = NULL)
 {
-    if(g_{{ function_sufix }}_cb_id < 0)
-        return g_{{ function_sufix }}_cb_id;
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    _ptr -> FCb = NULL;
+    return _ptr->MDoesNotReceive(aTo);
 
-    int _rval =
-    NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(
-                g_{{ function_sufix }}_cb_id , NULL);
-
-    if (_rval >= 0)
-    {
-        received_data_info_t _data;
-        unsigned _size = 0;
-        {
-            NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);
-            g_{{ function_sufix }}_cb = NULL;
-            g_{{ function_sufix }}_cb_id = -1;
-            _data.swap(g_{{ function_sufix }});
-            _size = g_{{ function_sufix }}_size;
-            g_{{ function_sufix }}_size = 0;
-        }
-        if(aTo && _size > 0)
-        {
-            received_data_info_t::const_iterator _it = _data.begin();
-            aTo -> reserve(aTo->size() + _size);
-            for(; _it != _data.end() ;++_it)
-            {
-                aTo -> resize(aTo->size() +1 );
-                _it->FMessage.FBuffer >> (aTo -> back());
-            }
-            _rval = _size;
-        }else if(aTo)
-            _rval = 0;
-    }
-    return _rval;
+{#    if(g_{{ function_sufix }}_cb_id < 0)#}
+{#        return g_{{ function_sufix }}_cb_id;#}
+{##}
+{#    int _rval =#}
+{#    NUDT::CCustomer::sMGetInstance().MDoNotReceiveMSG(#}
+{#                g_{{ function_sufix }}_cb_id , NULL);#}
+{##}
+{#    if (_rval >= 0)#}
+{#    {#}
+{#        received_data_info_t _data;#}
+{#        unsigned _size = 0;#}
+{#        {#}
+{#            NSHARE::CRAII<NSHARE::CMutex> _block(g_{{ function_sufix }}_lock);#}
+{#            g_{{ function_sufix }}_cb = NULL;#}
+{#            g_{{ function_sufix }}_cb_id = -1;#}
+{#            _data.swap(g_{{ function_sufix }});#}
+{#            _size = g_{{ function_sufix }}_size;#}
+{#            g_{{ function_sufix }}_size = 0;#}
+{#        }#}
+{#        if(aTo && _size > 0)#}
+{#        {#}
+{#            received_data_info_t::const_iterator _it = _data.begin();#}
+{#            aTo -> reserve(aTo->size() + _size);#}
+{#            for(; _it != _data.end() ;++_it)#}
+{#            {#}
+{#                aTo -> resize(aTo->size() +1 );#}
+{#                _it->FMessage.FBuffer >> (aTo -> back());#}
+{#            }#}
+{#            _rval = _size;#}
+{#        }else if(aTo)#}
+{#            _rval = 0;#}
+{#    }#}
+{#    return _rval;#}
 }
-inline void {{ func_prefix }}_generate({{ struct_name }}* aData)
+inline void {{ func_prefix }}_generate({{ struct_name }}* aThis)
 {
-    using namespace {{ common.get_namespace(name) }}::test;
-    *aData = generate<{{ struct_name }}>();
+{#    using namespace {{ common.get_namespace(name) }}::test;#}
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    {{ struct_name }}_impl_t::generate(_ptr);
 }
-inline void {{ func_prefix }}_makeZero({{ struct_name }}* aData)
+inline void {{ func_prefix }}_makeZero({{ struct_name }}* aThis)
 {
-    using namespace {{ common.get_namespace(name) }}::test;
-    aData->makeZero();
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    _ptr->makeZero();
 }
 {% endfor %}
 
+unsigned protocol_revision_version()
+{
+    return {{ name | upper }}_VERSION_REVISION;
+}
+unsigned protocol_major_version()
+{
+    return {{ name | upper }}_VERSION_MAJOR;
+}
+unsigned protocol_minor_version()
+{
+    return {{ name | upper }}_VERSION_MINOR;
+}
 #endif /* {{ file_name | upper }}_H */
 {% endautoescape %}

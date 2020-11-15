@@ -46,7 +46,7 @@ template_env.filters['is_complex'] = ps.is_complex_type
 template_env.filters['is_dynamic'] = ps.is_dynamic_type
 template_env.filters['is_array'] = ps.is_array_type
 template_env.filters['is_bit_field'] = ps.is_bit_field
-
+template_env.filters['all_fields'] = ps.all_field_msg
 
 
 
@@ -174,6 +174,15 @@ def generate_source(lib_path, _protocol):
              "src/python_lib/protocol_{0}_udt_api.h".format(str.lower(lib_name)), _protocol)
     gen_file("src/python_lib/protocol_udt_api.impl.h", lib_path,
              "src/python_lib/protocol_{0}_udt_api.impl.h".format(str.lower(lib_name)), _protocol)
+    gen_file("src/python_lib/example.py", lib_path,
+             "", _protocol)
+    gen_file("src/python_lib/revision.c.in", lib_path,
+             "", _protocol)
+    gen_file("src/python_lib/ChangeLog.txt.in", lib_path,
+             "", _protocol)
+    gen_file("src/python_lib/revision.h", lib_path,
+             "src/python_lib/protocol_{0}_python_revision.h.in".format(str.lower(lib_name)),
+             _protocol)
 
     #   Generate matlab files
     gen_file("src/matlab_lib/CMakeLists.txt", lib_path, '', _protocol)
@@ -187,7 +196,8 @@ def generate_source(lib_path, _protocol):
     gen_file("src/matlab_lib/revision.c.in", lib_path,"", _protocol)
     gen_file("src/matlab_lib/ChangeLog.txt.in", lib_path, "", _protocol)
     gen_file("src/matlab_lib/example.m", lib_path, "", _protocol)
-
+    gen_file("src/matlab_lib/protocol_simulink_udt_api.h", lib_path,
+             "src/matlab_lib/protocol_{0}_simulink_udt_api.h".format(str.lower(lib_name)), _protocol)
     #Generate cmake files
     gen_file("CMakeModules/config.h.cmake", lib_path, '', _protocol)
     gen_file("CMakeModules/configure_PROTOCOL.cmake", lib_path,

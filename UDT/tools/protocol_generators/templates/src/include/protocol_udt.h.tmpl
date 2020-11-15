@@ -20,12 +20,12 @@
 
 #include <customer.h>
 #include <{{ name | upper }}/config/config.h>
-#include <{{ common.get_namespace(name) }}.h>
-#include <{{ common.get_namespace(name) }}_msg_headers.h>
-#include <{{ common.get_namespace(name) }}_ostream.h>
-#include <{{ common.get_namespace(name) }}_serialize.h>
-#include <{{ common.get_namespace(name) }}_serialize_binary.h>
-#include <{{ common.get_namespace(name) }}_test_message.h>
+#include "{{ common.get_namespace(name) }}.h"
+#include "{{ common.get_namespace(name) }}_msg_headers.h"
+#include "{{ common.get_namespace(name) }}_ostream.h"
+#include "{{ common.get_namespace(name) }}_serialize.h"
+#include "{{ common.get_namespace(name) }}_serialize_binary.h"
+#include "{{ common.get_namespace(name) }}_test_message.h"
 
 namespace {{ common.get_namespace(name) }}
 {
@@ -53,7 +53,7 @@ inline NUDT::required_header_t get_header()
 * @tparam T type of message
 */
 template<class T>
-class CHandler:NSHARE::CDenyCopying
+class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
 {
     /** Info about received data
     */
@@ -73,6 +73,7 @@ class CHandler:NSHARE::CDenyCopying
     CHandler();
     virtual ~CHandler()
     {
+        MDoesNotReceive(NULL);
     }
 
     /** Serialize message to JSON string
@@ -142,7 +143,7 @@ class CHandler:NSHARE::CDenyCopying
     *           otherwise error code
     * @tparam Objet type
     */
-    template <typename U = T>
+    template <typename U>
     inline int MGetNext(U * aTo, NUDT::received_message_info_t* aInfo = NULL)
     {
         int _amount_of = 0;

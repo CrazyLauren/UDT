@@ -1,0 +1,43 @@
+{% set file_name = 'protocol_' + name | lower +'_python_revision' %}
+{% import "base_macros.tmpl" as common %}
+{% import "message_macros.tmpl" as fm %}
+{{ common.add_file_secription(file_name+'.h',author,version) }}
+{% autoescape False %}
+#ifndef {{ file_name | upper }}_H
+#define {{ file_name | upper }}_H
+
+#include <SHARE/revision.h>
+
+
+DECLARATION_VERSION_FOR(@_SWIG_TARGET_NAME@)
+
+unsigned api_revision_version()
+{
+    return REVISION_OF(@_SWIG_TARGET_NAME@);
+}
+unsigned api_major_version()
+{
+    return MAJOR_VERSION_OF(@_SWIG_TARGET_NAME@);
+}
+unsigned api_minor_version()
+{
+    return MINOR_VERSION_OF(@_SWIG_TARGET_NAME@);
+}
+const char* api_revision_path_info()
+{
+    return REVISION_PATH_OF(@_SWIG_TARGET_NAME@);
+}
+
+const char* api_compile_time()
+{
+    return COMPILE_TIME_OF(@_SWIG_TARGET_NAME@);
+}
+
+const char* api_compile_date()
+{
+    return COMPILE_DATA_OF(@_SWIG_TARGET_NAME@);
+}
+
+
+#endif /* {{ file_name | upper }}_H */
+{% endautoescape %}

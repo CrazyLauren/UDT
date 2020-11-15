@@ -54,6 +54,12 @@ public:
 
 	virtual IRtc* MGetRTC(name_rtc_t const& aID) const;
 
+	virtual IRtc* MWaitForRTC(name_rtc_t const& aID,
+			double aTime = -1) const;
+
+	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName,
+			eRTCType const& aType);
+
 	/** Initialize module
 	 *
 	 */
@@ -86,6 +92,8 @@ public:
 	 */
 	bool MIsRTC() const;
 private:
+	static rtc_info_t::unique_id_t sFIdCounter;
+
 	/** State of RTC
 	 *
 	 */
@@ -107,9 +115,12 @@ private:
 	protected_RTC_array_t FRTCArray;//!< List of available RTC
 	CDataObject::value_t 	FHandler;//!< Handler for new RTC info
 	real_time_clocks_t FRealTimeClocks;//!< Info about RTCs
-	NSHARE::CMutex FCommonMutex;//!< Mutex for common purpose
+	real_time_clocks_t FOwnTimeClocks;//!< Info about Own RTC
+	mutable NSHARE::CMutex FCommonMutex;//!< Mutex for common purpose
 	NSHARE::CSharedMemory FMemory;//!< is used for communication
 	ICustomer* FPCustomer;//!< Pointer to customer
+
+	mutable NSHARE::CCondvar FWaitForEvent;
 };
 }
 

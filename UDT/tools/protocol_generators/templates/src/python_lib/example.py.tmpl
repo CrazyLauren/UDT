@@ -1,0 +1,43 @@
+{% set _language = 'ru' if 'language' in settings and settings.language == 'ru' else 'en'  %}
+{% set _example_name = name+"_python_example"%}
+from UDT import customer_python as pnet
+from {{ name|upper }} import {{name}}_python as pl
+
+#{% if _language != 'ru' %} initialize UDT {% else %} Подключаемся к UDT{% endif %}
+
+pnet.init_udt_library_default("{{ _example_name }}",{{ version.major }},{{ version.minor }})
+pnet.udt_open()
+
+#{% if _language != 'ru' %} Wait for connected to Kernel {% else %} Ждём подключения к Kernel {% endif %}
+
+pnet.udt_wait_for_event("event_connected", -1)
+
+{% set _example_message = messages|first if messages|length > 0 else None%}
+{% if _example_message != None %}
+    {% set struct_name = _example_message.___name + '_t'  %}
+    {% set _header_msg = _example_message.___parent|last %}
+    {% set _uniques = _header_msg.___LogicalType.unique  if "unique" in _header_msg.___LogicalType else None %}
+
+message_{{ _example_message.___number }} = pl.{{ struct_name }}()
+
+#{% if _language != 'ru' %} Receive from me {% else %} Получаем сообщения от себя {% endif %}
+
+message_{{ _example_message.___number }}.receive("{{ _example_name }}", 0{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} )
+
+#{% if _language != 'ru' %} Filling object {% else %} Заполняем данные {% endif %}
+
+message_{{ _example_message.___number }}.generate()
+
+#{% if _language != 'ru' %} Send data ... {% else %} Отправляем данные {% endif %}
+
+message_{{ _example_message.___number }}.send({% for _unique in _uniques %}{% if not loop.first %}, {% endif %}{{ _unique.test }}{% endfor %})
+
+#{% if _language != 'ru' %} Wait for data and print result {% else %} Ждём получения данных и выводим в консоль сообщение {% endif %}
+
+if message_{{ _example_message.___number }}.wait_data() > 0:
+    while message_{{ _example_message.___number }}.get_next() >= 0:
+        message_{{ _example_message.___number }}.print_this()
+
+message_{{ _example_message.___number }}.does_not_receive()
+pnet.udt_close()
+{% endif %}

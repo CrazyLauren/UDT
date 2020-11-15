@@ -726,8 +726,8 @@ int CCustomer::_pimpl::MSettingDgParserFor(
 	else
 	{
 		LOG(WARNING) << "Replace handler "<<FEventsData[(uint32_t)_i]<< " to " << aHandler;
-		CHECK(FEventsData[_val.MGetHandler()].MIs());
-		FEventsData[_val.MGetHandler()] = aHandler;
+		CHECK(FEventsData[_i].MIs());
+		FEventsData[_i] = aHandler;
 	}
 
 	MUpdateDemandPriority();
@@ -1116,19 +1116,21 @@ int CCustomer::_pimpl::MWaitForEvent(NSHARE::Strings  aEvents,double aSec)
 		else
 		{
 			double const _cur_time=NSHARE::get_time();
+			double _time = _cur_time;
 			for (HANG_INIT;
 					MIsKeepOnWaiting(&aEvents) && //
-					aSec>(NSHARE::get_time()-_cur_time);//
+					aSec>(_time-_cur_time);//
 			HANG_CHECK)
 			{
-				FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec-(NSHARE::get_time()-_cur_time));
-
+				FCondvarWaitFor.MTimedwait(&FMutexWaitFor,aSec-(_time - _cur_time));
+				double _time = NSHARE::get_time();
 				NSHARE::Strings::iterator _it = aEvents.begin();
 				for (; _it != aEvents.end(); )
 					if(FWaitFor.find(*_it)==FWaitFor.end())
 						_it=aEvents.erase(_it);
 					else
 						++_it;
+
 			}
 		}
 	}

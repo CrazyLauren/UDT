@@ -39,7 +39,10 @@ plugins.
 				}
 			}
         },
-		
+		"start_protection": 
+		{
+			"port":"18011"
+		},
 		/** Options of channel by which 
 			the useful data is sent.
 			The key is name of channel.

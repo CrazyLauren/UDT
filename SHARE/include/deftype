@@ -53,6 +53,7 @@
 #include <SHARE/UType/CEvent.h>
 #include <SHARE/UType/CEvents.h>
 #include <SHARE/UType/deffunc.h>
+#include <SHARE/UType/CSingletonProcess.h>
 
 #include <SHARE/UType/CIPCSem.h>
 #include <SHARE/UType/CIPCSignalEvent.h>

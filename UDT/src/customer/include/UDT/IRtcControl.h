@@ -42,42 +42,40 @@ public:
 	 */
 	virtual name_rtc_t MGetRTCByName(rtc_id_t const& aID) const =0;
 
+	/** Get RTC By specified ID
+	 *
+	 * @param aID RTC id
+	 * @return Pointer to RTC
+	 */
 	virtual IRtc* MGetRTC(name_rtc_t const& aID) const =0;
+
+	/** Gets or Create new RTC
+	 *
+	 * @param aName Id of RTC
+	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
+	 * @return pointer to RTC or NULL if Kernel is disabled
+	 * @warning blocking call!!!
+	 * @warning Auto call MJoinToRTC()
+	 */
+	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName,
+			eRTCType const& aType) =0;
+
+	/** Get RTC By specified ID
+	 *
+	 * @param aID RTC id
+	 * @param aTime
+	 * @return Pointer to RTC
+	 */
+	virtual IRtc* MWaitForRTC(name_rtc_t const& aID,
+			double aTime = -1) const =0;
+
 
 	/** Gets all RTC
 	 *
 	 * @return array of RTC
 	 */
 	virtual array_of_RTC_t MGetAllRTC() const=0;
-//	/** Wait for specified time to expire or
-//	 * expire time of the other program
-//	 *
-//	 * @param aNewTime expired time
-//	 * @param aID ID of RTC
-//	 * @return current time
-//	 */
-//	virtual rtc_time_t MNextTime(rtc_id_t const& aID,rtc_time_t aNewTime) const=0;
-//
-//	/** Check for existing
-//	 *
-//	 * @param aName name of RTC
-//	 * @return true if is exist
-//	 */
-//	virtual bool MIsExist(name_rtc_t const& aName) const=0;
-//
-//	/** UnRegistration RTC
-//	 *
-//	 * @param aName ID of RTC
-//	 * @return name of RTC
-//	 */
-//	virtual name_rtc_t MUnRegistration(rtc_id_t const& aID) =0;
-//
-//	/** Gets current time
-//	 *
-//	 * @param aName ID of RTC
-//	 * @return current time
-//	 */
-//	virtual rtc_time_t MGetCurrentTime(rtc_id_t const& aID) const =0;
+
 protected:
 	IRtcControl(const NSHARE::CText& type) :
 		IModule(type)

@@ -173,6 +173,10 @@ public:
 	 */
 	static bool MSendMultiCastMsgByInterface(CSocket& aSocket,struct sockaddr_in const & aSa);
 
+	/** Set close-on-exist flags
+	 *
+	 */
+	static bool MSetCloseOnExist(CSocket& aSocket);
 };
 
 } /* namespace NSHARE */

@@ -61,10 +61,17 @@ if(NOT SHARED_PTR_FOUND)
           set(SHARED_PTR_HEADER ${SHARED_PTR_HEADER_} CACHE INTERNAL "" FORCE)
           set(SHARED_PTR_FOUND ${_SHARED_PTR_FOUND} CACHE INTERNAL "" FORCE)
           message(INFO " find shared_ptr  in ${SHARED_PTR_HEADER_} namespace ${SHARED_PTR_NAMESPACE}")
-          return()
+          break()
         endif(_SHARED_PTR_FOUND)
       endforeach(SHARED_PTR_NAMESPACE_)
+
+      if(SHARED_PTR_FOUND)
+          break()
+      endif()
+
     endif(_SHARED_PTR_HEADER_FOUND)
+
+
   endforeach(SHARED_PTR_HEADER_)
   cmake_pop_check_state()
 endif()

@@ -1955,7 +1955,7 @@ if error == 0
 
      result = {{ function_name }} ('recv', handler_id, ...
                 '{{ _example_name }}', ...
-                0{% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} );
+                uint32(0){% for _unique in _uniques %}, {{ _unique.test }}{% endfor %} );
 
      %{% if _language != 'ru' %} Filling object {% else %} Создаём тестовое сообщения {% endif %}
 

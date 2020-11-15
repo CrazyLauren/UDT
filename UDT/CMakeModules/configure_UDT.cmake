@@ -8,9 +8,9 @@ include(CheckCXXSourceCompiles)
 include(CheckTypeSize)
 include(FindPackageHandleStandardArgs)
 
-if (WIN32)
+if (MSVC)
 	# This option is to enable the /MP switch for Visual Studio 2005 and above compilers
-	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." OFF)
+	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." ON)
 
 	mark_as_advanced(BUILD_BY_MP)
 
