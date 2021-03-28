@@ -4,17 +4,13 @@ string(TOUPPER ${_TARGET_NAME}
 		_TARGET_UP
 		)
 
-configure_target_version(${_TARGET_NAME}
-						${CMAKE_CURRENT_SOURCE_DIR}
-						"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
-						)
 
 option(${_TARGET_UP}_NO_STATRUP_TEST "Disable  start up tests " ON)
 mark_as_advanced(${_TARGET_UP}_NO_STATRUP_TEST)
 
 
 file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-list (APPEND TARGET_SRC    "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c")
+
 if (NOT HAVE_DEX)
 	list (REMOVE_ITEM TARGET_SRC CDex.cpp)
 endif ()
@@ -73,6 +69,7 @@ helper_add_library(${_TARGET_UP}
 					TRUE)
 
 configure_logging(${_TARGET_NAME})
+configure_version_for(${_TARGET_NAME})
 
 if (WIN32)
 	set (${_TARGET_UP}_PLATFORM_LIBS

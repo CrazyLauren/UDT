@@ -378,6 +378,7 @@ macro(generate_cpack)
 
 		list(APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS
 		     "
+\\\${If} \\\${SectionIsSelected} \\\${matlab_package}		     
 SearchPath $0 matlab.exe
 \\\${If} \\\${FileExists} \\\$0
 	ExecWait '\\\"\\\$0\\\" -wait -nodisplay -nodesktop -r \\\"try, matlab.addons.toolbox.installToolbox(\$\\\\'$INSTDIR\\\\${CMAKE_INSTALL_DATAROOTDIR}\\\\${PROJECT_NAME}\\\\package\\\\${${PROJECT_NAME}_MTBLX_FILE_NAME}\$\\\\'); catch ME, warning(getReport(ME)); quit(1); end; quit\\\"'
@@ -386,24 +387,24 @@ SearchPath $0 matlab.exe
       MessageBox MB_OK|MB_ICONEXCLAMATION \\\
       \\\"No Matlab installation has been found. (Install Matlab Package manually)\\\"
 \\\${Endif}
+\\\${Endif}
 "
 		     )
 		list(APPEND CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
 		     "
+\\\${If} \\\${SectionIsSelected} \\\${matlab_package}		     
 SearchPath $0 matlab.exe
 \\\${If} \\\${FileExists} \\\$0
 	ExecWait '\\\"\\\$0\\\" -wait -nodisplay -nodesktop -r \\\"try, tbxs = matlab.addons.toolbox.installedToolboxes; for i = 1:length(tbxs), if strcmp(lower(tbxs(i).Name),lower(\$\\\\'${${PROJECT_NAME}_MATLAB_PROJECT_NAME}\$\\\\')), matlab.addons.toolbox.uninstallToolbox(tbxs(i)); end, end, catch ME, warning(getReport(ME)); quit(1); end; quit\\\"'
 	DetailPrint \\\"Matlab return \\\$0 \\\"
-\\\${Else}
-      MessageBox MB_OK|MB_ICONEXCLAMATION \\\
-      \\\"No Matlab installation has been found. (Uninstall Matlab Package manually)\\\"
+\\\${Endif}
 \\\${Endif}
 "
 		     )
 	endif()
 
-	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/${PROJECT_NAME}_CPack.cmake")
-		include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/${PROJECT_NAME}_CPack.cmake")
+	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/configure_CPack.cmake")
+		include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/configure_CPack.cmake")
 	endif()
 
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

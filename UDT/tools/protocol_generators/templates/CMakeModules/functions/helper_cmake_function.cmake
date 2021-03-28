@@ -484,6 +484,10 @@ function(configure_target_version aTARGET aFILE_PATH aOUT_PATH)
 			_TARGET_UP
 			)
 
+	if("${aFILE_PATH}" STREQUAL "")
+		set(aFILE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules/functions/")
+	endif()
+	
 	if("${ARGV3}" STREQUAL "")
 		set(_CANGELOG_PATH ${CMAKE_CURRENT_SOURCE_DIR})		
 	else()
@@ -502,6 +506,21 @@ function(configure_target_version aTARGET aFILE_PATH aOUT_PATH)
 						)
 endfunction()
 
+# Configure version for target
+#
+#
+#
+function(configure_version_for aTARGET)
+	
+	configure_target_version(${aTARGET}
+		""		
+		"${CMAKE_BINARY_DIR}/src/${aTARGET}/"
+		)
+
+	target_sources(${aTARGET}
+				PRIVATE "${CMAKE_BINARY_DIR}/src/${aTARGET}/revision.c"
+		)	
+endfunction()
 
 # Define _LIB_NAME library to be built 
 #       _SOURCE_FILES_VAR2  
@@ -896,7 +915,7 @@ macro(configure_project
 			 )
 	endif()
 
-	include (CMakeModules/configure_${aPROJECT_NAME}.cmake)
+	include (CMakeModules/configure.cmake)
 	configure_file(CMakeModules/config.h.cmake 
 				${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config/config.h
 				ESCAPE_QUOTES

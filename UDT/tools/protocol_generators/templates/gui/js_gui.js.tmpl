@@ -246,12 +246,12 @@
 {% endmacro %}
 {% macro add_gui_for(aMsg)  %}
 
-    {% set _description = aMsg.___description if '___description' in aMsg
-                        and  aMsg.___description|length >0 else  aMsg.___name %}
+    {% set ___title = aMsg.___title if '___title' in aMsg
+                        and  aMsg.___title|length >0 else  aMsg.___name %}
         {{ aMsg.___name }}: {
             getName:function()
             {
-                return "{{ _description }}";
+                return "{{ ___title }}";
             },
             {{ get_entry_msg(aMsg) -}},
             {{ serialize_msg(aMsg) -}},

@@ -75,9 +75,9 @@ INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/src/"\
 						
 FILE_PATTERNS          = *.h *.c *.hpp *.cpp *.dox *.md
 RECURSIVE              = YES
-EXCLUDE                =
+EXCLUDE                = 
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */dependencies/*
 EXCLUDE_SYMBOLS        = sMUnitTest
 EXAMPLE_PATH           = "${CMAKE_CURRENT_SOURCE_DIR}/examples/"
 EXAMPLE_PATTERNS       =

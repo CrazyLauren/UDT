@@ -1,0 +1,58 @@
+#include(CheckSymbolExists)
+#include(CheckFunctionExists)
+#include(CheckLibraryExists)
+include(CheckIncludeFileCXX)
+#include(CheckIncludeFile)
+include(CheckIncludeFiles)
+include(CheckCXXSourceCompiles)
+#include(CheckTypeSize)
+
+check_include_files(stdint.h ${PROJECT_NAME}_HAVE_STDINT_H)
+check_cxx_source_compiles("
+          #include <cstddef>
+            struct D{
+                char c;
+            };
+
+          int main(void)
+          {
+                using namespace std;
+                unsigned _val=offsetof(D,c);
+            return 0;
+          }"
+                               HAVE_OFFSET_OF)
+
+
+if (MSVC)
+	option(BUILD_BY_MP "Set to ON to build  with the /MP option (Visual Studio 2005 and above)." ON)
+	if(BUILD_BY_MP)
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+	endif(BUILD_BY_MP)
+	
+	#[[set_property(TARGET  APPEND PROPERTY 
+	COMPILE_FLAGS 
+		"/INCREMENTAL:NO
+		/OPT:NOREF
+		/OPT:NOICF
+		/GL
+		/MANIFEST:NO
+		/LTCG")]]
+		
+	set(${PROJECT_NAME}_PLATFORM_DEFINITIONS 
+		${${PROJECT_NAME}_PLATFORM_DEFINITIONS}
+				_CRT_SECURE_NO_WARNINGS
+				NOMINMAX
+				_USE_MATH_DEFINES				
+				CACHE STRING "Platform definitions" FORCE				
+				)
+endif(MSVC)
+set(${PROJECT_NAME}_BUILD_COMPONENT_PYTHON
+    TRUE
+    CACHE BOOL
+    "Build Python bindings")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(${PROJECT_NAME}_MATLAB_PACKAGE_PROJECT_FILE_PATH
+    ${PROJECT_SOURCE_DIR}/CMakeModules/matlab_${PROJECT_NAME}.prj.in
+    CACHE INTERNAL "Matlab project patch")
+

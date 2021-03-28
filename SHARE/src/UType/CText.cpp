@@ -43,7 +43,7 @@ std::locale utf8_locale()
 	{
 		_is = true;
 		char _strs[][128] =
-		{ "ru_RU.UTF-8", "C.UTF8", "en_US.UTF8" };
+		{ "ru_RU.UTF-8","ru_RU.UTF8", "C.UTF8","C.UTF-8", "en_US.UTF8", "en_US.UTF-8" };
 		for (unsigned i = 0; i < sizeof(_strs) / sizeof(_strs[0]); ++i)
 			try
 			{

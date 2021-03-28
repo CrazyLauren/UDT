@@ -590,7 +590,7 @@ unsigned CRequiredDG::MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
  *
  *\return a amount of the last request of message
  */
-unsigned CRequiredDG::MUnincludeMessageChildren(NSHARE::uuid_t const & aFrom,
+unsigned CRequiredDG::MExcludeMessageChildren(NSHARE::uuid_t const & aFrom,
 		NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
 		uuids_of_expecting_dg_t*  aUnincludeFrom,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld)
 {
@@ -689,7 +689,7 @@ bool CRequiredDG::MUnSendPacketFromTo(NSHARE::uuid_t const& aFrom,
 
 			_count = _is ? _count + 1 : _count;
 		}
-		_count += MUnincludeMessageChildren(aFrom, aTo, _msg, &_uuids,aNew, aRemoved);
+		_count += MExcludeMessageChildren(aFrom, aTo, _msg, &_uuids, aNew, aRemoved);
 		return _count>0;
 	}
 	else
@@ -1071,8 +1071,8 @@ void CRequiredDG::MFillMsgHandlersFor(user_datas_t & aFrom, user_datas_t &aTo,
 			for(;_ut!=_ut_end && _for!=*_ut;++_ut)
 			;
 
-			bool const _has_sent_by_uuid_to_registator=_ut==_ut_end;
-			if(_has_sent_by_uuid_to_registator)
+			bool const _has_sent_by_uuid_to_registrator = _ut== _ut_end;
+			if(_has_sent_by_uuid_to_registrator)
 			{
 				LOG(ERROR)<<"Is not implemented";
 				_error=E_INCORRECT_USING_OF_UDT_1;
@@ -1350,7 +1350,7 @@ void CRequiredDG::MRemoveDataWithUserErrors(IExtParser::result_t * const aMsg,
 			}
 			{
 				///< remove data from aDatas and add put it to aSendError
-				_invalide_datas.splice(_invalide_datas.end(), _datas, _it_buf++);//only postincrement
+				_invalide_datas.splice(_invalide_datas.end(), _datas, _it_buf++);//only post-increment
 			}
 			{
 				_mt = _msgs.erase(_mt);
@@ -1411,7 +1411,7 @@ user_datas_t::iterator CRequiredDG::MExtractMessages(IExtParser::result_t const 
 		aWhat->FDataId.FDataOffset=static_cast<unsigned>(aP.MDataOffset(_msgs.front().FType));
 		DCHECK_LT(aWhat->FDataId.FDataOffset,1000);
 
-		aTo->splice(aTo->end(),*aFrom,aWhat++);//warning only postincrement
+		aTo->splice(aTo->end(),*aFrom,aWhat++);//warning only post-increment
 	}
 	DCHECK(!aTo->empty());
 	return aWhat;
@@ -1490,7 +1490,7 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 					aFail))
 				++_it_buf;
 			else
-				aTo->splice(aTo->end(), *aFrom, _it_buf++);	//only postincrement
+				aTo->splice(aTo->end(), *aFrom, _it_buf++);	//only post-increment
 		}
 		else
 		{
@@ -1502,7 +1502,7 @@ void CRequiredDG::MAddReceiversForMessages(IExtParser::result_t const& _msgs,
 									<< _handling_data.FDataId.FRouting.FFrom.FUuid
 									<< " does not required. Ignoring ...";
 			LOG_IF(INFO,_ru.FNumberOfRealReceivers==0)<<"As only registrars are exist!!!";
-			aTo->splice(aTo->end(),*aFrom,_it_buf++);//only postincrement
+			aTo->splice(aTo->end(),*aFrom,_it_buf++);//only post-increment
 		}
 	}
 }
@@ -1637,7 +1637,7 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 		if (_routing.FExpected.empty())
 		{
 			LOG(INFO)<< "Nobody expects of data from '" << _from<< "' by  '"<< _protocol<< "' protocol.";
-			aTo->splice(aTo->end(),_sent_datas,_ut++);//warning must only  postincrement
+			aTo->splice(aTo->end(),_sent_datas,_ut++);//warning must only  post-increment
 			continue;
 		}
 
@@ -1687,7 +1687,7 @@ void CRequiredDG::MFillByUserProtocol(user_datas_t*const  aFrom,
 
 			_data.FDataId.FDataOffset=0;
 
-			_msgs.splice(_msgs.end(),_sent_datas,_ut++);//warning only postincrement
+			_msgs.splice(_msgs.end(),_sent_datas,_ut++);//warning only post-increment
 		}
 
 		if (!_msgs_headers.empty())
@@ -2392,6 +2392,7 @@ inline void CRequiredDG::MReadMsgChild(msg_inheritances_t * const aTo) const
 	for (; _i.FBegin != _i.FEnd; ++_i.FBegin)
 	{
 		NSHARE::CText const& _protocol=_i.FBegin->first;
+		VLOG(2)<<" Read hierarchy info of "<<_protocol;
 		IExtParser const* _parser=_i.FBegin->second;
 
 		DCHECK(!_protocol.empty());
@@ -2400,6 +2401,7 @@ inline void CRequiredDG::MReadMsgChild(msg_inheritances_t * const aTo) const
 		IExtParser::inheritances_info_t const _val(_parser->MGetInheritances());
 		if (!_val.empty())
 		{
+            VLOG(2)<<" Hierarchy info is exist ";
 			///2) Saving to aTo only direct heir of the message
 
 			msg_inheritance_tree_t& _current_tree = _genealogy[_protocol];
@@ -2410,6 +2412,7 @@ inline void CRequiredDG::MReadMsgChild(msg_inheritances_t * const aTo) const
 			for (; _jt != _jt_end; ++_jt)
 			{
 				msg_family_t& _family = _current_tree[*_jt];
+				VLOG(2)<<"Add child for "<< static_cast<required_header_t const&>( *_jt);
 
 				/** if a child protocol value is empty
 				 * then it's equal of the parent protocol
@@ -2420,7 +2423,7 @@ inline void CRequiredDG::MReadMsgChild(msg_inheritances_t * const aTo) const
 				inheritance_msg_header_t const _child(_child_protocol, _jt->FChildHeader,0/*direct heir*/);
 				_family.MPutChild(_child);
 
-				DCHECK_EQ(_family.MGetChildren().size(), 1);
+
 			}
 		}
 	}
@@ -2449,96 +2452,123 @@ inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
 	 * doesn't obtained its hierarchy or
 	 * doesn't override the maximum number of children.
 	 * */
-	for (msg_inheritances_t::iterator _it = _direct_child_info.begin();//
-			!_direct_child_info.empty() && _depth < FMaxInheritanceDepth;//
-			)
-	{
-		if (_it == _direct_child_info.end())
-		{
-			//next circle
-			_it = _direct_child_info.begin();
-			++_depth;
-		}
+    for (msg_inheritances_t::iterator _it = _direct_child_info.begin();//
+         !_direct_child_info.empty() && _depth < FMaxInheritanceDepth;//
+        )
+    {
+        if (_it == _direct_child_info.end())
+        {
+            VLOG(2) << "Next cycle " << _depth;
+            //next circle
+            _it = _direct_child_info.begin();
+            ++_depth;
+        }
 
-		NSHARE::CText const& _protocol=_it->first;
-		DCHECK(!_protocol.empty());
+        NSHARE::CText const &_protocol = _it->first;
+        DCHECK(!_protocol.empty());
 
-		msg_inheritance_tree_t & _tree = _it->second;
+        msg_inheritance_tree_t &_tree = _it->second;
+        msg_inheritance_tree_t::iterator _tit = _tree.begin();
 
-		msg_inheritance_tree_t::iterator _tit = _tree.begin();
-		for (; _tit != _tree.end(); )
-		{
-			required_header_t const& _current = _tit->first;
-			msg_family_t& _family = _tit->second;
+        for (; _tit != _tree.end();)
+        {
+            required_header_t const &_current = _tit->first;
+            VLOG(2) << " Handle message " << _current;
+            msg_family_t &_family = _tit->second;
+            msg_heritance_t &_children_info = _family.MGetChildrenW();
+            DCHECK(!_children_info.empty());
 
-			DCHECK(!_family.MGetChildren().empty());
-			DCHECK_EQ(_family.MGetChildren().size(),1);
+            unsigned _i = 0; ///iterator isn't used as it can be invalided
+            for (; _i < _children_info.size();)
+            {
+                /** 2) Check If The children of the message haven't
+                * direct heir in the direct heir tree (if it's handled)
+                *
+                *
+                */
+                inheritance_msg_header_t const &_my_child = _children_info[_i];
+                VLOG(2) << " Handle child:" << _my_child;
 
-			/** 2) If The child of the message hav't
-			 * direct heir in the direct heir tree
-			 */
-			inheritance_msg_header_t const& _my_child = _family.MGetChildren().back();
+                msg_heritance_t const &_child_of_my_child = sMGetMessageChildren(
+                    _my_child.FProtcol, _my_child.FHeader, _direct_child_info);
 
-			msg_heritance_t const& _child_of_my_child = sMGetMessageChildren(
-					_my_child.FProtcol, _my_child.FHeader, _direct_child_info);
+                /// if the child hasn't been handled previously and it have children
+                bool const _is_children_filled = _child_of_my_child.empty();
 
-			if (_child_of_my_child.empty())
-			{
+                if (_is_children_filled)
+                {
+                    VLOG(2) << " Children info is filled ";
+                    /** 2.1 Than read  from genealogical tree info
+                    * about child's children which has been
+                    * obtained previously.
+                    *
+                    */
 
-				/** 2.1 Than read  from genealogical tree info
-				 * about child's children which has been
-				 * obtained previously.
-				 *
-				 */
-				{
+                    /** 2.1.1 If child is not exist in the genealogical tree adds it.
+                     */
 
-					 /** 2.1.0 If child is not exist in the genealogical tree adds it.
-					  */
-
-					msg_inheritance_tree_t& _tree=_to[_my_child.FProtcol];
-					msg_heritance_t const& _children_of_my_child=_tree[_my_child.FHeader].MGetChildren();
+                    msg_inheritance_tree_t &_out_tree = _to[_my_child.FProtcol];
+                    msg_heritance_t const &_children_of_my_child = _out_tree[_my_child.FHeader].MGetChildren();
 
 
-					/** If The child has children
-					  *  puts their to the end of
-					  *  message children info object.
-					 *
-					 */
-					if (!_children_of_my_child.empty())
-						_family.MPutChildrenOfChild(_children_of_my_child);
-				}
-				DLOG_IF(FATAL,
-						!(_family.MGetChildren().back().FDepth==_depth||//
-								_family.MGetChildren().back().FDepth==_depth+1)
-						)<<"Invalid depth "<<_family.MGetChildren().back().FDepth<<" != "<<_depth;
+                    /** 2.1.1 Puts information about the message and its
+                     * children to genealogical tree
+                     *
+                     */
+                    msg_family_t& _put_to = _to[_protocol][_current];
+                    _put_to.MPutChild(_my_child);
+                    if (!_children_of_my_child.empty())
+                        _put_to.MPutChildrenOfChild(_children_of_my_child);
 
-				/** 2.1.1 Puts information about the message and its
-				 * children to genealogical tree
-				 *
-				 */
-				_to[_protocol][_current]=_family;
+                    DLOG_IF(FATAL, !(_put_to.MGetChildren().back().FDepth == _depth ||//
+                        _put_to.MGetChildren().back().FDepth == _depth + 1)
+                    ) << "Invalid depth " << _put_to.MGetChildren().back().FDepth << " != " << _depth;
 
-				/** 2.1.2 Then As the message hierarchy is filled to genealogical tree,
-				 *  it is erased from direct heir tree
-				 */
-				_tree.erase(_tit++);	//warning! only postincrement
-			}
-			else
-			{
-				/** 2.2 Otherwise, Skips with message
-				 * until the next cycle
-				 *
-				 */
-				DCHECK_EQ(_child_of_my_child.size(), 1);
-				++_tit;
-			}
-		}
 
-		if (_tree.empty())
-			_direct_child_info.erase(_it++);//warning! only postincrement
-		else
-			++_it;
-	}
+                    /** 2.1.2 Then As the message hierarchy is filled to genealogical tree,
+                     *  it is erased from children list
+                     */
+                    _children_info.erase(_children_info.begin() + _i);
+                }
+                else
+                {
+                    /** 2.2 Otherwise, Skips with child
+                     * until the next cycle
+                     *
+                     */
+                    DCHECK_GE(_family.MGetChildren().size(), 1);
+                    ++_i;
+
+                    VLOG(2) << "Skip child ";
+                }
+
+            }
+            if (_children_info.empty())
+            {
+                /** 3.1 Then As the message hierarchy is filled to genealogical tree,
+                *  it is erased from direct heir tree
+                */
+                VLOG(2) << "All children has been filled. The number of children:"
+                    <<_family.MGetChildren().size();
+                _tree.erase(_tit++);    //warning! only post-increment
+
+            }
+            else
+            {
+                /** 3.2 Otherwise, Skips with message
+                * until the next cycle
+                *
+                */
+                ++_tit;
+                VLOG(2) << "Skip to next cycle";
+            }
+        }
+
+        if (_tree.empty())
+            _direct_child_info.erase(_it++);//warning! only post-increment
+        else
+            ++_it;
+    }
 	return _depth;
 }
 
@@ -2549,6 +2579,7 @@ inline unsigned CRequiredDG::MCreateGenealogyTreeFromChildInfo(
  */
 bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 {
+    VLOG(2)<<"Fill parent info";
 	DCHECK_NOTNULL(aTo);
 	msg_inheritances_t &_to(*aTo);
 
@@ -2563,9 +2594,12 @@ bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 		for (; _it_msg != _jt_end; ++_it_msg)
 		{
 			required_header_t const& _msg = _it_msg->first;
+
+
 			msg_family_t& _hierarchy = _it_msg->second;
 
 			msg_heritance_t const& _child = _hierarchy.MGetChildren();//was filled early
+            VLOG(2)<<"Fill parent for child of message "<<_msg<<" of "<<_msg_protocol<<" children:"<<_child.size();
 
 			/** Pass to all message children information
 			 * about it
@@ -2574,8 +2608,12 @@ bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 									_it_child != _child.end(); ++_it_child)
 			{
 				NSHARE::CText const& _child_protocol=_it_child->FProtcol;
+				DCHECK(!_child_protocol.empty());
+
 				required_header_t const& _child_type=_it_child->FHeader;
+
 				msg_inheritances_t::iterator _p = _to.find(_child_protocol);
+				VLOG(2)<<"Handle child "<<_child_type<<" protocol "<<_child_protocol;
 
 				if (_p == _to.end())
 				{
@@ -2597,6 +2635,7 @@ bool CRequiredDG::MParentInfo(msg_inheritances_t * const aTo) const
 					else
 					{
 						_pf->second.MPutParrent(inheritance_msg_header_t(_msg_protocol,_msg,_it_child->FDepth));
+						DCHECK(!_pf->second.MGetParrents().empty());
 						//DCHECK_EQ(_pf->second.MGetParrents().size()-1,_it_child->FDepth);
 					}
 				}
@@ -2651,7 +2690,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 	{
 		NSHARE::CText const& _protocol=_it->first;
 
-		///A protocol name hasn''t to be empty
+		///A protocol name hasn't to be empty
 		if(_protocol.empty())
 		{
 			LOG(DFATAL)<<"Empty protocol detected";
@@ -2723,7 +2762,7 @@ unsigned CRequiredDG::sMCheckCorrectionOfGenealogyTree(
 			else if(aParentCheck && _parent.empty())
 			{
 				_is_correct = false;
-				LOG(DFATAL)<<" empty child and parent";
+				LOG(DFATAL)<<" empty child and parent for "<<_jt->first <<" of "<<_protocol;
 			}
 			else if(aParentCheck)
 			{
@@ -2814,7 +2853,7 @@ const NSHARE::CText CRequiredDG::inheritance_msg_header_t::NAME = "header_info";
 CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t():
 		FDepth(demand_dg_t::HANDLER_DEFAULT_PRIORITY)
 {
-	;
+
 }
 /** \brief Two objects can be passed to constructor
  *
@@ -2828,7 +2867,7 @@ CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t(NSHARE::CText co
 		FHeader(aHeader),//
 		FDepth(aDepth)
 {
-	;
+
 }
 CRequiredDG::inheritance_msg_header_t::inheritance_msg_header_t(NSHARE::CConfig const& aConf) :
 		FHeader(aConf.MChild(required_header_t::NAME)),//
@@ -2876,7 +2915,7 @@ bool CRequiredDG::inheritance_msg_header_t::operator<(
 bool CRequiredDG::inheritance_msg_header_t::operator==(
 		const NUDT::CRequiredDG::inheritance_msg_header_t& aRht) const
 {
-	return FProtcol == aRht.FProtcol && FHeader == aRht.FHeader;;
+	return FProtcol == aRht.FProtcol && FHeader == aRht.FHeader;
 }
 
 /** Returns parent list in hierarchical order
@@ -2886,6 +2925,10 @@ bool CRequiredDG::inheritance_msg_header_t::operator==(
 CRequiredDG::msg_heritance_t const& CRequiredDG::msg_family_t::MGetParrents() const
 {
 	return FBaseMessages;
+}
+CRequiredDG::msg_heritance_t& CRequiredDG::msg_family_t::MGetParentsW()
+{
+    return FBaseMessages;
 }
 /*!@brief Check is parent exist
  *
@@ -2911,7 +2954,7 @@ bool CRequiredDG::msg_family_t::MPutParrent(inheritance_msg_header_t const& aPar
 			FBaseMessages.end(), aParrent);
 	LOG_IF(DFATAL,_it != FBaseMessages.end())<< "The parent is exist" << aParrent;
 #endif
-
+	VLOG(2)<<"Push parent "<<aParrent.FHeader;
 	FBaseMessages.push_back(aParrent);
 	return true;
 }
@@ -2922,6 +2965,10 @@ bool CRequiredDG::msg_family_t::MPutParrent(inheritance_msg_header_t const& aPar
 CRequiredDG::msg_heritance_t const& CRequiredDG::msg_family_t::MGetChildren() const
 {
 	return FSubMessages;
+}
+CRequiredDG::msg_heritance_t& CRequiredDG::msg_family_t::MGetChildrenW()
+{
+    return FSubMessages;
 }
 /*!@brief Puts children to child array
  *
@@ -2973,14 +3020,15 @@ bool CRequiredDG::msg_family_t::MPutChild(inheritance_msg_header_t const& aChild
 	if (_it != FSubMessages.end())
 	{
 		_is_exist = *_it == aChild;
-		VLOG(INFO) << "The child is exist" << aChild;
+		VLOG_IF(INFO, _is_exist) << "The child is exist: " << aChild<<" ignore";
 	}
 	DCHECK(!_is_exist);
 
 	if (!_is_exist)
 	{
+        VLOG(INFO) << "Add child: " << aChild;
 		FSubMessages.insert(_it, aChild);
-	};
+	}
 	return _is_exist;
 }
 /*! @brief Check is child exist

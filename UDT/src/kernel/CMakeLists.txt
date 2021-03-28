@@ -1,14 +1,9 @@
 set (_TARGET_NAME Kernel)
 
-configure_target_version(${_TARGET_NAME}
-		${PATH_TO_REVISION_IN}
-		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
-		)
 file(GLOB_RECURSE _SOURCE_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/*.c
 		)
-list (APPEND _SOURCE_FILES    "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c")
 
 file (GLOB_RECURSE _HEADER_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/*.h
@@ -32,6 +27,7 @@ helper_add_executable(${_TARGET_NAME}
 		_PRIVATE_DEFINITIONS
 		true
 		)
+configure_version_for(${_TARGET_NAME})
 
 set (_PUBLIC_LIBRARIS
 		#

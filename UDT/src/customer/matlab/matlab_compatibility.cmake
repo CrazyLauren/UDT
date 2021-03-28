@@ -1,17 +1,8 @@
 set(_TARGET_NAME customer_matlab)
 
-configure_target_version(${_TARGET_NAME}
-		${PATH_TO_REVISION_IN}
-		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
-		)
-
-
 file (GLOB _SOURCE_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/*.c
-		)
-list (APPEND _SOURCE_FILES
-		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c"
 		)
 				
 file (GLOB _HEADER_FILES
@@ -52,4 +43,4 @@ helper_add_matlab_library(${_TARGET_NAME}
                         ${_OUTPUT_NAME}
                         "${_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}/+udt"
                         )
-
+configure_version_for(${_TARGET_NAME})

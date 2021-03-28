@@ -5,17 +5,10 @@ string(TOUPPER ${_TARGET_NAME}
 		)
 
 set(CUSTOMER_SWIG_OUTPUT_PATH "${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/swig")
-configure_target_version(${_TARGET_NAME}
-		${PATH_TO_REVISION_IN}
-		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/"
-		)
 
 file(GLOB _SOURCE_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
-		)
-list (APPEND _SOURCE_FILES
-		"${CMAKE_BINARY_DIR}/src/${_TARGET_NAME}/revision.c"
 		)
 
 file (GLOB _HEADER_FILES
@@ -151,7 +144,7 @@ helper_add_library(${_TARGET_NAME}
 		_PUBLIC_DEFINITIONS
 		_PRIVATE_DEFINITIONS
 		TRUE)
-
+configure_version_for(${_TARGET_NAME})
 
 helper_target_link_libraries(${_TARGET_NAME}
 		_PUBLIC_LIBRARIS

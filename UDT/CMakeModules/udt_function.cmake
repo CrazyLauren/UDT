@@ -24,16 +24,8 @@ function (add_loadable_module aTARGET_NAME)
 			)
 
 
-	configure_target_version(${aTARGET_NAME}
-			${PATH_TO_REVISION_IN}
-			"${CMAKE_BINARY_DIR}/src/${aTARGET_NAME}/"
-			)
-
 	file(GLOB _SOURCE_FILES
 			${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-			)
-	list (APPEND _SOURCE_FILES
-		  ${CMAKE_BINARY_DIR}/src/${aTARGET_NAME}/revision.c
 			)
 
 	file (GLOB _HEADER_FILES
@@ -101,6 +93,16 @@ function (add_loadable_module aTARGET_NAME)
 				_PUBLIC_DEFINITIONS
 				_PRIVATE_DEFINITIONS				
 				FALSE)
+				
+		configure_target_version(${aTARGET_NAME}
+			""		
+			"${CMAKE_BINARY_DIR}/src/${aTARGET_NAME}/"
+			)
+
+		target_sources(${aTARGET_NAME}_Static
+					PRIVATE "${CMAKE_BINARY_DIR}/src/${aTARGET_NAME}/revision.c"
+			)							
+		
 		set (_PUBLIC_LIBRARIS
 		     udt_share
 		     )
@@ -132,6 +134,7 @@ function (add_loadable_module aTARGET_NAME)
 				_PRIVATE_DEFINITIONS
 				_PUBLIC_DEFINITIONS
 				FALSE)
+		configure_version_for(${aTARGET_NAME})
 
 		set (_PUBLIC_LIBRARIS
 		     ${CUSTOMER_LIBRARIES}
@@ -150,8 +153,7 @@ function (add_loadable_module aTARGET_NAME)
 			ARCHIVE DESTINATION "${${PROJECT_NAME}_INSTALL_PREFIX}${CMAKE_INSTALL_LIBDIR}" COMPONENT libraries
 			RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_CUSTOMER_PLUGIN_PATH} COMPONENT libraries
 			)
-	endif()
-
+	endif()	
 
 
 endfunction()

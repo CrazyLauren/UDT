@@ -301,6 +301,8 @@ private:
 		bool MPutParrent(inheritance_msg_header_t const&);
 		bool MIsParent(inheritance_msg_header_t const&)const;
 
+        msg_heritance_t& MGetChildrenW();
+        msg_heritance_t& MGetParentsW();
 	private:
 		static bool sMBaseMSGCompare(inheritance_msg_header_t const& aLht, inheritance_msg_header_t const& aRht);
 		msg_heritance_t FBaseMessages;///< Sorted in hierarchical order list of all parents of messages
@@ -404,9 +406,9 @@ private:
 	unsigned MIncludeMessageChildren(NSHARE::uuid_t const & aFrom,
 			NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
 			uuids_of_expecting_dg_t*  aIncludeTo, demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
-	unsigned MUnincludeMessageChildren(NSHARE::uuid_t const & aFrom,
+	unsigned MExcludeMessageChildren(NSHARE::uuid_t const & aFrom,
 			NSHARE::uuid_t const & aTo, demand_dg_t const & aWhat,
-			uuids_of_expecting_dg_t*  aIncludeTo,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
+			uuids_of_expecting_dg_t*  aUnincludeFrom,demand_dgs_for_t* const aNew, demand_dgs_for_t* const aOld);
 	inline void MSerializeMsgExpectedList(NSHARE::CConfig* const aTo) const;
 	inline void MReadMsgChild(msg_inheritances_t * const aTo) const;
 	inline unsigned MCreateGenealogyTreeFromChildInfo(
