@@ -16,6 +16,7 @@ jobs:
       - name: Set variables
         id: vars
         shell: bash
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
         run: |
           # Set git branch or git tag as slug
           if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
