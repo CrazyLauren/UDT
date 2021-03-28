@@ -20,6 +20,7 @@
 #include <core/CDescriptors.h>
 
 #include <CRTCForModeling.h>
+#include <IRtcSync.h>
 namespace NUDT
 {
 
@@ -52,14 +53,21 @@ public:
 	 */
 	void MStop();
 private:
-	typedef SHARED_PTR<CRTCForModeling> smart_rtc_modeling_t;
-	typedef std::vector<smart_rtc_modeling_t> array_of_rtc_t;//!< Array of RTC
+
+	struct rtc_data_t
+	{
+		NSHARE::intrusive_ptr<IRtcApi> FApi;
+		NSHARE::intrusive_ptr<IRtcSync> FSyncApi;//!< Own sync object with hierarchical down RTC
+	};
+	//typedef CRTCForModeling> smart_rtc_modeling_t;
+	typedef std::vector<rtc_data_t> array_of_rtc_t;//!< Array of RTC
 	typedef NSHARE::CSafeData<array_of_rtc_t> safety_array_of_rtc_t;//!< thread safety type
 	typedef std::map<NSHARE::uuid_t, real_time_clocks_t> rtc_info_from_t;//!< RTC info from
 	typedef NSHARE::CSafeData<rtc_info_from_t> safety_rtc_info_from_t;
 
 	typedef NSHARE::CSafeData<real_time_clocks_t> safety_rtc_info_t;//!< RTC info
 	typedef int rtc_id_t;//!< is used to hold RTC id
+	typedef std::vector<std::pair<IRtcSync *, IRtcSync*> > removed_sync_t;//!< first unsync from, second - who is unsync
 
 	void MInit();
 	bool MCreateSharedMemory(NSHARE::CText& aName);
@@ -72,7 +80,7 @@ private:
 	bool MRegistreNewRTC(rtc_info_t& aRtc);
 	static NSHARE::eCBRval sMMainLoop(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
 	static NSHARE::eCBRval sMTestLoop(NSHARE::CThread const* WHO, NSHARE::operation_t * WHAT, void*);
-	static void sMTestLoop(CRTCForModeling* aRTC);
+	static void sMTestLoop(IRtcApi* aRTC);
 	static int sMHandleCloseId(CHardWorker* WHO, args_data_t* WHAT,
 			void* YOU_DATA);
 	static int sMHandleOpenId(CHardWorker* WHO, args_data_t* WHAT,
@@ -86,12 +94,21 @@ private:
 
 
 	bool MCreateSharedMemoryIfNeed();
-	void MStartTestIfNeed(smart_rtc_modeling_t const&);
+	void MStartTestIfNeed(IRtcApi *);
 	bool MIsRTCExist(
 			const NSHARE::CProgramName& aRtcGroup);
-	void MStartRTCDispatcher(smart_rtc_modeling_t const& _rval);
-	smart_rtc_modeling_t MPushNewRTC(const NSHARE::CProgramName& aRtcGroup);
-	smart_rtc_modeling_t MPopRTC(const NSHARE::CProgramName& aRtcGroup);
+	void MStartRTCDispatcher(IRtcApi *);
+
+	NSHARE::intrusive_ptr<IRtcApi> MCreateNewRTC(rtc_info_t& aRtc);
+
+	bool MPushNewRTC(IRtcApi* );
+	bool MGetNearestRTCFor(IRtcApi* ,
+			array_of_rtc_t& aFrom,
+			std::vector<array_of_rtc_t::iterator>* aToEqual,
+			std::vector<array_of_rtc_t::iterator>* aToUp,
+			std::vector<array_of_rtc_t::iterator>* aToDown) const;
+
+	NSHARE::intrusive_ptr<IRtcApi> MPopRTC(const rtc_unique_id_t& aRtcGroup);
 
 	void MGetDiff(const real_time_clocks_t& aRtc,
 			rtc_info_array_t* aNew,
@@ -99,6 +116,19 @@ private:
 	void MStoreReceivedRTCInfo(const real_time_clocks_t& aRtc);
 	void MPutToRTCList(rtc_info_t const& aRtc);
 	bool MPopFromRTCList(rtc_info_t const& aRtc);
+	unsigned MIsIn(NSHARE::CProgramName const& aWhat,
+			NSHARE::CProgramName const& aIn) const;
+
+	void MRemoveHierarchyDownRtc(IRtcSync *aSyncInfo,
+			IRtcApi* aRtc,
+			removed_sync_t* aRemoved);
+	void MSyncHierarchyUpRtc(rtc_data_t& aRtcData,
+			std::vector<array_of_rtc_t::iterator> const& aNearestUp,
+			removed_sync_t* aRemoved);
+
+	void MSyncHierarchyDownRtc(rtc_data_t& aRtcData,
+			std::vector<array_of_rtc_t::iterator> const& aNearestDown);
+
 	//void MDispatcher() const;
 
 	NSHARE::CSharedMemory FMemory;//!< is used for communication

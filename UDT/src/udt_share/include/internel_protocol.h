@@ -389,7 +389,8 @@ SHARED_PACKED(struct user_data_header_t
 
 	uint64_t FUUIDFrom;
 	//8
-	uint64_t FType;
+	uint32_t FNumber;
+	uint32_t FDataSize;
 	//16
 
 
@@ -411,12 +412,7 @@ SHARED_PACKED(struct user_data_header_t
 	uint8_t FMinor;
 	uint8_t FMajor;
 	//32
-
-	uint32_t FNumber;
-	//36
-
-	uint32_t FDataSize;
-	//40
+	uint8_t FHeaderType[UDT_MAX_MESSAGE_HEADER_SIZE];
 });
 COMPILE_ASSERT(sizeof(user_data_header_t) == (8*4 + UDT_MAX_MESSAGE_HEADER_SIZE), InvalidSizeOfUserData);
 

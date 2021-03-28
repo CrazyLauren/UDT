@@ -265,6 +265,7 @@ struct split_info
 };
 //received data
 typedef data_from_id<program_id_t> new_id_t;
+typedef data_from_id<real_time_clocks_t> real_time_clocks_id_t;
 //typedef data_from_id<user_data_t> user_data_id_t;
 typedef std::list<user_data_t> user_datas_t;
 struct routing_user_data_t

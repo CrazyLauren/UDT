@@ -98,7 +98,8 @@ private:
 	void MHandleNewRTC(const real_time_clocks_t& aWhat);
 	static int sMHandleNewRTC(CHardWorker* WHO, args_data_t* WHAT,
 			void* YOU_DATA);
-
+	static int sMHandleNewRTCForMe(CHardWorker* WHO, args_data_t* WHAT,
+			void* YOU_DATA);
 	SHARED_PTR<demand_dgs_t> FpDemands;
 	SHARED_PTR<demand_dgs_for_t> FpDemandsDgFor;
 	SHARED_PTR<user_data_t> FpUserDataFor;
@@ -118,6 +119,7 @@ private:
 	CLinkDiagnostic FDisgnostic;
 	program_id_t const FCustomer;
 	CDataObject::value_t FHandlerNewRTC;//!< Handler of new RTC info
+	CDataObject::value_t FHandlerNewRTCForMe;//!< Handler of new RTC info
 	//CDataObject::value_t FHandlerOfClose;//!< Handler of disconnection of the program
 
 	friend class CInParser<CLocalLink> ;

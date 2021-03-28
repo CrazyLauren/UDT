@@ -41,6 +41,7 @@ mxChar const  print_command[]={(mxChar)'p',(mxChar)'r',(mxChar)'i',(mxChar)'n',(
 mxChar const  to_json[]={(mxChar)'t',(mxChar)'o',(mxChar)'J',(mxChar)'S',(mxChar)'O',(mxChar)'N'};
 mxChar const  from_json[]={(mxChar)'f',(mxChar)'r',(mxChar)'o',(mxChar)'m',(mxChar)'J',(mxChar)'S',(mxChar)'O',(mxChar)'N'};
 mxChar const  to_send[]={(mxChar)'s',(mxChar)'e',(mxChar)'n',(mxChar)'d'};
+mxChar const  public_data[]={(mxChar)'p',(mxChar)'u',(mxChar)'b',(mxChar)'l',(mxChar)'i',(mxChar)'c'};
 mxChar const  wait_data[]={(mxChar)'w',(mxChar)'a',(mxChar)'i',(mxChar)'t'};
 mxChar const  no_wait_data[]={(mxChar)'n',(mxChar)'o',(mxChar)'w',(mxChar)'a',(mxChar)'i',(mxChar)'t'};
 mxChar const  recv_data[]={(mxChar)'r',(mxChar)'e',(mxChar)'c',(mxChar)'v'};
@@ -415,6 +416,61 @@ inline
         else if(IS_COMMAND(to_send))
         {
             VLOG(1)<<"To send command detected ";
+            if(_message_ptr == NULL
+            {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                || _send_{{ field.id  }}_ptr == NULL
+            {% endfor %}
+                )
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No message ");
+
+                _is_error = true;
+            }else
+                if(!_output_ptr)
+            {
+                mexErrMsgIdAndTxt( "{{ name }}:InvalidArgument",
+                "No output argument ");
+
+                _is_error = true;
+            }
+            else
+            {
+                T _msg;
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                {{ field.type  }} _{{ field.id  }};
+                {% endfor %}
+                if(!deserialize(&_msg, _message_ptr)
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                || !deserialize(&_{{ field.id  }}, _send_{{ field.id  }}_ptr )
+                {% endfor %}
+                )
+                {
+                    mexErrMsgIdAndTxt( "{{ name }}:InvalidMessage",
+                        "Cannot deserialize message ");
+
+                        _is_error = true;
+                }else
+                {
+                    int const _rval = sMSend(_msg
+                {% for field in header.___fields|fields(True)
+                    if field.LogicalType|string() in ["unique"]
+                     %}
+                    , _{{ field.id  }}
+                {% endfor %});
+                    *_output_ptr = NSHARE::matlab::serialize(_rval);
+                }
+            }
+        }
+        else if(IS_COMMAND(public_data))
+        {
+            VLOG(1)<<"Public command detected ";
             if(_message_ptr == NULL
             {% for field in header.___fields|fields(True)
                     if field.LogicalType|string() in ["unique"]
@@ -936,6 +992,14 @@ inline
     				  "     \t      major (%s) - API major version\n"
     				  "     \t      minor (%s) - API minor version\n"
 
+                      "     \t# Public message:\n\n"
+    				  "     \t\tresult = {{ name }}('public', id, message{% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %},  a{{ field.id }}{% endfor %} )\n\n"
+    				  "     \t      id (%s) - Unique id of handler\n"
+    				  "     \t      message (%s) - The printed message\n"
+                    {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+                      "     \t      a{{ field.id }} (%s) - {{ field.description }}\n"
+                    {% endfor %}
+    				  "     \t      result (%s) - >0 - unique message id, otherwise error code\n\n\n"
             , matlab_code_t<handler_id_t>::type()//create id
 
             , matlab_code_t<handler_id_t>::type()//destroy id
@@ -1000,6 +1064,15 @@ inline
 
             , matlab_code_t<uint32_t>::type()//version major
             , matlab_code_t<uint32_t>::type()//version minor
+
+            , matlab_code_t<handler_id_t>::type()//public id
+            , matlab_code_t<T>::type()//public message
+            {% for field in header.___fields|fields(True) if field.LogicalType|string() in ["unique"] %}
+            {% set _type = field.TypeOfLogicalType if field | is_dynamic else field.type %}
+            , matlab_code_t<{{ _type }}>::type()//send a{{ field.id }}
+            {% endfor %}
+            , matlab_code_t<int>::type()//public result
+
             );
     }
     return !_is_error;

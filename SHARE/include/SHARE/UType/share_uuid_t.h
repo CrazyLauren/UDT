@@ -48,6 +48,7 @@ struct SHARE_EXPORT uuid_t
 	CText MToString() const;
 	bool MFromString(CText const&);
 	uint32_t MGetHash()const;
+	uint16_t MGetHash16()const;
 
 	uuid_t& operator =(uint64_t const& aVal)
 	{

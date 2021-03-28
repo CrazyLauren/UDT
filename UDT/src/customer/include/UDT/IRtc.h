@@ -36,7 +36,7 @@ struct callback_rtc_t;
  * For using the RTC You has to be connected to it by calling
  * #IRtc::MJoinToRTCWorker method.
  */
-class IRtc
+class IRtc: public NSHARE::IIntrusived
 {
 public:
 	typedef double time_in_second_t;//!< time in second type

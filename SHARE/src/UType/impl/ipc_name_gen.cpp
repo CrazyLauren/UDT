@@ -15,7 +15,7 @@
 
 namespace NSHARE
 {
-	static int g_counter = 0;
+	static NSHARE::atomic_t g_counter;
 	extern size_t get_unique_name(char const* aPreifix, uint8_t* aBuf, size_t aSize)
 	{
 		NSHARE::CText _rand;
@@ -24,7 +24,8 @@ namespace NSHARE
 		if (aPreifix)
             _mutex_name<<aPreifix<<"_";
 
-        _mutex_name<<NSHARE::CThread::sMPid()<<"_"<<_rand<<++g_counter;
+		unsigned const _value = ++g_counter;
+        _mutex_name<<NSHARE::CThread::sMPid()<<"_"<<_value<<"_"<<_rand;
 		size_t _name_len = (_mutex_name.length_code());
 		_name_len =
 			_name_len <= (aSize - 1) ?

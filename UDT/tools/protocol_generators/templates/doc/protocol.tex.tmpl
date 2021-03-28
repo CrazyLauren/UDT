@@ -81,7 +81,6 @@
 \begin{document}
 
 \begin{titlepage}
- \thispagestyle{empty}
 {% set centering_longtable = '>{\\centering\\arraybackslash\\hspace{0pt}}' %}
 {% set quote_l = '<<' if _language == 'ru' else '\"' %}
 {% set quote_r = '>>' if _language == 'ru' else '\"' %}
@@ -132,6 +131,8 @@
 \end{tabularx}
 \centering\today
 \end{titlepage}
+\setcounter{page}{2}
+
 {% set _chapter = "Introduction" if _language != 'ru' else "Аннотация" %}
 \chapter{ {{ _chapter }} }
 {% if _language == 'ru' %}

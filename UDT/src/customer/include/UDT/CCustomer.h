@@ -514,7 +514,7 @@ public:
 	typedef std::vector<NSHARE::CText> modules_t;///< An information about modules
 	typedef std::set<program_id_t> customers_t;///< An information about program
 
-	typedef std::vector<IRtc*> rtc_list_t;
+	typedef std::vector<NSHARE::intrusive_ptr<IRtc> > rtc_list_t;
 	/*!\brief Collection of bitwise flags for change
 	 * sending behavior
 	 *
@@ -922,6 +922,45 @@ public:
 					NSHARE::version_t(), requirement_msg_info_t::eFLags const& aFlags =
 					requirement_msg_info_t::E_NO_FLAGS);
 
+	/** Inform about subscribing to
+	 *
+	 *
+	 * When somebody is subscribe to message  , the callback function
+	 * is called.
+	 *
+	 * @param aProtocol - protocol name
+	 * @param aMsg - message type
+	 *\return <0 if the error is occured \n
+	 *			else unique handler ID (can be used in #MDoesNotInformAboutSubscribe)
+	 */
+	int MInformAboutSubscribe(const NSHARE::CText& aProtocol,
+				required_header_t const& aMsg,
+				const callback_t& aHandler);
+
+	/** Doesn't inform about subscribe
+	 *
+	 * @param aId handler ID (retrun value of #MInformAboutSubscribe or #MInformAboutUnSubscribe)
+	 * @return true if removed
+	 */
+	bool MDoesNotInformAboutSubscribing(const NSHARE::CText& aProtocol,
+			required_header_t const& aMsg,unsigned aId);
+
+	/** Inform about subscribing to
+	 *
+	 *
+	 * When somebody is subscribe to message  , the callback function
+	 * is called.
+	 *
+	 * @param aProtocol - protocol name
+	 * @param aMsg - message type
+	 *\return <0 if the error is occured \n
+	 *			else unique handler ID (can be used in #MDoesNotInformAboutUnSubscribe)
+	 */
+	int MInformAboutUnSubscribe(const NSHARE::CText& aProtocol,
+				required_header_t const& aMsg,
+				const callback_t& aHandler);
+
+
 	/*!\brief Unsubscribe to the message (Remove the message handler)
 	 *
 	 *
@@ -1061,12 +1100,60 @@ public:
 	 */
 	IRtc* MGetRTC(NSHARE::CText const& aName) const;
 
+	/** Gets or Create new RTC
+	 *
+	 * @param aName Id of RTC
+	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
+	 * @param aModuleName Name of RTC Module
+	 * @return pointer to RTC or NULL if Kernel is disabled
+	 * @warning blocking call!!!
+	 */
+	virtual IRtc* MGetOrCreateRTC(NSHARE::CText const& aName,
+			unsigned const& aType,
+			NSHARE::CText const& aModuleName = NSHARE::CText());
+
+	/** Creates new RTC
+	 *
+	 * @param aName Id of RTC
+	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
+	 * @param aModuleName Name of RTC Module
+	 * @return pointer to RTC or NULL if Kernel is disabled
+	 * @warning blocking call!!!
+	 */
+	virtual IRtc* MCreateRTC(NSHARE::CText const& aName,
+			unsigned const& aType,
+			NSHARE::CText const& aModuleName = NSHARE::CText());
+
+	/** Remove RTC if You is owner
+	 *
+	 * @param aName RTC name
+	 * @return true if remove
+	 */
+	virtual bool MRemoveRTC(NSHARE::CText const& aName);
+
 	/** Gets list of available RTC
 	 *
+	 * @param aModuleName Name of RTC Module
 	 * @return list of RTC
 	 */
-	rtc_list_t MGetListOfRTC() const;
+	rtc_list_t MGetListOfRTC(NSHARE::CText const& aModuleName
+			= NSHARE::CText()) const;
 
+	/** Wait for RTC created
+	 *
+	 * @param aID RTC id
+	 * @param aTime
+	 * @return Pointer to RTC or NULL
+	 */
+	IRtc* MWaitForRTCCreated(NSHARE::CText const& aID,
+			double aTime = -1) const;
+
+	/** Force  stop to wait for RTC create
+	 *
+	 * @param aID RTC id
+	 * @return true - is stopped
+	 */
+	bool MForceUnWaitForRTCCreated(NSHARE::CText const& aID) const;
 
 	struct _pimpl;//!< Realization
 

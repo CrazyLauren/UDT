@@ -668,6 +668,97 @@ var storage =
                     //todo
                 },
                 data: []
-            }
+            },
+            rtc: {
+                get: function (aVal)
+                {
+                     let self = storage.rtc;
+                    if (!aVal)
+                        return self.data;
+
+                    for (let i = 0; i < self.data.length; ++i)
+                    {
+                        if (self.data[i].hand == aVal)
+                            return self.data[i];
+                    }
+
+                    return null;
+                },
+                set: function (aVal)
+                {
+                    let self = storage.rtc;
+                    let _rtc = new Array;
+                    if (aVal.hasOwnProperty("rtc"))
+                    {
+                        if ($.isArray(aVal.rtc))
+                            _rtc = aVal.rtc;
+                        else
+                            _rtc.push(aVal.rtc);
+                    }
+
+                    let _exist = {};
+                    _rtc.forEach(function (item)
+                    {
+                        _exist[item.time.owner + item.time.uid] = item;
+                    });
+
+                    self.data.forEach(function (item)
+                    {
+                        const _id = item.time.owner + item.time.uid;
+                        if (!_exist.hasOwnProperty(_id))
+                        {
+                            self.removed(item);
+                        } else
+                            _exist[_id] = undefined;
+
+                    });
+                    for (let _i in _exist)
+                    {
+                        if (_exist.hasOwnProperty(_i) && _exist[_i])
+                        {
+                            self.created(_exist[_i]);
+                        }
+                    }
+
+                    self.data = _rtc;
+                    try
+                    {
+                        self.updated(_rtc);
+                    } catch (e)
+                    {
+
+                    }
+                }
+                ,
+                updated: function (event)
+                {
+                }
+                ,
+                removed: function (event)
+                {
+                }
+                ,
+                created: function (event)
+                {
+                }
+                ,
+                update: function (aSinc = true)
+                {
+                    let self = storage.rtc;
+                    $.ajax(
+                        {
+                            type: "GET",
+                            data: {query: ["time_dispatcher"]},
+                            async: aSinc,
+                            dataType: "json",
+                            contentType: "application/json; charset=utf-8"
+                        }).done(function (data)
+                    {
+                        self.set(data.state.time_dispatcher);
+                    })
+                }
+                ,
+                data: []
+            },
         }
     ;

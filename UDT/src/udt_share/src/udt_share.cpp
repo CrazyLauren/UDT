@@ -103,7 +103,7 @@ static std::pair<size_t,size_t> deserialize_dg_head(user_data_info_t &_user,NSHA
 	_user.FSplit.FCoefficient = _from.FSplitCoefficient;
 	_user.FWhat.FVersion.FMajor = _from.FMajor;
 	_user.FWhat.FVersion.FMinor = _from.FMinor;
-	memcpy(_user.FWhat.FMessageHeader,&_from.FType,sizeof(_user.FWhat.FMessageHeader));
+	memcpy(_user.FWhat.FMessageHeader,_from.FHeaderType,sizeof(_user.FWhat.FMessageHeader));
 
 	_user.FEndian = (NSHARE::eEndian) (_from.FFlags.FEndian);
 	size_t _offset = sizeof(user_data_header_t);
@@ -277,7 +277,7 @@ extern size_t UDT_SHARE_EXPORT fill_header(NSHARE::CBuffer::pointer _begin ,
 	_user_data->FDataOffset = static_cast<uint32_t>(_id.FDataOffset);
 	_user_data->FMajor=_id.FWhat.FVersion.FMajor;
 	_user_data->FMinor=_id.FWhat.FVersion.FMinor;
-	memcpy(&_user_data->FType,_id.FWhat.FMessageHeader,sizeof(_id.FWhat.FMessageHeader));
+	memcpy(_user_data->FHeaderType,_id.FWhat.FMessageHeader,sizeof(_id.FWhat.FMessageHeader));
 
 
 	_user_data->FFlags.FEndian=_id.FEndian;

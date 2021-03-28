@@ -73,9 +73,16 @@ bool CLocalLink::MIsOpened() const
 bool CLocalLink::MSubscribe()
 {
 	{
-		callback_data_t _cb(sMHandleNewRTC, this);
+		callback_data_t _cb(sMHandleNewRTCForMe, this);
 		CDataObject::value_t _val(
 				data_to_id<real_time_clocks_t>::sMGetNameFor(Fd), _cb);
+		FHandlerNewRTCForMe = _val;
+		CDataObject::sMGetInstance() += FHandlerNewRTCForMe;
+	}
+	{
+		callback_data_t _cb(sMHandleNewRTC, this);
+		CDataObject::value_t _val(real_time_clocks_t::NAME,
+				_cb);
 		FHandlerNewRTC = _val;
 		CDataObject::sMGetInstance() += FHandlerNewRTC;
 	}
@@ -130,7 +137,8 @@ bool CLocalLink::MAccept()
 	}
 	if (FpRtc)
 	{
-		CDataObject::sMGetInstance().MPush(*FpRtc, true);
+		CDataObject::sMGetInstance().MPush(
+				make_data_from(Fd, *FpRtc), true);
 		FpRtc.reset();
 	}
 
@@ -222,7 +230,7 @@ bool CLocalLink::MReceivedData(real_time_clocks_t const& aRTC,
 {
 	if (E_OPEN == FState)
 	{
-		CDataObject::sMGetInstance().MPush(aRTC, true);
+		CDataObject::sMGetInstance().MPush(make_data_from(Fd, aRTC), true);
 	}
 	else
 		FpRtc=SHARED_PTR<real_time_clocks_t>(new real_time_clocks_t(aRTC));
@@ -595,6 +603,22 @@ void CLocalLink::MHandleNewRTC(const real_time_clocks_t& aWhat)
 	MSend(_buf);
 }
 int CLocalLink::sMHandleNewRTC(CHardWorker* WHO, args_data_t* WHAT,
+		void* YOU_DATA)
+{
+	typedef real_time_clocks_t _t;
+
+	CLocalLink* _this = reinterpret_cast<CLocalLink*>(YOU_DATA);
+	DCHECK_NOTNULL(_this);
+
+	const _t* _p =
+			reinterpret_cast<const _t*>(WHAT->FPointToData);
+	DCHECK_NOTNULL(_p);
+
+	_this->MHandleNewRTC(*_p);
+
+	return NSHARE::E_CB_SAFE_IT;
+}
+int CLocalLink::sMHandleNewRTCForMe(CHardWorker* WHO, args_data_t* WHAT,
 		void* YOU_DATA)
 {
 	typedef data_to_id<real_time_clocks_t> _t;

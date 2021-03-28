@@ -28,7 +28,7 @@ NSHARE::CText const CRTCForModelingModule::NAME = "modeling";
 rtc_info_t::unique_id_t CRTCForModelingModule::sFIdCounter = 0;
 
 CRTCForModelingModule::CRTCForModelingModule() :
-		IRtcControl(NAME), //
+		IRtcControl(NAME, eRTC_MODELING), //
 		FCommonMutex(NSHARE::CMutex::MUTEX_NORMAL),
 		FPCustomer(NULL) //
 {
@@ -47,7 +47,7 @@ CRTCForModelingModule::CRTCForModelingModule() :
 IRtcControl::rtc_id_t CRTCForModelingModule::MPushRTC(CRTCModelingImpl* aRtc)
 {
 	protected_RTC_array_t::WAccess<> _access = FRTCArray.MGetWAccess();
-	_access->FRtc.push_back(aRtc);
+	_access->FRtc.push_back(array_of_RTC_t::value_type(aRtc));
 	return static_cast<IRtcControl::rtc_id_t>(_access->FRtc.size() - 1);
 }
 /** Open share memory for RTC
@@ -118,7 +118,7 @@ IRtc* CRTCForModelingModule::MGetRTC(name_rtc_t const& aID) const
 		if ((*_it)->MGetRTCInfo().FName == aID)
 		{
 			VLOG(2) << "Rtc is founded " << aID;
-			return *_it;
+			return _it->MGet();
 		}
 
 	LOG(INFO) << "No RTC named " << aID;
@@ -186,33 +186,71 @@ bool CRTCForModelingModule::MCreateRTC(real_time_clocks_t const& aRtc)
 	}
 	return _is;
 }
-IRtc* CRTCForModelingModule::MGetOrCreateRTC(name_rtc_t const& aID,
-		eRTCType const& aType)
+IRtc* CRTCForModelingModule::MGetOrCreateRTC(name_rtc_t const& aID)
 {
 	IRtc* _val = MGetRTC(aID);
 	if(_val != NULL)
 		return _val;
 
-	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+	return MCreateRTC(aID);
+}
+IRtc* CRTCForModelingModule::MCreateRTC(name_rtc_t const& aID)
+{
+	IRtc* _val =NULL;
 	{
-		//todo check is exist
-
 		rtc_info_t _info;
 		_info.FName = aID;
-		_info.FRTCType = aType;
-		_info.FOwner = get_my_id().FId.FUuid;
-		_info.FUniqueId = ++sFIdCounter;
-		FOwnTimeClocks.MInsert(_info);
+		_info.FRTCType = FRtcType;
+		_info.FId.FOwner = get_my_id().FId.FUuid;
+		_info.FId.FId = ++sFIdCounter;
 
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+		{
+			rtc_info_array_t::iterator _it = FOwnTimeClocks.FRtc.begin(),
+					_it_end(FOwnTimeClocks.FRtc.end());
+
+			for (; _it != _it_end //
+			&& _it->FName == aID
+					; ++_it)
+				;
+
+			if (_it != _it_end)
+				return NULL;
+		}
+		FOwnTimeClocks.MInsert(_info);
 		update_own_real_time_clocks_t _cval;
 		_cval.FNewRTC = FOwnTimeClocks;
+
 		CDataObject::sMGetInstance().MPush(_cval);
 	}
 	_val = MWaitForRTC(aID);
 	DCHECK_NOTNULL(_val);
-	bool const _is = _val->MIsJoinToRTC();
-	DCHECK(_is);
+	VLOG(2)<<"Join to created RTC";
 	return _val;
+}
+bool CRTCForModelingModule::MRemoveRTC(name_rtc_t const& aName)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+
+	rtc_info_array_t::iterator _it = FOwnTimeClocks.FRtc.begin(),
+			_it_end(FOwnTimeClocks.FRtc.end());
+	for (; _it != _it_end //
+	&& !(_it->FName == aName)
+			; ++_it)
+		;
+	if (_it != _it_end)
+	{
+		LOG(INFO)<<"Remove RTC "<<aName;
+		FOwnTimeClocks.FRtc.erase(_it);
+
+		update_own_real_time_clocks_t _cval;
+		_cval.FNewRTC = FOwnTimeClocks;
+
+		CDataObject::sMGetInstance().MPush(_cval);
+		return true;
+	}
+	LOG(INFO)<<"Cannot remove RTC "<<aName;
+	return false;
 }
 IRtc* CRTCForModelingModule::MWaitForRTC(name_rtc_t const& aID,
 		double aTime) const
@@ -238,6 +276,39 @@ IRtc* CRTCForModelingModule::MWaitForRTC(name_rtc_t const& aID,
 
 	return _val;
 }
+
+void CRTCForModelingModule::MWaitForRTC(
+		wait_for_t* aWaitFor
+		) const
+{
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+		FWaitFor[aWaitFor->FID] = NSHARE::intrusive_ptr<wait_for_t>(aWaitFor);
+	}
+	if (aWaitFor->FRtc == NULL)
+	{
+		IRtc* _rtc = MGetRTC(aWaitFor->FID);
+		if(_rtc != NULL)
+			aWaitFor->FRtc = _rtc;
+	}
+}
+
+void CRTCForModelingModule::MUnWait(
+		name_rtc_t const& aWhat
+		) const
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+	wait_for_store_t::iterator _it = FWaitFor.find(aWhat);
+
+	if(_it != FWaitFor.end())
+	{
+		NSHARE::intrusive_ptr<wait_for_t> _wf= _it->second;
+		FWaitFor.erase(_it);
+		_wf->FCondvar.MBroadcast();
+	}
+}
+
+
 /** Update RTC
  *
  *@param aOldRTC update RTC
@@ -284,30 +355,67 @@ bool CRTCForModelingModule::MUpdateRTC()
 void CRTCForModelingModule::MUpdateRTCInfo(real_time_clocks_t const& aRTC)
 {
 	VLOG(1) << "Update RTC " << aRTC;
-
-	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
-	real_time_clocks_t const _old = FRealTimeClocks;
-	FRealTimeClocks = aRTC;
-
-	if (_old.FShdMemName != FRealTimeClocks.FShdMemName)
+	bool _is_changed = false;
 	{
-		bool _is_changed = false;
-		if (!MOpenSharedMemory())
-		{
-			LOG(DFATAL) << "Cannot open new shared memory:"
-									<< FRealTimeClocks.FShdMemName;
-		}
-		else if (!MIsRTC())
-			_is_changed = MCreateRTC(FRealTimeClocks);
-		else
-			_is_changed = MUpdateRTC();
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+		real_time_clocks_t const _old = FRealTimeClocks;
+		FRealTimeClocks = aRTC;
 
-		if (_is_changed)
+		//if (_old.FShdMemName != FRealTimeClocks.FShdMemName)
 		{
-			CDataObject::sMGetInstance().MPush(real_time_clocks_updated_t());
-			FWaitForEvent.MBroadcast();
+			if (!FMemory.MIsOpened() && !MOpenSharedMemory())
+			{
+				LOG(DFATAL) << "Cannot open new shared memory:"
+										<< FRealTimeClocks.FShdMemName;
+			}
+			else if (!MIsRTC())
+				_is_changed = MCreateRTC(FRealTimeClocks);
+			else
+				_is_changed = MUpdateRTC();
+
+			if (_is_changed)
+			{
+				CDataObject::sMGetInstance().MPush(
+						real_time_clocks_updated_t());
+				FWaitForEvent.MBroadcast();
+			}
 		}
 	}
+
+	if(_is_changed)
+		MUnlockWaitedRTC();
+}
+
+/** Unlock blocked thread which is expected specified RTC
+ *
+ */
+void CRTCForModelingModule::MUnlockWaitedRTC()
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FCommonMutex);
+	wait_for_store_t::iterator _it(FWaitFor.begin());
+	for (; _it != FWaitFor.end(); ++_it)
+	{
+		{// may be founded yet
+			NSHARE::CRAII<NSHARE::CMutex> _lock(
+					_it->second->FLockMutex);
+			if (_it->second->FRtc != NULL)
+				continue;
+		}
+		IRtc* _rtc = MGetRTC(_it->first);
+
+		if (_rtc != NULL)
+		{
+			NSHARE::CRAII<NSHARE::CMutex> _lock(
+					_it->second->FLockMutex);
+
+			if (_it->second->FRtc != NULL)// may be founded yet
+			{
+				_it->second->FRtc = _rtc;
+				_it->second->FCondvar.MBroadcast();
+			}
+		}
+	}
+
 }
 } /* namespace NUDT */
 

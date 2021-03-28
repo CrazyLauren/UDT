@@ -191,6 +191,10 @@ def append_header_info(_header_out):
                 _header_out['___LogicalType'][_val].append(_field)
 
 
+def get_align_info(aWhat):
+    return int(aWhat['___constants']['align']) * 8
+
+
 def correct_fields(aTo):
     def correct(aWhat):
         _fields, _offset, _msg_align = alignment_fields(aWhat)
@@ -602,7 +606,7 @@ def alignment_fields(aMsg, aIgnore=None):
     if '___parent' in aMsg and isinstance(aMsg['___parent'], list):
         for _parent in aMsg['___parent']:
             if 'align' in _parent['___constants']:
-                _msg_align = max(_msg_align, int(_parent['___constants']['align']))
+                _msg_align = max(_msg_align, int(_parent['___constants']['align']) * 8)
 
     def lcm(x, y):
         return x * y // math.gcd(x, y)
@@ -704,7 +708,11 @@ def alignment_fields(aMsg, aIgnore=None):
 
         return _offset
 
-    _offset = align_msg(_offset, _prev_type_info['type'])
+    if 'is_integer' in type_info[_prev_type_info['type']] and \
+            type_info[_prev_type_info['type']]['is_integer'] == 'true':
+        _offset = align_msg(_offset, _prev_type_info['type'])
+    else:
+        _offset = align_msg(_offset, 'uint32_t')
 
     if '___size' in aMsg and int(aMsg['___size']) * 8 > _offset:
         _size = int(aMsg['___size']) * 8
@@ -1144,6 +1152,7 @@ def all_field_msg(aMsg, aIgnoreReserv=False):
 
     _rval.extend(all_field(aMsg['___fields'], aIgnoreReserv))
     return _rval
+
 
 def bit_field(fields, aIsIgnore=True, aBegin=0):
     _rval = []

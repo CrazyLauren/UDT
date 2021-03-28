@@ -151,7 +151,7 @@ bool  CCondvar::MTimedwait(IMutex *aMutex)
 bool CCondvar::MTimedwait(IMutex *aMutex, double const aTime)
 {
 	DCHECK(dynamic_cast<CMutex*>(aMutex)!=NULL);
-	LOG_IF(DFATAL,aTime<0) << "Time is negative.";
+	//LOG_IF(DFATAL,aTime<0) << "Time is negative.";
 	unsigned int const _time=(aTime<=0?INFINITE:(unsigned int)(aTime * 1000));
 	return FPImpl->MWait(static_cast<CMutex *>(aMutex), _time);
 }

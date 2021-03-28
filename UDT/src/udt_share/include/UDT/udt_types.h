@@ -12,10 +12,11 @@
 #ifndef UDT_TYPES_H_
 #define UDT_TYPES_H_
 
-#include "UDT/udt_share_macros.h"
+#include <UDT/udt_share_macros.h>
+#include <UDT/config/config.h>
 namespace NUDT
 {
-#define UDT_MAX_MESSAGE_HEADER_SIZE 8
+//#define UDT_MAX_MESSAGE_HEADER_SIZE 16
 /*!\brief A header of the requirement message
  *
  * The size of the message header is 8 byte.

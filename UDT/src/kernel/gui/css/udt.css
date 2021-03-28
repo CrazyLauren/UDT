@@ -188,3 +188,95 @@ html, body {
     top: 0;
     left: 0;
 }
+
+
+/*---------RTC----------*/
+#rtc_pane {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+#rtc_buttons_region {
+    display: table-row;
+}
+
+#rtc_region {
+    display: table-row;
+    width: 100%;
+    height: 100%;
+}
+
+/*Data table */
+#rtc_region .data_table {
+    width: 90%;
+}
+
+#rtc_region .data_table table, tbody {
+    width: 100%;
+}
+
+#rtc_region .data_table td, th {
+    width: auto;
+}
+
+#rtc_region .data_table td, th:nth-child(-n+2) {
+    width: 25%;
+    text-align: center;
+    vertical-align: center;
+}
+
+/*raw colors*/
+#rtc_region .data_table tr:hover > td {
+    background-color: #f5f5f5;
+    color: #454545;
+    cursor: pointer;
+}
+
+#rtc_region .handler-class-0.ui-state-active,
+.data_table tr.handler-class-0 > td {
+    background: lightslategray;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-1.ui-state-active,
+.data_table tr.handler-class-1 > td {
+    background: lightseagreen;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-2.ui-state-active,
+.data_table tr.handler-class-2 > td {
+    background: cornflowerblue;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-3.ui-state-active,
+.data_table tr.handler-class-3 > td {
+    background: darkkhaki;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-4.ui-state-active,
+.data_table tr.handler-class-4 > td {
+    background: sienna;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-5.ui-state-active,
+.data_table tr.handler-class-5 > td {
+    background: yellowgreen;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-6.ui-state-active,
+.data_table tr.handler-class-6 > td {
+    background: burlywood;
+    color: #ffffff;
+}
+
+#rtc_region .handler-class-7.ui-state-active,
+.data_table tr.handler-class-7 > td {
+    background: darkorchid;
+    color: #ffffff;
+}

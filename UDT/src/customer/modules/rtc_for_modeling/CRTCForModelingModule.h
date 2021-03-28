@@ -45,6 +45,7 @@ public:
 	 *
 	 */
 	virtual array_of_RTC_t MGetAllRTC() const;
+
 	/** Gets name by ID
 	 *
 	 * @param aName ID of RTC
@@ -57,8 +58,17 @@ public:
 	virtual IRtc* MWaitForRTC(name_rtc_t const& aID,
 			double aTime = -1) const;
 
-	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName,
-			eRTCType const& aType);
+	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName);
+	virtual IRtc* MCreateRTC(name_rtc_t const& aName);
+
+	void MWaitForRTC(
+			wait_for_t* aWaitFor
+			) const;
+
+	void MUnWait(
+			name_rtc_t const& aWhat
+				) const;
+	bool MRemoveRTC(name_rtc_t const& aName);
 
 	/** Initialize module
 	 *
@@ -102,6 +112,7 @@ private:
 		array_of_RTC_t FRtc;//!< Pointer to RTC
 	};
 	typedef NSHARE::CSafeData<rtc_state_t> protected_RTC_array_t;//!< RW lock for  #rtc_state_t
+	typedef std::map<name_rtc_t, NSHARE::intrusive_ptr<wait_for_t> > wait_for_store_t; //!< wait for store
 
 	static int sMReceiveRTC(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	void MUpdateRTCInfo(real_time_clocks_t const&);
@@ -110,6 +121,7 @@ private:
 
 	bool MCreateRTC(real_time_clocks_t const& aRtc);
 	bool MUpdateRTC();
+	void MUnlockWaitedRTC();
 
 
 	protected_RTC_array_t FRTCArray;//!< List of available RTC
@@ -119,6 +131,7 @@ private:
 	mutable NSHARE::CMutex FCommonMutex;//!< Mutex for common purpose
 	NSHARE::CSharedMemory FMemory;//!< is used for communication
 	ICustomer* FPCustomer;//!< Pointer to customer
+	mutable wait_for_store_t FWaitFor;//!< Store expected RTC by user
 
 	mutable NSHARE::CCondvar FWaitForEvent;
 };

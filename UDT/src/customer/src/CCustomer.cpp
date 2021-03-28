@@ -301,6 +301,27 @@ int CCustomer::MDoNotReceiveMSG(const NSHARE::CText& aFrom,
 	return MGetImpl().MRemoveDgParserFor( _msg, NULL);
 }
 
+int CCustomer::MInformAboutSubscribe(const NSHARE::CText& aProtocol,
+		required_header_t const& aMsg,
+		const callback_t& aHandler)
+{
+	return MGetImpl().MInformAboutSubscribing(aProtocol, aMsg,
+			aHandler,true);
+}
+bool CCustomer::MDoesNotInformAboutSubscribing(const NSHARE::CText& aProtocol,
+		required_header_t const& aMsg, unsigned aId)
+{
+	return MGetImpl().MDoesNotInformAboutSubscribing(aProtocol,aMsg,aId);
+}
+int CCustomer::MInformAboutUnSubscribe(const NSHARE::CText& aProtocol,
+		required_header_t const& aMsg,
+		const callback_t& aHandler)
+{
+	return MGetImpl().MInformAboutSubscribing(aProtocol, aMsg,
+			aHandler,false);
+}
+
+
 int CCustomer::MSend(NSHARE::CText aProtocolName, NSHARE::CBuffer & aBuffer,
 		eSendToFlags aFlag)
 {
@@ -451,9 +472,37 @@ IRtc* CCustomer::MGetRTC(NSHARE::CText const& aName) const
 {
 	return MGetImpl().MGetRTC(aName);
 }
-CCustomer::rtc_list_t CCustomer::MGetListOfRTC() const
+IRtc* CCustomer::MGetOrCreateRTC(NSHARE::CText const& aName,
+		unsigned const& aType,
+		NSHARE::CText const& aModuleName)
 {
-	return MGetImpl().MGetListOfRTC();
+	return MGetImpl().MGetOrCreateRTC(name_rtc_t(aName),
+			static_cast<eRTCType>(aType), aModuleName);
+}
+IRtc* CCustomer::MCreateRTC(NSHARE::CText const& aName,
+		unsigned const& aType,
+		NSHARE::CText const& aModuleName)
+{
+	return MGetImpl().MCreateRTC(name_rtc_t(aName),
+			static_cast<eRTCType>(aType), aModuleName);
+}
+bool CCustomer::MRemoveRTC(NSHARE::CText const& aName)
+{
+	return MGetImpl().MRemoveRTC(name_rtc_t(aName));
+}
+CCustomer::rtc_list_t CCustomer::MGetListOfRTC(NSHARE::CText const&
+		aModuleName) const
+{
+	return MGetImpl().MGetListOfRTC(aModuleName);
+}
+IRtc* CCustomer::MWaitForRTCCreated(NSHARE::CText const& aName,
+		double aTime) const
+{
+	return MGetImpl().MWaitForRTCCreated(name_rtc_t(aName), aTime);
+}
+bool CCustomer::MForceUnWaitForRTCCreated(NSHARE::CText const& aName) const
+{
+	return MGetImpl().MForceUnWaitForRTCCreated(name_rtc_t(aName));
 }
 std::ostream& CCustomer::sMPrintError(std::ostream& aStream, error_t const& aVal)
 {

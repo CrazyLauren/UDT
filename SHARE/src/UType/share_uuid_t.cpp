@@ -14,6 +14,7 @@
 #include <deftype>
 #include <iomanip>
 #include <SHARE/random_value.h>
+#include <SHARE/crc16.h>
 
 namespace NSHARE
 {
@@ -161,6 +162,10 @@ uint32_t uuid_t::MGetHash() const
     _val = _val + (_val << 6);
     _val = _val ^ (_val >> 22);
     return (uint32_t) _val;
+}
+uint16_t uuid_t::MGetHash16() const
+{
+    return NSHARE::crc16_t<0xC005>::sMCalcCRCofBuf((uint8_t const*)&FVal, (uint8_t const*)&FVal + sizeof(FVal));
 }
 };
 

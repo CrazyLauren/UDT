@@ -17,15 +17,16 @@
 #include <SHARE/UType/CIPCMutex.h>
 #include <SHARE/UType/CIPCSem.h>
 #include <udt_rtc_types.h>
+#include <IRtcSync.h>
 namespace NUDT
 {
 /** RTC realized for modeling
  *
  */
-class CRTCForModeling: NSHARE::CDenyCopying
+class CRTCForModeling:public IRtcApi, NSHARE::CDenyCopying
 {
 public:
-	typedef time_info_t::rtc_time_t rtc_time_t;//!< time in
+	typedef time_info_t::rtc_time_t rtc_time_t;//!< time in microseconds
 
 	/** default constructor
 	 *
@@ -38,7 +39,8 @@ public:
 	 * @param aName  The unique name of RTC
 	 */
 	CRTCForModeling(NSHARE::IAllocater* aAllocator,
-			NSHARE::CProgramName const& aName);
+			NSHARE::CProgramName const& aName,
+			rtc_unique_id_t const& aId);
 
 	/** Open the exist RTC
 	 *
@@ -141,6 +143,49 @@ public:
 	 * @return number of joined or -1
 	 */
 	int MGetAmountOfJoined() const;
+
+	/** Serialize data
+	 *
+	 * @return
+	 */
+	NSHARE::CConfig MSerialize() const;
+
+	/** If need sync with the other RTC
+	 *
+	 * @return
+	 */
+	bool MIsNeedSync() const;
+
+	/**
+	 *
+	 * @param  aRtc Setup RTC sync
+	 */
+	void MSet(IApiSync* aRtc);
+
+	/** Remove from sync
+	 *
+	 * @param aRtc
+	 */
+	NSHARE::intrusive_ptr<IApiSync> MRemoveSync();
+
+	/** Gets id
+	 *
+	 * @return get id
+	 */
+	rtc_unique_id_t MGetId() const;
+
+	/** Gets type
+	 *
+	 * @return type
+	 */
+	eRTCType MGetType() const;
+
+	NSHARE::intrusive_ptr<IApiSync> MGetSync() const;
+
+	virtual void MSyncStateIsUpdated()
+	{
+
+	}
 private:
 
     /**
@@ -159,6 +204,19 @@ private:
 	 * @param aNewTime a new time
 	 */
 	void MUpdateTime(uint64_t aNewTime) const;
+
+	/** Synchronize if need with the other
+	 *
+	 * @param aNewTime
+	 */
+	void MSyncTimeIfNeed(rtc_time_t aNewTime) const;
+
+
+	/** Force stop synchronize
+	 *
+	 */
+	void MForceUnlockSync() const;
+
 	bool MInitializeSignals();
 	void MDeInitializeSignals();
 	void MUnlockWaiter() const;
@@ -182,8 +240,13 @@ private:
 	bool FIsDone; //!< If true then dispatcher is working
 	bool FIsJoin;//!<If true then joined
 	bool FIsICreateInfo;//!< true I'm create time_info
+	bool FIsSyncLock; //!< If block in synchronize
 	mutable unsigned FMyStepNumber;//!< Number of step which i did
     mutable NSHARE::atomic_t FIsWaitForNextStepState;//!< state of wait for next step
+
+    mutable NSHARE::CMutex FSyncMutex;
+    NSHARE::intrusive_ptr<IApiSync> FSyncRtc;//!< Sync interface
+    rtc_unique_id_t FRtcId;
 };
 
 
@@ -193,23 +256,30 @@ inline CRTCForModeling::CRTCForModeling() :
 		FIsDone(true),//
 		FIsJoin(false),//
 		FIsICreateInfo(false),//
+		FIsSyncLock(false),//
         FMyStepNumber(0)
 {
     FIsWaitForNextStepState=eStateNoWait;
 }
 inline CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator, //
-		NSHARE::CProgramName const& aName) :
+		NSHARE::CProgramName const& aName,
+		rtc_unique_id_t const& aId) :
 		FAllocator(NULL), //
 		FTimeInfo(NULL), //
 		FIsDone(true),//
 		FIsJoin(false),//
 		FIsICreateInfo(false),//
-        FMyStepNumber(0)
+		FIsSyncLock(false),//
+        FMyStepNumber(0),//
+		FRtcId(aId)
 {
     FIsWaitForNextStepState=eStateNoWait;
 	DCHECK(aName.MIsValid());
 
 	time_info_t* _p = NSHARE::allocate_object<time_info_t>(*aAllocator);
+	_p->FOwner = aId.FOwner.FVal;
+	_p->FId = aId.FId;
+
 	if(_p==NULL ||  !MOpen(aAllocator,aName,_p))
 	{
 		aAllocator->MDeallocate(_p, 0);
@@ -225,6 +295,7 @@ inline CRTCForModeling::CRTCForModeling(NSHARE::IAllocater* aAllocator,
 				FIsDone(true),//
 				FIsJoin(false),//
 				FIsICreateInfo(false),//
+				FIsSyncLock(false),//
                 FMyStepNumber(0)
 {
     FIsWaitForNextStepState=eStateNoWait;
@@ -240,6 +311,8 @@ inline bool CRTCForModeling::MOpen(NSHARE::IAllocater* aAllocator,
 	FName=aName;
 	FAllocator=aAllocator;
 	FTimeInfo=aP;
+	FRtcId.FId = aP->FId;
+	FRtcId.FOwner = aP->FOwner;
 
 	bool _is=MInitializeSignals();
 	if(!_is)
@@ -273,6 +346,7 @@ inline void CRTCForModeling::MDeInitializeSignals()
 inline CRTCForModeling::~CRTCForModeling()
 {
 	MForceStopDispatcher();
+	MRemoveSync();
 	MLeaveFromRTC();
 	MDestroyRTC();
 }
@@ -450,6 +524,61 @@ inline void CRTCForModeling::MUpdateTime(rtc_time_t aNewTime) const
 		MUnlockWaiter();
 	}
 }
+inline NSHARE::intrusive_ptr<IApiSync> CRTCForModeling::MGetSync() const
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+	return FSyncRtc;
+}
+inline void CRTCForModeling::MSet(IApiSync* aRtc)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+	FSyncRtc = aRtc;
+	FSyncRtc ->MSet(this);
+}
+inline 	NSHARE::intrusive_ptr<IApiSync> CRTCForModeling::MRemoveSync()
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+	NSHARE::intrusive_ptr<IApiSync> _rval(FSyncRtc);
+	if (_rval.MIs())
+	{
+		FSyncRtc = NULL;
+		_lock.MUnlock();
+
+		_rval->MRemove();
+	}
+	return _rval;
+}
+inline eRTCType CRTCForModeling::MGetType() const
+{
+	return eRTC_MODELING;
+}
+inline rtc_unique_id_t CRTCForModeling::MGetId() const
+{
+	return FRtcId;
+}
+inline bool CRTCForModeling::MIsNeedSync() const
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+	return FSyncRtc.MIs();
+}
+inline void CRTCForModeling::MSyncTimeIfNeed(rtc_time_t aNewTime) const
+{
+	NSHARE::intrusive_ptr<IApiSync> _rtc;
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+		_rtc = FSyncRtc;
+	}
+	_rtc ->MSync(aNewTime);
+}
+inline void CRTCForModeling::MForceUnlockSync() const
+{
+	NSHARE::intrusive_ptr<IApiSync> _rtc;
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FSyncMutex);
+		_rtc = FSyncRtc;
+	}
+	_rtc ->MForceUnlock();
+}
 inline void CRTCForModeling::MUnlockWaiter() const
 {
     DCHECK_EQ(FTimeInfo->FNumOfUnlocked,0);
@@ -622,6 +751,10 @@ inline bool CRTCForModeling::MForceStopDispatcher()
 		FIsDone = true;
 		VLOG(2) << "Wait for dispatcher stopped";
 		FHasToBeUpdated.MSignal();
+		if(FIsSyncLock)
+		{
+			MForceUnlockSync();
+		}
 		NSHARE::CRAII<NSHARE::CMutex> _destroy_lock(FDestroyMutex);
 	}
 	return true;
@@ -632,7 +765,9 @@ inline bool CRTCForModeling::MDispatcher()
 	NSHARE::CRAII < NSHARE::CMutex > _destroy_lock(FDestroyMutex);
 	CRTCForModeling::rtc_time_t _next_time = 0;
 
-	NSHARE::CRAII <NSHARE:: CIPCMutex > _lock(FSem);
+	//NSHARE::CRAII <NSHARE:: CIPCMutex > _lock(FSem);
+	FSem.MLock();//<--------------
+
 	if (!FIsDone)
 		do
 		{
@@ -643,17 +778,39 @@ inline bool CRTCForModeling::MDispatcher()
 				FHasToBeUpdated.MTimedwait(&FSem);
 			} while (_step == FTimeInfo->FTimeStep && !FIsDone);
 
+			if (FIsDone)
+				break;
+
 			DCHECK_EQ(FTimeInfo->FNumOfUnlocked, 0);
             DCHECK_EQ(FTimeInfo->FNumOfLocked, FTimeInfo->FNumOfWorking);
             DCHECK_EQ(FTimeInfo->FNumOfWait,0);
 
+            if(MIsNeedSync())
+            {
+            	rtc_time_t _next = 0;
+
+            	do
+            	{
+            		_next = FTimeInfo->FNextTimer;
+
+            		FIsSyncLock = true;
+
+            		FSem.MUnlock();//<--------------
+					MSyncTimeIfNeed(_next);
+					FSem.MLock();//<--------------
+
+					FIsSyncLock = false;
+
+					DCHECK_EQ(_next, FTimeInfo->FNextTimer);
+            	} while(_next == FTimeInfo->FNextTimer);
+            }
 			MUpdateTime(FTimeInfo->FNextTimer);
-
-
 
 		} while (!FIsDone //
 		&& FTimeInfo //
 				&& FTimeInfo->FTime != time_info_t::END_OF_TIME);
+
+	FSem.MUnlock();//<--------------
 
 	FIsDone=true;
 	LOG(INFO) << "Time is ended for dispatcher " << FName;
@@ -691,6 +848,19 @@ inline NSHARE::CProgramName const& CRTCForModeling::MGetName() const
 inline NSHARE::IAllocater::offset_pointer_t CRTCForModeling::MGetOffset() const
 {
 	return FAllocator->MOffset(FTimeInfo);
+}
+inline NSHARE::CConfig CRTCForModeling::MSerialize() const
+{
+	NSHARE::CConfig _conf("rtc");
+	_conf.MAdd(FName.MSerialize());
+
+	if(FTimeInfo != NULL)
+		_conf.MAdd(FTimeInfo->MSerialize());
+
+	_conf.MAdd("join", MIsJoinToRTC());
+	_conf.MAdd("done", FIsDone);
+
+	return _conf;
 }
 }
 

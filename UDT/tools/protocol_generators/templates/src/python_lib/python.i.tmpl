@@ -54,6 +54,18 @@ unsigned protocol_minor_version();
         {% endif %}
     {% endfor %}
     );
+    int public_msg(
+    {% for field in header.___fields|fields(True) if field.LogicalType|string() == "unique" %}
+        {% if not loop.first %}
+            ,
+        {% endif %}
+        {% if  field.TypeInfo.standard %}
+            const {{ field.type }}& a{{ field.id }}
+        {% else %}
+            const {{common.get_namespace(name)}}::{{ field.type }}& a{{ field.id }}
+        {% endif %}
+    {% endfor %}
+    );
     int receive(const char* aFrom,
     unsigned aFlags
     {% for field in header.___fields|fields(True)

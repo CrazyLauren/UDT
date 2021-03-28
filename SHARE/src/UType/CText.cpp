@@ -1645,7 +1645,7 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 		for (; _it != format.end(); ++_it)
 		{
 			bool _is_end = false;
-			switch (*_it)
+			switch ((uint32_t)*_it)
 			{
 			case '#':
 			case '0':
@@ -1725,7 +1725,7 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 		}
 
 		_mode length_mod = _none;
-		switch (*_it)
+		switch ((uint32_t)*_it)
 		{
 		case 'h':
 			++_it;
@@ -1781,7 +1781,7 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 			break;
 		}
 		CText subst;
-		switch (*_it)
+		switch ((uint32_t)*_it)
 		{
 
 		case 'd':
@@ -1836,7 +1836,7 @@ static CText string_printf_v(ICodeConv const& aType, const CText& format,
 		case 'X':
 		{
 			int base = 10;
-			switch (*_it)
+			switch ((uint32_t)*_it)
 			{
 			case 'o':
 				base = 8;
@@ -2141,7 +2141,7 @@ bool CText::sMIsMatch(const_iterator _pat_it, const_iterator _pat_end,
 	for (; _pat_it != _pat_end;)
 	{
 		if (!_is_escape)
-			switch (*_pat_it)
+			switch ((uint32_t)*_pat_it)
 			{
 			case '\\':
 			{

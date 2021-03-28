@@ -28,6 +28,9 @@ const NSHARE::CText routing_user_data_t::NAME = "UserDataId";
 template<>
 const NSHARE::CText new_id_t::NAME = "NewId";
 
+template<>
+const NSHARE::CText real_time_clocks_id_t::NAME = "NewRTC";
+
 
 template<>
 const NSHARE::CText demands_id_t::NAME = "DemandsId";

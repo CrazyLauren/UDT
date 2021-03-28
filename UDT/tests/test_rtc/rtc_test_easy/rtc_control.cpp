@@ -215,14 +215,20 @@ bool test()
 	CHECK_EQ(CCustomer::sMGetInstance().MGetMyWishForMSG().size(),0);
 
 	subscribe_to_msg();
-	CCustomer::sMGetInstance().MWaitForEvent(CCustomer::EVENT_UPDATE_RTC_INFO);
+	{
+		LOCK_STREAM
+		std::cout<<"Wait for RTC "<<g_rtc_name<<std::endl;
+	}
+	g_rtc=CCustomer::sMGetInstance().MWaitForRTCCreated(g_rtc_name);
+	CHECK_NOTNULL(g_rtc);
+	//CCustomer::sMGetInstance().MWaitForEvent(CCustomer::EVENT_UPDATE_RTC_INFO);
 	{
 		LOCK_STREAM
 		std::cout<<"RTC info updated ..."<<std::endl;
 	}
 
-	g_rtc=CCustomer::sMGetInstance().MGetRTC(g_rtc_name);
-	CHECK_NOTNULL(g_rtc);
+	//g_rtc=CCustomer::sMGetInstance().MGetRTC(g_rtc_name);
+
 
 	start_publishers();
 

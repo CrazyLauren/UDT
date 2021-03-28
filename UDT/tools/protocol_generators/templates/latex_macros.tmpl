@@ -195,18 +195,19 @@
     & \makecell[{{_align_cell}}]{ {% if aLanguage != 'ru' %} Len\\gth {% else %}Раз-\\мер{% endif %} \\ {{ word_bit }} }
     & {% if aLanguage != 'ru' %} Range {% else %} Ограни\-чения {% endif %}
     & {% if aLanguage != 'ru' %} Samples {% else %} ЦМР {% endif %}
-    & {% if aLanguage != 'ru' %} Comment {% else %} Коммен\-тарий {% endif %}\\ \nopagebreak
+    & {% if aLanguage != 'ru' %} Comment {% else %} Приме\-чание {% endif %}\\ \nopagebreak
     \hline
     {% for field in aMsg.___fields %}
+        {% set _row_end = "\\nopagebreak" if loop.first else "" %}
         {% if 'fields' in field %}
             {% for bf in field['fields'] %}
                 {% if 'number' in bf %}
-                    {{ add_table_row(aNumBits, aMsg, bf, aLanguage) }} \\
+                    {{ add_table_row(aNumBits, aMsg, bf, aLanguage) }} \\ {{ _row_end }}
                     \hline
                 {% endif %}
             {% endfor %}
         {% elif 'word' in field and 'number' in field  %}
-            {{ add_table_row(aNumBits, aMsg, field, aLanguage) }} \\
+            {{ add_table_row(aNumBits, aMsg, field, aLanguage) }} \\ {{ _row_end }}
             \hline
         {% endif %}
     {% endfor %}
@@ -226,7 +227,6 @@
     {% set _max_type_len = aMsg.___latex.max_type_id %}
     {% set _max_len_lim = 8 %}
     {% set _limitation = aField|limitation %}
-
     {% if 'LogicalType' in aField  and 'LogicalTypeInfo' in aField
             and aField.LogicalType != 'none' and 'enum' in aField.LogicalTypeInfo %}
         {% set _or_lang = 'or' if aLanguage!='ru' else 'или' %}
@@ -310,7 +310,6 @@
     {% if ns.range | length == 0  %}
         {% set  ns.range = '-'%}
     {% endif %}
-
     {% set begin = '' %}
     {% set _len_txt = '' %}
     {% if 'offset' in aField %}
@@ -323,22 +322,18 @@
     {% if begin | length == 0  %}
         {% set  begin = '-'%}
     {% endif %}
-
     {% if _len %}
         {% set word_ = _len | int // aNumBits %}
         {% set bit_ = _len | int % aNumBits %}
         {% set _len_txt = word_|string + '\\textbackslash' + bit_ |string%}
     {% endif %}
-
     {% if _len_txt | length == 0  %}
         {% set _len_txt = '-'%}
     {% endif %}
     {% set _type_text = aField.type  %}
-
     {% if 'array_len' in aField and aField.array_len|int >0  %}
         {% set _type_text = _type_text + '['+ aField.array_len|string +']' %}
     {% endif %}
-
     {% if 'LogicalType' in aField and aField.LogicalType == 'dynamic array' %}
         {% set _com_1 = 'Length of dynamic array. Range is for each array value.
         Type of dyanamic array is ' if aLanguage!='ru' else
@@ -354,11 +349,9 @@
     {% if _samples | length == 0  %}
         {% set _samples = '-'%}
     {% endif %}
-
     {% if comments | length == 0  %}
         {% set comments = '-'%}
     {% endif %}
-
     \rownumber
     {% if aField.id |length > _max_len %}
     & {{ split_text(aField.id, _max_len ) -}}

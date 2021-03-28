@@ -718,7 +718,7 @@ struct CSharedAllocator::block_node_t *CSharedAllocator::block_node_t::MNext(
 {
 	DCHECK_GE(FNextNode, FBlockSize);
 	DCHECK_GE(FNextNode, sizeof(heap_head_t));
-	return sMPointerFromBase<block_node_t>(FNextNode, aBaseAddr);
+	return (FNextNode<FBlockSize|| FNextNode<sizeof(heap_head_t))?NULL: sMPointerFromBase<block_node_t>(FNextNode, aBaseAddr);
 }
 CSharedAllocator::offset_t CSharedAllocator::block_node_t::MSetNextNode(offset_t const& aVal)
 {
@@ -732,7 +732,7 @@ struct CSharedAllocator::process_node_t * CSharedAllocator::process_node_t::MNex
 		void* aBaseAddr) const
 {
 	DCHECK_GE(FNextNode, sizeof(heap_head_t) + sizeof(block_node_t));
-	return sMPointerFromBase<process_node_t>(FNextNode, aBaseAddr);
+	return (FNextNode < (sizeof(heap_head_t) + sizeof(block_node_t)))? NULL:sMPointerFromBase<process_node_t>(FNextNode, aBaseAddr);
 }
 CSharedAllocator::offset_t CSharedAllocator::process_node_t::MSetNextNode(offset_t const& aVal)
 {
@@ -809,9 +809,8 @@ CSharedAllocator::CSharedAllocator(void * aBase) :
 		MInitFromCreatedHeap(aBase);
 }
 CSharedAllocator::~CSharedAllocator()
-{
-	if (FCurentProcess)
-		MReleaseHeap();
+{	
+	MReleaseHeap();
 }
 
 bool CSharedAllocator::MInitFromCreatedHeap(void* aVal,bool aCleanUp,size_t aReserv)
@@ -2417,70 +2416,83 @@ bool CSharedAllocator::MCleanUpResourceByWatchDog(clean_up_f_t aFunction,
 	DCHECK_NOTNULL(FBase);
 
 	CRAII<CSharedAllocator> _block(*this);
+
 	heap_head_t* const _p_head = sMGetHead(FBase);
 	const unsigned _pid = get_pid_optimized();
 	const unsigned _tid = NSHARE::CThread::sMThreadId();
+
 	if (_p_head->MIsWatchDogExist()
 			&& !(_pid == _p_head->FWacthDogPid && _tid == _p_head->FWacthDogTid))
 	{
 		DLOG(WARNING)<<"A New Watch dog is registering.";
 		MResetWatchDogImpl(_p_head);
 	}
+
 	DVLOG(2) << "Initializing  watch dog...";
 	_p_head->FWacthDogPid = _pid;
 	_p_head->FWacthDogTid = _tid;
+
+
 	NSHARE::CIPCSem _wd_sem;
 	_wd_sem.MInit(_p_head->FWatchDogSem, sizeof(_p_head->FWatchDogSem), 0,
 			CIPCSem::E_UNDEF);
 
 	_block.MUnlock();		//!---
 
-	DLOG(INFO) << "Watch dog stands guard.";
+	LOG(INFO) << "Watch dog stands guard.";
 
-	//CRAII<CIPCSem> _block2(_wd_sem);
-	_wd_sem.MWait();
-	++FState.FWatchDog;
-	if (!(_pid == _p_head->FWacthDogPid && _tid == _p_head->FWacthDogTid))
+	for (;;)
 	{
-		_p_head->FMutexFlags &= ~heap_head_t::WACTH_DOG_PRIORITY;
-		DLOG(INFO)<<"The watch dog no longer "<<_pid<<":"<<_tid<<" stand guard...";
-		//_block2.MUnlock();
-		_wd_sem.MFree();
-		return false;
-	}
-	CHECK(_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY);
+		//CRAII<CIPCSem> _block2(_wd_sem);
+		_wd_sem.MWait();
+		++FState.FWatchDog;
 
-	MWatchDogLock();		//!---
-	DLOG(INFO) << "Clean up by watch dog.";
-
-	leak_processes_t _proc;
-	MGetLeakProcesses(_proc);
-
-	clean_up_resources_t _resources;
-	MGetLeakResources(_proc, _resources);
-
-	//now call watch dog
-	//if the block has not to be removed
-	//the pid will be changed to holder pid
-	MUnlock();//!---
-	(*aFunction)(this, &_resources, aData);
-
-	MLock();//!---
-	MCheckResources(_resources);
-
-	MCleanUpMemoryImpl(_resources);
-	MCleanUpFreeSemaphore();
-/*	{
-		process_node_t * _p = _p_head->MFirstProcessNode(FBase);
-		for (; _p != NULL;)
+		//warning cannot lock by watch dog as TID and PID doesn't equal
+		if (!MWatchDogLock()) //!---
 		{
-			block_node_t* const _p_node = sMGetBlockNode(_p);
-			CHECK(_p_node->MIsAllocated());
-			_p = _p->MNext(FBase);
+			LOG(INFO) << "The watch dog no longer " << _pid << ":" << _tid
+									<< " stand guard...";
+
+			LOG_IF(DFATAL,
+					_pid == _p_head->FWacthDogPid//
+					&& _tid == _p_head->FWacthDogTid
+					) << "Error during lock watch dog " << _pid << ":" << _tid
+												;
+			break;
 		}
-	}*/
-	DLOG(INFO)<<"CleanUp finished. "<<sMPrintAsXml(this);
-	MUnlock();//!---
+
+		DLOG(INFO) << "Clean up by watch dog.";
+
+		leak_processes_t _proc;
+		MGetLeakProcesses(_proc);
+
+		clean_up_resources_t _resources;
+		MGetLeakResources(_proc, _resources);
+
+		//now call watch dog
+		//if the block has not to be removed
+		//the pid will be changed to holder pid
+		MUnlock();	//!---
+		(*aFunction)(this, &_resources, aData);
+
+		MLock();	//!---
+		MCheckResources(_resources);
+
+		MCleanUpMemoryImpl(_resources);
+		MCleanUpFreeSemaphore();
+		/*	{
+		 process_node_t * _p = _p_head->MFirstProcessNode(FBase);
+		 for (; _p != NULL;)
+		 {
+		 block_node_t* const _p_node = sMGetBlockNode(_p);
+		 CHECK(_p_node->MIsAllocated());
+		 _p = _p->MNext(FBase);
+		 }
+		 }*/
+		DLOG(INFO) << "CleanUp finished. " << sMPrintAsXml(this);
+		MUnlock();	//!---
+	}
+	_wd_sem.MFree();
 	return true;
 }
 
@@ -2578,10 +2590,11 @@ bool CSharedAllocator::MIsMemoryUsed()
 }
 bool CSharedAllocator::MReleaseHeap()
 {
-	DVLOG(2) << "MReleaseHeap is called.";
-	DCHECK_NOTNULL(FBase);
+	DVLOG(2) << "MReleaseHeap is called.";	
 	bool _is_full_cleanup = false;
+	if(FCurentProcess != NULL)
 	{
+		DCHECK_NOTNULL(FBase);
 		CRAII<CSharedAllocator> _block(*this);
 		MCleanUpImpl();
 		heap_head_t* const _p_head = sMGetHead(FBase);
@@ -3037,8 +3050,17 @@ bool CSharedAllocator::MWatchDogLock() const
 {
 	DCHECK_NOTNULL(FBase);
 	heap_head_t* const _p_head = sMGetHead(FBase);
+	const unsigned _pid = get_pid_optimized();
+	const unsigned _tid = NSHARE::CThread::sMThreadId();
+
+
 	//if(_p_head->FPIDOfLockedMutex )
-	bool _is = MLockImpl(_p_head);
+	bool _is = _pid == _p_head->FWacthDogPid //
+			&& _tid == _p_head->FWacthDogTid
+			&& MLockImpl(_p_head);
+
+	DCHECK(!_is || ((_p_head->FMutexFlags & heap_head_t::WACTH_DOG_PRIORITY) != 0));
+
 	_p_head->FMutexFlags &= ~heap_head_t::WACTH_DOG_PRIORITY;
 	return _is;
 }

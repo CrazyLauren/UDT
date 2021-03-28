@@ -130,6 +130,28 @@ inline int {{ func_prefix }}_send({{ struct_name }} * aThis
 {#            _buf);#}
 {#    return _rval;#}
 }
+inline int {{ func_prefix }}_public_msg({{ struct_name }} * aThis
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+        {% if  field.TypeInfo.standard %}
+            , const {{ field.type }}& a{{ field.id }}
+        {% else %}
+           , const {{common.get_namespace(name)}}::{{ field.type }}& a{{ field.id }}
+        {% endif %}
+    {% endfor %}
+    )
+{
+    {{ struct_name }}_impl_t * const _ptr = reinterpret_cast<{{ struct_name }}_impl_t *>(aThis);
+    DCHECK_NOTNULL(_ptr);
+    return _ptr->MPublic(*static_cast<{{ struct_name }}*>(_ptr)
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+            , a{{ field.id }}
+    {% endfor %}
+    );
+}
 {#namespace#}
 {#{#}
 {#static received_data_info_t g_{{ function_sufix }};#}

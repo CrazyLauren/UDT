@@ -150,6 +150,13 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	int MRemoveDgParserFor( requirement_msg_info_t  aNumber,callback_t * aTo);
 	int MRemoveDgParserFor( demand_dg_t::event_handler_value_t  aNumber, request_info_t* aTo);
 
+	int MInformAboutSubscribing(const NSHARE::CText& aProtocol,
+					required_header_t const& aMsg,
+					const callback_t& aHandler, bool aSubscribe);
+
+	bool MDoesNotInformAboutSubscribing(const NSHARE::CText& aProtocol,
+			required_header_t const& aMsg,
+			unsigned aId);
 
 	int  MUdpateRecvList() const;
 
@@ -166,11 +173,50 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	 */
 	IRtc* MGetRTC(NSHARE::CText const& aName) const;
 
+	/** Gets or Create new RTC
+	 *
+	 * @param aName Id of RTC
+	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
+	 * @param aModuleName Name of RTC Module
+	 * @return pointer to RTC or NULL if Kernel is disabled
+	 * @warning blocking call!!!
+	 */
+	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName,
+			eRTCType const& aType,
+			NSHARE::CText const& aModuleName);
+
+	virtual IRtc* MCreateRTC(name_rtc_t const& aName,
+			eRTCType const& aType,
+			NSHARE::CText const& aModuleName);
+
 	/** Gets list of available RTC
 	 *
+	 * @param aModuleName Name of RTC Module
 	 * @return list of RTC
 	 */
-	rtc_list_t MGetListOfRTC() const;
+	rtc_list_t MGetListOfRTC(NSHARE::CText const& aModuleName) const;
+
+	/** Wait for RTC created
+	 *
+	 * @param aID RTC id
+	 * @param aTime
+	 * @return Pointer to RTC or NULL
+	 */
+	IRtc* MWaitForRTCCreated(name_rtc_t const& aID, double aTime) const;
+
+	/** Force  stop to wait for RTC create
+	 *
+	 * @param aID RTC id
+	 * @return true - is stopped
+	 */
+	bool MForceUnWaitForRTCCreated(name_rtc_t const& aID) const;
+
+	/** Remove RTC if You is owner
+	 *
+	 * @param aName RTC name
+	 * @return true if remove
+	 */
+	virtual bool MRemoveRTC(name_rtc_t const& aName);
 
 	/** Store info about new module
 	 *
@@ -184,8 +230,57 @@ struct CCustomer::_pimpl: public ICustomer, public events_t
 	 */
 	void MPopModule(IModule* aModule);
 private:
+
+	struct subscribe_info_t
+	{
+		typedef std::pair<callback_t, bool> callback_info_t; //!< true - subscribe false unsubscribe
+		typedef std::vector<callback_info_t> callback_array_t;
+
+		subscribe_info_t()
+		{
+			FHandlersNumber =0;
+		}
+		subscribe_info_t(NSHARE::CText  const& aProtocol,
+				required_header_t const& aHeader):
+				FProtocol(aProtocol.empty()?RAW_PROTOCOL_NAME:aProtocol),//
+				FHeader(aHeader)//
+		{
+			FProtocol.MToLowerCase();
+			FHandlersNumber =0;
+		}
+
+		NSHARE::CText FProtocol;
+		required_header_t FHeader;
+
+		int MPut(callback_info_t const& aNew) const;
+		int MEraseCb(unsigned aNumber) const;
+		unsigned MGetHandlerNumber() const;
+		callback_array_t const& MGetCallbacks() const;
+	private:
+
+		mutable unsigned FHandlersNumber;//as uses set
+		mutable callback_array_t FCallbackHandler;//as uses set
+	};
+
+	struct subscribe_info_fast_less_compare: NSHARE::CStringFastLessCompare
+	{
+		bool operator()(const subscribe_info_t& a, const subscribe_info_t& b) const
+		{
+
+			int const _cmp = memcmp(a.FHeader.FMessageHeader, b.FHeader.FMessageHeader,
+					sizeof(a.FHeader.FMessageHeader));
+
+			return _cmp == 0 ?
+					NSHARE::CStringFastLessCompare::operator ()(a.FProtocol,
+							b.FProtocol) :
+					_cmp < 0;
+		}
+	};
+
 	typedef std::set<NSHARE::CText,NSHARE::CStringFastLessCompare> wait_for_t;
 	typedef std::vector<callback_t> event_hash_map_t; // If callback is not exist when MIs() false and FYouData pointer to next free cell
+	typedef std::set<subscribe_info_t, subscribe_info_fast_less_compare> subscribes_info_t;
+
 	static int sMReceiver(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMReceiveCustomers(CHardWorker* aWho, args_data_t* aWhat, void* aData);
 	static int sMFailSents(CHardWorker* aWho, args_data_t* aWhat, void* aData);
@@ -225,6 +320,7 @@ private:
 	unsigned MPutEvents(const NSHARE::Strings& aEvents,
 			NSHARE::Strings* aAddedList);
 	void MUpdateDemandPriority();
+	void MInformAboutSubscribing(subcribe_receiver_args_t::what_t& aWhat) const;
 	//-----------------
 	CCustomer& FThis;
 
@@ -249,6 +345,9 @@ private:
 	demand_dg_t::event_handler_value_t FUniqueNumber;
 	uint16_t FMainPacketNumber;
 	array_of_modules_t FModules;//!< Info about modules (sorted)
+
+	subscribes_info_t FSubcribeInfo;
+	mutable NSHARE::CMutex FSubcribeInfoMutex;
 
 	friend class CCustomer;
 };

@@ -70,6 +70,10 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
     typedef NSHARE::Callback_t<signal_new_t> new_data_cb_t;//!< The new data CB
 
     new_data_cb_t FNewDataCb;//!< Notification about new data
+
+    /** Create the ne object
+    *
+    */
     CHandler();
     virtual ~CHandler()
     {
@@ -93,7 +97,7 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
     */
 	inline static T sMFromJson(const std::string& aData, bool aIsHead = true);
 
-    /** Send message (public)
+    /** Send message
     *
     * @param aMsg The message
     * @return >0 the unique number of the message
@@ -107,6 +111,59 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
     {% endfor %}
     );
 
+    /** Public message (send message)
+    *
+    * If you public message, than the latest
+    * message will be send automatically
+    * to the new subscribers (only to it).
+    *
+    * It's convenient method if
+    * the message has to receive all
+    * subscribers irrespective
+    * to "subscribing" time (if the message send before
+    *  some program subscribe to the message).
+    *
+    * @param aMsg The message
+    * @return >0 the unique number of the message
+               otherwise  the error code
+    */
+    inline int MPublic(const T& aMsg
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+            , const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+    );
+
+    /** Clean publish info
+    *
+    */
+    inline void MCleanPublish(
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"] %}
+            {% if not loop.first %}, {% endif %}
+            const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+            );
+
+    /** Clean all published data
+    */
+    inline MCleanAllPublish();
+
+
+    /** Generate buffer (serialize message)
+    *
+    * @param aMsg The message
+    * @return byte buffer
+    */
+    inline static std::pair<NSHARE::CBuffer, NUDT::required_header_t>
+                    sMGenerateBuffer(const T& aMsg
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+            , const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+    );
     /** Wait of new data
     *
     * @param aTime expect time (-1 - infinity)
@@ -166,7 +223,38 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
             *aInfo = static_cast<NUDT::received_message_info_t const>(_rd.FData);
         return _amount_of;
     }
+    /** Get Only latest received message
+    *
+    * @param aTo store message to object
+    * @param aInfo Info about message
+    * @return 0 or
+    *           otherwise error code
+    * @tparam Objet type
+    */
+    template <typename U>
+    inline int MNeedOnlyLatest(U * aTo, NUDT::received_message_info_t* aInfo = NULL)
+    {
+        NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
 
+        if(FReceivedData.empty())
+            return -1;
+
+        data_info_t const _rd(FReceivedData.back());
+        FReceivedData.clear();
+        FNumberOfMessage = 0;
+        _block.MUnlock();
+
+       _rd.FData.FMessage.FBuffer >> (*aTo);
+
+#ifdef VLOG
+        VLOG(1)<<"Read received data "<<_rd.FId;
+        VLOG(2)<<"Received data \n"<< (*aTo)<<"\n from \n"<<static_cast<NUDT::received_message_info_t const>(_rd.FData);
+#endif
+        if(aInfo != NULL)
+            *aInfo = static_cast<NUDT::received_message_info_t const>(_rd.FData);
+
+        return 0;
+    }
     /** Amount of available received message
     *
     * @return the number of available message
@@ -190,6 +278,90 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
     inline static void generate(T* aData);
 
     protected:
+	/** Class uses to send data to connected
+	 * program
+	 *
+	 */
+	class CRepeatSender: NSHARE::CDenyCopying, public NSHARE::IIntrusived
+	{
+	public:
+
+		CRepeatSender(NSHARE::CBuffer const& aData,
+				NUDT::required_header_t const& aHeader) :
+				FData(aData), //
+				FHeader(aHeader)
+		{
+			NUDT::callback_t const _handler(&sMReceivedDataCb, this);
+			FUniqueNumber =
+					NUDT::CCustomer::sMGetInstance().MInformAboutUnSubscribe(
+							protocol(),
+							FHeader,
+							_handler
+							);
+		}
+		~CRepeatSender()
+		{
+			if (MIs())
+			{
+				NUDT::CCustomer::sMGetInstance().MDoesNotInformAboutSubscribing(
+						protocol(),
+						FHeader,
+						FUniqueNumber
+						);
+				FUniqueNumber = -1;
+			}
+
+		}
+		bool MIs() const
+		{
+			return FUniqueNumber >= 0;
+		}
+        void MUpdateBuffer(NSHARE::CBuffer const& aNewData)
+        {
+            NSHARE::CRAII<NSHARE::CMutex> _block(FDataMutex);
+            FData = aNewData;
+        }
+	private:
+
+		static int sMNewSubscriberCb(NUDT::CCustomer* WHO, void* WHAT,
+				void* YOU_DATA)
+		{
+			((CRepeatSender*) YOU_DATA)->MHandleNewSubscriber(
+					(NUDT::subcribe_receiver_args_t::what_t *) WHAT);
+			return 0;
+		}
+		void MHandleNewSubscriber(NUDT::subcribe_receiver_args_t::what_t& aWhat) const
+		{
+#ifdef VLOG
+			VLOG(1) << "Send data to " << aWhat.FWho
+								<< "\n as it's cponnected \n header "
+								<< FHeader;
+#endif
+			if (MIs())
+			{
+				NSHARE::CBuffer _send;
+                {
+                    NSHARE::CRAII<NSHARE::CMutex> _block(FDataMutex);
+                    _send = FData;
+                }
+				int const _rval = NUDT::CCustomer::sMGetInstance().MSend(
+						FHeader,
+						protocol(),
+						_send,
+						aWhat.FWho
+						);
+			}
+		}
+
+		NSHARE::CBuffer FData;
+		NUDT::required_header_t const FHeader;
+		int FUniqueNumber;
+        mutable  NSHARE::CMutex FDataMutex;
+	};
+	typedef NSHARE::intrusive_ptr<CRepeatSender>  sender_ptr_t; //!< ptr to object
+
+	typedef std::map<NUDT::required_header_t,
+			sender_ptr_t> repeat_senders_t; //!< map of senders
 
     /** Callback to handle received data
     *
@@ -198,6 +370,13 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
     {
         return ((CHandler*)YOU_DATA)->MReceiveData((NUDT::received_message_args_t *) WHAT);
     }
+    static NUDT::required_header_t MGetHeader(
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"] %}
+            {% if not loop.first %}, {% endif %}
+            const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+            );
 
     /** Notification about new data
     *
@@ -243,11 +422,14 @@ class CHandler:NSHARE::CDenyCopying, public NSHARE::IIntrusived
         return 0;
     }
 
+
     received_data_info_t FReceivedData;//!< Received data storage
     unsigned FNumberOfMessage;//!< The number of received message
     unsigned FReceivedDataUniqueId;//!< The unique Id of received data
 
     int FCbID;//!< Unique CB Id of receiving function
+
+    repeat_senders_t FRepeatHandlers;
 
     mutable NSHARE::CMutex FMutex;//!< Mutex to lock FReceivedData
     mutable unsigned FCondVarNum;//!< The number of blocking thread which is expecting data
@@ -286,6 +468,50 @@ inline  T CHandler<T>::sMFromJson(const std::string& aData, bool aIsHead)
                         );
 }
 template<class T>
+NUDT::required_header_t CHandler<T>::MGetHeader(
+{% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"] %}
+        {% if not loop.first %}, {% endif %}
+        const {{ field.type }}& a{{ field.id }}
+{% endfor %}
+        )
+{
+    NUDT::required_header_t _header(get_header<T>());
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+    (({{ struct_header_name }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+    {% endfor %}
+    return _header;
+}
+
+template<class T>
+inline std::pair<NSHARE::CBuffer, NUDT::required_header_t> CHandler<T>::sMGenerateBuffer(const T& aMsg
+{% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+        , const {{ field.type }}& a{{ field.id }}
+{% endfor %}
+)
+{
+    using namespace NUDT;
+    std::pair<NSHARE::CBuffer, NUDT::required_header_t> _rval;
+    NSHARE::CBuffer& _buf = _rval.first;
+    NUDT::required_header_t& _header = _rval.second;
+
+    _buf = CCustomer::sMGetInstance().MGetNewBuf(
+            sizeof(T));
+    _buf.resize(0);
+    serialize_binary(_buf, aMsg);
+    _header = MGetHeader(
+    {% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+        {% if not loop.first %}, {% endif %} a{{ field.id }}
+    {% endfor %});
+    return  _rval;
+}
+template<class T>
 inline int CHandler<T>::sMSend(const T& aMsg
 {% for field in header.___fields|fields(True)
         if field.LogicalType|string() in ["unique"]
@@ -295,17 +521,17 @@ inline int CHandler<T>::sMSend(const T& aMsg
 )
 {
     using namespace NUDT;
-    NSHARE::CBuffer _buf = CCustomer::sMGetInstance().MGetNewBuf(
-            sizeof(T));
-    _buf.resize(0);
-    serialize_binary(_buf, aMsg);
-    NUDT::required_header_t _header(get_header<T>());
-
+    std::pair<NSHARE::CBuffer, NUDT::required_header_t> _data(
+        sMGenerateBuffer(aMsg
     {% for field in header.___fields|fields(True)
-            if field.LogicalType|string() in ["unique"]
-             %}
-    (({{ struct_header_name }}*)_header.FMessageHeader)->{{ field.id }} = a{{ field.id }};
+        if field.LogicalType|string() in ["unique"]
+         %}
+        , a{{ field.id }}
     {% endfor %}
+        ));
+
+    NSHARE::CBuffer& _buf = _data.first;
+    NUDT::required_header_t& _header = _data.second;
 
     int const _rval = CCustomer::sMGetInstance().MSend(
             _header,
@@ -317,6 +543,83 @@ inline int CHandler<T>::sMSend(const T& aMsg
 #endif
     return _rval;
 }
+template<class T>
+inline int CHandler<T>::MPublic(const T& aMsg
+    {% for field in header.___fields|fields(True)
+            if field.LogicalType|string() in ["unique"]
+             %}
+            , const {{ field.type }}& a{{ field.id }}
+    {% endfor %}
+    )
+{
+    using namespace NUDT;
+    std::pair<NSHARE::CBuffer, NUDT::required_header_t> _data(
+        sMGenerateBuffer(aMsg
+    {% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+        , a{{ field.id }}
+    {% endfor %}
+        ));
+    NSHARE::CBuffer& _buf = _data.first;
+    NUDT::required_header_t& _header = _data.second;
+
+    {
+        NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+        typename repeat_senders_t::iterator _it = FRepeatHandlers.find(_header);
+        if (_it == FRepeatHandlers.end())
+        {
+            FRepeatHandlers[_header] = sender_ptr_t(new
+                            CRepeatSender(_buf, _header));
+        }else
+        {
+            _it->second->MUpdateBuffer(_buf);
+        }
+    }
+    int const _rval = CCustomer::sMGetInstance().MSend(
+            _header,
+            protocol(),
+            _buf);
+#ifdef VLOG
+        LOG(INFO) <<"Send data id "<<_rval;
+        VLOG(2) <<"Send data \n "<<aMsg;
+#endif
+    return _rval;
+}
+template<class T>
+inline void CHandler<T>::MCleanPublish(
+{% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"] %}
+        {% if not loop.first %}, {% endif %}
+        const {{ field.type }}& a{{ field.id }}
+{% endfor %}
+        )
+{
+    NUDT::required_header_t _header(MGetHeader(
+    {% for field in header.___fields|fields(True)
+        if field.LogicalType|string() in ["unique"]
+         %}
+        {% if not loop.first %}, {% endif %} a{{ field.id }}
+    {% endfor %}));
+
+    sender_ptr_t _ptr;
+
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+    typename repeat_senders_t::iterator _it = FRepeatHandlers.find(_header);
+    if (_it != FRepeatHandlers.end())
+    {
+        _ptr =  _it->second;
+        FRepeatHandlers.erase(_it);
+    }
+}
+
+template<class T>
+inline void CHandler<T>::MCleanAllPublish()
+{
+    NSHARE::CRAII<NSHARE::CMutex> _block(FMutex);
+    FRepeatHandlers.clear();
+}
+
 
 template<class T>
 inline int CHandler<T>::MWaitData(double aTime ) const

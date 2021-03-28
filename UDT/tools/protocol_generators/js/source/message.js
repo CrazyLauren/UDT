@@ -506,7 +506,7 @@ function update_msg_tabel (jseditor, aMsgFieldEditor) {
                     $('td', headerTable).each(function (index, td) {
                         if (td.innerText in msgEditor.getValue()) {
                             let valEditor = jseditor.getEditor(msgEditor.path + '.' + td.innerText);
-                            if (valEditor)
+                            if (valEditor && valEditor.getValue() !== null)
                                 td.innerText = valEditor.getValue().toString();
                         }
                     });

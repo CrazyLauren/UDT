@@ -13,6 +13,9 @@
 #include <deftype>
 #include <SHARE/socket.h>
 #include <SHARE/Socket/CNetBase.h>
+#if !defined(HAVE_WINSOCK_H)
+#	include <sys/socket.h>
+#endif
 
 namespace NSHARE
 {

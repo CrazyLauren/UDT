@@ -467,7 +467,7 @@ int rtc_c_get_rtc_info(rtc_info_c_t* aToArray, unsigned aSize)
 				&& i < (int) aSize
 				; ++_it, ++i)
 		{
-			DCHECK_NOTNULL((*_it));
+			DCHECK(_it->MIs());
 			NUDT::convert(aToArray++, *(*_it));
 		}
 

@@ -23,9 +23,11 @@ class IRtc;
 class CUSTOMER_EXPORT IRtcControl:public IModule
 {
 public:
-	typedef std::vector<IRtc*> array_of_RTC_t;//!< The array of pointer to RTC
+	typedef std::vector<NSHARE::intrusive_ptr<IRtc> > array_of_RTC_t;//!< The array of pointer to RTC
 	typedef unsigned rtc_id_t;//!< unique id of RTC
 	typedef  time_info_t::rtc_time_t rtc_time_t;
+	struct wait_for_t;
+
 
 
 	/** Gets ID by name
@@ -55,20 +57,36 @@ public:
 	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
 	 * @return pointer to RTC or NULL if Kernel is disabled
 	 * @warning blocking call!!!
-	 * @warning Auto call MJoinToRTC()
 	 */
-	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName,
-			eRTCType const& aType) =0;
+	virtual IRtc* MGetOrCreateRTC(name_rtc_t const& aName) =0;
 
-	/** Get RTC By specified ID
+	/** Creates new RTC
 	 *
-	 * @param aID RTC id
-	 * @param aTime
-	 * @return Pointer to RTC
+	 * @param aName Id of RTC
+	 * @param aType Type of RTC (for creating only, can be ignored by Kernel)
+	 * @return pointer to RTC or NULL if Kernel is disabled
+	 * @warning blocking call!!!
 	 */
-	virtual IRtc* MWaitForRTC(name_rtc_t const& aID,
-			double aTime = -1) const =0;
+	virtual IRtc* MCreateRTC(name_rtc_t const& aName) =0;
 
+	/** Remove RTC if You is owner
+	 *
+	 * @param aName RTC name
+	 * @return true if remove
+	 */
+	virtual bool MRemoveRTC(name_rtc_t const& aName) =0;
+
+	/** Wait for RTC created
+	 *
+	 * @param aWaitFor Struct for wait for
+	 */
+	virtual void MWaitForRTC(
+			wait_for_t* aWaitFor
+			) const =0;
+
+	virtual void MUnWait(
+				name_rtc_t const& aWhat
+				) const =0;
 
 	/** Gets all RTC
 	 *
@@ -76,10 +94,36 @@ public:
 	 */
 	virtual array_of_RTC_t MGetAllRTC() const=0;
 
-protected:
-	IRtcControl(const NSHARE::CText& type) :
-		IModule(type)
+	inline eRTCType const& MGetRTCType() const
 	{
+		return FRtcType;
+	}
+protected:
+	IRtcControl(const NSHARE::CText& aModuleName, eRTCType const& aType):
+		IModule(aModuleName),
+		FRtcType(aType)
+	{
+	}
+	eRTCType const FRtcType;
+};
+
+/** Wait for RTC structure
+ *
+ */
+struct IRtcControl::wait_for_t: NSHARE::IIntrusived
+{
+	NSHARE::CMutex FLockMutex;
+	NSHARE::CCondvar FCondvar;
+
+	IRtc* FRtc;//!< Out variable
+
+	name_rtc_t const FID;
+	wait_for_t(name_rtc_t const& aID):
+		FLockMutex(NSHARE::CMutex::MUTEX_NORMAL),//
+				FRtc(NULL),//
+				FID(aID)
+	{
+
 	}
 };
 }

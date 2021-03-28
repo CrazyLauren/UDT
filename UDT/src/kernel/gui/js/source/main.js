@@ -30,6 +30,7 @@ $(document).ready(function ()
     create_tab("tabs-sniffer","Sniffer");
     //create_tab("tabs-info","Info");
     //create_tab("tabs-settings","Settings");
+    create_tab("tabs-rtc","RTC");
     var handle_activation=function(tab)
     {
         let _tab_id = tab.attr("id");
@@ -43,6 +44,9 @@ $(document).ready(function ()
                 break;
             case "tabs-net":
                 udt_net.open(tab);
+                break;
+            case "tabs-rtc":
+                rtc.open(tab);
                 break;
             default:
                 tab.empty().html("Couldn't load this tab");

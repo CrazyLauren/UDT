@@ -17,60 +17,98 @@
 namespace NUDT
 {
 using namespace NSHARE;
+
+//---------------------------
+const NSHARE::CText rtc_unique_id_t::NAME = "rtc_id";
+const NSHARE::CText rtc_unique_id_t::KEY_UNIQUE_ID = "uid";
+
+const rtc_unique_id_t::unique_id_t rtc_unique_id_t::NO_ID = 0;
+
+rtc_unique_id_t::rtc_unique_id_t() :
+		FId(NO_ID)
+{
+	;
+}
+rtc_unique_id_t::rtc_unique_id_t(NSHARE::CConfig const& aConf) :
+		FOwner(aConf.MChild(NSHARE::uuid_t::NAME)), //
+		FId(NO_ID)
+{
+	aConf.MGetIfSet(KEY_UNIQUE_ID, FId);
+}
+NSHARE::CConfig rtc_unique_id_t::MSerialize() const
+{
+	CConfig _conf(NAME);
+	_conf.MSet(KEY_UNIQUE_ID, FId);
+	_conf.MAdd(FOwner.MSerialize());
+	return _conf;
+}
+bool rtc_unique_id_t::MIsValid() const
+{
+	return FOwner.MIsValid() //
+	&& FId != NO_ID;
+}
+bool rtc_unique_id_t::operator<(rtc_unique_id_t const& aInfo) const
+		{
+	return (FOwner == aInfo.FOwner) ? FId < aInfo.FId : FOwner < aInfo.FOwner;
+}
+
+bool rtc_unique_id_t::operator==(rtc_unique_id_t const& aInfo) const
+		{
+	return FOwner == aInfo.FOwner && FId == aInfo.FId;
+}
+
+bool rtc_unique_id_t::operator!=(rtc_unique_id_t const& aInfo) const
+{
+	return !operator ==(aInfo);
+}
 //---------------------------
 const NSHARE::CText rtc_info_t::NAME = "rtc_info";
 const NSHARE::CText rtc_info_t::KEY_RTC_TYPE = "rtc_type";
 const NSHARE::CText rtc_info_t::KEY_NAME = "name";
 const NSHARE::CText rtc_info_t::KEY_NULL_OFFSET = "offset";
-const NSHARE::CText rtc_info_t::KEY_UNIQUE_ID = "uid";
 
-rtc_info_t::rtc_info_t():
-		FRTCType(eRTC_DEFAULT),//
-		FOffset(NSHARE::IAllocater::NULL_OFFSET),//
-		FUniqueId(0)
+rtc_info_t::rtc_info_t() :
+		FRTCType(eRTC_DEFAULT), //
+		FOffset(NSHARE::IAllocater::NULL_OFFSET)
 {
 	;
 }
 rtc_info_t::rtc_info_t(NSHARE::CConfig const& aConf) :
-		FOwner(aConf.MChild(NSHARE::uuid_t::NAME)),//
-		FRTCType(eRTC_DEFAULT),//
-		FOffset(NSHARE::IAllocater::NULL_OFFSET),//
-		FUniqueId(0)
+		FId(aConf.MChild(rtc_unique_id_t::NAME)), //
+		FRTCType(eRTC_DEFAULT), //
+		FOffset(NSHARE::IAllocater::NULL_OFFSET)
 {
 	CText _name;
-	if(aConf.MGetIfSet(KEY_NAME,_name))
-			FName.MSetRaw(_name);
+	if (aConf.MGetIfSet(KEY_NAME, _name))
+		FName.MSetRaw(_name);
 
-	int _val=-1;
+	int _val = -1;
 
-	if(aConf.MGetIfSet(KEY_RTC_TYPE, _val))
-		FRTCType=static_cast<eRTCType>(_val);
+	if (aConf.MGetIfSet(KEY_RTC_TYPE, _val))
+		FRTCType = static_cast<eRTCType>(_val);
 
 	aConf.MGetIfSet(KEY_NULL_OFFSET, FOffset);
-	aConf.MGetIfSet(KEY_UNIQUE_ID, FUniqueId);
 }
 NSHARE::CConfig rtc_info_t::MSerialize() const
 {
 	CConfig _conf(NAME);
-	_conf.MAdd(FOwner.MSerialize());
+	_conf.MAdd(FId.MSerialize());
 	_conf.MSet(KEY_NULL_OFFSET, FOffset);
 	_conf.MSet(KEY_NAME, FName.MGetRawName());
 	_conf.MSet<int>(KEY_RTC_TYPE, FRTCType);
-	_conf.MSet(KEY_UNIQUE_ID, FUniqueId);
 	return _conf;
 }
 bool rtc_info_t::MIsValid() const
 {
-	return FName.MIsValid() && FOwner.MIsValid() && FUniqueId>0;
+	return FName.MIsValid() && FId.MIsValid();
 }
 bool rtc_info_t::operator==(rtc_info_t const& aInfo) const
-{
+		{
 	return aInfo.FName == FName //
 	&& aInfo.FRTCType == FRTCType //
 	&& aInfo.FOffset == FOffset //
-	&& FOwner == aInfo.FOwner //
-	&& FUniqueId == aInfo.FUniqueId //
-			;
+	&& FId == aInfo.FId //
+	;
 }
 const NSHARE::CText real_time_clocks_t::NAME = "rtcs";
 const NSHARE::CText real_time_clocks_t::SHARED_MEMORY_NAME = "shm_name";
@@ -92,7 +130,7 @@ real_time_clocks_t::real_time_clocks_t(NSHARE::CConfig const& aConf)
 }
 static bool less_compare(rtc_info_t const& aLft, rtc_info_t const& aRgt)
 {
-	return aLft.FOwner < aRgt.FOwner;
+	return aLft.FId < aRgt.FId;
 }
 void real_time_clocks_t::MInsert(rtc_info_t const& aRtc)
 {
@@ -126,6 +164,6 @@ bool real_time_clocks_t::MIsValid() const
 	}
 	return FInfoFrom.MIsValid();
 }
-};
-
+}
+;
 

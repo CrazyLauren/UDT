@@ -405,22 +405,28 @@ int CCustomer::_pimpl::sMDemands(CHardWorker* aWho, args_data_t* aWhat,
 	_old.FReceivers.reserve(_prog.size());
 	demand_dgs_t::const_iterator _it = _prog.begin(), _it_end(_prog.end());
 
+
 	for (; _it != _it_end; ++_it)
 	{
 		subcribe_receiver_args_t::what_t _what;
 		_what.FWhat.FFrom = _it->FNameFrom.MGetRawName();
 		_what.FWhat.FProtocolName = _it->FProtocol;
 		_what.FWhat.FRequired = _it->FWhat;
-		_what.FWhat.FFlags=_it->FFlags.MGetMask();
+		_what.FWhat.FFlags = _it->FFlags.MGetMask();
+
+		bool const _is_removed = _it->FFlags.MGetFlag(demand_dg_t::E_REMOVED);
 
 		if (_it->FUUIDFrom.MIs())
 			_what.FWho = _it->FUUIDFrom.MGetConst();
 
-		if(_it->FFlags.MGetFlag(demand_dg_t::E_REMOVED))
+		if (_is_removed)
 			_old.FReceivers.push_back(_what);
 		else
 			_new.FReceivers.push_back(_what);
+
+		 _impl->MInformAboutSubscribing(_what);
 	}
+
 
 	int _count=0;
 	if(!_new.FReceivers.empty())
@@ -1196,17 +1202,128 @@ IRtc* CCustomer::_pimpl::MGetRTC(NSHARE::CText const& aName) const
 	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
 	return _p;
 }
-CCustomer::rtc_list_t CCustomer::_pimpl::MGetListOfRTC() const
+
+
+CCustomer::rtc_list_t CCustomer::_pimpl::MGetListOfRTC(NSHARE::CText const& aModuleName) const
 {
-	std::vector<IRtc*> _rval;
+	CCustomer::rtc_list_t _rval;
 	CRTCFactory::factory_its_t _its=CRTCFactory::sMGetInstance().MGetIterator();
 	for(;_its.FBegin!=_its.FEnd;++_its.FBegin)
 	{
+		if(!aModuleName.empty() && _its.FBegin->first != aModuleName)
+			continue;
 		IRtcControl::array_of_RTC_t const _array(
 				_its.FBegin->second->MGetAllRTC());
 		_rval.insert(_rval.end(), _array.begin(),_array.end());
 	}
 	return _rval;
+}
+IRtc* CCustomer::_pimpl::MGetOrCreateRTC(name_rtc_t const& aName,
+		eRTCType const& aType,
+		NSHARE::CText const& aModuleName)
+{
+	IRtc* _p=NULL;
+	CRTCFactory::factory_its_t _its =
+			CRTCFactory::sMGetInstance().MGetIterator();
+
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		if( (aModuleName.empty() || _its.FBegin->first == aModuleName)
+				&& aType == _its.FBegin->second->MGetRTCType()
+				)
+		{
+			_p = _its.FBegin->second->MGetOrCreateRTC(aName);
+			break;
+		}
+	}
+
+	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
+	return _p;
+}
+IRtc* CCustomer::_pimpl::MCreateRTC(name_rtc_t const& aName,
+		eRTCType const& aType,
+		NSHARE::CText const& aModuleName)
+{
+	IRtc* _p=NULL;
+	CRTCFactory::factory_its_t _its =
+			CRTCFactory::sMGetInstance().MGetIterator();
+
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		if( (aModuleName.empty() || _its.FBegin->first == aModuleName)
+				&& aType == _its.FBegin->second->MGetRTCType()
+				)
+		{
+			_p = _its.FBegin->second->MCreateRTC(aName);
+			break;
+		}
+	}
+
+	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
+	return _p;
+}
+
+bool CCustomer::_pimpl::MRemoveRTC(name_rtc_t const& aName)
+{
+	CRTCFactory::factory_its_t _its =
+			CRTCFactory::sMGetInstance().MGetIterator();
+
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		if(_its.FBegin->second->MRemoveRTC(aName))
+			return true;
+
+	}
+
+	return false;
+}
+IRtc* CCustomer::_pimpl::MWaitForRTCCreated(name_rtc_t const& aID, double aTime) const
+{
+	IRtc* _p=NULL;
+	NSHARE::intrusive_ptr<IRtcControl::wait_for_t> _rval(
+			new IRtcControl::wait_for_t(aID));
+	{
+
+
+		CRTCFactory::factory_its_t _its =
+						CRTCFactory::sMGetInstance().MGetIterator();
+
+		NSHARE::CRAII<NSHARE::CMutex> _lock(_rval->FLockMutex);
+		for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+		{
+			_its.FBegin->second->MWaitForRTC(
+					_rval.MGet()
+					);
+		}
+	}
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(_rval->FLockMutex);
+		if (_rval->FRtc == NULL)
+		{
+			_rval->FCondvar.MTimedwait(&_rval->FLockMutex, aTime);
+		}
+		_p = _rval->FRtc;
+
+		CRTCFactory::factory_its_t _its =
+				CRTCFactory::sMGetInstance().MGetIterator();
+		for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+		{
+			_its.FBegin->second->MUnWait(aID);
+		}
+	}
+
+	VLOG_IF(2,_p==NULL)<<"Rtc is not founded";
+	return _p;
+}
+bool CCustomer::_pimpl::MForceUnWaitForRTCCreated(name_rtc_t const& aID) const
+{
+	CRTCFactory::factory_its_t _its =
+			CRTCFactory::sMGetInstance().MGetIterator();
+	for (; _its.FBegin != _its.FEnd; ++_its.FBegin)
+	{
+		_its.FBegin->second->MUnWait(aID);
+	}
+	return true;
 }
 
 CDataObject& CCustomer::_pimpl::MGetDataObject() const
@@ -1221,5 +1338,137 @@ CResources& CCustomer::_pimpl::MGetResourceObject() const
 CConfigure& CCustomer::_pimpl::MGetConfigureObject() const
 {
 	return CConfigure::sMGetInstance();
+}
+int CCustomer::_pimpl::subscribe_info_t::MPut(callback_info_t const& aNew) const
+{
+	if(!aNew.first.MIs())
+		return -1;
+
+	if(FCallbackHandler.size() == FHandlersNumber)
+	{
+		FCallbackHandler.push_back(aNew);
+		++FHandlersNumber;
+		return (int)(FCallbackHandler.size() -1);
+
+	}else
+	{
+		DCHECK_GT(FHandlersNumber, 0);
+
+		callback_array_t::iterator _it = FCallbackHandler.begin(),
+				_it_end(FCallbackHandler.end());
+
+		for (; _it != _it_end //
+			&& _it->first.MIs() ; ++_it)
+			;
+
+		DCHECK(_it != _it_end);
+
+		if (_it != _it_end)
+		{
+			DCHECK(!_it->first.MIs());
+
+			*_it = aNew;
+			return (int)(_it - FCallbackHandler.begin());
+		}else
+			return -1;
+	}
+}
+int CCustomer::_pimpl::subscribe_info_t::MEraseCb(unsigned aNumber) const
+{
+	if (FCallbackHandler.size() > aNumber //
+			&& FCallbackHandler[aNumber].first.MIs()
+			)
+	{
+		FCallbackHandler[aNumber].first = callback_t();
+		return --FHandlersNumber;
+	}
+	return -1;
+}
+unsigned CCustomer::_pimpl::subscribe_info_t::MGetHandlerNumber() const
+{
+	return FHandlersNumber;
+}
+CCustomer::_pimpl::subscribe_info_t::callback_array_t const& CCustomer::_pimpl::subscribe_info_t::MGetCallbacks() const
+{
+	return FCallbackHandler;
+}
+int CCustomer::_pimpl::MInformAboutSubscribing(const NSHARE::CText& aProtocol,
+				required_header_t const& aMsg,
+				const callback_t& aHandler, bool aSubscribe)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSubcribeInfoMutex);
+
+	subscribe_info_t _info(aProtocol, aMsg);
+
+	std::pair<subscribes_info_t::iterator,
+		bool> _rval = FSubcribeInfo.insert(_info);
+
+//	_rval.first->FCallbackHandler.push_back(
+//			subscribe_info_t::callback_info_t(aHandler, aSubscribe));
+//
+//	++_info.FHandlersNumber;
+	int const _num = _rval.first->MPut(
+			subscribe_info_t::callback_info_t(aHandler, aSubscribe));
+	DCHECK((_rval.second && _info.MGetHandlerNumber() == 1 )
+			|| _info.MGetHandlerNumber() > 1
+			);
+
+	//return (int)(_rval.first->FCallbackHandler.size() -1);
+	return _num;
+}
+
+bool CCustomer::_pimpl::MDoesNotInformAboutSubscribing(const NSHARE::CText& aProtocol,
+		required_header_t const& aMsg, unsigned aId)
+{
+	NSHARE::CRAII<NSHARE::CMutex> _lock(FSubcribeInfoMutex);
+
+	subscribe_info_t _info(aProtocol, aMsg);
+
+	subscribes_info_t::iterator _it = FSubcribeInfo.find(_info);
+
+	if(_it!= FSubcribeInfo.end() /*
+			&& _it->FCallbackHandler.size() > aId*/)
+	{
+//		_it->FCallbackHandler[aId].first = callback_t();
+//
+//		if(--_it->FHandlersNumber == 0)
+		int const _rval = _it->MEraseCb(aId);
+		if (_rval == 0)
+		{
+			FSubcribeInfo.erase(_it);
+		}
+		return _rval >= 0;
+		//return true;
+	}
+	return false;
+}
+
+void CCustomer::_pimpl::MInformAboutSubscribing(subcribe_receiver_args_t::what_t& aWhat) const
+{
+	bool const _is_new= (aWhat.FWhat.FFlags & demand_dg_t::E_REMOVED) ==0 ;
+	subscribe_info_t const _info(aWhat.FWhat.FProtocolName,
+			aWhat.FWhat.FRequired);
+
+	std::vector<subscribe_info_t::callback_info_t> _calls;
+	{
+		NSHARE::CRAII<NSHARE::CMutex> _lock(FSubcribeInfoMutex);
+
+		subscribes_info_t::const_iterator _jt = FSubcribeInfo.find(_info);
+		if (_jt != FSubcribeInfo.end())
+		{
+			DCHECK_GT(_jt->MGetHandlerNumber(), 0);
+			_calls = _jt->MGetCallbacks();
+		}
+	}
+	for (unsigned j = 0; j < _calls.size(); ++j)
+	{
+		subscribe_info_t::callback_info_t const& _cb(
+				_calls[j]);
+		if (
+				_cb.first.MIs()//
+				&& _cb.second == _is_new // _cb.second  - true if new, _is_new - true if new
+				)
+			_cb.first(&FThis, &aWhat);
+	}
 }
 }
