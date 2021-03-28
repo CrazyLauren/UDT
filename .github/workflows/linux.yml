@@ -35,7 +35,8 @@ jobs:
       - uses: actions/checkout@v1
       - name: Set variables
         id: vars
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         run: |
           # Set git branch or git tag as slug
           if [[ ${GITHUB_REF} =~ ^refs\/tags\/ ]]; then
@@ -54,7 +55,8 @@ jobs:
           echo ::set-env name=GIT_SLUG::${GIT_SLUG}
       - name: Install (Linux)
         if: runner.os == 'Linux'
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         run: |
             # LLVM 9 is not yet in Bionic's repositories.
             #sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
